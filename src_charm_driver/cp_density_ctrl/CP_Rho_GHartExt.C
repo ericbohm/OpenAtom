@@ -36,7 +36,8 @@
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 #include "src_piny_physics_v1.0/include/proto_defs/proto_cp_ewald_corrs.h"
-
+#include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
+#include "main/PhysScratchCache.h"
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -48,6 +49,7 @@ extern Config config;
 
 extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
 extern CProxy_CPcharmParaInfoGrp    scProxy;
+extern CProxy_PhysScratchCache     pScratchProxy;
 extern CkVec <CProxy_AtomsCache>              UatomsCacheProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>       UrhoGHartExtProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>       UrhoRHartExtProxy;
@@ -445,7 +447,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
    double *perdCorr = rho_gs.perdCorr;
    CPLOCAL::CP_hart_eext_calc(numPoints,rho,natm,fastAtoms,vks,
                               &ehart_ret,&eext_ret,&ewd_ret,k_x,k_y,k_z,perdCorr,
-                              thisIndex.x,config.nfreq_cplocal_hartext);
+                              thisIndex.x, pScratchProxy.ckLocalBranch()->psscratch, config.nfreq_cplocal_hartext);
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(HartExcVksG_, StartTime, CmiWallTimer());    
 #endif

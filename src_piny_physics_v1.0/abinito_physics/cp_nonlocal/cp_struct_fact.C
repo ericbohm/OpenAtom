@@ -41,7 +41,8 @@ void CPNONLOCAL::CP_calc_Struct_Fact(int gSpaceSize,
                            complex *StructFact_fy,
                            complex *StructFact_fz,
                            FastAtoms *atoms,
-                           int mydoublePack, int numSfGrps, int indexSfGrp)
+				     int mydoublePack, int numSfGrps, int indexSfGrp,
+				     PSSCRATCH *pscratch)
 
 //============================================================================
   {// Begin function
@@ -69,11 +70,11 @@ void CPNONLOCAL::CP_calc_Struct_Fact(int gSpaceSize,
   int *natm_typ_lang = cppseudo->nonlocal.natm_typ_lang;
   int **iatm_typ_lang= cppseudo->nonlocal.iatm_typ_lang;
 
-  double *x          = cppseudo->nonlocal.x;
-  double *y          = cppseudo->nonlocal.y;
-  double *z          = cppseudo->nonlocal.z;
-  complex *ei_inc    = cppseudo->nonlocal.ei_inc;
-  complex *s_now     = cppseudo->nonlocal.ti_inc;
+  double *x          = pscratch->x;
+  double *y          = pscratch->y;
+  double *z          = pscratch->z;
+  complex *ei_inc    = pscratch->ei_inc;
+  complex *s_now     = pscratch->ti_inc;
 
   /*--------------------------------*/
   /* Cell and pressure information  */

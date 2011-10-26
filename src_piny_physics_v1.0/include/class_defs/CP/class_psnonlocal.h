@@ -41,41 +41,8 @@ class PSNONLOCAL{
    double ecut;             // Num: Cutoff in Hartree : FOR NL
    double fft_size_scale;   // Num: Increase in FFT size tuning EES accuracy : 
                             //      same for NL and EEXT
+  double *vnorm_0;
 
-   // SF scratch for non-ees non-local method
-   double *x,*y,*z;
-   double *vnorm_0;
-   complex *ei_inc;
-   complex *ti_inc;
-   double *vtemp;
-   int *index_atm;
-
-   // Scratch for ees method : non-local AND eext scratch are here!!
-   double *aj;
-   double *rn;
-   double *rn1;
-   int *index_a;
-   int *index_b;
-   int *igrid_at;
-   int *igrid_bt;
-   int *iatemp;
-   int *ibtemp;
-   int *ictemp;
-   double *frac_a;
-   double *frac_b;
-   double *frac_c;
-   int **igrid_a;
-   int **igrid_b;
-   int **igrid_c;
-   double **mn_a;
-   double **mn_b;
-   double **mn_c;
-   double **ua;
-   double **ub;
-   double **uc;
-   double **dmn_a;
-   double **dmn_b;
-   double **dmn_c;
 
 //-------------------------------------------------------------------------
 //con-destruct:
@@ -134,34 +101,6 @@ class PSNONLOCAL{
     p | ecut;
     p | fft_size_scale;
 
-    // Malloc the unpuppables
-    if(p.isUnpacking() && (ees_on+ees_eext_on) > 0){
-       aj      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
-       rn      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
-       rn1     = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
-       index_a = (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
-       index_b = (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
-       igrid_at= (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
-       igrid_bt= (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
-       frac_a  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
-       frac_b  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
-       frac_c  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
-       iatemp  = (int *)cmalloc(natm_tot*sizeof(int),"psnl_pup");
-       ibtemp  = (int *)cmalloc(natm_tot*sizeof(int),"psnl_pup");
-       ictemp  = (int *)cmalloc(natm_tot*sizeof(int),"psnl_pup");
-       igrid_a = cmall_int_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       igrid_b = cmall_int_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       igrid_c = cmall_int_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       mn_a    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       mn_b    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       mn_c    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       ua    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       ub    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       uc    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       dmn_a   = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       dmn_b   = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-       dmn_c   = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-    }//endif
 
      // the pups also malloc
     if(natm>0){
@@ -174,25 +113,68 @@ class PSNONLOCAL{
       pup1d_int(p,&ityp_v,nl_iter);
       pup1d_int(p,&n_zmat,nl_iter);
       pup1d_int(p,&ioff_zmat,nl_iter);
-
       pup2d_int(p,&iatm_typ_lang,natm_typ,nl_max1);
-
-      pup1d_dbl(p,&x,natm);
-      pup1d_dbl(p,&y,natm);
-      pup1d_dbl(p,&z,natm);
       pup1d_dbl(p,&vnorm_0,natm);
     }//endif
 
-    pup1d_int(p,&index_atm,natm_tot);  // reused by hartree and are scratch
-    pup1d_dbl(p,&vtemp,natm_tot);
-    pup1d_cpl(p,&ei_inc,natm_tot);
-    pup1d_cpl(p,&ti_inc,natm_tot);
 
   }//end pupping
 #endif
 //-------------------------------------------------------------------------
 }; //PSNONLOCAL
 //==========================================================================
+
+class PSSCRATCH
+{
+ public:
+  // SF scratch for non-ees non-local method
+  double *x,*y,*z;
+  complex *ei_inc;
+  complex *ti_inc;
+  double *vtemp;
+  int *index_atm;
+
+  // Scratch for ees method : non-local AND eext scratch are here!!
+  double *aj;
+  double *rn;
+  double *rn1;
+  int *index_a;
+  int *index_b;
+  int *igrid_at;
+  int *igrid_bt;
+  int *iatemp;
+  int *ibtemp;
+  int *ictemp;
+  double *frac_a;
+  double *frac_b;
+  double *frac_c;
+  int **igrid_a;
+  int **igrid_b;
+  int **igrid_c;
+  double **mn_a;
+  double **mn_b;
+  double **mn_c;
+  double **ua;
+  double **ub;
+  double **uc;
+  double **dmn_a;
+  double **dmn_b;
+  double **dmn_c;
+  PSNONLOCAL *psnonlocal; // local ptr to the readonly stuff
+
+  PSSCRATCH(PSNONLOCAL *_psnonlocal, CPATOM_MAPS *maps);
+  PSSCRATCH(){};
+  ~PSSCRATCH(){}; 
+  // Hey Glenn, you never implemented a proper destructor for PSNONLOCAL.
+  /* These are all local scratches, therefore we don't define a pup
+     for them because actual usage is entirely ephemeral.  The only
+     reason we don't malloc/free them on the fly is to avoid the
+     overhead of doing those operations over and over again.  If you
+     find yourself thinking we need to migrate these then you should
+     seek counseling for extreme pupperphilia.
+  */
+
+}; //PSSCRATCH
 
 #ifdef PUP_ON
 PUPmarshall(PSNONLOCAL);

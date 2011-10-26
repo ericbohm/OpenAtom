@@ -10,7 +10,7 @@
 #include "../../../../include/Atoms.h"
 #include "../../../../include/RunDescriptor.h"
 #include "../../../../include/eesDataClass.h"
-
+#include "../../../include/class_defs/Interface_ctrl.h"
 class CPNONLOCAL{
 
  //---------------------------------------------------------------------------
@@ -40,7 +40,7 @@ static void CP_enl_atm_forc_calc(int , int , FastAtoms *,
 
 static void CP_calc_Struct_Fact(int , int *, int *, int *, 
                                 complex *, complex *, complex *, complex *,
-                                FastAtoms *,  int , int ,int );
+                                FastAtoms *,  int , int ,int, PSSCRATCH * );
 
 static void get_rad_proj(int ,int ,double ,double ,double ,int , int , 
                          double *,double *,double *,double *,double *,double *);
@@ -56,7 +56,7 @@ static void eesSetEesWghtGgrp(int , int *, int *, int *,double *, double *,
 
 static void eesSplProjectorGgrp(int ,int *,int *,int *,double *,int *);
 
-static void eesAtmBsplineRgrp(FastAtoms *, int *, RPPDATA **);
+ static void eesAtmBsplineRgrp(FastAtoms *, int *, RPPDATA **, PSSCRATCH *);
 
 static void eesProjGchare(int , complex *,int *,int *, int *,int , int , int ,
                           double *, double *, double *, double *,complex *,int *,

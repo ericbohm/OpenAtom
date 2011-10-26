@@ -12,7 +12,7 @@
 //============================================================================
 void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int nproc,
                                  double *pot_ewd_ret, double *vself_ret, double *vbgr_ret,
-                                 double *recip_corr)
+				 double *recip_corr, PSSCRATCH *pscratch)
 //============================================================================
   { // Begin Function
 //----------------------------------------------------------------------------
@@ -175,7 +175,7 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
   recip_corr[0] = 0.0;
   if(iperd<3 && iperd>0){
     atm_recip_corr(natm,x,y,z,fx,fy,fz,q,vol,hmat,hmati,iperd,recip_corr,
-                   myid,nproc);
+                   myid,nproc, pscratch);
   }//endif
 
 //============================================================================
@@ -232,7 +232,7 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
 void CPRSPACEION::atm_recip_corr(int natm,double *x, double *y, double *z,
                                  double *fx, double *fy, double *fz,double *q,
                                  double vol,double *hmat,double *hmati,int iperd,
-                                 double *vnow_ret,int myid, int nproc){
+                                 double *vnow_ret,int myid, int nproc, PSSCRATCH *pscratch){
 //==========================================================================
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
@@ -252,11 +252,11 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
    double *clus_corr_c = genewald->kernel_corr_c;
    double *clus_corr_b = genewald->kernel_corr_b;
 
-   complex *ei_inc = nonlocal->ei_inc+1;
-   complex *h      = nonlocal->ti_inc+1;
-   double *sa      = nonlocal->x;
-   double *sb      = nonlocal->y;
-   double *sc      = nonlocal->z;
+   complex *ei_inc = pscratch->ei_inc+1;
+   complex *h      = pscratch->ti_inc+1;
+   double *sa      = pscratch->x;
+   double *sb      = pscratch->y;
+   double *sc      = pscratch->z;
 
    double *ei_incr = reinterpret_cast<double*> (ei_inc);
    double *hr      = reinterpret_cast<double*> (h);

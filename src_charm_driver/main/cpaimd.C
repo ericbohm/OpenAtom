@@ -15,6 +15,7 @@
  */
 
 #include "cpaimd.h"
+
 #include "InstanceController.h"
 #include "ENL_EKE_Collector.h"
 #include "pcCreationManager.h"
@@ -43,7 +44,7 @@
 #include "TimeKeeper.h"
 
 #include "charm++.h"
-
+#include "PhysScratchCache.h"
 #include <cmath>
 #include <unistd.h>
 #include <iostream>
@@ -133,6 +134,7 @@ CkHashtableT<intdual, int> OrthoHelpermaptable;
 
 CProxy_main                       mainProxy;
 CProxy_CPcharmParaInfoGrp         scProxy;
+CProxy_PhysScratchCache           pScratchProxy;
 Config                            config;
 CProxy_TimeKeeper                 TimeKeeperProxy;
 CProxy_InstanceController         instControllerProxy;
@@ -553,7 +555,7 @@ main::main(CkArgMsg *msg) {
     make_rho_runs(sim);
 
     scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
-
+    pScratchProxy = CProxy_PhysScratchCache::ckNew();
     // bump all the INT_MAPs to the right size
     AtomImaptable.resize(config.numInstances);
     PIBImaptable.resize(config.numInstances);

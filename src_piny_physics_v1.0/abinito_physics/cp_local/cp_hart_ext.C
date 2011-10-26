@@ -22,7 +22,8 @@
 void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *atoms,
                                 complex *vks, double *ehart_ret,double *eext_ret,
                                 double *ewd_ret,int *k_x, int *k_y, int *k_z, 
-                                double *perdCorr,int index,int nfreq_cmi_update)
+                                double *perdCorr,int index, PSSCRATCH *pscratch,
+				int nfreq_cmi_update )
 //============================================================================
 // Function:  Hartree and External potentials
 //
@@ -157,10 +158,10 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
 // Set up variables for break point calculations (helpful vectors!)
 
    // piny style malloc so add 1 to anybody who wants to start at 0
-   int *index_atm  = nonlocal->index_atm;
-   double *vtemp   = nonlocal->vtemp+1;
-   complex *ei_inc = nonlocal->ei_inc+1;
-   complex *h      = nonlocal->ti_inc+1;
+   int *index_atm  = pscratch->index_atm;
+   double *vtemp   = pscratch->vtemp+1;
+   complex *ei_inc = pscratch->ei_inc+1;
+   complex *h      = pscratch->ti_inc+1;
 
    int izero         = -10;
    int igo           = 0;
@@ -600,7 +601,7 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, 
-                                RHORHARTDATA **RhoRHartData)
+                                RHORHARTDATA **RhoRHartData, PSSCRATCH *pscratch)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -629,27 +630,27 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
   int ngrid_b    = cppseudo->ngrid_eext_b;
   int ngrid_c    = cppseudo->ngrid_eext_c;
 
-  double *aj     = non_local->aj;
-  double *rn     = non_local->rn;
-  double *rn1    = non_local->rn1;
-  int *iatemp    = non_local->iatemp;
-  int *ibtemp    = non_local->ibtemp;
-  int *ictemp    = non_local->ictemp;
-  double *frac_a = non_local->frac_a;
-  double *frac_b = non_local->frac_b;
-  double *frac_c = non_local->frac_c;
-  int **igrid_a  = non_local->igrid_a;
-  int **igrid_b  = non_local->igrid_b;
-  int **igrid_c  = non_local->igrid_c;
-  double **mn_a  = non_local->mn_a;
-  double **mn_b  = non_local->mn_b;
-  double **mn_c  = non_local->mn_c;
-  double **ua    = non_local->ua;
-  double **ub    = non_local->ub;
-  double **uc    = non_local->uc;
-  double **dmn_a = non_local->dmn_a;
-  double **dmn_b = non_local->dmn_b;
-  double **dmn_c = non_local->dmn_c;
+  double *aj     = pscratch->aj;
+  double *rn     = pscratch->rn;
+  double *rn1    = pscratch->rn1;
+  int *iatemp    = pscratch->iatemp;
+  int *ibtemp    = pscratch->ibtemp;
+  int *ictemp    = pscratch->ictemp;
+  double *frac_a = pscratch->frac_a;
+  double *frac_b = pscratch->frac_b;
+  double *frac_c = pscratch->frac_c;
+  int **igrid_a  = pscratch->igrid_a;
+  int **igrid_b  = pscratch->igrid_b;
+  int **igrid_c  = pscratch->igrid_c;
+  double **mn_a  = pscratch->mn_a;
+  double **mn_b  = pscratch->mn_b;
+  double **mn_c  = pscratch->mn_c;
+  double **ua    = pscratch->ua;
+  double **ub    = pscratch->ub;
+  double **uc    = pscratch->uc;
+  double **dmn_a = pscratch->dmn_a;
+  double **dmn_b = pscratch->dmn_b;
+  double **dmn_c = pscratch->dmn_c;
 
   double *xatm   = atoms->x;
   double *yatm   = atoms->y;

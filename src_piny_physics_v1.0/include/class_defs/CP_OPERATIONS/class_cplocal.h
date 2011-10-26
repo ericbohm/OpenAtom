@@ -11,6 +11,7 @@
 
 #include "../../../../include/Atoms.h"
 #include "../../../../include/eesDataClass.h"
+class PSSCRATCH;
 
 class CPLOCAL{
 
@@ -25,7 +26,7 @@ class CPLOCAL{
  //---------------------------------------------------------------------------
  // functions
   static void CP_hart_eext_calc(int , complex *,int , FastAtoms *,complex *, 
-                          double *,double *,double *,int *, int *, int *, double *,int,int nfreq_cmi_update=4);
+				double *,double *,double *,int *, int *, int *, double *,int, PSSCRATCH *, int nfreq_cmi_update=4);
 
   static void CP_get_vpsnow(int *,int ,double ,double ,double ,
                             double *,double *,double *,double *,
@@ -37,7 +38,7 @@ class CPLOCAL{
   static void eesSetEesWghtGgrp(int , int *, int *, int *,double *, double *, 
                                 int ,int ,int ,int );
 
-  static void eesAtmBsplineRgrp(FastAtoms *, int *, RHORHARTDATA **);
+  static void eesAtmBsplineRgrp(FastAtoms *, int *, RHORHARTDATA **, PSSCRATCH *);
 
   static void eesPackGridRchare(int , int , double *, int ,int , int ***, double ***, int *, 
                                 int **, int );

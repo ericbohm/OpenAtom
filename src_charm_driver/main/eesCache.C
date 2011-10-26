@@ -16,6 +16,8 @@
 #include "cpaimd.h"
 #include "eesCache.h"
 #include "AtomsCache.h"
+#include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
+#include "PhysScratchCache.h"
 #include <cmath>
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "cp_state_ctrl/CP_State_Plane.h"
@@ -31,6 +33,7 @@ extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
 extern CProxy_CPcharmParaInfoGrp         scProxy;
+extern CProxy_PhysScratchCache         pScratchProxy;
 extern CkVec <CProxy_AtomsCache>                   UatomsCacheProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 
@@ -413,7 +416,7 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
    double  StartTime=CmiWallTimer();
 #endif    
 
-    CPNONLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRppChares,RppData);
+   CPNONLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRppChares,RppData, pScratchProxy.ckLocalBranch()->psscratch);
 
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());    
@@ -458,7 +461,7 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
     double  StartTime=CmiWallTimer();
 #endif    
 
-    CPLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRhoRHartChares,RhoRHartData);
+    CPLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRhoRHartChares,RhoRHartData, pScratchProxy.ckLocalBranch()->psscratch);
 
 #if CMK_TRACE_ENABLED
     traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());    

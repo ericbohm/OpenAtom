@@ -229,7 +229,7 @@ void CPNONLOCAL::eesSplProjectorGgrp(int ncoef, int *ka, int *kb, int *kc,
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDATA **RPPData)
+void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDATA **RPPData, PSSCRATCH *psscratch)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -258,32 +258,32 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
 
   int n_interp2  = n_interp*n_interp;
 
-  double *aj     = nonlocal->aj;
-  double *rn     = nonlocal->rn;
-  double *rn1    = nonlocal->rn1;
-  int *index_a   = nonlocal->index_a;
-  int *index_b   = nonlocal->index_b;
-  int *igrid_at  = nonlocal->igrid_at;
-  int *igrid_bt  = nonlocal->igrid_bt;
-  int *igo       = nonlocal->iatemp;
-  int *iatemp    = nonlocal->iatemp;
-  int *ibtemp    = nonlocal->ibtemp;
-  int *ictemp    = nonlocal->ictemp;
-  double *frac_a = nonlocal->frac_a;
-  double *frac_b = nonlocal->frac_b;
-  double *frac_c = nonlocal->frac_c;
-  int **igrid_a  = nonlocal->igrid_a;
-  int **igrid_b  = nonlocal->igrid_b;
-  int **igrid_c  = nonlocal->igrid_c;
-  double **mn_a  = nonlocal->mn_a;
-  double **mn_b  = nonlocal->mn_b;
-  double **mn_c  = nonlocal->mn_c;
-  double **ua    = nonlocal->ua;
-  double **ub    = nonlocal->ub;
-  double **uc    = nonlocal->uc;
-  double **dmn_a = nonlocal->dmn_a;
-  double **dmn_b = nonlocal->dmn_b;
-  double **dmn_c = nonlocal->dmn_c;
+  double *aj     = psscratch->aj;
+  double *rn     = psscratch->rn;
+  double *rn1    = psscratch->rn1;
+  int *index_a   = psscratch->index_a;
+  int *index_b   = psscratch->index_b;
+  int *igrid_at  = psscratch->igrid_at;
+  int *igrid_bt  = psscratch->igrid_bt;
+  int *igo       = psscratch->iatemp;
+  int *iatemp    = psscratch->iatemp;
+  int *ibtemp    = psscratch->ibtemp;
+  int *ictemp    = psscratch->ictemp;
+  double *frac_a = psscratch->frac_a;
+  double *frac_b = psscratch->frac_b;
+  double *frac_c = psscratch->frac_c;
+  int **igrid_a  = psscratch->igrid_a;
+  int **igrid_b  = psscratch->igrid_b;
+  int **igrid_c  = psscratch->igrid_c;
+  double **mn_a  = psscratch->mn_a;
+  double **mn_b  = psscratch->mn_b;
+  double **mn_c  = psscratch->mn_c;
+  double **ua    = psscratch->ua;
+  double **ub    = psscratch->ub;
+  double **uc    = psscratch->uc;
+  double **dmn_a = psscratch->dmn_a;
+  double **dmn_b = psscratch->dmn_b;
+  double **dmn_c = psscratch->dmn_c;
 
   double *xatm   = atoms->x;
   double *yatm   = atoms->y;

@@ -1739,12 +1739,6 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
   int *natm_lang;        /* # atms of this type: iatm_typ_lang     */
   int *iatm_str_lang;    /* where atm is in list: iatm_typ_lang    */
 
-  int *index_atm;
-  double *x,*y,*z,*vtemp;
-  complex *ei_inc;
-  complex *ti_inc;
-
-  double *vnorm_0;
 
 /*=========================================================================*/
 /* I) Some redudant checking */
@@ -1839,7 +1833,7 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
 /*===================================================================*/
 // Fill the norm for l=0 with 1 radial channel
 
-  vnorm_0  = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
+  double *vnorm_0  = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
   for(i=1;i<=natm_nl;i++){vnorm_0[i]=0.0;}
 
   lang = 0; lang1 = 1;
@@ -1856,31 +1850,10 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
         vnorm_0[iatm] = vpsnorm[ind_now];
       }//endfor
     }//endfor
-
   }//endif
-
 /*===================================================================*/
-// Scratch nicely initialized for pupping
-
-  x          = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
-  y          = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
-  z          = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
-
-  // reused by hartree so a bit bigger
-  index_atm  = (int *)cmalloc(natm_tot*sizeof(int),"nonloc_list")-1;
-  vtemp      = (double *)cmalloc(natm_tot*sizeof(double),"nonloc_list")-1;
-  ei_inc     = (complex *)cmalloc(natm_tot*sizeof(complex),"nonloc_list")-1;
-  ti_inc     = (complex *)cmalloc(natm_tot*sizeof(complex),"nonloc_list")-1;
-
-  for(i=1;i<=natm_nl;i++){x[i]=0.0;}
-  for(i=1;i<=natm_nl;i++){y[i]=0.0;}
-  for(i=1;i<=natm_nl;i++){z[i]=0.0;}
-  for(i=1;i<=natm_tot;i++){ei_inc[i]=complex(0.0,0.0);}
-  for(i=1;i<=natm_tot;i++){ti_inc[i]=complex(0.0,0.0);}
-
-/*===================================================================*/
-/* V) Put the stuff back */
-
+    // put it back
+  cppseudo->nonlocal.vnorm_0       = vnorm_0; 
   cppseudo->nonlocal.natm_tot      = natm_tot;
   cppseudo->nonlocal.natm          = natm_nl;
   cppseudo->nonlocal.natm_typ      = natm_typ;
@@ -1892,47 +1865,9 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
   cppseudo->nonlocal.map_nl        = map_nl;
   cppseudo->nonlocal.natm_lang     = natm_lang;
   cppseudo->nonlocal.iatm_str_lang = iatm_str_lang;
-
-  cppseudo->nonlocal.x             = x;
-  cppseudo->nonlocal.y             = y;
-  cppseudo->nonlocal.z             = z;
-  cppseudo->nonlocal.ei_inc        = ei_inc;
-  cppseudo->nonlocal.ti_inc        = ti_inc;
-  cppseudo->nonlocal.vnorm_0       = vnorm_0;  
-  cppseudo->nonlocal.index_atm     = index_atm;
-  cppseudo->nonlocal.vtemp         = vtemp;
-
-
-  // add the non-local ees memory
   if(ees_on==1 || ees_eext_on==1){
-    int natm = natm_tot;
-    cppseudo->nonlocal.aj      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
-    cppseudo->nonlocal.rn      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
-    cppseudo->nonlocal.rn1     = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
-    cppseudo->nonlocal.index_a = (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
-    cppseudo->nonlocal.index_b = (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
-    cppseudo->nonlocal.igrid_at= (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
-    cppseudo->nonlocal.igrid_bt= (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
-    cppseudo->nonlocal.frac_a  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
-    cppseudo->nonlocal.frac_b  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
-    cppseudo->nonlocal.frac_c  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
-    cppseudo->nonlocal.iatemp  = (int *)cmalloc(natm*sizeof(int),"psnl_pup");
-    cppseudo->nonlocal.ibtemp  = (int *)cmalloc(natm*sizeof(int),"psnl_pup");
-    cppseudo->nonlocal.ictemp  = (int *)cmalloc(natm*sizeof(int),"psnl_pup");
-    cppseudo->nonlocal.igrid_a = cmall_int_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.igrid_b = cmall_int_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.igrid_c = cmall_int_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.mn_a    = cmall_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.mn_b    = cmall_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.mn_c    = cmall_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.ua      = cmall_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.ub      = cmall_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.uc      = cmall_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.dmn_a   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.dmn_b   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
-    cppseudo->nonlocal.dmn_c   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
     nlEesSetIter(cppseudo);
-  }//endif
+  }
 
 /*-----------------------------------------------------------------------*/
   }/*end routine*/
@@ -2050,3 +1985,63 @@ void set_ylm_cons(CPYLM_CONS *ylm_cons)
 //==========================================================================
 
 
+
+PSSCRATCH::PSSCRATCH(PSNONLOCAL *_psnonlocal, CPATOM_MAPS *cpatom_maps)
+{
+
+  psnonlocal=_psnonlocal;
+
+  int natm=psnonlocal->natm;
+  int natm_tot=psnonlocal->natm_tot;
+  int natm_nl = natm_tot;  // too big, but we don't really care.
+  int ityp=0;
+
+/*===================================================================*/
+// Scratch nicely initialized for pupping
+
+  x          = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
+  y          = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
+  z          = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
+
+  // reused by hartree so a bit bigger
+  index_atm  = (int *)cmalloc(natm_tot*sizeof(int),"nonloc_list")-1;
+  vtemp      = (double *)cmalloc(natm_tot*sizeof(double),"nonloc_list")-1;
+  ei_inc     = (complex *)cmalloc(natm_tot*sizeof(complex),"nonloc_list")-1;
+  ti_inc     = (complex *)cmalloc(natm_tot*sizeof(complex),"nonloc_list")-1;
+  for(int i=1;i<=natm_nl;i++){x[i]=0.0;}
+  for(int i=1;i<=natm_nl;i++){y[i]=0.0;}
+  for(int i=1;i<=natm_nl;i++){z[i]=0.0;}
+  for(int i=1;i<=natm_tot;i++){ei_inc[i]=complex(0.0,0.0);}
+  for(int i=1;i<=natm_tot;i++){ti_inc[i]=complex(0.0,0.0);}
+  int n_interp=psnonlocal->n_interp;
+
+  if(psnonlocal->ees_on==1 || psnonlocal->ees_eext_on==1){
+    int natm = natm_tot;
+    aj      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+    rn      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+    rn1     = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+    index_a = (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
+    index_b = (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
+    igrid_at= (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
+    igrid_bt= (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
+    frac_a  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
+    frac_b  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
+    frac_c  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
+    iatemp  = (int *)cmalloc(natm*sizeof(int),"psnl_pup");
+    ibtemp  = (int *)cmalloc(natm*sizeof(int),"psnl_pup");
+    ictemp  = (int *)cmalloc(natm*sizeof(int),"psnl_pup");
+    igrid_a = cmall_int_mat(1,n_interp,0,natm,"psnl_pup");
+    igrid_b = cmall_int_mat(1,n_interp,0,natm,"psnl_pup");
+    igrid_c = cmall_int_mat(1,n_interp,0,natm,"psnl_pup");
+    mn_a    = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    mn_b    = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    mn_c    = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    ua      = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    ub      = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    uc      = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    dmn_a   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    dmn_b   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    dmn_c   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+  }//endif
+
+}

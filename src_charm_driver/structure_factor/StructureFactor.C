@@ -11,6 +11,9 @@
 #include "StructFactorCache.h"
 #include "main/CPcharmParaInfoGrp.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
+#include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
+#include "main/PhysScratchCache.h"
+
 
 //==============================================================================
 
@@ -19,6 +22,7 @@ extern CkVec <CProxy_StructFactCache> UsfCacheProxy;
 extern CkVec <CProxy_AtomsCache> UatomsCacheProxy;
 extern CkVec <CProxy_EnergyGroup> UegroupProxy;
 extern CProxy_CPcharmParaInfoGrp      scProxy;
+extern CProxy_PhysScratchCache  pScratchProxy;
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
 //#define _CP_DEBUG_SF_CALC_
@@ -75,7 +79,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
       CPNONLOCAL::CP_calc_Struct_Fact(gsSize,k_x, k_y,k_z, 
 				      structFactor,structFactor_fx,structFactor_fy,
 				      structFactor_fz,fastAtoms, config.doublePack, 
-				      numSfGrps,thisIndex.x);
+				      numSfGrps,thisIndex.x, pScratchProxy.ckLocalBranch()->psscratch);
   //----------------------------------------------------------------------------
   // Communicate the results
       int totalsize=gsSize*natm_nl_grp_max;

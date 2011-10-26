@@ -15,7 +15,8 @@
 #include "CPcharmParaInfoGrp.h"
 #include "load_balance/IntMap.h"
 #include "charm++.h"
-
+#include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
+#include "PhysScratchCache.h"
 
 #include <cmath>
 
@@ -44,6 +45,7 @@ extern CkVec <CProxy_eesCache>             UeesCacheProxy;
 extern CProxy_TemperController temperControllerProxy;
 extern CProxy_InstanceController instControllerProxy;
 extern CProxy_CPcharmParaInfoGrp   scProxy;
+extern CProxy_PhysScratchCache pScratchProxy;
 
 //----------------------------------------------------------------------------
 
@@ -601,7 +603,7 @@ void AtomsCompute::startRealSpaceForces(){
 
 #ifndef _CP_DEBUG_PSI_OFF_
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
-   CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr);
+   CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr, pScratchProxy.ckLocalBranch()->psscratch);
 #endif
 #endif
 

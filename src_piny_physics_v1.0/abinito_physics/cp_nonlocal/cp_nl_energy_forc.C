@@ -154,7 +154,7 @@ void CPNONLOCAL::CP_enl_force_calc(complex* zMatrixRow, int forcesSize,
 
 void CPNONLOCAL::CP_enl_atm_forc_calc(int numSfGrps, int indexSfGrp, FastAtoms *atoms,
         complex *zmatrixSum,complex *zmatrixSum_fx,complex *zmatrixSum_fy,
-        complex *zmatrixSum_fz,double *enl_ret,int mydoublePack, int istate)
+				      complex *zmatrixSum_fz,double *enl_ret,int mydoublePack, int istate)
 
 //============================================================================
   {// begin routine

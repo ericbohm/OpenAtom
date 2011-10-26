@@ -13,6 +13,17 @@ module CPcharmParaInfo
 	};
 };
 
+module PhysScratchCache
+{
+	class PSNONLOCAL;
+	// The physics configuration, both input, and derived, is kept here.
+	// This data is effectively readonly.
+	group PhysScratchCache
+	{
+		entry PhysScratchCache();
+	};
+};
+
 
 module Atoms
 {
@@ -171,6 +182,7 @@ mainmodule cpaimd {
 	initproc registersumFastDouble(void);	
 	
 	extern module CPcharmParaInfo;
+	extern module PhysScratchCache;
 	extern module gSpaceDriver;
 	extern module gParticlePlane;
 	extern module gStatePlane;
@@ -219,6 +231,7 @@ mainmodule cpaimd {
 	readonly Config config;
 
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
+	readonly CProxy_PhysScratchCache pScratchProxy;
 	readonly CProxy_InstanceController instControllerProxy;
 
 	readonly CProxy_TemperController temperControllerProxy;
@@ -301,6 +314,7 @@ mainmodule cpaimd {
         readonly MDINTRA      readonly_mdintra;
         readonly GENERAL_DATA readonly_general_data;
         readonly CP           readonly_cp; 
+
 
 
 	message CompAtmForcMsg {double zmat[];};
