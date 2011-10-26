@@ -20,7 +20,8 @@ extern CkVec <CProxy_AtomsCompute>                   UatomsComputeProxy;
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-PIBeadAtoms::PIBeadAtoms(UberCollection _thisInstance, int _numBeads) :thisInstance(_thisInstance), numBeads(_numBeads)
+PIBeadAtoms::PIBeadAtoms(UberCollection _thisInstance, int _numBeads, int _natm) :thisInstance(_thisInstance), 
+										  numBeads(_numBeads), natm (_natm)
 //============================================================================
     {// begin routine
 //============================================================================
@@ -101,6 +102,49 @@ void PIBeadAtoms::accept_PIMD_Fx(AtomXYZMsg *msg)
 //============================================================================
     }//end routine
 //============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void PIBeadAtoms::accept_PIMD_Fx_and_x(AtomXYZMsg *msg)
+//============================================================================
+  {// begin routine
+//============================================================================
+
+  fx[msg->index]=msg->x[thisIndex];
+  fy[msg->index]=msg->y[thisIndex];
+  fz[msg->index]=msg->z[thisIndex];
+  x[msg->index]=msg->x[(thisIndex+natm)];
+  y[msg->index]=msg->y[(thisIndex+natm)];
+  z[msg->index]=msg->z[(thisIndex+natm)];
+  delete msg;
+
+//============================================================================
+//  atomdest[PIBeadIndex]=atomdest;
+
+  acceptCount_Fx++;
+  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx (%d of %d)\n",thisInstance.proxyOffset,thisIndex, acceptCount_Fx, numBeads);
+
+  if(acceptCount_Fx==numBeads){
+      compute_PIMD_Fu();
+      compute_PIMD_u();
+      acceptCount_Fx=0;
+      UberCollection instance=thisInstance;
+      for(int bead=0;bead<numBeads; bead++){
+	  instance.idxU.x=bead;
+	  int proxyOffset=instance.setPO();
+	  //	  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx sending atomsGrp{%d}.accept_PIMD_fu\n",thisInstance.proxyOffset,thisIndex, proxyOffset);
+	  //	  UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_fu(fxu[bead],
+	  //	  fyu[bead], fzu[bead], thisIndex);
+	  // this atom index has to send the Fu to everyone
+	  UatomsComputeProxy[proxyOffset].accept_PIMD_Fu_and_u(fxu[bead], fyu[bead], fzu[bead],xu[bead], yu[bead], zu[bead], thisIndex);
+      }//endfor
+    }//endif
+//============================================================================
+    }//end routine
+//============================================================================
+
 
 
 //============================================================================

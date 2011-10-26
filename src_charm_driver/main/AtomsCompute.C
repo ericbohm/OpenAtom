@@ -277,8 +277,10 @@ void AtomsCompute::recvContribute(CkReductionMsg *msg) {
 #endif
   if(handleForcesCount==2)
     handleForces();
-}
 
+//==========================================================================
+ }//end routine
+//==========================================================================
 
 
 //==========================================================================
@@ -304,14 +306,22 @@ void AtomsCompute::recvContributeForces(CkReductionMsg *msg) {
 
   if(handleForcesCount==2)
     handleForces();
-}
+//=================================================================
+  }//end routine
+//=================================================================
 
-
-void AtomsCompute::handleForces()
-  {//=================================================================
+//=================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//=================================================================
+void AtomsCompute::handleForces()  {
+//=================================================================
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("{%d}[%d] AtomsCompute::handleForces \n ", thisInstance.proxyOffset, thisIndex);     
 #endif
+//=================================================================
+  AtomsCache *ag         = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
+  int iteration = ag->iteration;
+//=================================================================
   copyFastToSlow();
   zeroforces(); // we're now getting everyone's forces
   double fmag=0.0;
@@ -384,7 +394,11 @@ void AtomsCompute::handleForces()
 // if classical go on to integration, otherwise Fx -> Fu
 
   if(numPIMDBeads>1){  
-    send_PIMD_Fx();   // atom integration must wait on Fx->Fu transformation
+    if(iteration==0){
+      send_PIMD_Fx_and_x(); // atom integration must wait on both transforms
+    }else{
+      send_PIMD_Fx();   // atom integration must wait on Fx->Fu transformation
+    }//endif
   }else{
     integrateAtoms(); // Fx is all you need so go forth and integrate
   }//endif
@@ -394,12 +408,12 @@ void AtomsCompute::handleForces()
 //==========================================================================
 
 //==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
 /**
  * Integrate atoms.  This is parallelized so that a subset of the atoms are 
  * computed on each processor and their results sent to AtomCompute->acceptAtoms(). 
  */
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void AtomsCompute::integrateAtoms(){
 //============================================================
@@ -713,6 +727,37 @@ void AtomsCompute::send_PIMD_Fx(){
 //==========================================================================
 
 
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void AtomsCompute::send_PIMD_Fx_and_x(){ 
+//==========================================================================
+//  CkPrintf("{%d}[%d] AtomsCompute::send_PIMD_fx iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), *iteration);     
+// every BOC has all Fx might as well just bcast from beadroot
+
+  if(amBeadRoot){
+    AtomXYZMsg *msg= new (2*natm, 2*natm, 2*natm, 8*sizeof(int)) AtomXYZMsg;
+    for(int atomI=0;atomI<natm;atomI++){
+      msg->x[atomI]=atoms[atomI].fx;
+      msg->y[atomI]=atoms[atomI].fy;
+      msg->z[atomI]=atoms[atomI].fz;
+    }//endfor
+    int ioff = natm;
+    for(int atomI=0;atomI<natm;atomI++){
+      msg->x[(atomI+ioff)]=atoms[atomI].x;
+      msg->y[(atomI+ioff)]=atoms[atomI].y;
+      msg->z[(atomI+ioff)]=atoms[atomI].z;
+    }//endfor
+    msg->index=PIBeadIndex;
+    UPIBeadAtomsProxy[thisInstance.proxyOffset].accept_PIMD_Fx_and_x(msg);
+  }else{ 
+    // everyone else should chill out for Fu
+  }//endif
+//-------------------------------------------------------------------------
+ }//end routine
+//==========================================================================
+
+
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -988,6 +1033,7 @@ void AtomsCompute::atomsDone(CkReductionMsg *msg)
   else
     UatomsCacheProxy[thisInstance.proxyOffset].atomsDone();
 }
+//==============================================================================
 
 
 //==============================================================================
@@ -1050,6 +1096,38 @@ void AtomsCompute::accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int ato
   atoms[atomI].fxu    =_fxu; // FastAtoms not used for integration or output
   atoms[atomI].fyu    =_fyu;
   atoms[atomI].fzu    =_fzu;
+
+  acceptCountfu++;
+#ifdef _CP_DEBUG_ATMS_
+  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
+	   thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, atomI, _fxu, _fyu, _fzu);     
+#endif
+  if(acceptCountfu==natm){
+    //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu done calling integrator iteration %d\n ", 
+    //              thisInstance.proxyOffset, CkMyPe(), *iteration);     
+    integrateAtoms();
+    acceptCountfu=0;
+  }//endif
+
+//==============================================================================
+ }//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+// is broadcast to us
+void AtomsCompute::accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu, 
+                                        double _xu, double _yu, double _zu, int atomI){
+//==============================================================================
+
+  atoms[atomI].fxu    =_fxu; // FastAtoms not used for integration or output
+  atoms[atomI].fyu    =_fyu;
+  atoms[atomI].fzu    =_fzu;
+
+  atoms[atomI].xu    =_xu; // FastAtoms not used for integration or output
+  atoms[atomI].yu    =_yu;
+  atoms[atomI].zu    =_zu;
 
   acceptCountfu++;
 #ifdef _CP_DEBUG_ATMS_
@@ -1157,7 +1235,10 @@ void AtomsCompute::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI){
       integrateAtoms();
       acceptCountu=0;
   }//endif
-}
+
+//==============================================================================
+  }//end routine
+//==============================================================================
 
 #include "Atoms.def.h"
 
