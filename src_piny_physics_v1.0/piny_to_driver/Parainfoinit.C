@@ -114,7 +114,6 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 
 //========================================================================
 
-   sim->doublepack     = 1;         //Dange for kpoints
    sim->ntemper        = ntemper;
    sim->pi_beads       = pi_beads;
    sim->nstates        = nstates;
@@ -127,11 +126,6 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->nlIters        = nlIters;
    sim->dt             = dt;
    sim->vol            = vol;
-
-   sim->nkpoint        = nkpoint;
-   sim->pi_beads       = pi_beads;
-   sim->nspin          = (cp_lsda==1 ? 2: 1);
-   sim->ntemper        = 1;  // for now this is hard coded
 
    sim->iperd          = iperd;
    sim->doublepack     = doublepack;
