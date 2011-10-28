@@ -52,6 +52,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int cp_lsda         = cpopts->cp_lsda;
   int cp_lda          = cpopts->cp_lda;
   int cp_norb_rot_kescal = cpopts->cp_norb_rot_kescal;
+  int cp_force_complex_psi = cpopts->cp_force_complex_psi;
   int ibinary_write_opt= cpopts->iwrite_coef_binary;
   int natm_tot        = (mdatoms->mdclatoms_info.natm_tot);
   int natm_nl         = (cppseudo->nonlocal.natm);
@@ -145,6 +146,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->cp_std         = cp_std;
    sim->cp_wave        = cp_wave;
    sim->cp_grad_corr_on= cp_grad_corr_on;
+   sim->cp_force_complex_psi = cp_force_complex_psi;
 
    if(cp_min_opt==0){
      sim->ntime          = ntime+1;

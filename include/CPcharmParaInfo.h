@@ -152,6 +152,7 @@ class CPcharmParaInfo {
    int cp_min_update; 
    int cp_min_cg;
    int cp_min_std;
+   int cp_force_complex_psi;
    int sizeX, sizeY, sizeZ;
    int rhoRsubplanes;
    int ees_eext_on;         //Opt: EES option on for external energy
@@ -260,6 +261,7 @@ class CPcharmParaInfo {
      cp_min_update= s.cp_min_update;
      cp_min_cg    = s.cp_min_cg;
      cp_min_std   = s.cp_min_std;
+     cp_force_complex_psi = s.cp_force_complex_psi;
      rhoRsubplanes= s.rhoRsubplanes;
      sizeX        = s.sizeX;
      sizeY        = s.sizeY;
@@ -485,6 +487,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
      cp_min_update= s.cp_min_update;
      cp_min_cg    = s.cp_min_cg;
      cp_min_std   = s.cp_min_std;
+     cp_force_complex_psi = s.cp_force_complex_psi;
      rhoRsubplanes= s.rhoRsubplanes;
      sizeX        = s.sizeX;
      sizeY        = s.sizeY;
@@ -774,7 +777,8 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       p|fftopt;     p|kx_max;  p|ky_max;  p|kz_max; p|cp_norb_rot_kescal; 
       p|ndump_frq;  p|istart_typ_cp; p|cp_grad_corr_on;
       p|cp_opt;     p|cp_std;     p|cp_wave;
-      p|cp_min_opt; p|cp_min_update; p|cp_min_std; p|cp_min_cg; p|rhoRsubplanes;
+      p|cp_min_opt; p|cp_min_update; p|cp_min_std; p|cp_force_complex_psi;
+      p|cp_min_cg; p|rhoRsubplanes;
       p|sizeX;      p|sizeY;      p|sizeZ;  
       p|ees_eext_on;    p|ees_nloc_on;
       p|ngrid_nloc_a;  p|ngrid_nloc_b;   p|ngrid_nloc_c;

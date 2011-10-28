@@ -424,7 +424,7 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
 /*========================================================================*/
 /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 39;
+  *num_dict = 41;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_cp")-1;
 
 /*========================================================================*/
@@ -645,7 +645,18 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[i].error_mes,"on,off");
         strcpy((*dict)[i].keyword,"cp_min_update");
         strcpy((*dict)[i].keyarg,"on");
-
+  /*-----------------------------------------------------------------------*/ 
+  /* 40)\cp_force_complex_psi{on,off} */
+        i = 40;
+        strcpy((*dict)[i].error_mes,"on,off");
+        strcpy((*dict)[i].keyword,"cp_force_complex_psi");
+        strcpy((*dict)[i].keyarg,"off");
+  /*-----------------------------------------------------------------------*/ 
+  /* 41)\cp_allow_duplicate_kpts{on,off} */
+        i = 41;
+        strcpy((*dict)[i].error_mes,"on,off");
+        strcpy((*dict)[i].keyword,"cp_allow_duplicate_kpts");
+        strcpy((*dict)[i].keyarg,"off");
 /*========================================================================*/
 /*------------------------------------------------------------------------*/
 /*========================================================================*/

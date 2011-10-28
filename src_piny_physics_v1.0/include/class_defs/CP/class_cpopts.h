@@ -33,6 +33,8 @@ class CPOPTS{
   int iread_coef_binary;      // binary read option for coef file 
   int icheck_perd_size;       // Opt: Check atm dists under CBCs 
   int icheck_dual_size;       // Opt: Check atm dists under CBCs 
+  int cp_force_complex_psi;   // Opt: Force psi to be complex for debugging
+  int cp_allow_dup_kpts;      // Opt: allow duplicate kpoints for debugging
 
   int cp_becke;               // cp GGA flags 
   int cp_pw91x;
@@ -95,6 +97,8 @@ class CPOPTS{
       iread_coef_binary  = 0;    
       icheck_perd_size   = 0;     
       icheck_dual_size   = 0;     
+      cp_force_complex_psi = 0;
+      cp_allow_dup_kpts    = 0;
       cp_becke        = 0;     
       cp_pw91x        = 0;
       cp_fila_1x      = 0; 
@@ -146,6 +150,8 @@ class CPOPTS{
       p | iread_coef_binary;
       p | icheck_perd_size;
       p | icheck_dual_size;
+      p | cp_force_complex_psi;
+      p | cp_allow_dup_kpts;
       p | cp_becke;
       p | cp_pw91x;
       p | cp_fila_1x; 
@@ -209,6 +215,8 @@ class CPOPTS{
      fprintf(fp,"iread_coef_binary %d\n",iread_coef_binary);
      fprintf(fp,"icheck_perd_size %d\n",icheck_perd_size);
      fprintf(fp,"icheck_dual_size %d\n",icheck_dual_size);
+     fprintf(fp,"cp_force_complex_psi %d\n",cp_force_complex_psi);
+     fprintf(fp,"cp_allow_dup_kpts %d\n",cp_allow_dup_kpts);
      fprintf(fp,"cp_becke %d\n",cp_becke);
      fprintf(fp,"cp_pw91x %d\n",cp_pw91x);
      fprintf(fp,"cp_fila_1x %d\n",cp_fila_1x); 

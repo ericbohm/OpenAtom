@@ -479,7 +479,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
     setMigratable(false);
   }//endif
 
-
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
    savedvksBf=NULL;
    savedforceBf=NULL;
@@ -700,6 +699,7 @@ void CP_State_GSpacePlane::readFile() {
   int ngridbNL      = sim->ngrid_nloc_b;
   int ngridcNL      = sim->ngrid_nloc_c;
   int nkpoint       = sim->nkpoint;
+  int cp_force_complex_psi = sim->cp_force_complex_psi;
 
 //============================================================================
 // Set the file name using the config path and state number
@@ -730,26 +730,22 @@ void CP_State_GSpacePlane::readFile() {
             config.dataPath,mySpinIndex,myKptIndex,myBeadIndex,myTemperIndex,ind_state+1);
     readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
               kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
-#define _DEBUG_KPT_CODE_
-#ifdef _DEBUG_KPT_CODE_
-/***************
-    if(ind_state==0){
-      CkPrintf("\n$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-      CkPrintf("Adding a phase to the states to debug kpt code!!\n");
-      CkPrintf("in routine CP_State_GspacePlane.C\n");
-      CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+    if(cp_force_complex_psi==1){
+      if(ind_state==0){
+        CkPrintf("\n$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+        CkPrintf("Adding a phase to the states to debug kpt code!!\n");
+        CkPrintf("in routine CP_State_GspacePlane.C\n");
+        CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+      }//endif
+      double phase = M_PI*((double)(ind_state+1))/((double)(nstates+1));
+      for(int i=0;i<numData;i++){
+        double re = cos(phase); double im = sin(phase);
+        double ore = re*complexPoints[i].re - im*complexPoints[i].im; 
+        double oim = re*complexPoints[i].im + im*complexPoints[i].re; 
+        complexPoints[i].re = ore;
+        complexPoints[i].im = oim;
+      }//endfor
     }//endif
-//    double phase = M_PI*((double)(nkpoint*ind_state+1+kpoint_ind))/((double)(nstates*nkpoint+1));
-    double phase = M_PI*((double)(ind_state+1))/((double)(nstates+1));
-    for(int i=0;i<numData;i++){
-      double re = cos(phase); double im = sin(phase);
-      double ore = re*complexPoints[i].re - im*complexPoints[i].im; 
-      double oim = re*complexPoints[i].im + im*complexPoints[i].re; 
-      complexPoints[i].re = ore;
-      complexPoints[i].im = oim;
-    }//endfor
-************/
-#endif
   }else{
     kx -= 1;  ky -= 1; kz -=1;
     PhysicsParamTransfer::fetch_state_kvecs(kx,ky,kz,ncoef,config.doublePack);
@@ -1786,7 +1782,6 @@ void  CP_State_GSpacePlane::sendLambda() {
 
 
 #define _CP_GSPACE_PSI_FORCE_OUTPUT_BEFORE_LAMBDA_OFF_
-
 #ifdef  _CP_GSPACE_PSI_FORCE_OUTPUT_BEFORE_LAMBDA_
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     int *ka           = eesData->GspData[iplane_ind]->ka;
@@ -2222,7 +2217,6 @@ void CP_State_GSpacePlane::doLambda() {
 
 
 #define _CP_GSPACE_PSI_FORCE_OUTPUT_AFTER_LAMBDA_OFF_
-
 #ifdef  _CP_GSPACE_PSI_FORCE_OUTPUT_AFTER_LAMBDA_
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     int *ka           = eesData->GspData[iplane_ind]->ka;
@@ -3295,9 +3289,9 @@ void CP_State_GSpacePlane::launchOrthoT(){
 //==============================================================================
 void CP_State_GSpacePlane::sendRedPsiV(){
 
-	#ifdef DEBUG_CP_GSPACE_PSIV
-		CkPrintf("GSpace[%d,%d] sendRedPsiV: Going to send redundant PsiV data\n",thisIndex.x,thisIndex.y);
-	#endif
+#ifdef DEBUG_CP_GSPACE_PSIV
+	CkPrintf("GSpace[%d,%d] sendRedPsiV: Going to send redundant PsiV data\n",thisIndex.x,thisIndex.y);
+#endif
 //==============================================================================
 // I) Local Pointers
 
@@ -3421,9 +3415,9 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
   int  *num_recv    = RCommPkg[irecv].num_recv;
   int **lst_recv    = RCommPkg[irecv].lst_recv;
 
-	#ifdef DEBUG_CP_GSPACE_PSIV
+#ifdef DEBUG_CP_GSPACE_PSIV
 		CkPrintf("GSpace[%d,%d] acceptRedPsiV Received redundant PsiV values from sender %d\n",thisIndex.x,thisIndex.y,isend);
-	#endif
+#endif
 //==============================================================================
 // unpack
 
@@ -3450,9 +3444,9 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
 
   countRedPsiV++;
   if(countRedPsiV==numRecvRedPsi){
-	#ifdef DEBUG_CP_GSPACE_PSIV
+#ifdef DEBUG_CP_GSPACE_PSIV
 		CkPrintf("GSpace[%d,%d] acceptRedPsiV received all %d GSRedPsi messages carrying redundant PsiV data\n",thisIndex.x,thisIndex.y,countRedPsiV);
-	#endif
+#endif
     countRedPsiV = 0;
     iRecvRedPsiV  = 1;
     if(jtemp!=gs.nkx0_red){
@@ -3513,9 +3507,9 @@ void  CP_State_GSpacePlane::sendPsiV() {
     CkAbort("Error: GSpace cannot sendPsiV() without sending/receiving the redundant psi values around\n");
   }//endif
 
-	#ifdef DEBUG_CP_GSPACE_PSIV
-		CkPrintf("GSpace[%d,%d] sendPsiV\n",thisIndex.x,thisIndex.y);
-	#endif
+#ifdef DEBUG_CP_GSPACE_PSIV
+	CkPrintf("GSpace[%d,%d] sendPsiV\n",thisIndex.x,thisIndex.y);
+#endif
 
   acceptedVPsi = false;
 
@@ -3563,9 +3557,9 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
   int chunksize   = gs.numPoints/config.numChunksSym;
   int chunkoffset = offset*chunksize;; // how far into the points this contribution lies
 
-	#ifdef DEBUG_CP_GSPACE_PSIV
+#ifdef DEBUG_CP_GSPACE_PSIV
 		CkPrintf("GSpace[%d,%d] acceptNewPsiV(reductionMsg) PCs have sent new PsiV data\n",thisIndex.x,thisIndex.y);
-	#endif
+#endif
   if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
     CkPrintf("GSpace[%d,%d] Error: You can't acceptNewPsiV() without sending/receiving the redundant PsiV values around: finished %d %d : %d %d\n",thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
     CkAbort("Error: GSpace cannot acceptNewPsiV() without sending/receiving the redundant PsiV values around\n");
@@ -3592,9 +3586,9 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
   countVPsiO[offset]++;//psi arrives in as many as 2 reductions
 
   if(countVPsi==AllPsiExpected){ 
-	#ifdef DEBUG_CP_GSPACE_PSIV
-		CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d reductions).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
-	#endif
+#ifdef DEBUG_CP_GSPACE_PSIV
+	CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d reductions).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
+#endif
     thisProxy(thisIndex.x,thisIndex.y).doNewPsiV();
   }//endif
 
@@ -3625,10 +3619,10 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
   int chunksize   = gs.numPoints/config.numChunksSym;
   int chunkoffset = offset*chunksize;; // how far into the points this contribution lies
 
-	#ifdef DEBUG_CP_GSPACE_PSIV
+#ifdef DEBUG_CP_GSPACE_PSIV
 		CkPrintf("GSpace[%d,%d] acceptNewPsiV(partialResultMsg) Received new PsiV data (msg %d of %d) from PC [%d,%d,%d,%d] (offset %d)\n",thisIndex.x,thisIndex.y,countVPsi+1,AllPsiExpected,
 		msg->sndr.w,msg->sndr.x,msg->sndr.y,msg->sndr.z,offset);
-	#endif
+#endif
   if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
     CkPrintf("GSpace[%d,%d] Error: You can't acceptNewPsiV() without sending/receiving the redundant PsiV values around: finished %d %d : %d %d\n",thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
     CkAbort("Error: GSpace cannot acceptNewPsiV() without sending/receiving the redundant PsiV values around\n");
@@ -3655,9 +3649,9 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
   countVPsiO[offset]++;//psi arrives in as many as 2 reductions
 
   if(countVPsi==AllPsiExpected){ 
-	#ifdef DEBUG_CP_GSPACE_PSIV
+#ifdef DEBUG_CP_GSPACE_PSIV
 		CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d messages).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
-	#endif
+#endif
     thisProxy(thisIndex.x,thisIndex.y).doNewPsiV();
   }//endif
 
@@ -3672,9 +3666,9 @@ void CP_State_GSpacePlane::doNewPsiV(){
 //=============================================================================
 // (0) Error check
 //  CkPrintf("[%d %d] GSP doNewPsiV \n",thisIndex.x, thisIndex.y);
-	#ifdef DEBUG_CP_GSPACE_PSIV
+#ifdef DEBUG_CP_GSPACE_PSIV
 		CkPrintf("GSpace[%d,%d] doNewPsiV\n",thisIndex.x,thisIndex.y);
-	#endif
+#endif
 
   CkAssert(countVPsi==AllPsiExpected); 
 
@@ -4104,12 +4098,12 @@ void CP_State_GSpacePlane::completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApa
 	/// Retrieve the handshake token and the rdma handle from the message
 	RDMApair_GSP_PC token = msg->token();
 	rdmaHandleType ourHandle = msg->handle();
-	#ifdef DEBUG_CP_PAIRCALC_RDMA
+#ifdef DEBUG_CP_PAIRCALC_RDMA
         std::stringstream dbgStr; 
         dbgStr<<token;
 		CkPrintf("%s : Received RDMA setup confirmation from paircalc. Now have %d handles of %d (%d symm + %d asymm)\n", dbgStr.str().c_str(),
 			thisIndex.x,thisIndex.y, gotHandles+1, numRDMAlinksSymm+numRDMAlinksAsymm, numRDMAlinksSymm, numRDMAlinksAsymm );
-	#endif
+#endif
 	/// Determine which loop (symm/Asymm) this PC that has sent setup confirmation, belongs to
     cp::gspace::PCCommManager *pcMgr;
 	if (token.symmetric)
@@ -4145,20 +4139,20 @@ void CP_State_GSpacePlane::completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApa
 		pcMgr->rightDestinationHandles.push_back(ourHandle);
 	}
 	
-	#ifdef DEBUG_CP_PAIRCALC_RDMA
+#ifdef DEBUG_CP_PAIRCALC_RDMA
         CkPrintf("%s : Will RDMA-put %d units of data at an offset of %d units from %p on proc %d to %p on proc %d\n",
 			dbgStr.str().c_str(), dataSize, offset, 
             (!token.shouldSendLeft && !token.symmetric)? &(gs.packedForceData) : &(gs.packedPlaneData), ourHandle.senderNode,
             ourHandle.recverBuf,ourHandle.recverNode); 
-	#endif
+#endif
 
 	/// Call a reduction that signals the end of the initialization phase to main
 	if(++gotHandles == numRDMAlinksSymm + numRDMAlinksAsymm)
 	{
-		#ifdef DEBUG_CP_PAIRCALC_RDMA
+#ifdef DEBUG_CP_PAIRCALC_RDMA
 			CkPrintf("GSpace[%d,%d] received RDMA setup confirmation from all %d PCs (%d symm + %d asymm) I was expecting. Triggering reduction to indicate end of init phase.\n",
 				thisIndex.x,thisIndex.y,gotHandles,numRDMAlinksSymm,numRDMAlinksAsymm);
-		#endif
+#endif
 		int i=1;
 		CkCallback cbDoneInit = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy);
 		contribute(sizeof(int), &i, CkReduction::sum_int, cbDoneInit, thisInstance.proxyOffset);
