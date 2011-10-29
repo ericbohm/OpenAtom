@@ -66,13 +66,6 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   UberMmax = nspin;    //nspin   spin not yet in here
 
   // Warn the folks when dicey things are going down
-  if(pi_beads>1){
-    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
-    PRINTF("    Danger, Danger, pi_beads > 1 = %d\n",pi_beads);
-    PRINTF("    Put on your debugging shoes and get ready to boogy\n");
-    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
-  }//endif
-
   if(nkpoint>1){
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
     PRINTF("    Danger, Danger, nkpoint > 1 = %d\n",nkpoint);
@@ -93,7 +86,6 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
     PRINTF("    Danger, Danger, ntemper > 1 = %d\n",ntemper);
     PRINTF("    This is not yet supported in any way, shape or form\n");
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
-    EXIT(1);
   }//endif
 
 //===================================================================================
