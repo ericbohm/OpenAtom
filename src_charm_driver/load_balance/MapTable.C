@@ -233,6 +233,56 @@ void IntMap3::translate(IntMap3 *fromMap, int offsetX, int offsetY, int offsetZ,
 	  }
       }
 };
+void IntMap4::translate(IntMap4 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus )
+{
+  keyWmax=fromMap->keyWmax;
+  keyXmax=fromMap->keyXmax;
+  keyYmax=fromMap->keyYmax;
+  keyZmax=fromMap->keyZmax;
+  keyStep=fromMap->keyStep;
+  Map=new int***[keyWmax];
+  int ***mappointpointbuf = new int**[keyWmax*keyXmax];
+  int **mappointbuf = new int*[keyWmax*keyXmax*keyYmax];
+  int *mapbuf= new int[keyWmax*keyXmax*keyYmax*keyZmax];
+  for(int w=0;w<keyWmax;w++)
+    {
+      Map[w]=   mappointpointbuf + (w*keyXmax);
+      for(int x=0;x<keyXmax;x++)
+	{
+	  Map[w][x]= mappointbuf + (w*keyXmax+x)*keyYmax;
+	  for(int y=0;y<keyYmax;y++)
+	    Map[w][x][y]= mapbuf + ((w*keyXmax+x)*keyYmax+y)*keyZmax;
+	}
+    }
+  if(torus)
+    {
+	int x, y, z, t, destpe;
+	for(int wind=0; wind<keyWmax; wind++)
+	  for(int xind=0; xind<keyXmax; xind++){
+	    for(int yind=0; yind<keyYmax; yind++) {
+	      for(int zind=0; zind<keyZmax; zind++) {
+		topoMgr->rankToCoordinates(fromMap->get(wind,xind*keyStep, yind*keyStep,zind), x, y, z, t);
+		int newx=(x+offsetX)%topoMgr->getDimNX();
+		int newy=(y+offsetY)%topoMgr->getDimNY();
+		int newz=(z+offsetZ)%topoMgr->getDimNZ();
+		destpe =  topoMgr->coordinatesToRank(newx, newy, newz, t);
+		set(wind, xind*keyStep, yind*keyStep, zind, destpe);
+	      }
+	    }
+	  }
+    }
+    else
+      {
+	for(int wind=0; wind<keyWmax; wind++)
+	  for(int xind=0; xind<keyXmax; xind++){
+	    for(int yind=0; yind<keyYmax; yind++) {
+	      for(int zind=0; zind<keyZmax; zind++) {
+		set(wind, xind*keyStep, yind*keyStep, zind, fromMap->get(wind, xind*keyStep, yind*keyStep,zind)+offsetX);
+	      }
+	    }
+	  }
+      }
+};
 
 
 AtomMapTable::AtomMapTable(MapType1 *_tomap, PeList *availprocs, int numInst,

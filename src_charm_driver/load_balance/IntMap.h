@@ -232,6 +232,7 @@ class IntMap4 {
       }
     IntMap4(){keyWmax=0;keyXmax=0; keyYmax=0, keyZmax=0; keyStep=1; Map=NULL; stepTable=0; }
     IntMap4(IntMap4 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus );
+    void translate(IntMap4 *fromMap,int offsetX, int offsetY, int offsetZ, bool torus );
 
 
 };
