@@ -833,9 +833,15 @@ Per Instance startup BEGIN
 	      // Identify who is the owner for this bubble
 	      CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
 
+          // Fill out a structure with all configs needed for PC mapping
+          cp::startup::PCMapConfig pcMapCfg;
+          pcMapCfg.boxSize   = boxSize;
+          pcMapCfg.getPeList = peList4PCmapping;
+          pcMapCfg.gSpaceMap = &GSImaptable[thisInstance.getPO()];
+
 	      // Delegate the actual construction/initialization to a creation manager
 	      cp::startup::PCCreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);
-	      pcCreator.build(pcHandleCB, boxSize, peList4PCmapping, &GSImaptable[thisInstance.getPO()]);
+	      pcCreator.build(pcHandleCB, pcMapCfg);
 
 	      //============================================================================
 	      int *usedProc= new int[config.numPesPerInstance];

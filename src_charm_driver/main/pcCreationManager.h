@@ -10,6 +10,18 @@
 namespace cp {
     namespace startup {
 
+/// A container for assorted mapping inputs to pass around easily
+struct PCMapConfig
+{
+    public:
+        int boxSize;
+        PeListFactory getPeList;
+        MapType2 *gSpaceMap;
+        bool isTorusMap;
+};
+
+
+
 /**
  * Manages the creation of a complete paircalc bubble that includes
  * two paircalc instances (symmetric and asymmetric), an ortho instance
@@ -20,7 +32,7 @@ class PCCreationManager
 {
     public:
         PCCreationManager(const paircalc::pcConfig &_symmCfg, const paircalc::pcConfig &_asymmCfg, const ortho::orthoConfig &_orthoCfg);
-        void build(CkCallback cb, const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap);
+        void build(CkCallback cb, const PCMapConfig mapCfg);
 
     private:
         /// The configs for the symmetric and asymmetric paircalc instances
