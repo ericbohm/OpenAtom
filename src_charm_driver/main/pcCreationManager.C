@@ -12,6 +12,8 @@ PCCreationManager::PCCreationManager(const paircalc::pcConfig &_symmCfg, const p
 {
     if (symmCfg.orthoGrainSize != asymmCfg.orthoGrainSize)
         CkAbort("Ortho grain size mismatch in supllied configs\n");
+    if (symmCfg.instanceIndex != asymmCfg.instanceIndex)
+        CkAbort("Cannot wire together two PCs from different instances!!");
 }
 
 
