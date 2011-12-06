@@ -1,0 +1,39 @@
+main/TemperController.[Ch] 
+
+Each energyStruct master will send the energyStruct to
+TemperController.acceptData() at the end of the energyDone process.
+This is launched from EnergyGroup::sendToTemper.  Everything will then
+wait pending on the arrival of EnergyGroup::resumeFromTemper which
+will locally call energyDone().  It will then tell each GSP that
+registered with it that the energy is done and it can continue via
+UgSpaceDriverProxy.doneComputingEnergy.
+
+There is one energyGroup group for each bead and temper.
+
+TODO: the send from energygroup should transmit the bead number to
+help debug.
+
+The head of each temper will receive
+InstanceController::acceptNewTemperature(double temperature)
+as sent in a loop from the end of TemperController::acceptData after
+you have shuffled your temperatures accordingly.
+
+The index instancecontroller is the instance number
+(numbeads*numtempers*numkpoints*numspin) == proxyOffset in
+the ubercollection.
+
+void CP_State_GSpacePlane::acceptNewTemperature(double temp)
+void AtomsCompute::acceptNewTemperature(double temp)
+
+You have to update the kT and everything that depends on it, like
+thermostat masses, etc. in atomsCompute accordingly.
+
+When all the atoms and GSPs have received their temps and contributed
+to the reduction, the root of the reduction will trigger
+resumeFromTemper. 
+
+EnergyGroup::resumeFromTemper needs refactoring to work with GSP to
+handle the switch.
+
+Glenn: do the math so that some CP process works with tempering and do
+some toy models to make sure your math is right.
