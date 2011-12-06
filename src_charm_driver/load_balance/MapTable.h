@@ -40,9 +40,9 @@ class inttriple {
 	  p|y;
 	  p|z;
       }
-    inline int getx(){return x;};
-    inline int gety(){return y;};
-    inline int getz(){return z;};
+    inline int getx() const {return x;};
+    inline int gety() const {return y;};
+    inline int getz() const {return z;};
     // silenty assumes that X is the heavy hitter in keyspace
     // safe for our purposes
     inline CkHashCode hash() const {
