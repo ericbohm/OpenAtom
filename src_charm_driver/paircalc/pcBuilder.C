@@ -38,7 +38,7 @@ InstanceIDs Builder::build(const startup::PCMapConfig mapCfg)
 
 
 // Hacky way to allow PC builders of each instance to access the maptable for instance 0 pc
-namespace impl { MapType4 *dirtyGlobalMapTable4PC; }
+namespace impl { MapType4 *dirtyGlobalMapTable4PCsym, *dirtyGlobalMapTable4PCasym; }
 
 /**
  * Create the map for placing the paircalculator chare array elements. Also perform other housekeeping chores like dumping the maps to files etc.
@@ -53,6 +53,7 @@ void Builder::createMap(const startup::PCMapConfig mapCfg)
         achunks=config.numChunksSym;
     }
 
+    MapType4 **inst0MapTable = cfg.isSymmetric ? &impl::dirtyGlobalMapTable4PCsym : &impl::dirtyGlobalMapTable4PCasym;
     // Generate a map name
     std::string mapName = cfg.isSymmetric ? "SymScalcMap" : "AsymScalcMap";
     /// Get an appropriately constructed PeList from the supplied factory functor
@@ -98,7 +99,7 @@ void Builder::createMap(const startup::PCMapConfig mapCfg)
         }
 
         // Save a globally visible handle to the mapTable that builders of other PC instances can access
-        impl::dirtyGlobalMapTable4PC = new MapType4(mapTable);
+        *inst0MapTable = new MapType4(mapTable);
     }
     // else, this is not the first instance. Simply translate the 0th instance
     else
@@ -107,9 +108,9 @@ void Builder::createMap(const startup::PCMapConfig mapCfg)
         int y = mapCfg.mapOffset.gety();
         int z = mapCfg.mapOffset.getz();
         if((CkNumPes()==1) && !mapCfg.isTorusFake)
-            mapTable = *impl::dirtyGlobalMapTable4PC;
+            mapTable = **inst0MapTable;
         else
-            mapTable.translate(impl::dirtyGlobalMapTable4PC, x, y, z, mapCfg.isTorusMap);
+            mapTable.translate(*inst0MapTable, x, y, z, mapCfg.isTorusMap);
     }
 
     /// Create a map group that will read and use this map table
