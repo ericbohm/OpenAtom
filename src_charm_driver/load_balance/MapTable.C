@@ -282,6 +282,14 @@ void IntMap4::translate(IntMap4 *fromMap, int offsetX, int offsetY, int offsetZ,
 	    }
 	  }
       }
+    // The stepTable is translate-invariant. Simply generate the same values
+    if (keyXmax > 0 && keyStep > 0)
+    {
+        if (stepTable) delete [] stepTable;
+        stepTable= new int [keyXmax*keyStep];
+        for(int s=0; s<keyXmax*keyStep; s++)
+            stepTable[s] = s/keyStep;
+    }
 };
 
 
