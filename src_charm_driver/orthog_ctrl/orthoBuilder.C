@@ -12,10 +12,13 @@
 namespace cp {
     namespace ortho {
 
+// Hacky way to allow Ortho builders of each instance to access the maptable for instance 0 pc
+namespace impl { MapType2 *dirtyGlobalMapTable4Ortho, *dirtyGlobalMapTable4OrthoHelper; }
+
 /**
  * Create the map objects and also all the chare arrays needed for an Ortho instance
  */
-CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory getPeList)
+CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, const startup::PCMapConfig mapCfg)
 {
     CkPrintf("Building Ortho Chares\n");
 
@@ -33,7 +36,7 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
     /// The step 2 helper map logic object
     MapType2 helperMapTable;
 
-    PeList *availGlobR = getPeList();
+    PeList *availGlobR = mapCfg.getPeList();
 
     //-------------------------------------------------------------------------
     // Create maps for placing the Ortho chare array elements
@@ -45,24 +48,38 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
     double Timer=CmiWallTimer();
 
     availGlobR->reset();
-    MapType2 orthoMapTable;
-    orthoMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
-
-    int success = 0;
-    if(config.loadMapFiles)
-    {
-        int size[2];
-        size[0] = size[1] = cfg.numStates/cfg.grainSize;
-        MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-        success = mf->loadMap("OrthoMap", &orthoMapTable);
-        delete mf;
-    }
     PeList *avail= new PeList();
-    if(success == 0)
+    MapType2 orthoMapTable;
+    if (cfg.instanceIndex == 0)
     {
-        SCalcMap *asymmMap = CProxy_SCalcMap(asymmHandle.mapperGID).ckLocalBranch();
-        MapType4 *maptable = asymmMap->getMapTable();
-        OrthoMapTable Otable = OrthoMapTable(&orthoMapTable, avail, cfg.numStates, cfg.grainSize, maptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
+        orthoMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
+
+        int success = 0;
+        if(config.loadMapFiles)
+        {
+            int size[2];
+            size[0] = size[1] = cfg.numStates/cfg.grainSize;
+            MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+            success = mf->loadMap("OrthoMap", &orthoMapTable);
+            delete mf;
+        }
+        if(success == 0)
+        {
+            SCalcMap *asymmMap = CProxy_SCalcMap(asymmHandle.mapperGID).ckLocalBranch();
+            MapType4 *maptable = asymmMap->getMapTable();
+            OrthoMapTable Otable = OrthoMapTable(&orthoMapTable, avail, cfg.numStates, cfg.grainSize, maptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
+        }
+
+        // Save a globally visible handle to the mapTable that builders of other ortho instances can access
+        impl::dirtyGlobalMapTable4Ortho = new MapType2(orthoMapTable);
+    }
+    // else, simply translate the instance 0 ortho map
+    else
+    {
+        int x = mapCfg.mapOffset.getx();
+        int y = mapCfg.mapOffset.gety();
+        int z = mapCfg.mapOffset.getz();
+        orthoMapTable.translate(impl::dirtyGlobalMapTable4Ortho, x, y, z, mapCfg.isTorusMap);
     }
 
     double newtime=CmiWallTimer();
@@ -94,25 +111,41 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
     orthoOpts.setMap(orthoMap);
     CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
 
+
+
     // Create maps for the Ortho helper chares
     if(config.useOrthoHelpers)
     {
-        helperMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
         double Timer=CmiWallTimer();
-        success = 0;
-        if(config.loadMapFiles)
+
+        if (cfg.instanceIndex == 0)
         {
-            int size[2];
-            size[0] = size[1] = cfg.numStates/cfg.grainSize;
-            MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-            success = mf->loadMap("OrthoHelperMap", &helperMapTable);
-            delete mf;
+            helperMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
+            int success = 0;
+            if(config.loadMapFiles)
+            {
+                int size[2];
+                size[0] = size[1] = cfg.numStates/cfg.grainSize;
+                MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+                success = mf->loadMap("OrthoHelperMap", &helperMapTable);
+                delete mf;
+            }
+
+            if(success == 0)
+            {
+                OrthoHelperMapTable OHtable = OrthoHelperMapTable(&helperMapTable, cfg.numStates, cfg.grainSize, &orthoMapTable, avail, excludePes);
+            }
+            // Save a globally visible handle to the mapTable that builders of other ortho instances can access
+            impl::dirtyGlobalMapTable4OrthoHelper = new MapType2(orthoMapTable);
+        }
+        else
+        {
+            int x = mapCfg.mapOffset.getx();
+            int y = mapCfg.mapOffset.gety();
+            int z = mapCfg.mapOffset.getz();
+            helperMapTable.translate(impl::dirtyGlobalMapTable4OrthoHelper, x, y, z, mapCfg.isTorusMap);
         }
 
-        if(success == 0)
-        {
-            OrthoHelperMapTable OHtable = OrthoHelperMapTable(&helperMapTable, cfg.numStates, cfg.grainSize, &orthoMapTable, avail, excludePes);
-        }
         double newtime=CmiWallTimer();
         CkPrintf("OrthoHelperMap created in %g\n", newtime-Timer);
         CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew(helperMapTable);

@@ -35,7 +35,7 @@ void PCCreationManager::build(CkCallback cb, const PCMapConfig mapCfg)
     // Spawn the ortho array and its world of chares/classes (CLA_Matrix, OrthoHelper etc.)
     CkPrintf("Creating the ortho array\n");
     cp::ortho::Builder orthoBuilder(orthoCfg);
-    msg->orthoAID = orthoBuilder.build(msg->asymmIDs, mapCfg.getPeList);
+    msg->orthoAID = orthoBuilder.build(msg->asymmIDs, mapCfg);
 
     // Ask ortho to setup its communication sections of paircalcs
     CkPrintf("Setting up communication between gspace <--> paircalc <--> ortho\n");
