@@ -106,7 +106,10 @@ void Builder::createMap(const startup::PCMapConfig mapCfg)
         int x = mapCfg.mapOffset.getx();
         int y = mapCfg.mapOffset.gety();
         int z = mapCfg.mapOffset.getz();
-        mapTable.translate(impl::dirtyGlobalMapTable4PC, x, y, z, mapCfg.isTorusMap);
+        if((CkNumPes()==1) && !mapCfg.isTorusFake)
+            mapTable = *impl::dirtyGlobalMapTable4PC;
+        else
+            mapTable.translate(impl::dirtyGlobalMapTable4PC, x, y, z, mapCfg.isTorusMap);
     }
 
     /// Create a map group that will read and use this map table

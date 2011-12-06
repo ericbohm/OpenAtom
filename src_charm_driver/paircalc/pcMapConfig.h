@@ -16,6 +16,7 @@ struct PCMapConfig
         PeListFactory getPeList;
         MapType2 *gSpaceMap;
         bool isTorusMap;
+        bool isTorusFake;
         inttriple mapOffset;
 };
 

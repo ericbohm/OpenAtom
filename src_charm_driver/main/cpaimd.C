@@ -836,11 +836,12 @@ Per Instance startup BEGIN
 
           // Fill out a structure with all configs needed for PC mapping
           cp::startup::PCMapConfig pcMapCfg;
-          pcMapCfg.boxSize   = boxSize;
-          pcMapCfg.getPeList = peList4PCmapping;
-          pcMapCfg.gSpaceMap = &GSImaptable[thisInstance.getPO()];
-          pcMapCfg.isTorusMap= (config.torusMap == 1);
-          pcMapCfg.mapOffset = mapOffsets[numInst];
+          pcMapCfg.boxSize     = boxSize;
+          pcMapCfg.getPeList   = peList4PCmapping;
+          pcMapCfg.gSpaceMap   = &GSImaptable[thisInstance.getPO()];
+          pcMapCfg.isTorusMap  = (config.torusMap == 1);
+          pcMapCfg.isTorusFake = (config.fakeTorus == 1);
+          pcMapCfg.mapOffset   = mapOffsets[numInst];
 
 	      // Delegate the actual construction/initialization to a creation manager
 	      cp::startup::PCCreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);

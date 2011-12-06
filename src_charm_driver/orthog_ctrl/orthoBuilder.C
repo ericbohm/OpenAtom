@@ -79,7 +79,10 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, const startup::
         int x = mapCfg.mapOffset.getx();
         int y = mapCfg.mapOffset.gety();
         int z = mapCfg.mapOffset.getz();
-        orthoMapTable.translate(impl::dirtyGlobalMapTable4Ortho, x, y, z, mapCfg.isTorusMap);
+        if((CkNumPes()==1) && !mapCfg.isTorusFake)
+            orthoMapTable = *impl::dirtyGlobalMapTable4Ortho;
+        else
+            orthoMapTable.translate(impl::dirtyGlobalMapTable4Ortho, x, y, z, mapCfg.isTorusMap);
     }
 
     double newtime=CmiWallTimer();
@@ -143,7 +146,10 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, const startup::
             int x = mapCfg.mapOffset.getx();
             int y = mapCfg.mapOffset.gety();
             int z = mapCfg.mapOffset.getz();
-            helperMapTable.translate(impl::dirtyGlobalMapTable4OrthoHelper, x, y, z, mapCfg.isTorusMap);
+            if((CkNumPes()==1) && !mapCfg.isTorusFake)
+                helperMapTable = *impl::dirtyGlobalMapTable4OrthoHelper;
+            else
+                helperMapTable.translate(impl::dirtyGlobalMapTable4OrthoHelper, x, y, z, mapCfg.isTorusMap);
         }
 
         double newtime=CmiWallTimer();
