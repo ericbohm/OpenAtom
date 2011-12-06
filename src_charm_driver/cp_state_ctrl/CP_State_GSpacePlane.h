@@ -21,7 +21,6 @@ class RDMApair_GSP_PC;
 template <class tokenType> class RDMASetupConfirmationMsg;
 
 
-
 class GSIFFTMsg: public CMessage_GSIFFTMsg 
 {
     public:
@@ -95,6 +94,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         int registrationFlag;
         int nrotation;
         int exitFlag;
+        int outputFlag;
         int iRecvRedPsiV;
         int iSentRedPsi;
         int iSentRedPsiV;
@@ -154,9 +154,11 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         /// @RTH resume
         void acceptRedPsi(GSRedPsiMsg *msg);
         
+	void initBeadCookie(ICCookieMsg *m);
+	void minimizeSync(ICCookieMsg *m);
         void computeCgOverlap();
         void sendFFTData ();
-        
+	void setExitFlag();
         void readFile();
         void computeEnergies(int p, double d);
         void startFFT(CkReductionMsg *msg);
@@ -166,6 +168,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void screenPrintWallTimes();
 	void acceptNewTemperature(double temp);
         const UberCollection thisInstance;        
+	CkSectionInfo beadCookie;
     private:
 	FILE *temperScreenFile;
         double *wallTimeArr;//only used on [0,0]

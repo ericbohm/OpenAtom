@@ -96,7 +96,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
                 //------------------------------------------------------------------------
                 /// (I) If user wants state output, and this is dynamics (>2nd iteration, as nothing moves in dynamics iter 1) ... then write the states to file at the correct intervals or at the end of the simulation. Then wait for the data reduction and writes to finish (GSpaceDriver::allDoneWritingPsi resumes)
                 if (config.stateOutput==1 && c->paraInfo->cp_min_opt==0 && c->myGSpaceObj->iteration>1)
-                    if ( (c->myGSpaceObj->iteration-1)%c->paraInfo->ndump_frq==0 || c->myGSpaceObj->iteration==config.maxIter || c->myGSpaceObj->exitFlag==1 ) 
+                    if ( (c->myGSpaceObj->iteration-1)%c->paraInfo->ndump_frq==0 || c->myGSpaceObj->iteration==config.maxIter || c->myGSpaceObj->outputFlag==1 ) 
                     {
                         c->myGSpaceObj->writeStateDumpFile();
                         RTH_Suspend(); 

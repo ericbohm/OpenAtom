@@ -1,7 +1,6 @@
 module gSpaceDriver
 {
 	class UberCollection;
-
 	array [2D] GSpaceDriver
 	{
 		// Constructor(s)
@@ -63,6 +62,8 @@ module gParticlePlane
 module gStatePlane
 {
     extern module pcMessages;
+    extern module instanceController;
+
 	extern module RDMAMessages;
 	class RDMApair_GSP_PC;
     class pcSetupMsg;
@@ -114,5 +115,9 @@ module gStatePlane
 		entry void psiCgOvlap(CkReductionMsg *);
 		entry void acceptNewTemperature(double temp);
 		entry void readFile();
+		entry [nokeep] void initBeadCookie(ICCookieMsg *msg);
+		entry [nokeep] void minimizeSync(ICCookieMsg *msg);
+		entry void setExitFlag();
+
 	};
 };

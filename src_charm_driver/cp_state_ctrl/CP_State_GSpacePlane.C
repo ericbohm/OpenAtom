@@ -58,7 +58,7 @@
 #include "structure_factor/StructFactorCache.h"
 #include "main/CPcharmParaInfoGrp.h"
 #include "main/cpaimd.h"
-
+#include "main/InstanceController.h"
 #ifdef PC_USE_RDMA
     #define ENABLE_RDMA_HANDSHAKES
 #endif
@@ -103,7 +103,7 @@ extern CkVec <CProxy_eesCache>                UeesCacheProxy;
 
 extern CProxy_ComlibManager mgrProxy;
 extern ComlibInstanceHandle gssInstance;
-extern ComlibInstanceHandle mcastInstancePP;
+extern CkGroupID mCastGrpId;
 
 extern int nstates;
 extern int sizeX;
@@ -171,18 +171,43 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
       fprintf(temperScreenFile,"@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     }//endif
   }//endif
-
+  int numBeads=config.UberImax;
+  int numTempers=config.UberKmax;
 #ifndef _CP_DEBUG_ORTHO_OFF_
-  if(cp_min_opt==1 && fmagPsi_total<=tol_cp_min){
+  if (cp_min_opt==1)
+    {
+      if(numBeads==1 && numTempers==1)
+	{
+	  if(fmagPsi_total<=tol_cp_min){
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
-    exitFlag=1;
-    if(thisIndex.x==0 && thisIndex.y==0){
-      CkPrintf("----------------------------------------------\n");
-      CkPrintf("   CP wavefunction force tolerence reached!   \n");
-      CkPrintf("----------------------------------------------\n");
-    }//endif
-#endif
-  }//endif
+	    exitFlag=1; outputFlag=1;
+	    if(thisIndex.x==0 && thisIndex.y==0){
+	      CkPrintf("----------------------------------------------\n");
+	      CkPrintf("   CP wavefunction force tolerence reached!   \n");
+	      CkPrintf("----------------------------------------------\n");
+	    }//endif
+	  }
+#endif // _CP_DEBUG_SCALC_ONLY_ 
+	}
+      else
+	{
+#ifndef _CP_DEBUG_SCALC_ONLY_ 
+	  if(fmagPsi_total<=tol_cp_min)
+	    outputFlag=1;
+	  if(thisIndex.x==0 && thisIndex.y==0){
+	    // can't let any bead stop until they all reach tolerance.
+	    // but we only need one contributor from each replica.
+	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+	    //	    CkCallback cb(CkIndex_InstanceController::fmagMinTest(NULL),CkArrayIndex1D(0),instControllerProxy);
+	    int result=(fmagPsi_total <= tol_cp_min);
+	    CkPrintf("{%d} [%d,%d] tolcheck contrib %d \n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, result);
+	    mcastGrp->contribute(sizeof(int), &result, CkReduction::min_int, 
+				 beadCookie);
+	  }
+#endif // _CP_DEBUG_SCALC_ONLY_ 
+	}
+
+    }
 #endif
 
 //============================================================================
@@ -206,12 +231,28 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
   }//endif
 
   UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
-
 //============================================================================
   }// end routine
 //============================================================================
+void CP_State_GSpacePlane::initBeadCookie(ICCookieMsg *m)
+{
+  CkPrintf("{%d} [%d,%d] beadcookie initialized\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
+  CkGetSectionInfo(beadCookie,m);
+  //beadCookie=m->_cookie;
+}
 
+void CP_State_GSpacePlane::minimizeSync(ICCookieMsg *m)
+{
+  CkPrintf("{%d} [%d,%d] minimizeSync %d\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, m->junk);
+  CkGetSectionInfo(beadCookie,m);
+  if(m->junk==1)
+    thisProxy.setExitFlag();
+}
 
+void CP_State_GSpacePlane::setExitFlag()
+{
+  exitFlag=1;
+}
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -299,6 +340,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   ireset_cg           = 1;
   numReset_cg         = 0;
   exitFlag            = 0;
+  outputFlag          = 0;
   iRecvRedPsi         = 1;  
   iSentRedPsi         = 1;
   iRecvRedPsiV        = 0;
@@ -520,6 +562,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|iteration;
   p|nrotation;
   p|exitFlag;
+  p|outputFlag;
   p|cleanExitCalled;
   p|finishedCpIntegrate;
   p|iRecvRedPsi;
@@ -2185,9 +2228,9 @@ void CP_State_GSpacePlane::computeCgOverlap() {
 //============================================================================
 void CP_State_GSpacePlane::writeStateDumpFile()
 {
-    // Local pointers, variables and error checking
-    if(!acceptedPsi || !acceptedLambda || !acceptedVPsi)
-        CkAbort("{%d} Flow of Control Error : Attempting to write states without completing psi, vpsi and Lambda\n");
+  // Local pointers, variables and error checking
+  if(!acceptedPsi || !acceptedLambda || !acceptedVPsi)
+    CkAbort("{%d} Flow of Control Error : Attempting to write states without completing psi, vpsi and Lambda\n");
 
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
@@ -2222,60 +2265,60 @@ void CP_State_GSpacePlane::writeStateDumpFile()
   int myiteration = iteration;
   if(cp_min_opt==0){myiteration=iteration-1;}
 
-//============================================================================
-// Set the file names and write the files
-      if(ind_state==1 && ind_chare==1){
-        CkPrintf("-----------------------------------\n");
-        CkPrintf("Writing states to disk at time %d\n",myiteration);
-        CkPrintf("-----------------------------------\n");
-      }//endif
-    //------------------------------------------------------------------
-    // Update the velocities into scratch as we are between steps
-      if(cp_min_opt==0 && halfStepEvolve ==1){
- 	 halfStepEvolve = 0;
-         CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
-                      len_nhc_cp,num_nhc_cp,nck_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
-                      gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
-                      2,iteration,gs.degfree,gs.degfreeNHC,gs.degFreeSplt,
-                      gs.istrNHC,gs.iendNHC,1);
-      }//endif
-    //------------------------------------------------------------------
-    // Pack the message and send it to your plane 0
-      GStateOutMsg *msg  = new (ncoef,ncoef,ncoef,ncoef,ncoef,
-                              8*sizeof(int)) GStateOutMsg;
-      if(config.prioFFTMsg){
-         CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-         *(int*)CkPriorityPtr(msg) = config.rsfftpriority + 
-                                     thisIndex.x*gs.planeSize[0]+thisIndex.y;
-      }//endif
-      msg->size        = ncoef;
-      msg->senderIndex = thisIndex.y;  // planenumber
-      complex *data    = msg->data;
-      complex *vdata   = msg->vdata; 
-      int *mk_x        = msg->k_x;
-      int *mk_y        = msg->k_y;
-      int *mk_z        = msg->k_z;
-      if(cp_min_opt==0){
-        for(int i=0;i<ncoef;i++){vdata[i] = vpsi[i];}
-      }else{
-        for(int i=0;i<ncoef;i++){vdata[i] = 0.0;}
-      }//endif
-      for (int i=0;i<ncoef; i++){
-        data[i]  = psi[i];  
-        mk_x[i]  = k_x[i];  mk_y[i]  = k_y[i];  mk_z[i]  = k_z[i];
-      }//endfor
-      UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,redPlane).collectFileOutput(msg);
-    //------------------------------------------------------------------
-    // If you are not plane redPlane, you are done. Invoke the correct reduction.
-      if(thisIndex.y!=redPlane){
-		if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1)
-			UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
-		else
-		{
-			int i = 0;
-			contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDoneWritingPsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-		}
-      }//endif
+  //============================================================================
+  // Set the file names and write the files
+  if(ind_state==1 && ind_chare==1){
+    CkPrintf("-----------------------------------\n");
+    CkPrintf("Writing states to disk at time %d\n",myiteration);
+    CkPrintf("-----------------------------------\n");
+  }//endif
+  //------------------------------------------------------------------
+  // Update the velocities into scratch as we are between steps
+  if(cp_min_opt==0 && halfStepEvolve ==1){
+    halfStepEvolve = 0;
+    CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
+			       len_nhc_cp,num_nhc_cp,nck_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
+			       gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
+			       2,iteration,gs.degfree,gs.degfreeNHC,gs.degFreeSplt,
+			       gs.istrNHC,gs.iendNHC,1);
+  }//endif
+  //------------------------------------------------------------------
+  // Pack the message and send it to your plane 0
+  GStateOutMsg *msg  = new (ncoef,ncoef,ncoef,ncoef,ncoef,
+			    8*sizeof(int)) GStateOutMsg;
+  if(config.prioFFTMsg){
+    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+    *(int*)CkPriorityPtr(msg) = config.rsfftpriority + 
+      thisIndex.x*gs.planeSize[0]+thisIndex.y;
+  }//endif
+  msg->size        = ncoef;
+  msg->senderIndex = thisIndex.y;  // planenumber
+  complex *data    = msg->data;
+  complex *vdata   = msg->vdata; 
+  int *mk_x        = msg->k_x;
+  int *mk_y        = msg->k_y;
+  int *mk_z        = msg->k_z;
+  if(cp_min_opt==0){
+    for(int i=0;i<ncoef;i++){vdata[i] = vpsi[i];}
+  }else{
+    for(int i=0;i<ncoef;i++){vdata[i] = 0.0;}
+  }//endif
+  for (int i=0;i<ncoef; i++){
+    data[i]  = psi[i];  
+    mk_x[i]  = k_x[i];  mk_y[i]  = k_y[i];  mk_z[i]  = k_z[i];
+  }//endfor
+  UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,redPlane).collectFileOutput(msg);
+  //------------------------------------------------------------------
+  // If you are not plane redPlane, you are done. Invoke the correct reduction.
+  if(thisIndex.y!=redPlane){
+    if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1)
+      UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
+    else
+      {
+	int i = 0;
+	contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDoneWritingPsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
+      }
+  }//endif
 }//write the file
 //============================================================================
 

@@ -38,7 +38,8 @@ void TemperController::acceptData()
 {
   reportedIn=0;
   CkPrintf("Hey Glenn, this is where the Temper controller could do its job\n");
-  
+  /* insert temperature manipulation code here*/
+
   /* putting this in a for loop because we expect this to be personalized */
   UberCollection index;
   // average out the 

@@ -134,7 +134,9 @@ int MapType3::getCentroid(int torusMap) {
 
 void IntMap1::translate(IntMap1 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus ) 
 {
+
   keyXmax=fromMap->keyXmax;
+  CkAssert(keyXmax>0);
   Map= new int[keyXmax];
   if(torus)
       {
@@ -161,7 +163,12 @@ void IntMap2on2::translate(IntMap2on2 *fromMap, int offsetX, int offsetY, int of
 {
   keyXmax=fromMap->keyXmax;
   keyYmax=fromMap->keyYmax;
+  CkAssert(keyXmax>0);
+  CkAssert(keyYmax>0);
+  CkAssert(keyXmax<10000000);
+  CkAssert(keyYmax<10000000);
   Map= new int*[keyXmax];
+
   int *mapbuf=new int[keyXmax*keyYmax];
   for(int x=0;x<keyXmax;x++)
     {
@@ -193,9 +200,13 @@ void IntMap2on2::translate(IntMap2on2 *fromMap, int offsetX, int offsetY, int of
 
 void IntMap3::translate(IntMap3 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus )
 {
+ 
   keyXmax=fromMap->keyXmax;
   keyYmax=fromMap->keyYmax;
   keyZmax=fromMap->keyZmax;
+  CkAssert(keyXmax>0);
+  CkAssert(keyYmax>0);
+  CkAssert(keyZmax>0);
   Map=new int**[keyXmax];
   int **mappointbuf = new int*[keyXmax*keyYmax];
   int *mapbuf= new int[keyXmax*keyYmax*keyZmax];
@@ -240,6 +251,11 @@ void IntMap4::translate(IntMap4 *fromMap, int offsetX, int offsetY, int offsetZ,
   keyYmax=fromMap->keyYmax;
   keyZmax=fromMap->keyZmax;
   keyStep=fromMap->keyStep;
+  CkAssert(keyWmax>0);
+  CkAssert(keyXmax>0);
+  CkAssert(keyYmax>0);
+  CkAssert(keyZmax>0);
+
   Map=new int***[keyWmax];
   int ***mappointpointbuf = new int**[keyWmax*keyXmax];
   int **mappointbuf = new int*[keyWmax*keyXmax*keyYmax];

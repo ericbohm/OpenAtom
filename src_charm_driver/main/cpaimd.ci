@@ -136,8 +136,7 @@ module ENL_EKE_Collector
 
 module instanceController
 {
-	message ICCookieMsg;	
-
+	message ICCookieMsg;
 	array [1D] InstanceController {
         entry InstanceController();
 	entry void acceptNewTemperature(double t);
@@ -154,6 +153,7 @@ module instanceController
         entry void cleanExitAll(CkReductionMsg *m);
 	entry void gspDoneNewTemp(CkReductionMsg *m);
 	entry void atomsDoneNewTemp(CkReductionMsg *m);
+	entry void fmagMinTest(CkReductionMsg *m);
     };
 };
 
@@ -343,7 +343,6 @@ mainmodule cpaimd {
 	message RhoHartRSFFTMsg {complex data[];};
 
 	message NLFFTMsg {complex data[];};
-
 
 	mainchare main {
 		entry main();

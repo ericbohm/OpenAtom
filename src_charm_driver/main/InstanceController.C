@@ -57,6 +57,64 @@ InstanceController::InstanceController() {
       sectProxy.initCookie(cookieme);
     }
 }
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void InstanceController::init(){
+  UberCollection instance=UberCollection(thisIndex);
+  // 0th bead, 0th temper makes this to sync beads and tempers
+  if((config.UberImax >1 || config.UberKmax>1) && instance.idxU.x==0 && instance.idxU.z==0)
+    {
+      // make section for beads and tempers
+      int numDestinations=config.UberImax*config.UberKmax;
+      CkArrayID *beadArrayIds= new CkArrayID[numDestinations];
+      CkArrayIndex **elems  = new CkArrayIndex*[numDestinations];
+      int *naelems = new int[numDestinations];
+      for(int bead =0; bead<config.UberImax; bead++)
+	{
+	  instance.idxU.x=bead;
+	  for(int temper =0; temper<config.UberKmax; temper++)
+	    {
+	      int index=bead*config.UberKmax+temper;
+	      elems[index]= new CkArrayIndex2D[1];
+	      naelems[index]=1;
+	      instance.idxU.z=temper;
+	      instance.setPO();
+	      CkPrintf("fmag sync section adding bead %d temper %d index %d proxyOffset %d\n",bead, temper, index, instance.proxyOffset);
+	      beadArrayIds[index]=UgSpacePlaneProxy[instance.proxyOffset].ckGetArrayID();
+	      elems[index][0]=CkArrayIndex2D(0,0);
+	    }
+	}
+      //finish setting this up      
+      gTemperBeadProxy=CProxySection_CP_State_GSpacePlane(numDestinations, beadArrayIds, elems, naelems);
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+      gTemperBeadProxy.ckSectionDelegate(mcastGrp);
+      ICCookieMsg *cookieme=new ICCookieMsg;
+      CkCallback *cb = new CkCallback(CkIndex_InstanceController::fmagMinTest(NULL),CkArrayIndex1D(0),thisProxy);
+      mcastGrp->setReductionClient(gTemperBeadProxy,cb);
+      gTemperBeadProxy.initBeadCookie(cookieme);
+      
+    }
+}
+//============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void InstanceController::fmagMinTest(CkReductionMsg *m){
+
+
+  int result=(int)((int *)m->getData())[0];
+  CkPrintf("[%d] fmagMinTest %d\n",result);
+  ICCookieMsg *out=new ICCookieMsg;
+  out->junk = (result==config.UberImax*config.UberKmax) ? 1 :0;
+  delete m;
+  gTemperBeadProxy.minimizeSync(out);
+
+}
+//============================================================================
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -79,6 +137,7 @@ void InstanceController::doneInit(CkReductionMsg *msg){
     }
     if (done_init==3)
       { // kick off post constructor inits
+	if(thisIndex==0) init();
 	UberCollection thisInstance(thisIndex);
 	if(thisInstance.idxU.y==0)
 	  {
