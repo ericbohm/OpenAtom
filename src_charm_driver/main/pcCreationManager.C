@@ -29,8 +29,8 @@ void PCCreationManager::build(CkCallback cb, const PCMapConfig mapCfg)
     // Create the symmetric (psi) and asymmetric (lambda) paircalc instances
     CkPrintf("\n\nCreating the symmetric (psi) and asymmetric (lambda) paircalculators\n");
     cp::paircalc::Builder symmBuilder(symmCfg), asymmBuilder(asymmCfg);
-    msg->symmIDs  = symmBuilder.build (mapCfg.boxSize, mapCfg.getPeList, mapCfg.gSpaceMap);
-    msg->asymmIDs = asymmBuilder.build(mapCfg.boxSize, mapCfg.getPeList, mapCfg.gSpaceMap);
+    msg->symmIDs  = symmBuilder.build (mapCfg);
+    msg->asymmIDs = asymmBuilder.build(mapCfg);
 
     // Spawn the ortho array and its world of chares/classes (CLA_Matrix, OrthoHelper etc.)
     CkPrintf("Creating the ortho array\n");

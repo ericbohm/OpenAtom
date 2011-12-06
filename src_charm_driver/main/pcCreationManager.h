@@ -2,6 +2,7 @@
 #include "startupMessages.h"
 #include "paircalc/pcConfig.h"
 #include "orthog_ctrl/orthoConfig.h"
+#include "paircalc/pcMapConfig.h"
 #include "load_balance/PeList.h"
 #include "load_balance/IntMap.h"
 #ifndef PC_CREATION_MANAGER_H
@@ -9,18 +10,6 @@
 
 namespace cp {
     namespace startup {
-
-/// A container for assorted mapping inputs to pass around easily
-struct PCMapConfig
-{
-    public:
-        int boxSize;
-        PeListFactory getPeList;
-        MapType2 *gSpaceMap;
-        bool isTorusMap;
-};
-
-
 
 /**
  * Manages the creation of a complete paircalc bubble that includes
