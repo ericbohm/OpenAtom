@@ -108,7 +108,7 @@ void Builder::createMap(const startup::PCMapConfig mapCfg)
         int y = mapCfg.mapOffset.gety();
         int z = mapCfg.mapOffset.getz();
         if((CkNumPes()==1) && !mapCfg.isTorusFake)
-            mapTable = **inst0MapTable;
+            mapTable = *(new MapType4(**inst0MapTable)); ///< Lazy way to avoid having to write an assignment operator for MapType4
         else
             mapTable.translate(*inst0MapTable, x, y, z, mapCfg.isTorusMap);
     }
