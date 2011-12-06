@@ -11,7 +11,7 @@ extern Config config;
 namespace cp {
     namespace paircalc {
 
-InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap)
+InstanceIDs Builder::build(const startup::PCMapConfig mapCfg)
 {
     traceRegisterUserEvent("calcpairDGEMM", 210);
     traceRegisterUserEvent("calcpairContrib", 220);
@@ -19,7 +19,7 @@ InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList, MapType2 
     traceRegisterUserEvent("multiplyResultDGEMM2", 240);
     traceRegisterUserEvent("multiplyResultDGEMM1R", 250);
 
-    createMap(boxSize, getPeList, gSpaceMap);
+    createMap(mapCfg);
     createPairCalcs();
 
     pcHandle.mCastMgrGID = CProxy_CkMulticastMgr::ckNew(cfg.inputSpanningTreeFactor);
@@ -37,12 +37,13 @@ InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList, MapType2 
 }
 
 
-
+// Hacky way to allow PC builders of each instance to access the maptable for instance 0 pc
+namespace impl { MapType4 *dirtyGlobalMapTable4PCsym, *dirtyGlobalMapTable4PCasym; }
 
 /**
  * Create the map for placing the paircalculator chare array elements. Also perform other housekeeping chores like dumping the maps to files etc.
  */
-void Builder::createMap(const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap)
+void Builder::createMap(const startup::PCMapConfig mapCfg)
 {
     bool maptype = cfg.isSymmetric;
     int achunks = config.numChunksAsym;
@@ -52,10 +53,11 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList, MapType2 *gS
         achunks=config.numChunksSym;
     }
 
+    MapType4 **inst0MapTable = cfg.isSymmetric ? &impl::dirtyGlobalMapTable4PCsym : &impl::dirtyGlobalMapTable4PCasym;
     // Generate a map name
     std::string mapName = cfg.isSymmetric ? "SymScalcMap" : "AsymScalcMap";
     /// Get an appropriately constructed PeList from the supplied factory functor
-    PeList *availGlobG = getPeList();
+    PeList *availGlobG = mapCfg.getPeList();
     availGlobG->reset();
 
     // Compute num PEs along the states dimension of GSpace
@@ -77,21 +79,38 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList, MapType2 *gS
     double mapCreationTime = CmiWallTimer();
 
     MapType4 mapTable;
-    mapTable.buildMap(cfg.numPlanes, cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize, achunks, cfg.grainSize);
-
-    int success = 0;
-    if(config.loadMapFiles)
+    if (cfg.instanceIndex == 0)
     {
-        MapFile *mf = new MapFile(mapName.c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, cfg.grainSize);
-        success = mf->loadMap(mapName.c_str(), &mapTable);
-        delete mf;
+        mapTable.buildMap(cfg.numPlanes, cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize, achunks, cfg.grainSize);
+
+        int success = 0;
+        if(config.loadMapFiles)
+        {
+            MapFile *mf = new MapFile(mapName.c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, cfg.grainSize);
+            success = mf->loadMap(mapName.c_str(), &mapTable);
+            delete mf;
+        }
+
+        // If loading the map from a file failed, create a maptable
+        if(success == 0)
+        {
+            SCalcMapTable symTable = SCalcMapTable(&mapTable, availGlobG, cfg.numStates, cfg.numPlanes, cfg.grainSize, maptype, config.scalc_per_plane,
+                            planes_per_pe, achunks, config.numChunksSym, mapCfg.gSpaceMap, config.useCuboidMap, config.useCentroidMap, mapCfg.boxSize);
+        }
+
+        // Save a globally visible handle to the mapTable that builders of other PC instances can access
+        *inst0MapTable = new MapType4(mapTable);
     }
-
-    // If loading the map from a file failed, create a maptable
-    if(success == 0)
+    // else, this is not the first instance. Simply translate the 0th instance
+    else
     {
-        SCalcMapTable symTable = SCalcMapTable(&mapTable, availGlobG, cfg.numStates, cfg.numPlanes, cfg.grainSize, maptype, config.scalc_per_plane,
-                        planes_per_pe, achunks, config.numChunksSym, gSpaceMap, config.useCuboidMap, config.useCentroidMap, boxSize);
+        int x = mapCfg.mapOffset.getx();
+        int y = mapCfg.mapOffset.gety();
+        int z = mapCfg.mapOffset.getz();
+        if((CkNumPes()==1) && !mapCfg.isTorusFake)
+            mapTable = *(new MapType4(**inst0MapTable)); ///< Lazy way to avoid having to write an assignment operator for MapType4
+        else
+            mapTable.translate(*inst0MapTable, x, y, z, mapCfg.isTorusMap);
     }
 
     /// Create a map group that will read and use this map table

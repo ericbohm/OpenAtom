@@ -12,12 +12,14 @@ PCCreationManager::PCCreationManager(const paircalc::pcConfig &_symmCfg, const p
 {
     if (symmCfg.orthoGrainSize != asymmCfg.orthoGrainSize)
         CkAbort("Ortho grain size mismatch in supllied configs\n");
+    if (symmCfg.instanceIndex != asymmCfg.instanceIndex)
+        CkAbort("Cannot wire together two PCs from different instances!!");
 }
 
 
 
 
-void PCCreationManager::build(CkCallback cb, const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap)
+void PCCreationManager::build(CkCallback cb, const PCMapConfig mapCfg)
 {
     /// Create the message that will hold the handles to created chares
     pcSetupMsg *msg = new pcSetupMsg();
@@ -27,13 +29,13 @@ void PCCreationManager::build(CkCallback cb, const int boxSize, PeListFactory ge
     // Create the symmetric (psi) and asymmetric (lambda) paircalc instances
     CkPrintf("\n\nCreating the symmetric (psi) and asymmetric (lambda) paircalculators\n");
     cp::paircalc::Builder symmBuilder(symmCfg), asymmBuilder(asymmCfg);
-    msg->symmIDs  = symmBuilder.build (boxSize, getPeList, gSpaceMap);
-    msg->asymmIDs = asymmBuilder.build(boxSize, getPeList, gSpaceMap);
+    msg->symmIDs  = symmBuilder.build (mapCfg);
+    msg->asymmIDs = asymmBuilder.build(mapCfg);
 
     // Spawn the ortho array and its world of chares/classes (CLA_Matrix, OrthoHelper etc.)
     CkPrintf("Creating the ortho array\n");
     cp::ortho::Builder orthoBuilder(orthoCfg);
-    msg->orthoAID = orthoBuilder.build(msg->asymmIDs, getPeList);
+    msg->orthoAID = orthoBuilder.build(msg->asymmIDs, mapCfg);
 
     // Ask ortho to setup its communication sections of paircalcs
     CkPrintf("Setting up communication between gspace <--> paircalc <--> ortho\n");

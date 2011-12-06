@@ -2,6 +2,7 @@
 #include "startupMessages.h"
 #include "paircalc/pcConfig.h"
 #include "orthog_ctrl/orthoConfig.h"
+#include "paircalc/pcMapConfig.h"
 #include "load_balance/PeList.h"
 #include "load_balance/IntMap.h"
 #ifndef PC_CREATION_MANAGER_H
@@ -20,7 +21,7 @@ class PCCreationManager
 {
     public:
         PCCreationManager(const paircalc::pcConfig &_symmCfg, const paircalc::pcConfig &_asymmCfg, const ortho::orthoConfig &_orthoCfg);
-        void build(CkCallback cb, const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap);
+        void build(CkCallback cb, const PCMapConfig mapCfg);
 
     private:
         /// The configs for the symmetric and asymmetric paircalc instances
