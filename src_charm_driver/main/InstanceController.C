@@ -105,10 +105,10 @@ void InstanceController::init(){
 void InstanceController::fmagMinTest(CkReductionMsg *m){
 
 
-  int result=(int)((int *)m->getData())[0];
-  CkPrintf("[%d] fmagMinTest %d\n",result);
+  int result=( (int *) (m->getData()) )[0];
+  // CkPrintf("[%d] fmagMinTest %d\n",thisIndex, result);
   ICCookieMsg *out=new ICCookieMsg;
-  out->junk = (result==config.UberImax*config.UberKmax) ? 1 :0;
+  out->junk = result;
   delete m;
   gTemperBeadProxy.minimizeSync(out);
 

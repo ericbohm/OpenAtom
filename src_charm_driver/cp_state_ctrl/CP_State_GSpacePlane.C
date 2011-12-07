@@ -194,14 +194,22 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
 	  if(fmagPsi_total<=tol_cp_min)
 	    outputFlag=1;
+	  if(exitFlagMin==1) // every bead and temper is minimized
+	    {
+	      exitFlag=1; outputFlag=1;
+	      if(thisIndex.x==0 && thisIndex.y==0){
+		CkPrintf("----------------------------------------------\n");
+		CkPrintf("   CP wavefunction force tolerence reached!   \n");
+		CkPrintf("----------------------------------------------\n");
+	      }//endif
+	    }
 	  if(thisIndex.x==0 && thisIndex.y==0){
 	    // can't let any bead stop until they all reach tolerance.
 	    // but we only need one contributor from each replica.
 	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-	    //	    CkCallback cb(CkIndex_InstanceController::fmagMinTest(NULL),CkArrayIndex1D(0),instControllerProxy);
 	    int result=(fmagPsi_total <= tol_cp_min);
-	    CkPrintf("{%d} [%d,%d] tolcheck contrib %d \n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, result);
-	    mcastGrp->contribute(sizeof(int), &result, CkReduction::min_int, 
+	    //	    CkPrintf("{%d} [%d,%d] tolcheck contrib %d %.5g %5g %5g\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, result, fmagPsi_total, tol_cp_min,fmagPsi_total - tol_cp_min);
+	    mcastGrp->contribute(sizeof(int), &result, CkReduction::logical_and, 
 				 beadCookie);
 	  }
 #endif // _CP_DEBUG_SCALC_ONLY_ 
@@ -236,14 +244,14 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 //============================================================================
 void CP_State_GSpacePlane::initBeadCookie(ICCookieMsg *m)
 {
-  CkPrintf("{%d} [%d,%d] beadcookie initialized\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
+  //CkPrintf("{%d} [%d,%d] beadcookie initialized\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
   CkGetSectionInfo(beadCookie,m);
   //beadCookie=m->_cookie;
 }
 
 void CP_State_GSpacePlane::minimizeSync(ICCookieMsg *m)
 {
-  CkPrintf("{%d} [%d,%d] minimizeSync %d\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, m->junk);
+  // CkPrintf("{%d} [%d,%d] minimizeSync %d\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, m->junk);
   CkGetSectionInfo(beadCookie,m);
   if(m->junk==1)
     thisProxy.setExitFlag();
@@ -251,7 +259,7 @@ void CP_State_GSpacePlane::minimizeSync(ICCookieMsg *m)
 
 void CP_State_GSpacePlane::setExitFlag()
 {
-  exitFlag=1;
+  exitFlagMin=1;
 }
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -340,6 +348,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   ireset_cg           = 1;
   numReset_cg         = 0;
   exitFlag            = 0;
+  exitFlagMin         = 0;
   outputFlag          = 0;
   iRecvRedPsi         = 1;  
   iSentRedPsi         = 1;
@@ -562,6 +571,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|iteration;
   p|nrotation;
   p|exitFlag;
+  p|exitFlagMin;
   p|outputFlag;
   p|cleanExitCalled;
   p|finishedCpIntegrate;

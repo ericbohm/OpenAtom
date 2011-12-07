@@ -94,6 +94,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         int registrationFlag;
         int nrotation;
         int exitFlag;
+        int exitFlagMin;
         int outputFlag;
         int iRecvRedPsiV;
         int iSentRedPsi;
