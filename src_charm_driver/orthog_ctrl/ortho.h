@@ -100,6 +100,12 @@ using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within
 #define INVSQR_TOLERANCE	1.0e-15
 #define INVSQR_MAX_ITER		10
 
+#ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+#define myabs abs
+#else
+#define myabs std::abs
+#endif
+
 extern bool fakeTorus;
 extern int numPes;
 class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
@@ -289,26 +295,26 @@ inline double Ortho::array_diag_max(int sizem, int sizen, internalType *array)
     double absval, max_ret;
     if(thisIndex.x!=thisIndex.y)
     { //not diagonal
-        max_ret = std::abs(array[0]);
+        max_ret = myabs(array[0]);
         for(int i=0;i<sizem;i++)
         {
             for(int j=0;j<sizen;j++)
             {
-                absval = std::abs(array[i*sizen+j]);
+                absval = myabs(array[i*sizen+j]);
                 max_ret = (max_ret>absval) ? max_ret : absval;
             }
         }//endfor
     }
     else
     { //on diagonal 
-        max_ret = std::abs(array[0]-2.0);
+        max_ret = myabs(array[0]-2.0);
         for(int i=0;i<sizem;i++)
         {
             for(int j=0;j<sizen;j++)
             {
-                absval = std::abs(array[i*sizen+j]);
+                absval = myabs(array[i*sizen+j]);
                 if(i == j)
-                    absval = std::abs(absval - 2.0);
+                    absval = myabs(absval - 2.0);
                 max_ret = (max_ret>absval) ? max_ret : absval;
             }
         }//endfor
