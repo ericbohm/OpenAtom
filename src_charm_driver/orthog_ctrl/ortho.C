@@ -235,9 +235,6 @@ void Ortho::start_calc(CkReductionMsg *msg){
   }//endif
   // do tolerance check on smat, do_iteration will be called by reduction root
   if(cfg.isDynamics && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter>1){
-    if(thisIndex.x==0 && thisIndex.y==0){
-      CkPrintf("Doing tolerance check on SMAT \n");
-    }//endif
     double max =array_diag_max(m,n,S);
     contribute(sizeof(double),&max, CkReduction::max_double, 
 	       CkCallback(CkIndex_Ortho::maxCheck(NULL),CkArrayIndex2D(0,0),
@@ -395,6 +392,7 @@ void Ortho::maxCheck(CkReductionMsg *msg){
 
   double tolMax=fabs(((double *) msg->getData())[0]);
   delete msg;
+  CkPrintf("S matrix tolerance = %f while maxTolerance = %f\n",tolMax, cfg.maxTolerance);
 
   //  CkPrintf("SMAT tol    = %g\n", tolMax);
   if(tolMax < cfg.maxTolerance){
