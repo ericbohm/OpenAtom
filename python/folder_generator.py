@@ -24,7 +24,7 @@ def folder_generator(config_dict):
 		os.chdir(folder_name)
 		testscript.write('cd ' + folder_name + '\n')
 
-		command = 'ln -s ../../../' + info_dict['inputDir'] + '* .'
+		command = 'cp -ar ../../../' + info_dict['inputDir'] + '* .'
 		os.popen(command)
 		testscript.write(command + '\n')
 
