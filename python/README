@@ -4,7 +4,9 @@
 
 2\ Run the program
 	2.1 Make sure that '*.py' and '*.yml' are in the same folder
-	2.2 at the terminal, type 'python config_parser.py > summary'. Program will read from the config file, lanuch the testing and compare the output files with ref files and store the results into the summary file.
+	2.2 at the terminal, type 'python config_parser.py configfile.yml executablepath > summary'. Program will read from the config file, launch the testing and compare the output files with ref files and store the results into the summary file.
+	2.3 That step will create a test directory and a script for the execution of tests in the test directory.  The testscript can be re-used without re-executing the python framework which generated it.
+
 
 3\ Rules for config file
  	3.1 Every entry should start with '- '.
