@@ -2327,7 +2327,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 
     if(numPesPerInstance!=1 && igo==0){
       if(numPesPerInstance<=128){
-        Gstates_per_pe=nstates/4;
+        Gstates_per_pe=nstates/numPes;
       }else{ 
 	if(numPesPerInstance>128 && numPesPerInstance<=512){
           Gstates_per_pe=nstates/16;
@@ -2346,7 +2346,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 
     if(numPesPerInstance!=1 && igo==0){
       if(numPesPerInstance<=128){
-        Rstates_per_pe=nstates/4;
+        Rstates_per_pe=nstates/numPes;
       }else{
         Rstates_per_pe= sizez*nstates/numPesPerInstance;
       }//endif
