@@ -50,11 +50,11 @@ class MDTHERM_INFO{
     isokin_opt   = 0;
     num_nhc_iso  = 0;
 
-    wdti   = ((double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr"))-1;
-    wdti2  = ((double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr"))-1;
-    wdti4  = ((double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr"))-1;
-    wdti8  = ((double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr"))-1;
-    wdti16 = ((double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constrr"))-1;
+    wdti   = ((double *)cmalloc(((size_t) 25*sizeof(double)),"MDTHERM_INFO constr"))-1;
+    wdti2  = ((double *)cmalloc(((size_t) 25*sizeof(double)),"MDTHERM_INFO constr"))-1;
+    wdti4  = ((double *)cmalloc(((size_t) 25*sizeof(double)),"MDTHERM_INFO constr"))-1;
+    wdti8  = ((double *)cmalloc(((size_t) 25*sizeof(double)),"MDTHERM_INFO constr"))-1;
+    wdti16 = ((double *)cmalloc(((size_t) 25*sizeof(double)),"MDTHERM_INFO constrr"))-1;
    }
   ~MDTHERM_INFO(){
     cfree(&wdti[1],"MDTHERM_INFO destruct");
@@ -91,6 +91,9 @@ class MDTHERM_INFO{
         pup1d_int(p,&inhc_x,natm_tot);
         pup1d_int(p,&inhc_y,natm_tot);
         pup1d_int(p,&inhc_z,natm_tot);
+      }//endif
+      if(p.isUnpacking()){
+	wdti=wdti2=wdti4=wdti8=wdti16=NULL;
       }//endif
       pup1d_dbl(p,&wdti,25);
       pup1d_dbl(p,&wdti2,25);

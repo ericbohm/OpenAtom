@@ -822,8 +822,10 @@ void FFTcache::doNlFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
   }//endif
 
   // fftw only gives you one sign for real to complex : so do it yourself
-  if(fwdXPlanNL.option==0 && config.doublePack){
-    for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(config.doublePack){
+    if(fwdXPlanNL.option==0){// this plan is not intialized if doublePack==0
+      for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+    }//endif
   }//endif
 
 //==============================================================================
@@ -1253,9 +1255,12 @@ void FFTcache::doStpFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
   }//endif
 
   // fftw only gives you one sign for real to complex : so do it yourself
-  if(fwdXPlanState.option==0 && config.doublePack){
-    for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
-  }//endif
+
+  if(config.doublePack){
+    if(fwdXPlanState.option==0){ // this plan is unintialized if doublePack==0
+      for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+    }//endif
+ }//endif
 
 //==============================================================================
 // FFT along X direction : X moves with stride 1 through memory

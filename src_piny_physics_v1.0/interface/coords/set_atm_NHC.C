@@ -271,15 +271,15 @@ void set_atm_NHC(GENENSOPTS *genensopts,
   mdtherm_info_class->text_nhc = (double *)
              cmalloc((class_num_nhc+1)*sizeof(double),"set_atm_NHC")-1;
   mdtherm_info_class->wdti    = (double *)
-             cmalloc((size_t)9*sizeof(double),"set_atm_NHC")-1;
+             cmalloc(((size_t)25*sizeof(double)),"set_atm_NHC")-1;
   mdtherm_info_class->wdti2    = (double *)
-             cmalloc((size_t)9*sizeof(double),"set_atm_NHC")-1;
+             cmalloc(((size_t)25*sizeof(double)),"set_atm_NHC")-1;
   mdtherm_info_class->wdti4    = (double *)
-             cmalloc((size_t)9*sizeof(double),"set_atm_NHC")-1;
+             cmalloc(((size_t)25*sizeof(double)),"set_atm_NHC")-1;
   mdtherm_info_class->wdti8    = (double *)
-             cmalloc((size_t)9*sizeof(double),"set_atm_NHC")-1;
+             cmalloc(((size_t)25*sizeof(double)),"set_atm_NHC")-1;
   mdtherm_info_class->wdti16   = (double *)
-             cmalloc((size_t)9*sizeof(double),"set_atm_NHC")-1;
+             cmalloc(((size_t)25*sizeof(double)),"set_atm_NHC")-1;
 
   class_mass_nhc  = mdtherm_info_class->mass_nhc;
   class_gkt       = mdtherm_info_class->gkt;
