@@ -30,8 +30,6 @@ extern Config                               config;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
 extern CkVec <CProxy_CP_VanderWaalsR> UVdWRealProxy;
-extern CProxy_CPcharmParaInfoGrp            scProxy;
-extern CkVec <CProxy_AtomsCache>              UatomsCacheProxy;
 extern CkVec <CProxy_GSpaceDriver>          UgSpaceDriverProxy;
 extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
 
@@ -54,7 +52,7 @@ CP_VanderWaalsG::CP_VanderWaalsG(UberCollection _instance) :
 //============================================================================
 // Set counters local variables
 
-    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim = CPcharmParaInfo::get();
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -65,7 +63,7 @@ CP_VanderWaalsG::CP_VanderWaalsG(UberCollection _instance) :
 //============================================================================
 void CP_VanderWaalsG::init()
 {
-    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim = CPcharmParaInfo::get();
 
 }
 

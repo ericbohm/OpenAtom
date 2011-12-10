@@ -78,7 +78,7 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(
 //============================================================================
 
   CkAssert(sizeX>0); //check for startup wackiness
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   CkVec <RunDescriptor> *sortedRunDescriptors = sim->RhosortedRunDescriptors;
 
 //============================================================================
@@ -362,7 +362,7 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 //============================================================================
 // Check the flow of control to see if we can use the data.
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt = sim->cp_min_opt;
 
   iteration ++;
@@ -544,7 +544,7 @@ void CP_Rho_GHartExt::sendVks() {
 
 //============================================================================
 
-   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+   CPcharmParaInfo *sim = CPcharmParaInfo::get();
    FFTcache *fftcache   = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
    complex *vksScr      = fftcache->tmpData; // scratch from the cache has FFT output
 
@@ -677,7 +677,7 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
 //  atmSFT: numLines collections of lines of lth ngridcEext each with constant (gx,gy) 
 //          Each message contains 1 pt on each line
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int size             = msg->size;
   int offset           = msg->offset;   // z index
   int isub             = msg->offsetGx; // subplane index
@@ -730,6 +730,18 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
 
   countEextFFT++;
   if (countEextFFT == recvCountFromRHartExt) {
+#ifdef _DEBUG_GLENN_KPT_
+    char name[100];
+    sprintf(name,"SfAtmGxGyZ_inG.p%d.t%d.out",thisIndex.x,iter);
+    FILE *fp = fopen(name,"w");
+    for(int ix =0;ix<numLines;ix++){
+     for(int iy =0;iy<ngridcEext;iy++){
+       int i = ix*ngridcEext + iy;
+       fprintf(fp,"%d %d : %g %g\n",iy,ix,atmSF[i].re,atmSF[i].im);
+     }//endfor
+    }//endof
+    fclose(fp);
+#endif
     countEextFFT = 0;
 #ifndef _DEBUG_INT_TRANS_FWD_
     launchFlag   = 1;
@@ -787,7 +799,7 @@ void CP_Rho_GHartExt::FFTEesBck(){
                                  numLines,rho_gs.numRuns,rho_gs.runs,ngridcEext,ind_x);
 
 //============================================================================
-// If you are in g-space, get the energy otherwise tranpose
+// If the density has arrived, you can get the energy otherwise chill
 
   if(densityHere==1){getHartEextEes();}
 
@@ -975,7 +987,7 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
          thisIndex.x,thisIndex.y,flag,iterAtmTyp,natmTyp,CkMyPe());
 #endif
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
   complex *senddata  = fftcache->tmpData;
   int ix             = thisIndex.x;
@@ -1196,7 +1208,7 @@ void CP_Rho_GHartExt::acceptVks(int size, complex * inVks){
 void CP_Rho_GHartExt::exitForDebugging(){
 //============================================================================
 
-  CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim      = CPcharmParaInfo::get();
   int nchareG               = sim->nchareRhoGEext;
 
   CountDebug++;  

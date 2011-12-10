@@ -7,6 +7,7 @@
 #include "../include/proto_defs/proto_cp_ewald_local.h"
 #include "../class_defs/PINY_INIT/PhysicsParamTrans.h"
 
+
 //========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //========================================================================
@@ -48,19 +49,21 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int nstates         = cpcoeffs_info->nstate_up;
   int ntime           = gentimeinfo->ntime;
   int ibinary_opt     = cpopts->iread_coef_binary;
+  int cp_lsda         = cpopts->cp_lsda;
+  int cp_lda          = cpopts->cp_lda;
   int cp_norb_rot_kescal = cpopts->cp_norb_rot_kescal;
+  int cp_force_complex_psi = cpopts->cp_force_complex_psi;
   int ibinary_write_opt= cpopts->iwrite_coef_binary;
   int natm_tot        = (mdatoms->mdclatoms_info.natm_tot);
   int natm_nl         = (cppseudo->nonlocal.natm);
   int natm_typ        = cppseudo->natm_typ;
   int cp_grad_corr_on = cpopts->cp_gga;
 
-  int cp_lsda         = cpopts->cp_lsda;
-  int cp_lda          = cpopts->cp_lda;
-
-  int ncoef           = (cpewald->nktot_sm)+1;
   int fftopt          = gensimopts->fftopt;
   int iperd           = gencell->iperd;
+  int doublepack      = cpewald->doublepack;
+  int ncoef           = ( (doublepack==1) ? (cpewald->nktot_sm+1) : (cpewald->nktot_sm)); 
+  int nkpoint         = cpcoeffs_info->nkpoint;
   
   double vol          = gencell->vol;
   double dt           = gentimeinfo->dt;
@@ -99,16 +102,22 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
      EXIT(1);
    }//endif
 
+   if(cp_lda+cp_lsda!=1 || cp_lda<0 || cp_lsda<0 || cp_lda > 1 || cp_lsda>1){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("Messed up cp_lda or cp_lsda definitions %d %d\n",cp_lda,cp_lsda);
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+   }//endif
+
    int gen_wave=0;
    if(istart_typ_cp ==0){gen_wave=1;}
 
 //========================================================================
 
-   sim->doublepack     = 1;         //Dange for kpoints
    sim->ntemper        = ntemper;
    sim->pi_beads       = pi_beads;
    sim->nstates        = nstates;
-   sim->nkpoint        = 1;       // fixed in nkpoint version
+   sim->nkpoint        = nkpoint;
    sim->nspin          = (cp_lsda==1 ? 2 : 1); // up/dn independent or up/dn constrained
 
    sim->natm_typ       = natm_typ;
@@ -119,6 +128,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->vol            = vol;
 
    sim->iperd          = iperd;
+   sim->doublepack     = doublepack;
    sim->fftopt         = fftopt;
    sim->ncoef          = ncoef;
 
@@ -130,6 +140,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->cp_std         = cp_std;
    sim->cp_wave        = cp_wave;
    sim->cp_grad_corr_on= cp_grad_corr_on;
+   sim->cp_force_complex_psi = cp_force_complex_psi;
 
    if(cp_min_opt==0){
      sim->ntime          = ntime+1;
@@ -604,20 +615,31 @@ void PhysicsParamTransfer::fetch_state_kvecs(int *ka, int *kb, int *kc,
 //========================================================================
 
   if(doublePack==0){
-    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("Fix parainfoinit.C (fetch_state_kvecs) for k-points\n");
-    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-    EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("In the process of implementing k-points... hope it works!!\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
   }//endif
 
-  if(nktot+1!=ncoef){
+  if(nktot+1!=ncoef && doublePack==1){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("Internal error in parainfoinit(fetch_state_kvec) %d vs %d\n",nktot+1,ncoef);
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
   }//endif
 
-  setkvec3d_sm(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
+  if(nktot!=ncoef && doublePack==0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Internal error in parainfoinit(fetch_state_kvec) %d vs %d\n",nktot+1,ncoef);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
+
+  //RAZ: switched this from 0 to 1:
+  if (doublePack==1){
+    setkvec3d_sm(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
+  }else{
+    setkvec3d_sm_kpt(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
+  }//endif
 
 //========================================================================
   }//end routine

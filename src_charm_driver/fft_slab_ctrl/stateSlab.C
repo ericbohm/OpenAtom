@@ -20,7 +20,6 @@
 
 extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
 extern Config                    config;
-extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CkVec <CProxy_eesCache>           UeesCacheProxy;
 extern int nstates;
 extern int sizeX;
@@ -299,7 +298,7 @@ void GStateSlab::setKRange(int n, int *k_x, int *k_y, int *k_z){
   CkAssert(n == numPoints);
 
 //======================================================================
-// Find pts with k_x==0 then check the layout : kx=0 first
+// Find pts with k_x==0:
 
   int i;
   ihave_g000 = 0;
@@ -310,60 +309,75 @@ void GStateSlab::setKRange(int n, int *k_x, int *k_y, int *k_z){
   nkx0_red   = 0;
   nkx0_zero  = 0;
   kx0_strt   = 0;
-  for(i=0;i<numPoints;i++){
-    if(k_x[i]==0 && k_y[i]>0){nkx0_uni++;}
-    if(k_x[i]==0 && k_y[i]<0){nkx0_red++;}
-    if(k_x[i]==0 && k_y[i]==0 && k_z[i]>=0){nkx0_uni++;}
-    if(k_x[i]==0 && k_y[i]==0 && k_z[i]<0){nkx0_red++;}
-    if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){nkx0_zero++;ihave_g000=1;ind_g000=i;}
-    if(k_x[i]==0){
-      if(ihave_kx0==0){kx0_strt=i;}
-      ihave_kx0=1;
-      nkx0++;
-    }//endif
-  }//endif
-  kx0_end = kx0_strt + nkx0;
+  kx0_end    = 0;
 
-  if(kx0_strt!=0){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("kx=0 should be stored first | kx_srt !=0\n");
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkAbort("kx=0 should be stored first | kx_srt !=0\n");
+  if(config.doublePack){
+    for(i=0;i<numPoints;i++){
+      if(k_x[i]==0 && k_y[i]>0){nkx0_uni++;}
+      if(k_x[i]==0 && k_y[i]<0){nkx0_red++;}
+      if(k_x[i]==0 && k_y[i]==0 && k_z[i]>=0){nkx0_uni++;}
+      if(k_x[i]==0 && k_y[i]==0 && k_z[i]<0){nkx0_red++;}
+      if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){nkx0_zero++;ihave_g000=1;ind_g000=i;}
+      if(k_x[i]==0){
+        if(ihave_kx0==0){kx0_strt=i;}
+        ihave_kx0=1;
+        nkx0++;
+      }//endif
+    }//endfor
+    kx0_end = kx0_strt + nkx0;
+  }else{
+    for(int i=0;i<numPoints;i++){
+      if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){ihave_g000=1;ind_g000=i;}
+    }//endfor
   }//endif
+
+//======================================================================
+// Check the layout for doublePack case:  kx=0 first
+
+  if(config.doublePack){
+
+    if(kx0_strt!=0){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("kx=0 should be stored first | kx_srt !=0\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkAbort("kx=0 should be stored first | kx_srt !=0\n");
+    }//endif
   
-  if(nkx0!=nkx0_uni+nkx0_red){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Incorrect count of redundant guys\n");
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkAbort("Incorrect count of redundant guys\n");
+    if(nkx0!=nkx0_uni+nkx0_red){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Incorrect count of redundant guys\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkAbort("Incorrect count of redundant guys\n");
+    }//endif
+
+    for(i=0;i<nkx0;i++){  
+      if(k_x[i]!=0){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("kx should be stored consecutively and first\n");
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkAbort("kx should be stored consecutively and first\n");
+      }//endif
+    }//endif
+
+    for(i=0;i<nkx0_red;i++){  
+      if(k_y[i]>0 || (k_y[i]==0 && k_z[i]>=0)){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("ky <0 should be stored first\n");
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkAbort("ky <0 should be stored first\n");
+      }//endif
+    }//endfor
+
+    for(i=nkx0_red;i<nkx0_uni;i++){  
+      if(k_y[i]<0 || (k_y[i]==0 && k_z[i]<0)){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("ky <0 should be stored first\n");
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkAbort("ky <0 should be stored first\n");
+      }//endif
+    }//endfor
+
   }//endif
-
-  for(i=0;i<nkx0;i++){  
-    if(k_x[i]!=0){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("kx should be stored consecutively and first\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkAbort("kx should be stored consecutively and first\n");
-    }//endif
-  }//endif
-
-  for(i=0;i<nkx0_red;i++){  
-    if(k_y[i]>0 || (k_y[i]==0 && k_z[i]>=0)){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("ky <0 should be stored first\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkAbort("ky <0 should be stored first\n");
-    }//endif
-  }//endfor
-
-  for(i=nkx0_red;i<nkx0_uni;i++){  
-    if(k_y[i]<0 || (k_y[i]==0 && k_z[i]<0)){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("ky <0 should be stored first\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkAbort("ky <0 should be stored first\n");
-    }//endif
-  }//endfor
 
   packedRedPsi   = (complex *)fftw_malloc(nkx0*sizeof(complex));
   packedRedPsiV  = (complex *)fftw_malloc(nkx0*sizeof(complex));
@@ -402,16 +416,18 @@ void initRealStateSlab(RealStateSlab *rs, int ngrid_a,int ngrid_b, int ngrid_c,
 
    rs->thisState  = stateIndex;                // my state (I)
    rs->thisPlane  = planeIndex;                // my plane (z)
-   rs->nsize      = ngrid_a*ngrid_b;             // when fft is completed
-   rs->numPlanesToExpect = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
-   int rsize_a    = ngrid_a*(ngrid_b/2+1);
-   int rsize_b    = ngrid_b*(ngrid_a/2+1);
-   rs->rsize      = (rsize_a > rsize_b ? rsize_a : rsize_b);
-
-   if(config.doublePack)  {
-      rs->size = rs->rsize;
+   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+   rs->numPlanesToExpect = sim->nchareG;
+   if(config.doublePack){
+     int rsize_a    = ngrid_a*(ngrid_b/2+1);
+     int rsize_b    = ngrid_b*(ngrid_a/2+1);
+     rs->rsize      = (rsize_a > rsize_b ? rsize_a : rsize_b);
+     rs->nsize      = ngrid_a*ngrid_b;             // when fft is completed
+     rs->size = rs->rsize;
    }else{
-      rs->size = rs->nsize;
+     rs->rsize      = 2*ngrid_a*ngrid_b;
+     rs->nsize      = ngrid_a*ngrid_b;             // when fft is complete
+     rs->size       = rs->nsize;
    }//endif
 
    rs->planeArr  = (complex *) fftw_malloc(rs->size * sizeof(complex));

@@ -151,7 +151,7 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                         gensimopts,isurf_on);
 
 
-  assign_classes_int_data(mdclatoms_info,mdatom_maps,mdclatoms_pimd,
+   assign_classes_int_data(mdclatoms_info,mdatom_maps,mdclatoms_pimd,
                           mdbrnch_root,mdinteract,mdverlist,mdexcl,
                           mdnbr_list,mdconstrnt,mdghost_atoms,
                           cpatom_maps,cppseudo,mdtherm_info);
@@ -173,7 +173,17 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   hmat_cons_typ = gencell->hmat_cons_typ;
 
 //========================================================================
-// VI) Set up the ewald/cp: Done before setting intermol PE             
+// VI.a) Determine if user is performing a kpoint computation, set flags
+//       store kpoints, etc.
+
+  if(cp_on==1){
+    cpgen_wave->read_kpoints(cp_parse.kpt_file_name_set,cp_parse.kpt_file_name, 
+                             cp_parse.istart_cp);
+    free(cp_parse.kpt_file_name);
+  }//endif
+
+//========================================================================
+// VI.b) Set up the ewald/cp: Done before setting intermol PE             
 //                            CP/Ewald mallocing                          
 //                (interface/cp_ewald/control_set_cp_ewald                
 
@@ -208,7 +218,6 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
      }//endif : cp_on
   }//endif : charged periodic systems and/or CP
   genewald->ewald_on = ewald_on;
-
 
 //========================================================================
 //  VII) Setup intermolecular potential stuff: interspline mallocing      

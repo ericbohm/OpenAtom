@@ -43,7 +43,6 @@ extern CkVec <CProxy_CP_State_RealSpacePlane>    UrealSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
-extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
@@ -87,7 +86,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib,
 //============================================================================
 // Get parameters from the globals/groups
 
-    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim = CPcharmParaInfo::get();
 
     ngridcEext           = _ngridcEext;    // FFT sizes for rharteext
     ngrida               = sim->sizeX;     // FFT sizes for rho
@@ -374,12 +373,10 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
   }//endif
 #endif
   redCount++;
-  if(redCount==1)
-    {
-      RedMsg=msg;
-    }
-  else if(redCount<config.UberJmax)
-    {
+  if(redCount==1){
+    RedMsg=msg; // This guy is deleted in the next routine
+  }else{
+   if(redCount<=config.UberJmax){
       // there is one per k-point we'll sum them into the first
       // message we receive 
       double *indata=(double*) msg->getData();
@@ -388,15 +385,26 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
       for(int i=0;i<size ;i++)
 	outdata[i]+=indata[i];
       delete(msg);
-    }
-  if(redCount==config.UberJmax)
-    {
+   }//endif
+  }//endif
+
+  if(redCount==config.UberJmax){
       redCount=0;
       handleDensityReduction();
-    }
+  }//endif
 
-}
+//--------------------------------------------------------------------------
+   }//end routine
+//============================================================================
+
+
+//============================================================================
+//  Handle the memory cleanup and setting of flags when density has
+//  all arrived
+//============================================================================
 void CP_Rho_RealSpacePlane::handleDensityReduction() {
+//============================================================================
+
 #ifdef _CP_SUBSTEP_TIMING_
   if(rhoKeeperId>0){
       double rhostart=CmiWallTimer();
@@ -505,7 +513,7 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
 // Launch nonlocal g space if it wasn't done in RS
 //  Spread the launch over all the rhoRchares you can.
 
-  CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
 
   if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==1 && sim->natm_nl>0){ 
 
@@ -694,7 +702,7 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
 // Tell NLeesR its ok to compute its FFT. Otherwise we get no overlap
 //   Spread the launch over all the RhoR chares
 
-  CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
   if(sim->ees_nloc_on==1){ 
     CkAssert(rho_rs.sizeZ>=sim->ngrid_nloc_c);;
     if(thisIndex.x < sim->ngrid_nloc_c){
@@ -741,7 +749,7 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
 void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
 //============================================================================
 
-    CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
     int **listSubGx       = sim->listSubGx;
     int  *numSubGx        = sim->numSubGx;
 
@@ -949,7 +957,7 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
     sendPartlyFFTtoRhoGall();
   }//endif
 #else
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int **listSubGx = sim->listSubGx;
   int ic          = thisIndex.y;
   CkPrintf("%d %d : %d\n",thisIndex.x,thisIndex.y,myNplane_rho);
@@ -996,7 +1004,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 //============================================================================
 // Local pointers and variables
 
-    CPcharmParaInfo *sim        = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim        = CPcharmParaInfo::get();
     int nchareRhoG              = sim->nchareRhoG;
     int **tranpack_rho          = sim->index_tran_upack_rho;
     int *nlines_per_chareRhoG   = sim->nlines_per_chareRhoG;
@@ -1141,7 +1149,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoGall(){
 //============================================================================
 // Local pointers and variables
 
-    CPcharmParaInfo *sim        = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim        = CPcharmParaInfo::get();
     int nchareRhoG              = sim->nchareRhoG;
     int **tranpack_rho          = sim->index_tran_upack_rho;
     int *nlines_per_chareRhoG   = sim->nlines_per_chareRhoG;
@@ -1234,7 +1242,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
 //============================================================================
 // Unpack the message
 
-  CPcharmParaInfo *sim        = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim        = CPcharmParaInfo::get();
   int nchareG                 = sim->nchareRhoG;
   int **tranUnpack            = sim->index_tran_upack_rho;
   int *nlines_per_chareG      = sim->nlines_per_chareRhoG;
@@ -1390,7 +1398,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
 //============================================================================
 // Unpack the message
 
-  CPcharmParaInfo *sim        = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim        = CPcharmParaInfo::get();
   int nchareG                 = sim->nchareRhoG;
   int **tranUnpack            = sim->index_tran_upack_rho;
   int *nlines_per_chareG      = sim->nlines_per_chareRhoG;
@@ -1675,7 +1683,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
 void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
 //============================================================================
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int **listSubGx      = sim->listSubGx;
   int  *numSubGx       = sim->numSubGx;
 
@@ -2017,7 +2025,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 //============================================================================
 // Local Pointers
 
-  CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim   = CPcharmParaInfo::get();
   int nchareG            = sim->nchareRhoG;
   int **tranUnpack       = sim->index_tran_upack_rho;
   int *nlines_per_chareG = sim->nlines_per_chareRhoG;
@@ -2165,7 +2173,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
 //============================================================================
 // Local pointers
 
-  CPcharmParaInfo *sim        = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim        = CPcharmParaInfo::get();
   int nchareG                 = sim->nchareRhoG;
   int **tranUnpack            = sim->index_tran_upack_rho;
   int *nlines_per_chareG      = sim->nlines_per_chareRhoG;

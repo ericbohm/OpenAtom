@@ -32,7 +32,6 @@ extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CProxy_PhysScratchCache         pScratchProxy;
 extern CkVec <CProxy_AtomsCache>                   UatomsCacheProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
@@ -49,7 +48,8 @@ extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 eesCache::eesCache(int _nchareRPP, int _nchareGPP, int _nchareRHart,
-                   int _nchareGHart, int _nstates, int _nchareRhoG, UberCollection _thisInstance): thisInstance(_thisInstance)
+                   int _nchareGHart, int _nstates, int _nchareRhoG, int _nkpoint, 
+                   UberCollection _thisInstance): thisInstance(_thisInstance)
 //==============================================================================
    {//begin rotuine
 //==============================================================================
@@ -59,6 +59,7 @@ eesCache::eesCache(int _nchareRPP, int _nchareGPP, int _nchareRHart,
    rpp_on          = 0;
    nMallSize       = 100;
 
+   nkpoint         = _nkpoint;
    nchareRPP       = _nchareRPP;
    nchareGPP       = _nchareGPP;
    nchareRHart     = _nchareRHart;
@@ -142,7 +143,7 @@ void eesCache::registerCacheGPP  (int index, int ncoef, int *ka, int *kb, int *k
      nchareGPPProc          += 1;
      allowedGppChares[index] = 1;
      GppData[index] = new GPPDATA();
-     GppData[index]->init(index,ncoef,ka,kb,kc);
+     GppData[index]->init(nkpoint,index,ncoef,ka,kb,kc);
    }//endif
 
 }//end routine
@@ -201,7 +202,7 @@ void eesCache::registerCacheGSP(int is ,int ip){
     nchareGSPProc       += 1;
     allowedGspChares[ip] = 1;
     GspData[ip] = new GSPDATA();
-    GspData[ip]->init(ip);
+    GspData[ip]->init(ip,nkpoint);
   }//endif
 
   int i = nchareGSPProcT;
@@ -278,15 +279,16 @@ void RPPDATA::init(int index_in){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void GPPDATA::init(int index_in,int ncoef_in, int *ka, int *kb, int *kc){
+void GPPDATA::init(int nkpoint_in,int index_in,int ncoef_in, int *ka, int *kb, int *kc){
 
+  nkpoint  = nkpoint_in;
   index    = index_in;
   ncoef    = ncoef_in;
   b_re     = (double *)fftw_malloc((ncoef+1)*sizeof(double));
   b_im     = (double *)fftw_malloc((ncoef+1)*sizeof(double));
-  h_gspl   = (double *)fftw_malloc((ncoef+1)*sizeof(double));
-  ind_gspl = (int *)fftw_malloc((ncoef+1)*sizeof(int));
 
+  h_gspl    = cmall_mat(0,nkpoint,0,ncoef,"CPPDATA:init");
+  ind_gspl  = cmall_int_mat(0,nkpoint,0,ncoef,"CPPDATA:init");
 
   CPNONLOCAL::getEesPrms(&ngrid_a,&ngrid_b,&ngrid_c,&n_interp,&natm);
   CPNONLOCAL::eesSetEesWghtGgrp(ncoef,ka,kb,kc,b_re,b_im,ngrid_a,ngrid_b,ngrid_c,
@@ -478,10 +480,10 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void GSPDATA::init(int index_in){
+void GSPDATA::init(int index_in,int nkpoint_in){
 //==============================================================================
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
 
  //------------------------------------------------------------
  // Set the variables from the generic parainfo group
@@ -493,6 +495,7 @@ void GSPDATA::init(int index_in){
   ncoef    = sim->npts_per_chareG[index];  
   numLines = sim->nlines_per_chareG[index];
   numRuns  = 2*numLines;
+  nkpoint  = nkpoint_in;
 
  //------------------------------------------------------------
  // Set the runs from the generic group : 
@@ -512,14 +515,14 @@ void GSPDATA::init(int index_in){
  //------------------------------------------------------------
  // set the k-vectors
 
-  g  = (double *)fftw_malloc((ncoef+1)*sizeof(double));
-  g2 = (double *)fftw_malloc((ncoef+1)*sizeof(double));
   ka = (int *)fftw_malloc(ncoef*sizeof(int));
   kb = (int *)fftw_malloc(ncoef*sizeof(int));
   kc = (int *)fftw_malloc(ncoef*sizeof(int));
+  g2 = cmall_mat(0,nkpoint,0,ncoef,"eesCache.C");
+  g  = cmall_mat(0,nkpoint,0,ncoef,"eesCache.C");
 
-  CPNONLOCAL::genericSetKvector(ncoef,ka,kb,kc,g,g2,numRuns,runs,&gCharePkg,1,
-                                ngrid_a,ngrid_b,ngrid_c);
+  CPNONLOCAL::genericSetKvector(ncoef,ka,kb,kc,numRuns,runs,&gCharePkg,1,
+                                ngrid_a,ngrid_b,ngrid_c,g2,g);
 
  //------------------------------------------------------------
  // set the coef masses

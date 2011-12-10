@@ -654,7 +654,41 @@ values are placed in the file:
 
 \newpage
 %----------------------------------------------------------------
+\newpage
+%-------------------------------------------------------------------
+\subsection*{\bf \~{}sim\_temper\_def [10 keywords]}
+
+\begin{enumerate}
+
+ \vspace{0.15in} 
+ \item  $\backslash$num\{1\} : \\
+   Number of temperers
+
+ \vspace{0.15in} 
+ \item  $\backslash$ens\_opt\{nvt\} : \\
+   Ensemble in which you are tempering
+
+ \vspace{0.15in} 
+ \item  $\backslash$statept\_infile\{statepoint.list\} : \\
+   List of statepoints to be tempered.
+
+ \vspace{0.15in} 
+ \item  $\backslash$screen\_name\{screen.out\} : \\
+   Output name of any screen output for each temperer will be screen.out.\#
+
+ \vspace{0.15in} 
+ \item  $\backslash$switch\_steps\{1000\} : \\
+   Number of steps between switches
+
+ \vspace{0.15in} 
+ \item  $\backslash$output\_directory\{TEMPER\_OUT\} : \\
+   Output directory where files are stored.
+
+\end{enumerate}
+\newpage
+%-------------------------------------------------------------------
 %==================================================================
+
 
 
 %==================================================================
@@ -753,6 +787,16 @@ The following commands maybe specified in the system setup file:
  \vspace{0.15in} 
  \item  $\backslash$cp\_tau\_nhc\{25\} : \\
      Nose-Hoover Chain coupling time scale.
+
+ \vspace{0.15in} 
+ \item  $\backslash$num\_kpoint\{1\} : \\
+  Number of kpoints. If it is not set (default), code assumes gamma point.
+
+ \vspace{0.15in} 
+ \item  $\backslash$kpoint\_file\{pi\_md.kpts\} : \\
+ File where list of kpoints is stored. First line is number of kpoints followed
+by list of kpoints and weights each on a separate line (ka kb kc  wght) for a 
+file of nkpoint + 1 lines.
 
 \end{enumerate}
 

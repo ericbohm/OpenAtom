@@ -156,7 +156,7 @@ void calc_cutoff(int kmax_ewd, double *ecut,double *ecut_cp,int cp_on,
    if (cp_on == 1) {
      if (*ecut_cp * .5 < *ecut) {
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-	PRINTF("Ewald cutoff greater than cp cutoff %g vs %g \n",
+       PRINTF("Ewald cutoff greater than cp cutoff %g vs %g \n",
                                      (*ecut)*2.,*ecut_cp);
         PRINTF("Therefore, you must lower the maximum k-vector\n");
         PRINTF("required by your Ewald sum, perhaps change alp_ewd\n");
@@ -303,39 +303,39 @@ void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik,
       akb = (double) kb;
       kcmin = -kmaxv[3];
       if (ka == 0 && kb == 0) {
-	kcmin = 1;
+       kcmin = 1;
       }
       for (i = kcmin; i <= 0; ++i) {
-	akc = (double) i;
-	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
-	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme <= ecut * 4.) {break;}
+       akc = (double) i;
+       xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+       tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme <= ecut * 4.) {break;}
       }
 /*********************************/
 
       kcmin = i;
       for (i = 1; i <= kmaxv[3]; ++i) {
-	akc = (double) i;
-	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
-	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme > ecut * 4.) {break;}
+       akc = (double) i;
+       xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+       tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme > ecut * 4.) {break;}
       }//endfor : kc
 
       kcmax = i - 1;
       akc = (double) kcmin;
       for (kc = kcmin; kc <= kcmax; ++kc) {
-	akc = (double) kc;
-	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+       akc = (double) kc;
+       xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
         g  = sqrt(xk * xk + yk * yk + zk * zk);
         gmin_spl[0] = MIN(gmin_spl[0],g);
         gmax_spl[0] = MAX(gmax_spl[0],g);
-	++icount;
+       ++icount;
       }//endfor : kc
 
     }//endfor : kb
@@ -362,7 +362,7 @@ void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik,
 /*==========================================================================*/
 
 void setkvec3d(int nktot,double ecut,int *kmaxv,double *hmatik,
-		int *kastore, int *kbstore, int *kcstore, 
+              int *kastore, int *kbstore, int *kcstore, 
                 int *ibreak1, int *ibreak2, int cp_on, 
                 double *gmin_spl, double *gmin_true,double *gmax_spl)
 
@@ -402,29 +402,29 @@ void setkvec3d(int nktot,double ecut,int *kmaxv,double *hmatik,
       aka = (double) ka;
       kbmin = -kmaxv[2];
       if (ka == 0) {
-	kbmin = 0;
+       kbmin = 0;
       }
       for (i = kbmin; i <= 0; ++i) {
-	akb = (double) i;
-	xk = (aka * hmatik[1] + akb * hmatik[2]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8]) * tpi;
-	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme <= ecut * 4.) {
-	  break;
-	}
+       akb = (double) i;
+       xk = (aka * hmatik[1] + akb * hmatik[2]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8]) * tpi;
+       tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme <= ecut * 4.) {
+         break;
+       }
       }
       kbmin = i;
       i2 = kmaxv[2];
       for (i = 1; i <= i2; ++i) {
-	akb = (double) i;
-	xk = (aka * hmatik[1] + akb * hmatik[2]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8]) * tpi;
-	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme > ecut * 4.) {
-	  break;
-	}
+       akb = (double) i;
+       xk = (aka * hmatik[1] + akb * hmatik[2]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8]) * tpi;
+       tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme > ecut * 4.) {
+         break;
+       }
       }
 
 /*=============================*/
@@ -432,59 +432,59 @@ void setkvec3d(int nktot,double ecut,int *kmaxv,double *hmatik,
       kbmax = i - 1;
       i2 = kbmax;
       for (kb = kbmin; kb <= i2; ++kb) {
-	akb = (double) kb;
-	kcmin = -kmaxv[3];
-	if (ka == 0 && kb == 0) {
-	  kcmin = 1;
-	}
-	for (i = kcmin; i <= 0; ++i) {
-	  akc = (double) i;
-	  xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	  yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	  zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
-	  tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	  if (tryme <= ecut * 4.) {
-	    break;
-	  }
-	}
+       akb = (double) kb;
+       kcmin = -kmaxv[3];
+       if (ka == 0 && kb == 0) {
+         kcmin = 1;
+       }
+       for (i = kcmin; i <= 0; ++i) {
+         akc = (double) i;
+         xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+         yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+         zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+         tryme = (xk * xk + yk * yk + zk * zk) * .5;
+         if (tryme <= ecut * 4.) {
+           break;
+         }
+       }
 
 /*=============================*/
 
-	kcmin = i;
-	i3 = kmaxv[3];
-	for (i = 1; i <= i3; ++i) {
-	  akc = (double) i;
-	  xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	  yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	  zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
-	  tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	  if (tryme > ecut * 4.) {
-	    break;
-	  }
-	}
-	kcmax = i - 1;
-	i3 = kcmax;
-	for (kc = kcmin; kc <= i3; ++kc) {
-	  ++icount;
-	  aka = (double) ka;
-	  akb = (double) kb;
-	  akc = (double) kc;
-	  xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	  yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	  zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
-	  kastore[icount] = ka;
-	  kbstore[icount] = kb;
-	  kcstore[icount] = kc;
-	  tryme = sqrt(xk * xk + yk * yk + zk * zk);
-	  (*gmin_spl) = MIN(tryme,(*gmin_spl));
-	  (*gmax_spl) = MAX(tryme,(*gmax_spl));
-	  if (kc == kcmin) {
-	    ibreak1[icount] = 1;
-	  }
-	  if (kc < kcmax) {
-	    ibreak2[icount] = 1;
-	  }
-	}
+       kcmin = i;
+       i3 = kmaxv[3];
+       for (i = 1; i <= i3; ++i) {
+         akc = (double) i;
+         xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+         yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+         zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+         tryme = (xk * xk + yk * yk + zk * zk) * .5;
+         if (tryme > ecut * 4.) {
+           break;
+         }
+       }
+       kcmax = i - 1;
+       i3 = kcmax;
+       for (kc = kcmin; kc <= i3; ++kc) {
+         ++icount;
+         aka = (double) ka;
+         akb = (double) kb;
+         akc = (double) kc;
+         xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+         yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+         zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+         kastore[icount] = ka;
+         kbstore[icount] = kb;
+         kcstore[icount] = kc;
+         tryme = sqrt(xk * xk + yk * yk + zk * zk);
+         (*gmin_spl) = MIN(tryme,(*gmin_spl));
+         (*gmax_spl) = MAX(tryme,(*gmax_spl));
+         if (kc == kcmin) {
+           ibreak1[icount] = 1;
+         }
+         if (kc < kcmax) {
+           ibreak2[icount] = 1;
+         }
+       }
       }
     }
     if(nktot!=icount){
@@ -522,7 +522,7 @@ void setkvec3d(int nktot,double ecut,int *kmaxv,double *hmatik,
 
 void setkvec3d_sm(int nktot,double ecut,int *kmax_cp,double *hmatik,
                   int *kastore, int *kbstore, int *kcstore, 
-		  int *ibreak1, int *ibreak2, double *gmin, double *gmax, 
+                int *ibreak1, int *ibreak2, double *gmin, double *gmax, 
                   int iopt)
 
 /*==========================================================================*/
@@ -581,7 +581,7 @@ void setkvec3d_sm(int nktot,double ecut,int *kmax_cp,double *hmatik,
       zk = (aka * hmatik[7] + akb * hmatik[8]) * tpi;
       tryme = (xk * xk + yk * yk + zk * zk) * .5;
       if (tryme <= ecut) {
-	break;
+       break;
       }
     }
     kbmin = i;
@@ -593,7 +593,7 @@ void setkvec3d_sm(int nktot,double ecut,int *kmax_cp,double *hmatik,
       zk = (aka * hmatik[7] + akb * hmatik[8]) * tpi;
       tryme = (xk * xk + yk * yk + zk * zk) * .5;
       if (tryme > ecut) {
-	break;
+       break;
       }
     }
 
@@ -603,50 +603,50 @@ void setkvec3d_sm(int nktot,double ecut,int *kmax_cp,double *hmatik,
       akb = (double) kb;
       kcmin = -kmax_cp[3];
       if (ka == 0 && kb == 0) {
-	kcmin = 1;
+       kcmin = 1;
       }
       for (i = kcmin; i <= 0; ++i) {
-	akc = (double) i;
-	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
-	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme <= ecut) {
-	  break;
-	}
+       akc = (double) i;
+       xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+       tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme <= ecut) {
+         break;
+       }
       }
       
       kcmin = i;
       i3 = kmax_cp[3];
       for (i = 1; i <= i3; ++i) {
-	akc = (double) i;
-	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
-	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme > ecut) {
-	  break;
-	}
+       akc = (double) i;
+       xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+       tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme > ecut) {
+         break;
+       }
       }
       
       kcmax = i - 1;
       i3 = kcmax;
       for (kc = kcmin; kc <= i3; ++kc) {
-	++icount;
-	aka = (double) ka;
-	akb = (double) kb;
-	akc = (double) kc;
-	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+       ++icount;
+       aka = (double) ka;
+       akb = (double) kb;
+       akc = (double) kc;
+       xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
         g  = sqrt(xk*xk+yk*yk+zk*zk);
         *gmin = MIN(*gmin,g);
         *gmax = MAX(*gmax,g);
-	kastore[icount] = ka;
-	kbstore[icount] = kb;
-	kcstore[icount] = kc;
-	if (kc == kcmin && iopt==1) {ibreak1[icount] = 1;}
-	if (kc < kcmax  && iopt==1) {ibreak2[icount] = 1;}
+       kastore[icount] = ka;
+       kbstore[icount] = kb;
+       kcstore[icount] = kc;
+       if (kc == kcmin && iopt==1) {ibreak1[icount] = 1;}
+       if (kc < kcmax  && iopt==1) {ibreak2[icount] = 1;}
       }//endfor:kc
     }//endfor:kb
   }//endfor:ka
@@ -680,8 +680,8 @@ void setkvec3d_sm(int nktot,double ecut,int *kmax_cp,double *hmatik,
 /*==========================================================================*/
 
 void setkvec3d_res(int kmax_res, double *hmatik, 
-		  int *kastore, int *kbstore, int *kcstore, int *ibreak3, 
-		  int nktot, int nktot_res)
+                int *kastore, int *kbstore, int *kcstore, int *ibreak3, 
+                int nktot, int nktot_res)
 
 /*==========================================================================*/
 /*       Begin routine */
@@ -888,39 +888,39 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik ,
       akb = (double) kb;
       kcmin = -kmax_cp[3];
       if (ka == 0 && kb == 0) {
-	kcmin = 1;
+       kcmin = 1;
       }
       for (i = kcmin; i <= 0; ++i) {
-	akc = (double) i;
-	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
-	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme <= ecut) {break;}
+       akc = (double) i;
+       xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+       tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme <= ecut) {break;}
       }
 
       kcmin = i;
       i3 = kmax_cp[3];
       for (i = 1; i <= i3; ++i) {
-	akc = (double) i;
-	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
-	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme > ecut) {break;}
+       akc = (double) i;
+       xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+       tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme > ecut) {break;}
       }
 
       kcmax = i - 1;
       i3 = kcmax;
       for (kc = kcmin; kc <= i3; ++kc) {
-	akc = (double) kc;
-	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
-	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
-	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+       akc = (double) kc;
+       xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
         g  = sqrt(xk * xk + yk * yk + zk * zk);
         gmin[0] = MIN(gmin[0],g);
         gmax[0] = MAX(gmax[0],g);
-	++icount;
+       ++icount;
       }
     }
   }
@@ -936,12 +936,12 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik ,
       kcmin = -kmax_cp[3];
       if(ka==0&&kb==0){kcmin=1;}
       for(kc=kcmin;kc<=kmax_cp[3];kc++){
-	akc = (double) kc;
+       akc = (double) kc;
         xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
         yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
         zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
-	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme <= ecut) {icount++;}
+       tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme <= ecut) {icount++;}
       }//endfor
     }//endfor
   }//endfor
@@ -953,6 +953,128 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik ,
 /*==========================================================================*/
 
 
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+/* Set the k vectors on small grid without removing half*/
+/*==========================================================================*/
+
+void setkvec3d_sm_kpt(int nktot,double ecut,int *kmax_cp,double *hmatik,
+                  int *kastore, int *kbstore, int *kcstore, 
+                  int *ibreak1, int *ibreak2, double *gmin, double *gmax, 
+                  int iopt)
+
+/*==========================================================================*/
+/*       Begin routine */
+{/*begin routine */
+/*==========================================================================*/
+/* Local variables */
+
+  int i1, i2, i3;
+  int i, kbmin, kcmin, kbmax, kcmax, kamax, ka, kb, kc;
+  double xk, yk, zk;
+  int icount;
+  double aka, akb, akc,g;
+  double tpi, tryme;
+
+/*==========================================================================*/
+
+  tpi = M_PI * 2.;
+  gmin[0] = 1.0e10;
+  gmax[0] = 0.0;
+
+  icount = 0;
+  for(ka=-kmax_cp[1];ka<=kmax_cp[1];ka++){
+    aka = (double) ka;
+    for(kb=-kmax_cp[2];kb<=kmax_cp[2];kb++){
+      akb = (double) kb;
+      for(kc=-kmax_cp[3];kc<=kmax_cp[3];kc++){
+        akc = (double) kc;
+        xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+        yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+        zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+        g  = sqrt(xk * xk + yk * yk + zk * zk);
+        tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme <= ecut){
+         icount++;
+         kastore[icount] = ka;
+         kbstore[icount] = kb;
+         kcstore[icount] = kc;
+         if (kc == -kmax_cp[3] && iopt==1) {ibreak1[icount] = 1;}
+         if (kc < kmax_cp[3] && iopt==1)   {ibreak2[icount] = 1;}
+        }//endif
+      }//endfor
+    }//endfor
+  }//endfor
+
+  // we don't exclude k=0 anymore so these are the same
+  if (icount != nktot){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Incorrect number of small kvectors\n");
+    PRINTF("%d vs %d\n",icount,nktot);
+    PRINTF("Contact technical support\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
+  }//endif
+
+/*--------------------------------------------------------------------------*/
+  } /* setkvec3d_sm_kpt */
+/*==========================================================================*
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+/* Count number of k vectors on small grid without removing half*/
+/*==========================================================================*/
+
+void countkvec3d_sm_kpt(int *nktot, double ecut, int *kmax_cp, double *hmatik ,
+                        double *gmin, double *gmax)
+
+/*==========================================================================*/
+/*       Begin routine */
+{/*begin routine */
+/*==========================================================================*/
+/* Local variables */
+
+  int i1, i2, i3;
+  int i, kbmin, kcmin, kbmax, kcmax, kamax, ka, kb, kc;
+  double xk, yk, zk;
+  int icount;
+  double aka, akb, akc,g;
+  double tpi, tryme;
+
+/*==========================================================================*/
+
+  tpi = M_PI * 2.;
+  gmin[0] = 1.0e10;
+  gmax[0] = 0.0;
+
+  icount = 0;
+  for(ka=-kmax_cp[1];ka<=kmax_cp[1];ka++){
+    aka = (double) ka;
+    for(kb=-kmax_cp[2];kb<=kmax_cp[2];kb++){
+      akb = (double) kb;
+      for(kc=-kmax_cp[3];kc<=kmax_cp[3];kc++){
+       akc = (double) kc;
+       xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+       yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+       zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+       g  = sqrt(xk * xk + yk * yk + zk * zk);
+       gmin[0] = MIN(gmin[0],g);
+       gmax[0] = MAX(gmax[0],g);
+       tryme = (xk * xk + yk * yk + zk * zk) * .5;
+       if (tryme <= ecut) {icount++;}
+      }//endfor
+    }//endfor
+  }//endfor
+
+  nktot[0]=icount;
+  PRINTF("Small kvector counts : %d versus %d (does not exclude k=0)\n",nktot[0],icount);
+
+/*--------------------------------------------------------------------------*/
+  } /* countkvec3d_sm_kpt */
+/*==========================================================================*
 
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/

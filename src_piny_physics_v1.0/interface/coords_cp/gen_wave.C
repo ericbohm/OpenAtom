@@ -446,7 +446,7 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_in
 //========================================================================
 void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
 		            int gSpaceSize,int state_ind_m1,complex *gspace_coefs,
-                            double *xfull, double *yfull, double *zfull)
+                            double *xfull, double *yfull, double *zfull, int kpoint_ind)
 //========================================================================
    {//begin routine
 //========================================================================
@@ -470,6 +470,14 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
   double psi_r[21],psi_i[21];
   double ylmr[21],ylmi[21];
 
+
+  int nkpoint        = cpewald->nkpoint;
+  int doublePack     = cpewald->doublepack;
+
+  double akpoint =   cpewald->akpoint[kpoint_ind+1];
+  double bkpoint =   cpewald->bkpoint[kpoint_ind+1];
+  double ckpoint =   cpewald->ckpoint[kpoint_ind+1];
+
   if(nab_initio_g!=nab_initio){
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      PRINTF("GenWave :  bad number of ab initio atoms %d %d\n",
@@ -479,6 +487,7 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
   }//endif
 
 //----------------------------------------------------------------------
+
   double *cp_box_center     =  gencell->cp_box_center;
   double *cp_box_center_rel =  gencell->cp_box_center_rel;
   double *hmat              =  gencell->hmat_cp;
@@ -552,6 +561,7 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
 //-------------------------------------------------------------------------
 // get g vectors                                                           
 
+    k_x[i] += akpoint; k_y[i] += bkpoint; k_z[i] += ckpoint;
     double gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
     double gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
     double gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
@@ -671,12 +681,16 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
     gspace_coefs[i].re = helr*psi_r[is] - heli*psi_i[is];
     gspace_coefs[i].im = heli*psi_r[is] + helr*psi_i[is];
 
-    double wght = 2.0;
-    if(k_x[i]==0)wght=1.0;
+    double wght = 1.0;
+    if(doublePack==1){
+      wght = 2.0;
+      if(k_x[i]==0)wght=1.0;
+    }//endif
     anorm += (gspace_coefs[i].re*gspace_coefs[i].re+
               gspace_coefs[i].im*gspace_coefs[i].im)*wght;
-    if(i%30==0)
-      CmiNetworkProgress();
+    if(i%30==0)  CmiNetworkProgress();
+
+    k_x[i] -= akpoint; k_y[i] -= bkpoint; k_z[i] -= ckpoint;
   }//endfor:gSpaceSize
 
 //=========================================================================
@@ -1178,3 +1192,284 @@ void GEN_WAVE::read_occupation_numbers(double *occ_up,double *occ_dn,
 //--------------------------------------------------------------------------
  }//end routine
 //==========================================================================
+
+
+//=========================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//=========================================================================
+
+void GEN_WAVE::read_kpoints(int kpt_file_name_set,char *kpt_fname, int istart)
+              
+/*==========================================================================*/
+  {/*begin routine */
+/*==========================================================================*/
+/*               Local variable declarations                                */
+
+  CP           *cp           = CP::get();
+
+  int i,j;
+  double sum,max_val;
+
+/* Local pointers */
+
+  int cp_force_complex_psi= cp->cpopts.cp_force_complex_psi;
+  int cp_allow_dup_kpts   = cp->cpopts.cp_allow_dup_kpts;
+  int cp_dual_grid_opt_on = cp->cpopts.cp_dual_grid_opt;
+  int nkpoint             = cp->cpcoeffs_info.nkpoint;
+  int nkpoint_wave        = cp->cpcoeffs_info.nkpoint_wave;
+
+ /* ALL assigned after input and/or dynamic memory allocation */
+   int igamma_kpt_ind;
+   int nkpoint_now;
+   int doublepack;
+   double *akpoint;
+   double *bkpoint;
+   double *ckpoint;
+   double *wght_kpt;
+   double *wght_kpt_2;
+   int    *igamma_kpt;  /* 4 copies one for each structure */
+   int    *igamma_kpt_1;
+   int    *igamma_kpt_2;
+
+   FILE *fp_kpt;
+
+/*==========================================================================*/
+/*  I) Reading in occupation numbers                                        */
+
+   PRINTF("Setting up the kpoints:\n");
+   if(kpt_file_name_set==1){
+     PRINTF("Reading in the kpoints from data base file %s\n",kpt_fname);
+     fp_kpt=cfopen((const char *) kpt_fname,"r");
+
+     fscanf(fp_kpt,"%d",&nkpoint_now); 
+     readtoendofline(fp_kpt);
+
+     if(nkpoint_now!=nkpoint){
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+       PRINTF("Number of kpoints in file %s\n",kpt_fname);
+       PRINTF("not equal to the number specified in wave_function_def\n");
+       PRINTF(" %d found versus %d expected \n",nkpoint,nkpoint_now);
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+       fflush(stdout);EXIT(1);
+     }/*endif*/
+     if( (nkpoint_wave<=0) && (istart >= 1)){
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+       PRINTF("Number of kpoint wave functions specified\n");
+       PRINTF("must be greater than or equal to one for restart_pos\n");
+       PRINTF("or initial. Only %d found, at least 1 required\n",nkpoint_wave);
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+       fflush(stdout);EXIT(1);
+     }/*endif*/
+     if( (nkpoint_wave!=nkpoint) && (istart >= 3)){
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("Number of kpoint wave functions specified\n");
+        PRINTF("not equal to the number required for restart types\n");
+        PRINTF("restart_posvel or restart_all (restart_pos/initial only).\n");
+        PRINTF("%d found versus %d required \n",nkpoint_wave,nkpoint);
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        fflush(stdout);EXIT(1);
+     }/*endif*/
+     if( (nkpoint_wave> nkpoint) && (istart >= 1)){
+       PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");
+       PRINTF("Number of kpoint wave functions specified\n");
+       PRINTF("is greater than the number of k-points read in.\n");
+       PRINTF("%d wave functions versus %d kpoints.\n",nkpoint_wave,nkpoint);
+       PRINTF("The code will trim off the excess for you BUT \n");
+       PRINTF("Are you certain this is what you would like to do?\n");
+       PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");
+     }/*endif*/
+   }//endif : there is a kpoint file
+
+   akpoint  = (double *)cmalloc(nkpoint*sizeof(double),"read_coef_fetch_kpoints")-1;
+   bkpoint  = (double *)cmalloc(nkpoint*sizeof(double),"read_coef_fetch_kpoints")-1;
+   ckpoint  = (double *)cmalloc(nkpoint*sizeof(double),"read_coef_fetch_kpoints")-1;
+   wght_kpt = (double *)cmalloc(nkpoint*sizeof(double),"read_coef_fetch_kpoints")-1;
+
+   if(kpt_file_name_set==1){
+     for(i=1;i<=nkpoint;i++){
+        fscanf(fp_kpt,"%lf %lf %lf %lf",&akpoint[i],&bkpoint[i],&ckpoint[i],
+                                           &wght_kpt[i]);
+        readtoendofline(fp_kpt);
+     }/*endfor*/
+     fclose(fp_kpt);
+   }else{
+     akpoint[1]  = 0.0; bkpoint[1] = 0.0; ckpoint[1] = 0.0;
+     wght_kpt[1] = 1.0;
+   }//endif : we stick you at the Gamma point
+
+/*==========================================================================*/
+/* III) Check the k-points for range and uniqueness                         */
+
+    if(nkpoint==0){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("You must have at least one k-point!\n");
+      PRINTF("Even the Gamma point if thats what you want\n");
+      PRINTF("must be specified in the input. Sorry! \n");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      fflush(stdout);EXIT(1);
+    }/*endif*/
+
+    max_val = 0.0;
+    for(i=1;i<=nkpoint;i++){
+      max_val = MAX(max_val,fabs(akpoint[i]));
+      max_val = MAX(max_val,fabs(bkpoint[i]));
+      max_val = MAX(max_val,fabs(ckpoint[i]));
+    }/*endif*/
+
+    for(i=1;i<=nkpoint;i++){
+        if((akpoint[i]> 1.0) || (akpoint[i] < -1.0) ||
+           (bkpoint[i]> 1.0) || (bkpoint[i] < -1.0) ||
+           (ckpoint[i]> 1.0) || (ckpoint[i] < -1.0)){
+           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+           PRINTF("The k-points must be between -1 and 1 \n");
+           PRINTF("The %dth k-point is %g %g %g\n",i,akpoint[i],bkpoint[i],ckpoint[i]);
+           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+         fflush(stdout);EXIT(1);
+       }/*endif*/
+       if(wght_kpt[i]<=0.0){
+           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+           PRINTF("The k-point weights must be >= 0 \n");
+           PRINTF("The %dth k-point weight is %g\n",i,wght_kpt[i]);
+           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+           fflush(stdout);EXIT(1);
+      }/*endif*/
+
+    }/*endfor : kpoint*/
+
+    for(i=1;i<=nkpoint-1;i++){
+     for(j=i+1;j<=nkpoint;j++){
+      if((akpoint[i]==akpoint[j])&&
+         (bkpoint[i]==bkpoint[j])&&
+         (ckpoint[i]==ckpoint[j])){
+  	  if(cp_allow_dup_kpts==0){
+            PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+            PRINTF("The k-points should be all be different \n");
+            PRINTF("The %dth k-point is the same as the %dth\n",i,j);
+            PRINTF("(%g %g %g) versus (%g %g %g)\n",akpoint[i],bkpoint[i],ckpoint[i],
+                                                    akpoint[j],bkpoint[j],ckpoint[j]);
+            PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+            fflush(stdout);
+            EXIT(1);
+	  }else{
+            PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");
+            PRINTF("The k-points should be all be different \n");
+            PRINTF("The %dth k-point is the same as the %dth\n",i,j);
+            PRINTF("(%g %g %g) versus (%g %g %g)\n",akpoint[i],bkpoint[i],ckpoint[i],
+                                                    akpoint[j],bkpoint[j],ckpoint[j]);
+            PRINTF("You have set cp_allow_duplicate_kpts{on} to permit this case.\n");
+            PRINTF("Are you debugging????\n");
+            PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");
+            fflush(stdout);
+	  }//endif
+       }/*endif*/
+      }/*endfor*/
+     }/*endfor*/
+
+/*==========================================================================*/
+/* III) Locate the gamma point if it exists : make 4 arrays for 4 structures */
+
+  igamma_kpt   = (int *)cmalloc(nkpoint*sizeof(int),"read_coef_fetch_kpoints")-1;
+ 
+  igamma_kpt_ind = 0;
+  for(i=1;i<=nkpoint;i++){
+    igamma_kpt[i] = 0;
+    if((akpoint[i]==0.0)&&(bkpoint[i]==0.0)&&(ckpoint[i]==0.0)){
+      igamma_kpt[i] = 1;
+      igamma_kpt_ind = i;
+    }/*endif*/
+  }/*endfor*/
+
+  if(igamma_kpt_ind != 0 && nkpoint==1){doublepack = 1;}  // we have the gamma point
+  if(cp_force_complex_psi==1 && doublepack==1){
+    doublepack=0;
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("In gen_wave.C, the KS states are forced to be complex\n");
+    PRINTF("at the Gamma point. Are you debugging??? \n");
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n\n");
+    fflush(stdout);
+  }//endif
+
+  if(doublepack==0 && cp->cppseudo.ees_nonloc_on==0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("This code only supports the EES nonlocal method with kpoints.\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    fflush(stdout);
+    EXIT(1);
+  }//endif
+
+#ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+  if(doublepack==1){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("You are trying to perform a Gamma point run with the kpt PC.\n");   
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    fflush(stdout); EXIT(1);
+  }//endif
+#else
+  if(doublepack==0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("You are trying to perform a Kpt point run with the Gamma Pt PC\n");   
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    fflush(stdout); EXIT(1);
+  }//endif
+#endif
+
+  igamma_kpt_1 = (int *)cmalloc(nkpoint*sizeof(int),"read_coef_fetch_kpoints")-1;
+  igamma_kpt_2 = (int *)cmalloc(nkpoint*sizeof(int),"read_coef_fetch_kpoints")-1;
+  for(i=1;i<=nkpoint;i++){
+    igamma_kpt_1[i] = igamma_kpt[i];
+    igamma_kpt_2[i] = igamma_kpt[i];
+  }/*endif*/
+
+  if(cp_dual_grid_opt_on>0){
+    if(nkpoint>1 || igamma_kpt[1]!=0){
+         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+         PRINTF("No dual gridding with k points \n");
+         PRINTF("You have broken the symmetry\n");
+         PRINTF("You must work at the gamma point nkpoint=1\n");
+         PRINTF("and (0,0,0) not %d (%g %g %g)\n",nkpoint,
+             akpoint[1],bkpoint[1],ckpoint[1]);
+         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+       fflush(stdout);EXIT(1);
+    }/*endif*/
+  }/*endif*/
+
+/*==========================================================================*/
+/*  IV) Normalize the weights and make another copy                         */
+
+  sum = 0.0;
+  for(i=1;i<=nkpoint;i++){ 
+    sum += wght_kpt[i];
+  }/*endfor*/
+  for(i=1;i<=nkpoint;i++){ 
+    wght_kpt[i] = wght_kpt[i]/sum;
+  }/*endfor*/
+
+  wght_kpt_2 = (double *)cmalloc(nkpoint*sizeof(double),"read_coef_fetch_kpoints")-1;
+  for(i=1;i<=nkpoint;i++){ 
+    wght_kpt_2[i] = wght_kpt[i];
+  }/*endfor*/
+
+/*=================================================================================*/
+/* V) Put the variables into the structures : Some multiple copies for ease of use */
+
+   cp->cpewald.nkpoint              = nkpoint;
+
+   cp->cpcoeffs_info.igamma_kpt     = igamma_kpt;
+   cp->cpewald.igamma_kpt           = igamma_kpt_2;
+
+   cp->cpcoeffs_info.igamma_kpt_ind = igamma_kpt_ind;
+   cp->cpewald.igamma_kpt_ind       = igamma_kpt_ind;
+
+   cp->cpewald.akpoint = akpoint;
+   cp->cpewald.bkpoint = bkpoint;
+   cp->cpewald.ckpoint = ckpoint;
+
+   cp->cpcoeffs_info.wght_kpt = wght_kpt;
+   cp->cpewald.wght_kpt       = wght_kpt_2;
+
+   cp->cpcoeffs_info.doublepack = doublepack;
+   cp->cpewald.doublepack       = doublepack;
+
+/*-----------------------------------------------------------------------*/
+  }/* end routine */
+/*==========================================================================*/

@@ -94,7 +94,6 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		/// Pointer to the ParticlePlane object that I am driving (controlling) 
 		CP_State_ParticlePlane *myParticlePlaneObj;
 		/// A handle to the local copy of the config parameters (refresh on migration)
-		CPcharmParaInfo *paraInfo; 
 		
 	private:
 		/// A marker tying this class to a particular instance of interacting chares

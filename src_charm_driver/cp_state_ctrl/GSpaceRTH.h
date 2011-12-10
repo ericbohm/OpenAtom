@@ -15,8 +15,9 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
         /// (I) Compute the forces and coef evolution code block
         //===========================================================================
         
-        /// If this is minimization (& gen_wave?) OR if this is not the first step
-        if( (c->paraInfo->cp_min_opt==1 && c->paraInfo->gen_wave==0) || c->isFirstStep==false)
+        /// If this is minimization (& gen_wave?) OR if this is not
+        /// the first step
+        if( (CPcharmParaInfo::get()->cp_min_opt==1 && CPcharmParaInfo::get()->gen_wave==0) || c->isFirstStep==false)
         {
             c->isEnergyReductionDone = false;
             c->isAtomIntegrationDone = false;
@@ -29,7 +30,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
                 /// (B) If nonlocal energy computations are allowed, start SF/computeZ of NL forces.
                 #ifndef _CP_DEBUG_SFNL_OFF_
                     /// If EES is turned off, trigger nonlocal computations
-                    if (c->ees_nonlocal==0 && c->paraInfo->natm_nl!=0){
+                    if (c->ees_nonlocal==0 && CPcharmParaInfo::get()->natm_nl!=0){
                         /// Launch the structure factor and the Z matrix computations
                         c->releaseSFComputeZ();
                         /// If NL computations have been barriered, then wait (GSpaceDriver::doneNLForces or GSpaceDriver::allDoneNLForces resumes)
@@ -58,7 +59,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
                     /// If nonlocals are turned on, 
                     #ifndef _CP_DEBUG_SFNL_OFF_
                         /// If ees methods are turned on, then trigger the ees computations
-                        if(c->ees_nonlocal==1 && c->paraInfo->natm_nl!=0)
+                        if(c->ees_nonlocal==1 && CPcharmParaInfo::get()->natm_nl!=0)
                             c->startNonLocalEes(c->myGSpaceObj->iteration);
                     #endif
                     /// Even if we're not doing the FFT loop, just set the flag to fool ourselves if/when we check later
@@ -83,7 +84,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
             /// (G) Add contraint forces (rotate forces to non-orthogonal frame)
             #ifndef _CP_DEBUG_PSI_OFF_  // you are moving everything
                 /// Reset ParticlePlane's flag to false
-	      if(c->paraInfo->natm_nl!=0)c->areNLForcesDone = false;
+	      if(CPcharmParaInfo::get()->natm_nl!=0)c->areNLForcesDone = false;
                 c->myGSpaceObj->sendLambda();
                 #ifndef _CP_DEBUG_ORTHO_OFF_
                     RTH_Suspend(); // wait for forces to be fixed up  
@@ -95,8 +96,8 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
                 RTH_Suspend(); // wait for cg reduction : psiCgOvlap resumes
                 //------------------------------------------------------------------------
                 /// (I) If user wants state output, and this is dynamics (>2nd iteration, as nothing moves in dynamics iter 1) ... then write the states to file at the correct intervals or at the end of the simulation. Then wait for the data reduction and writes to finish (GSpaceDriver::allDoneWritingPsi resumes)
-                if (config.stateOutput==1 && c->paraInfo->cp_min_opt==0 && c->myGSpaceObj->iteration>1)
-                    if ( (c->myGSpaceObj->iteration-1)%c->paraInfo->ndump_frq==0 || c->myGSpaceObj->iteration==config.maxIter || c->myGSpaceObj->outputFlag==1 ) 
+                if (config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt==0 && c->myGSpaceObj->iteration>1)
+                    if ( (c->myGSpaceObj->iteration-1)%CPcharmParaInfo::get()->ndump_frq==0 || c->myGSpaceObj->iteration==config.maxIter || c->myGSpaceObj->outputFlag==1 ) 
                     {
                         c->myGSpaceObj->writeStateDumpFile();
                         RTH_Suspend(); 
@@ -125,15 +126,15 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
             #endif
             //------------------------------------------------------------------------
             /// (B) If user wants state output, and this is minimization ... then write the states to file at the correct intervals or at the end of the simulation. Then wait for the data reduction and writes to finish (GSpaceDriver::allDoneWritingPsi resumes)
-            if (config.stateOutput==1 && c->paraInfo->cp_min_opt==1 && c->myGSpaceObj->iteration>0)
-                if ( c->myGSpaceObj->iteration%c->paraInfo->ndump_frq==0 || c->myGSpaceObj->iteration==config.maxIter || c->myGSpaceObj->exitFlag==1 ) 
+            if (config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt==1 && c->myGSpaceObj->iteration>0)
+                if ( c->myGSpaceObj->iteration%CPcharmParaInfo::get()->ndump_frq==0 || c->myGSpaceObj->iteration==config.maxIter || c->myGSpaceObj->exitFlag==1 ) 
                 {
                     c->myGSpaceObj->writeStateDumpFile();
                     RTH_Suspend();
                 }
             //------------------------------------------------------------------------
             /// (C) If this is dynamics, check if we need a tolerance update (Velocity Norb rotation)
-            if(c->paraInfo->cp_min_opt == 0 && c->myGSpaceObj->iteration>1 && c->myGSpaceObj->iteration<= config.maxIter)
+            if(CPcharmParaInfo::get()->cp_min_opt == 0 && c->myGSpaceObj->iteration>1 && c->myGSpaceObj->iteration<= config.maxIter)
             {
                 /// If Ortho told us that we need a tolerance update
                 if(c->isPsiVupdateNeeded)
@@ -142,7 +143,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
                     c->myGSpaceObj->acceptedVPsi = false;
                     /// Sync PsiV at time t
                     c->myGSpaceObj->sendRedPsiV();
-                    /// If I have not received all my PsiV c->paraInfo, wait for it (acceptRedPsiV resumes)
+                    /// If I have not received all my PsiV CPcharmParaInfo::get()->, wait for it (acceptRedPsiV resumes)
                     if(c->myGSpaceObj->iRecvRedPsiV==0)
                         RTH_Suspend();
                     /// Tuck away your g=0 plane velocities
@@ -182,7 +183,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
         c->isFirstStep = false;   
         /*
         // send orthoT now
-        if(c->paraInfo->cp_min_opt == 0)
+        if(CPcharmParaInfo::get()->cp_min_opt == 0)
             c->myGSpaceObj->launchOrthoT();
         */
     }

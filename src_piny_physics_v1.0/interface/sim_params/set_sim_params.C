@@ -958,16 +958,52 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
        if(gensimopts->cp_min_update==0){
          PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
          PRINTF("You are in danger! Your cp_min_update is off! \n");
+         PRINTF("Are you debugging some CS code? \n");
          PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
        }//
+
+  /*-----------------------------------------------------------------------*/ 
+  /* 40)\cp_force_complex_psi{on,off} */
+       index=40;
+       ifound = 0;
+       if(strcasecmp(dict[index].keyarg,"on")==0)    {
+          cpopts->cp_force_complex_psi = 1; ifound++;}
+       if(strcasecmp(dict[index].keyarg,"off")==0)    {
+          cpopts->cp_force_complex_psi = 0; ifound++;}
+       if(ifound != 1){
+          keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
+       if(cpopts->cp_force_complex_psi==1){
+         PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+         PRINTF("You have forced the KS states to be complex.\n");
+         PRINTF("If you are at the Gamma point, the code will be slow.\n");
+         PRINTF("Are you debugging?\n");
+         PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+       }//endif
+  /*-----------------------------------------------------------------------*/ 
+  /* 41)\cp_allow_duplicate_kpts{on,off} */
+       index=41;
+       ifound = 0;
+       if(strcasecmp(dict[index].keyarg,"on")==0)    {
+          cpopts->cp_allow_dup_kpts = 1; ifound++;}
+       if(strcasecmp(dict[index].keyarg,"off")==0)    {
+          cpopts->cp_allow_dup_kpts = 0; ifound++;}
+       if(ifound != 1){
+          keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
+       if(cpopts->cp_allow_dup_kpts==1){
+         PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+         PRINTF("You have permitted the use of duplicate kpoints.\n");
+         PRINTF("Are you debugging?\n");
+         PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+       }//endif
 /*========================================================================*/
+// CP mass warning messages for the uninitiated
 
     PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
     double cmass_tau_def = cp_parse->cp_mass_tau_def;
     double cmass_cut_def = cp_parse->cp_mass_cut_def;
     double tau_true      = cmass_tau_def*sqrt(cmass_cut_def/CP_EMAGIC);
     PRINTF("The true cp_mass_tau is %g. The value set %g\n",tau_true,cmass_tau_def);
-    PRINTF("is scale by sqrt(cmass_cut_def/%g)=%g.\n",1.0/(2.0*CP_EMAGIC),
+    PRINTF("is scaled by sqrt(cmass_cut_def/%g)=%g.\n",1.0/(2.0*CP_EMAGIC),
              sqrt(cmass_cut_def/(2.0*CP_EMAGIC)));
     PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
 

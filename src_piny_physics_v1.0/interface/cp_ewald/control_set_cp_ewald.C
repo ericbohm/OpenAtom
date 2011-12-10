@@ -87,6 +87,7 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
    /*--------------------------------------*/
    /* Local pointers                       */
 
+   int doublepack      = cpcoeffs_info->doublepack;
    int iperd           = cell->iperd;
    double *hmat_ewd    = cell->hmat_ewd;
    double *hmat_ewd_cp = cell->hmat_ewd_cp;
@@ -193,9 +194,15 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
 /*--------------------------------------------------------------------*/
 /*  A)  Count the small k-vectors                                     */
 
-   countkvec3d_sm(&nktot_sm,ecut_sm,kmax_cp,hmati_ewd_cp,
+   if(doublepack==1){
+     countkvec3d_sm(&nktot_sm,ecut_sm,kmax_cp,hmati_ewd_cp,
                   &(cpewald->gw_gmin),&(cpewald->gw_gmax));
-   ncoef                  = nktot_sm+1;
+   }else{
+     countkvec3d_sm_kpt(&nktot_sm,ecut_sm,kmax_cp,hmati_ewd_cp,
+                      &(cpewald->gw_gmin),&(cpewald->gw_gmax));
+   }//endif
+   if(doublepack==1){ncoef                  = nktot_sm+1;} //excludes 0,0,0 for history
+   if(doublepack==0){ncoef                  = nktot_sm;}   //the new guys like 0,0,0
    cpewald->nktot_sm      = nktot_sm;
    cpcoeffs_info->ncoef   = ncoef;
 
@@ -238,7 +245,11 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
     PRINTF("Your small cp-fft grid is  %d by %d by %d\n",nk1,nk2,nk3);
     PRINTF("There are %d total k-vectors ",ncoef); 
     PRINTF("upon spherical truncation. \n");
+    if(doublepack==0){
+      PRINTF("You are not at the Gamma-point and are including the bottom half of k-space\n");
+    }//endif
     PRINTF("The small energy cutoff is Ecut= %f Ryd\n",2.0*ecut_sm);
+
 
 /*=======================================================================*/
 

@@ -168,6 +168,7 @@ module temperController
 
 
 mainmodule cpaimd {	
+
 	readonly double Timer;
 	readonly int nstates;
 	readonly int sizeX;
@@ -204,6 +205,7 @@ mainmodule cpaimd {
 	extern module temperController;
 
 
+    readonly CPcharmParaInfo simReadOnly;
 	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
 	readonly CkHashtableT<intdual, int> GSmaptable;
 	readonly CkHashtableT<intdual, int> RSmaptable;
@@ -233,7 +235,6 @@ mainmodule cpaimd {
 
 	readonly Config config;
 
-	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_PhysScratchCache pScratchProxy;
 	readonly CProxy_InstanceController instControllerProxy;
 
@@ -515,9 +516,11 @@ mainmodule cpaimd {
                    int numGState[nchareGState],   
                    int numRXState[nchareRState], 
                    int numRYState[nchareRState],
+                   int numRYStateLower[nchareRState],
                    int numGNL[nchareGNL],      
                    int numRXNL[nchareRNL],
                    int numRYNL[nchareRNL],
+                   int numRYNLLower[nchareRNL],
                    int numGRho[nchareGRho],    
                    int numRXRho[nchareRRhoTot],  
                    int numRYRho[nchareRRhoTot],
@@ -533,7 +536,7 @@ mainmodule cpaimd {
 	  * A place to hold the computed ees planewise data on each proc
 	  */	
 	group eesCache {
-		entry eesCache(int,int,int,int,int,int, UberCollection);
+		entry eesCache(int,int,int,int,int,int,int, UberCollection);
 	};
 };
 

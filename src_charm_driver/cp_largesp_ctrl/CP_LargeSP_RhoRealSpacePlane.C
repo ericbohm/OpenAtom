@@ -41,7 +41,6 @@
 extern CProxy_TimeKeeper                 TimeKeeperProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
 extern CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
-extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 
@@ -78,7 +77,7 @@ CP_LargeSP_RhoRealSpacePlane::CP_LargeSP_RhoRealSpacePlane(
 //============================================================================
 // Get parameters from the globals/groups
 
-    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim = CPcharmParaInfo::get();
 
 
 

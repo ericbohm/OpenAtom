@@ -33,7 +33,7 @@ class GEN_WAVE{
 
    void create_coefs(int *k_x,int *k_y,int *k_z,
                      int gSpaceSize,int nstate_in,complex *gspace_coefs,
-                     double *xfull, double *yfull, double *zfull);
+                     double *xfull, double *yfull, double *zfull, int kpoint_ind);
 
    void splin_btrans(double *g,double **gpsi0, double **gpsi1,
                      double **gpsi2, double **gpsi3,
@@ -54,6 +54,8 @@ class GEN_WAVE{
 static void read_occupation_numbers(double *occ_up,double *occ_dn,
                                     int nstate_up, int nstate_dn,int cp_lda_tmp,
                                     char *occupation_file,int *uniform_flag);
+
+static void read_kpoints(int , char *kpt_file_name, int istart);
 
 //-------------------------------------------------------------------------
 #ifdef PUP_ON

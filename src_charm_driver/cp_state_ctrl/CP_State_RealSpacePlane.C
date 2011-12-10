@@ -42,7 +42,6 @@ extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>            UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane>   UrhoRealProxy;
 extern CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
-extern CProxy_CPcharmParaInfoGrp              scProxy;
 extern CProxy_main                            mainProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>  UparticlePlaneProxy;
 extern CkVec <CProxy_FFTcache>                UfftCacheProxy;
@@ -125,10 +124,19 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
     ngrida = _ngrida;
     ngridb = _ngridb;
     ngridc = _ngridc;
-    csize = (ngrida/2 + 1)*ngridb; 
-    rsize = (ngrida   + 2)*ngridb; ;
-    iplane_ind  = thisIndex.y;
-    istate      = thisIndex.x;
+    if(config.doublePack){
+      csize = (ngrida/2 + 1)*ngridb; 
+      rsize = (ngrida   + 2)*ngridb; ;
+    }else{
+      csize = ngrida*ngridb; 
+      rsize = 2*csize;
+    }//endif
+    iplane_ind   = thisIndex.y;
+    istate       = thisIndex.x;
+    ibead_ind    = thisInstance.idxU.x;
+    kpoint_ind   = thisInstance.idxU.y;
+    itemper_ind  = thisInstance.idxU.z;
+
     forwardTimeKeep=_rfortime;
     backwardTimeKeep=_rbacktime;
     initRealStateSlab(&rs, ngrida, ngridb, ngridc, gSpaceUnits, 
@@ -153,6 +161,7 @@ void CP_State_RealSpacePlane::pup(PUP::er &p){
 
   p|iplane_ind;
   p|istate;
+  p|ibead_ind; p|kpoint_ind; p|itemper_ind;
   p|iteration;
   p|rhoRsubplanes;
   p|ngrida;
@@ -184,6 +193,15 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num){
 //============================================================================
 void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
 //============================================================================
+
+  if(thisIndex.x >= config.nstates || thisIndex.x < 0 || 
+     thisIndex.y >= ngridc         || thisIndex.y < 0){
+    CkPrintf("A message has arrived to real state state char index %d %d\n",
+              thisIndex.x,thisIndex.y);
+    CkPrintf("This chare is out of range. Boy, you sure made a big boo-boo!!\n");
+    CkExit();
+  }//endif
+
 #ifdef _CP_SUBSTEP_TIMING_
   if(forwardTimeKeep>0)
     {
@@ -206,16 +224,29 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
   vksDone=false;
 #endif
 
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
     int size               = msg->size; 
     int Index              = msg->senderIndex;
+    int Jndex              = msg->senderJndex;
+    int Kndex              = msg->senderKndex;
     complex *partiallyFFTd = msg->data;
-    int nchareG            = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
-    int **tranUnpack       = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
-    int *nline_per_chareG  = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
+    int nchareG            = sim->nchareG;
+    int **tranUnpack       = sim->index_tran_upack;
+    int *nline_per_chareG  = sim->nlines_per_chareG;
 
     int planeSize          = rs.size;
 
     count++;
+
+    /****************************************
+    char junk[1000];
+    sprintf(junk,"rstate%d.%d.out",thisIndex.x,thisIndex.y);
+    FILE *fp = fopen(junk,"a");
+    fprintf(fp,"Receiving from %d %d who is sending to %d %d : stuff %d of total %d\n",
+	    Jndex,Index,Jndex,Kndex,count,nchareG);
+    fclose(fp);
+    *****************************************/
+
     if (count > nchareG) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Mismatch in allowed gspace chare arrays : %d %d %d %d\n",
@@ -251,7 +282,13 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
       CkExit();
     }//endif
 
-    for(int i=0;i< size;i++){planeArr[tranUnpack[Index][i]] = partiallyFFTd[i];}
+    for(int i=0;i< size;i++){
+      if(tranUnpack[Index][i]<0 || tranUnpack[Index][i]>=planeSize){
+        CkPrintf("tranUnpack index out of range %d %d %d\n",i,Index,tranUnpack[Index][i]);
+        CkExit();
+      }//endif
+      planeArr[tranUnpack[Index][i]] = partiallyFFTd[i];
+    }//endif
 
     delete msg;
 
@@ -283,32 +320,81 @@ void CP_State_RealSpacePlane::doFFT(){
 
   CP           *cp           = CP::get();
 #include "../class_defs/allclass_strip_cp.h"
-  double *occ = cpcoeffs_info->occ_up;
-  double occ_now=occ[istate+1];
+  double *occ      = cpcoeffs_info->occ_up;
+  double *wght_kpt = cpcoeffs_info->wght_kpt;
+
+  double occ_now      = occ[istate+1];
+  double wght_kpt_now = wght_kpt[kpoint_ind+1];
+
+  double wght_rho = occ_now*wght_kpt_now;
 
 //============================================================================
 // Perform the FFT and get psi^2 which we can store in cache tmpData because
 // we will blast it right off before losing control
 
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
     FFTcache *fftcache  = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
-    int nplane_x        = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+    int nplane_x        = sim->nplane_x;
     complex *planeArr   = rs.planeArr;
     double  *planeArrR  = rs.planeArrR;
+   
+    // more convenient definition
+    if(!config.doublePack){nplane_x = (nplane_x+1)/2;}
 
 #if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
 
+    char junk[1000];
+    FILE *fp;
+
+    /************************************
+    sprintf(junk,"rstate%d.%d_beforeFFT.out",thisIndex.x,thisIndex.y);
+    fp = fopen(junk,"w");
+    if(!config.doublePack){
+      for(int i=0;i<ngridb;i++){
+        for(int j=i*ngrida,k=0;j<(i+1)*ngrida;j++,k++){
+          fprintf(fp,"%d %d %g %g\n",i,k,planeArr[(j)].re,planeArr[(j)].im);
+        }//endfor
+      }//endfor
+    }//endif
+    fclose(fp);
+    ************************************/
+
     fftcache->doStpFFTGtoR_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb,iplane_ind);
 
+    /****************************************
+    sprintf(junk,"rstate%d.%d_afterFFT.out",thisIndex.x,thisIndex.y);
+    fp = fopen(junk,"w");
+    if(!config.doublePack){
+      for(int i=0;i<ngridb;i++){
+        for(int j=i*ngrida,k=0;j<(i+1)*ngrida;j++,k++){
+          fprintf(fp,"%d %d %g %g\n",i,k,planeArr[(j)].re,planeArr[(j)].im);
+        }//endfor
+      }//endfor
+    }//endif
+    fclose(fp);
+    ************************************/
+
     fftcache->getCacheMem("CP_State_RealSpacePlane::doFFT");
+
     double *data = fftcache->tmpDataR;
 
-    for(int i=0,i2=0;i<ngridb;i++,i2+=2){
-      for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-        data[j] = planeArrR[(j+i2)]*planeArrR[(j+i2)]*occ_now;
+    if(config.doublePack){
+      for(int i=0,i2=0;i<ngridb;i++,i2+=2){
+        for(int j=i*ngrida;j<(i+1)*ngrida;j++){
+          data[j] = planeArrR[(j+i2)]*planeArrR[(j+i2)];
+          data[j] *= wght_rho;
+        }//endfor
       }//endfor
-    }//endfor
+    }else{
+      for(int i=0;i<ngridb;i++){
+        for(int j=i*ngrida;j<(i+1)*ngrida;j++){
+	    data[j] = (planeArr[j].getMagSqr());
+            data[j] *= wght_rho;
+        }//endfor
+      }//endfor
+    }//endif
     CmiNetworkProgress();
 
 #if CMK_TRACE_ENABLED
@@ -319,14 +405,10 @@ void CP_State_RealSpacePlane::doFFT(){
 // If non-local itself is on and the ees method is to be used, launch
 
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed 
-  int ees_nonlocal = scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on;
-  int natm_nl      = scProxy.ckLocalBranch()->cpcharmParaInfo->natm_nl;
+  int ees_nonlocal = sim->ees_nloc_on;
+  int natm_nl      = sim->natm_nl;
 
   if(ees_nonlocal==1 && config.launchNLeesFromRho==0 && natm_nl>0){
-    /*    if(config.nchareG>32)
-      {
-	fprintf(stderr,"[%d,%d]on %d nchareG is %d\n",thisIndex.x, thisIndex.y, CkMyPe(),config.nchareG);
-	} */
     //    CkAssert(config.nchareG<=ngridc);
     int div    = (config.nchareG / ngridc);
     int rem    = (config.nchareG % ngridc);
@@ -360,7 +442,11 @@ void CP_State_RealSpacePlane::doFFT(){
     CkPrintf("EGGA        = OFF FOR DEBUGGING\n");
     CkPrintf("EEXC+EGGA   = OFF FOR DEBUGGING\n");
   }//endif
-  bzero(planeArrR,(ngrida+2)*ngridb*sizeof(double));
+  if(config.doublePack){
+    bzero(planeArrR,(ngrida+2)*ngridb*sizeof(double));
+  }else{
+    bzero(planeArrR,(ngrida*ngridb*2)*sizeof(double))
+  }//endif
   fftcache->freeCacheMem("CP_State_RealSpacePlane::doFFT");
 #else
   doReduction();
@@ -459,6 +545,18 @@ void CP_State_RealSpacePlane::doReduction(){
 //============================================================================
 void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
 //============================================================================
+
+  CP           *cp           = CP::get();
+#include "../class_defs/allclass_strip_cp.h"
+  double *occ      = cpcoeffs_info->occ_up;
+  double *wght_kpt = cpcoeffs_info->wght_kpt;
+
+  double occ_now      = occ[istate+1];
+  double wght_kpt_now = wght_kpt[kpoint_ind+1];
+
+  double wght_rho = occ_now*wght_kpt_now;
+ 
+
 //============================================================================
 // Do not delete msg. Its a nokeep.
 //============================================================================
@@ -496,21 +594,30 @@ void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
   int subRem     = (ngridb % rhoRsubplanes);
   int subAdd     = (myindex < subRem ? 1 : 0);
   int subMax     = (myindex < subRem ? myindex : subRem);
-  int off        = (subSize*myindex + subMax)*(ngrida+2);
   int myNgridb   = subSize+subAdd;
   int size       = ngrida*myNgridb;
   CkAssert(mysize == size);
 
 //============================================================================	
 
-  double *psiVks      = rs.planeArrR;
-
   // multiply psi by vks to form psiVks
-  for(int i=0,i2=off;i<myNgridb;i++,i2+=2){
-    for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-      psiVks[(j+i2)] *= vks_tmp[j];
+  if(config.doublePack){
+    double *psiVks      = rs.planeArrR;
+    int off = (subSize*myindex + subMax)*(ngrida+2);
+    for(int i=0,i2=off;i<myNgridb;i++,i2+=2){
+      for(int j=i*ngrida;j<(i+1)*ngrida;j++){
+        psiVks[(j+i2)] *= vks_tmp[j]*wght_rho;
+      }//endfor
     }//endfor
-  }//endfor
+  }else{
+    complex *psiVks      = rs.planeArr;
+    int off = (subSize*myindex + subMax)*(ngrida);
+    for(int i=0;i<myNgridb;i++){
+      for(int j=i*ngrida;j<(i+1)*ngrida;j++){
+        psiVks[(j+off)] = psiVks[(j+off)]*(vks_tmp[j]*wght_rho);
+      }//endfor
+    }//endfor
+  }//endif
   CmiNetworkProgress();
 
 //============================================================================	
@@ -523,7 +630,6 @@ void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
     contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
 	       CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),UrealSpacePlaneProxy[thisInstance.proxyOffset]));
 #endif
-
     RTH_Runtime_resume(run_thread); // this is scalar, we continue right on
                                     // as threaded loops calls do vksfft
   }//endif
@@ -572,10 +678,14 @@ void CP_State_RealSpacePlane::doVksFFT() {
 
  //------------------------------------------------------------------
  // The FFT
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
   FFTcache *fftcache  = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
-  int nplane_x        = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+  int nplane_x        = sim->nplane_x;
   complex *planeArr   = rs.planeArr;
   double *planeArrR   = rs.planeArrR;
+  // more convenient definition
+  if(!config.doublePack){nplane_x = (nplane_x+1)/2;}
+
   fftcache->doStpFFTRtoG_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb,iplane_ind);
 
  //------------------------------------------------------------------
@@ -596,10 +706,25 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 //===================================================================
 // Perform the transpose and then the blast off the final 1D-FFT
 
-  int nchareG            = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
-  int **tranpack         = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
-  int *nlines_per_chareG = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+  int nchareG            = sim->nchareG;
+  int **tranpack         = sim->index_tran_upack;
+  int *nlines_per_chareG = sim->nlines_per_chareG;
   complex *vks_on_state  = rs.planeArr;
+
+    /****************************************
+    char junk[1000];
+    sprintf(junk,"vks_on_state%d.%d_afterFFT.out",thisIndex.x,thisIndex.y);
+    FILE *fp = fopen(junk,"w");
+    if(!config.doublePack){
+      for(int i=0;i<ngridb;i++){
+	for(int j=i*ngrida,k=0;j<(i+1)*ngrida;j++,k++){
+	  fprintf(fp,"%d %d %g %g\n",i,k,vks_on_state[(j)].re,vks_on_state[(j)].im);
+	}//endfor
+      }//endfor
+    }//endif
+    fclose(fp);
+    **********************************************/
 
  //------------------------------------------------------------------
 
