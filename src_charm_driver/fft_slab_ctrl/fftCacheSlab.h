@@ -397,7 +397,7 @@ class FFTcache: public Group {
 
      int cacheMemFlag;
      char cacheMemName[1000];
-
+     static CmiNodeLock fftw_plan_lock;
     //-----------------------------------------------------------
     // Generic plane temporaries used everywhere possible to avoid CmiMemcpys
      complex *tmpData; 

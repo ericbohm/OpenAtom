@@ -24,7 +24,7 @@ extern CkVec <CProxy_FFTcache> UfftCacheProxy;
 extern Config config;
 extern int nstates;
 extern int sizeX;
-
+CmiNodeLock FFTcache::fftw_plan_lock;
 //==============================================================================
 
 //==============================================================================
@@ -49,6 +49,9 @@ FFTcache::FFTcache(
                    int _rhoRsubPlanes, UberCollection _thisInstance): thisInstance(_thisInstance){
 //==============================================================================
 // Local Variables
+  if ( CmiMyRank() == 0 ) {
+    fftw_plan_lock = CmiCreateLock();
+  }
 
     int size[3];
     complex *cin; complex *cout; 
@@ -113,7 +116,7 @@ FFTcache::FFTcache(
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
-
+    CmiLock(fftw_plan_lock);
 //==============================================================================
 // Density, State and EES Scratch
 
@@ -473,7 +476,7 @@ FFTcache::FFTcache(
 	  fclose(wisdomFile);
 	}//endif
      }// end if opt==0
-
+    CmiUnlock(fftw_plan_lock);
 //------------------------------------------------------------------------------
    }//end routine
 //==============================================================================
