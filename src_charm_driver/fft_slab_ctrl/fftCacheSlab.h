@@ -435,7 +435,8 @@ class FFTcache: public Group {
 
     //-----------------------------------------------------------
     // The constructor 
-     FFTcache(     int _ngrida, int _ngridb, int _ngridc, 
+     FFTcache(UberCollection _thisInstance);
+     void setup(   int _ngrida, int _ngridb, int _ngridc, 
                    int _ngridaEext, int _ngridbEext, int _ngridcEext, 
                    int _ees_eext_on, int _ngridaNL, int _ngridbNL, int _ngridcNL, 
                    int _ees_NL_on, int _nlines_max, int _nlines_max_rho,
@@ -448,7 +449,7 @@ class FFTcache: public Group {
                    int  *numGRho,     int  *numRXRho,   int *numRYRho ,
                    int  *numGEext,    int  *numRXEext,  int *numRYEext ,
       	           int _fftopt,       int _nsplitR,     int _nsplitG,
-                   int _rhoRsubPlanes, UberCollection _thisInstance);
+                   int _rhoRsubPlanes);
     //-----------------------------------------------------------
     // cache control 
      void getCacheMem(const char *name){

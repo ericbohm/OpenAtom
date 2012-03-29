@@ -1542,21 +1542,19 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
       create_Rho_fft_numbers(nchareR,nchareRHart,config.rhoRsubplanes,
 			     sim->nplane_rho_x,sim->sizeY,ngridbEext,
 			     numRXRho,numRYRho,numRXEext,numRYEext,numSubGx);
-      UfftCacheProxy.push_back(CProxy_FFTcache::ckNew(
-					     sim->sizeX,sim->sizeY,sim->sizeZ,
-					     ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
-					     ngridaNl,  ngridbNl,  ngridcNl,  ees_nonlocal_on, 
-					     sim->nlines_max, sim->nlines_max_rho,
-					     config.nchareG,nchareR,
-					     config.nchareG,nchareRPP, 
-					     nchareRhoG,    nchareR,    nchareRRhoTot,
-					     nchareGHart,   nchareRHart,nchareRHartTot,
-					     numGState,     numRXState, numRYState,numRYStateLower,
-					     numGNL,        numRXNL,    numRYNL, numRYNLLower,
-					     numGRho,       numRXRho,   numRYRho,
-					     numGEext,      numRXEext,  numRYEext,
-					     config.fftopt,config.fftprogresssplitReal,config.fftprogresssplit,
-					     config.rhoRsubplanes, thisInstance));
+      UfftCacheProxy.push_back(CProxy_FFTcache::ckNew(thisInstance));
+      UfftCacheProxy[0].setup(sim->sizeX,sim->sizeY,sim->sizeZ,
+                              ngridaEext,ngridbEext,ngridcEext,ees_eext_on,                                   ngridaNl,  ngridbNl,  ngridcNl,  ees_nonlocal_on,
+                              sim->nlines_max, sim->nlines_max_rho,
+                              config.nchareG,nchareR,config.nchareG,nchareRPP,
+                              nchareRhoG, nchareR, nchareRRhoTot,
+                              nchareGHart, nchareRHart,nchareRHartTot,
+                              numGState, numRXState, numRYState,numRYStateLower,
+                              numGNL, numRXNL, numRYNL, numRYNLLower,
+                              numGRho, numRXRho, numRYRho,
+                              numGEext, numRXEext, numRYEext,
+                              config.fftopt, config.fftprogresssplitReal,
+                              config.fftprogresssplit,config.rhoRsubplanes);
       CkPrintf("created fftcache proxy\n");
       delete [] numRXState;
       delete [] numRYState;
