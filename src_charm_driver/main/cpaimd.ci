@@ -507,8 +507,7 @@ mainmodule cpaimd {
 	  * across entry method calls.  Does no messaging.
 	  */	
 	group FFTcache {
-               entry FFTcache(UberCollection _thisInstance);
-		entry void setup( int , int , int , int , int , int , 
+		entry FFTcache( int , int , int , int , int , int , 
                    int , int , int , int , int , int , int ,
                    int nchareGState, int nchareRState,
                    int nchareGNL,    int nchareRNL, 
@@ -528,7 +527,7 @@ mainmodule cpaimd {
                    int numGEext[nchareGEext],    
                    int numRXEext[nchareREextTot],  
                    int numRYEext[nchareREextTot],
-                   int ,  int ,  int , int );
+                   int ,  int ,  int , int, UberCollection );
 	};
 
 

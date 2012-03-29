@@ -32,11 +32,7 @@ CmiNodeLock FFTcache::fftw_plan_lock;
 //==============================================================================
 //FFTcache - sets up a fftcache on each processor
 //==============================================================================
-FFTcache::FFTcache(UberCollection _thisInstance): thisInstance(_thisInstance) {
-  //Empty constructor because of constructor serialization
-}
-
-void FFTcache::setup( 
+FFTcache::FFTcache( 
    		   int _ngrida, int _ngridb,int _ngridc,
                    int _ngridaEext, int _ngridbEext, int _ngridcEext, 
                    int _ees_eext_on, int _ngridaNL, int _ngridbNL, int _ngridcNL, 
@@ -50,14 +46,12 @@ void FFTcache::setup(
                    int  *numGRho,     int  *numRXRho,   int *numRYRho ,
                    int  *numGEext,    int  *numRXEext,  int *numRYEext ,
                    int _fftopt,       int _nsplitR,     int _nsplitG,
-                   int _rhoRsubPlanes){
+                   int _rhoRsubPlanes, UberCollection _thisInstance): thisInstance(_thisInstance){
 //==============================================================================
 // Local Variables
   if ( CmiMyRank() == 0 ) {
     fftw_plan_lock = CmiCreateLock();
   }
-
-  CmiNodeBarrier();
 
     int size[3];
     complex *cin; complex *cout; 
