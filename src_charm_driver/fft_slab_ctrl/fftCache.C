@@ -53,6 +53,12 @@ FFTcache::FFTcache(
     fftw_plan_lock = CmiCreateLock();
   }
 
+  //This will break if a chare array constructor is not run sequentially
+  //at the point of chare array instantiation
+  if( CmiMyNode() != 0 ) {
+    CmiNodeBarrier();
+  }
+
     int size[3];
     complex *cin; complex *cout; 
     double  *din; double *dout; 
