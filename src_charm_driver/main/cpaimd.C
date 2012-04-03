@@ -507,23 +507,23 @@ main::main(CkArgMsg *msg) {
     // Configure the GSpace entry methods that the PCs will callback
     if(cfgSymmPC.isOutputReduced)
     {
-        cfgSymmPC.gSpaceEP        = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_CkReductionMsg;
-        cfgSymmPC.PsiVEP          = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_CkReductionMsg;
+        cfgSymmPC.gSpaceEP        = CkIndex_CP_State_GSpacePlane::acceptNewPsi ((CkReductionMsg*)NULL);
+        cfgSymmPC.PsiVEP          = CkIndex_CP_State_GSpacePlane::acceptNewPsiV((CkReductionMsg*)NULL);
     }
     else
     {
-        cfgSymmPC.gSpaceEP        = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_partialResultMsg;
-        cfgSymmPC.PsiVEP          = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_partialResultMsg;
+        cfgSymmPC.gSpaceEP        = CkIndex_CP_State_GSpacePlane::acceptNewPsi ((partialResultMsg*)NULL);
+        cfgSymmPC.PsiVEP          = CkIndex_CP_State_GSpacePlane::acceptNewPsiV((partialResultMsg*)NULL);
     }
 
     if(cfgAsymmPC.isOutputReduced)
     {
-        cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_CkReductionMsg;
+        cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::acceptLambda ((CkReductionMsg*)NULL);
         cfgAsymmPC.PsiVEP         = 0;
     }
     else
     {
-        cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_partialResultMsg;
+        cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::acceptLambda ((partialResultMsg*)NULL);
         cfgAsymmPC.PsiVEP         = 0;
     }
 
