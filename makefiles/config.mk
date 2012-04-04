@@ -30,7 +30,8 @@
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
   LDFLAGS  += -L$(FFT_HOME)/lib -memory gnu
-  LDLIBS   += -module CkMulticast -module comlib -lz -lconv-util -lm
+  LDLIBS   += -module CkMulticast -module comlib -module completion -module NDMeshStreamer \
+              -lz -lconv-util -lm
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
