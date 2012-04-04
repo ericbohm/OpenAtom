@@ -292,7 +292,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 					   UberCollection _thisInstance
 					   ) :
   forwardTimeKeep(_gforward),  backwardTimeKeep(_gbackward),
-  thisProxy(this),
   thisInstance(_thisInstance)
 //============================================================================
    {//begin routine

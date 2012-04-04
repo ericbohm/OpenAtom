@@ -61,7 +61,6 @@ module gParticlePlane
 
 module gStatePlane
 {
-    extern module NDMeshStreamer;
     extern module pcMessages;
     extern module instanceController;
 
@@ -86,7 +85,7 @@ module gStatePlane
     include "paircalc/pcFwdDeclarations.h";
     include "load_balance/PeList.h";
 
-	array [2D]  CP_State_GSpacePlane : MeshStreamerArray2DClient<complex>
+	array [2D]  CP_State_GSpacePlane 
 	{
 		entry CP_State_GSpacePlane(int sizeX, int numG, int numR, int s_grain, int timekeepf, int timekeepb, UberCollection);
         entry void acceptPairCalcAIDs(pcSetupMsg *msg);

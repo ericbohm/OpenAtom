@@ -69,14 +69,11 @@ public:
 };
 
 
-#include "NDMeshStreamer.h"
 
-class CP_State_GSpacePlane: public MeshStreamerArray2DClient<complex>
+
+class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane 
 {
     public:
-        // coz meshStreamer won't let us inherit from the CBase version
-        CProxy_CP_State_GSpacePlane thisProxy;
-
         friend class CP_State_ParticlePlane;
         // ----------- Flags and counters used in the GSpace driver code -----------
         /// My state index
