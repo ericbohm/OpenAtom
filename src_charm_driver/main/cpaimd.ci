@@ -203,6 +203,7 @@ mainmodule cpaimd {
 	extern module ENL_EKE_Collector;
 	extern module instanceController;
 	extern module temperController;
+    extern module NDMeshStreamer;
 
 
     readonly CPcharmParaInfo simReadOnly;
@@ -371,7 +372,7 @@ mainmodule cpaimd {
 	};
 
 	
-	array [2D] CP_State_RealSpacePlane {
+	array [2D] CP_State_RealSpacePlane : MeshStreamerArray2DClient<complex> {
 		entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int, UberCollection);
 		entry void acceptFFT(RSFFTMsg *);
 		entry [local] void doFFT();

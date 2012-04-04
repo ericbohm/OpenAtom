@@ -109,7 +109,7 @@ void CP_State_RealSpacePlane::run () {
 CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits, 
                   int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc,
 		  int _rfortime, int _rbacktime, UberCollection _instance)
-  : thisInstance(_instance)
+  : thisProxy(this), thisInstance(_instance)
 {
 //============================================================================
 //  ckout << "State R Space Constructor : "

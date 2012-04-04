@@ -165,9 +165,13 @@ public:
 };
 //============================================================================
 
+#include "NDMeshStreamer.h"
 
-class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
+class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<complex> {
  public:
+     // coz meshStreamer won't let us inherit from the CBase version
+     CProxy_CP_State_RealSpacePlane thisProxy;
+
 	CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
 	~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
