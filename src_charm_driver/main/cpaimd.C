@@ -43,6 +43,7 @@
 #include "OneTimeMulticastStrategy.h"
 #include "TopoManager.h"
 #include "TimeKeeper.h"
+#include "completion.h"
 
 #include "charm++.h"
 #include "PhysScratchCache.h"
@@ -253,6 +254,10 @@ ComlibInstanceHandle commGHartRHartIns1;
 /// Multicast manager group that handles many mcast/redns in the code. Grep for info
 CkGroupID            mCastGrpId;
 CkReduction::reducerType complexVectorAdderType;
+
+// Temporary global readonlys to hold the MeshStreamer group proxies
+CProxy_ArrayMeshStreamer<complex, CProxy_MeshStreamerArray2DClient<complex>, CkArrayIndex2D> fftStreamer;
+CProxy_CompletionDetector completionDetector;
 //============================================================================
 
 /// The build system should define this macro to be the commit identifier
@@ -1643,6 +1648,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
  gspDriverOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
  UgSpaceDriverProxy.push_back( CProxy_GSpaceDriver::ckNew(thisInstance,gspDriverOpts) );
  UgSpaceDriverProxy[thisInstance.proxyOffset].doneInserting();
+
  //--------------------------------------------------------------------------------
  // We bind the particlePlane array to the gSpacePlane array migrate together
 
@@ -1738,6 +1744,12 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   UrealSpacePlaneProxy.push_back( CProxy_CP_State_RealSpacePlane::ckNew(1, 1, ngrida, ngridb, ngridc, rforward, rbackward, thisInstance, realSpaceOpts));
     UrealSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();  
+
+ //--------------------------------------------------------------------------------
+ // Create the MeshStreamer group and the completion detector group that it needs
+ int meshStreamerDims[3] = {CkNumPes(), 1, 1};
+ fftStreamer = CProxy_ArrayMeshStreamer<complex, CProxy_MeshStreamerArray2DClient<complex>, CkArrayIndex2D>::ckNew(1024, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 1, 10);
+ completionDetector = CProxy_CompletionDetector::ckNew();
 
   if(config.dumpMapFiles) {
     int size[2];
