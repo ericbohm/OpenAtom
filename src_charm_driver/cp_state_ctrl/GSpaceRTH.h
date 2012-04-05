@@ -44,10 +44,15 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
                 #ifndef _CP_DEBUG_VKS_OFF_ 
                     /// (D) FFT psi(gx,gy,gz)->psi(gx,gy,z)
                     c->myGSpaceObj->thisProxy(c->thisIndex.x,c->thisIndex.y).doFFT();
-                    /// Send psi to RealSpace
-                    c->myGSpaceObj->sendFFTData();
+                    if (c->myGSpaceObj->isStreamerReady)
+                        /// Send psi to RealSpace
+                        c->myGSpaceObj->sendFFTData();
+                    else
+                        /// Just mark the forward FFT sends as pending
+                        c->myGSpaceObj->isForwardFftSendPending = true;
                     /// Wait for (psi*vks) = F[gx,gy,z] to arive from RealSpace (acceptIFFT resumes)
                     RTH_Suspend();
+
                     /// (F) As the Psi forces have come back to us, do inverse FFT
                     c->myGSpaceObj->thisProxy(c->thisIndex.x,c->thisIndex.y).doIFFT();
                     /// If barriered, then wait for all GSpace chares to finish inverse FFT (GSpaceDriver::allDoneIFFT resumes)

@@ -93,6 +93,7 @@ module gStatePlane
 		entry void acceptIFFT(GSIFFTMsg *);
 		entry [local] void doIFFT();
 		entry [local] void doFFT();
+        entry void readyToStreamFFT();
 		entry void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
 		entry void collectFileOutput(GStateOutMsg *msg);
 		entry void acceptNewPsi(CkReductionMsg *msg);	

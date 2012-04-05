@@ -89,6 +89,10 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
 		int cleanExitCalled;
 		///
 		bool doneDoingIFFT;
+        /// 
+        bool isStreamerReady;
+        ///
+        bool isForwardFftSendPending;
         /// A proxy for the my ortho chare array so I can interact with it
         CProxy_Ortho myOrtho;
 
@@ -126,6 +130,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void launchAtoms();
         void launchOrthoT();
         void doFFT();
+        void readyToStreamFFT();
         void startNewIter ();
         void sendPsi();
         void sendPsiV();

@@ -203,7 +203,8 @@ mainmodule cpaimd {
 	extern module ENL_EKE_Collector;
 	extern module instanceController;
 	extern module temperController;
-    extern module NDMeshStreamer;
+    //extern module NDMeshStreamer;
+    include "NDMeshStreamer.h";
 
 
     readonly CPcharmParaInfo simReadOnly;

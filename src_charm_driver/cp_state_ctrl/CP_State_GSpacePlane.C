@@ -108,6 +108,9 @@ extern int nstates;
 extern int sizeX;
 extern int nchareG;              // number of g-space chares <= sizeX and >=nplane_x
 
+// Temporary global readonlys to hold the MeshStreamer group proxies
+extern CProxy_ArrayMeshStreamer<complex, CProxy_MeshStreamerArray2DClient<complex>, CkArrayIndex2D> fftStreamer;
+extern CProxy_CompletionDetector completionDetector;
 
 void testeke(int ,complex *,int *,int *,int *, int ,int);
 
@@ -362,6 +365,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   if(cp_min_opt==0){finishedCpIntegrate = 1;}// alternate entry point
   if(gen_wave==1){finishedCpIntegrate = 1;}// alternate entry point
   doneDoingIFFT       = false;
+  isStreamerReady     = false;
+  isForwardFftSendPending = false;
   acceptedPsi         = true;    // we start out with a psi
   acceptedVPsi        = true;    // we start out with a vpsi
   acceptedLambda      = false;   // no forces yet
@@ -531,7 +536,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
     redPlane = (redPlane > nchareG-1 ? redPlane-nchareG : redPlane);
   }//endif
 
-
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -598,6 +602,8 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|numRDMAlinksSymm;
   p|numRDMAlinksAsymm;
   p|doneDoingIFFT;
+  p|isStreamerReady;
+  p|isForwardFftSendPending ;
   p|doneNewIter;
   p|acceptedPsi;
   p|acceptedVPsi;
@@ -1172,6 +1178,16 @@ void CP_State_GSpacePlane::startNewIter ()  {
       CkAbort("Error: GSpace cannot startNewIter() before finishing the PsiV loop\n");
   }//endif
 
+  // Inform the meshStreamer to be ready for the forward FFT in the first step
+  // Setup for subsequent steps happens in doIFFT()
+  if (iteration == 0)
+  {
+      CkCallback startCb(CkIndex_CP_State_GSpacePlane::readyToStreamFFT(), thisProxy);
+      CkCallback endCb(CkCallback::ignore);
+      if (thisIndex.x == 0 && thisIndex.y == 0)
+          fftStreamer.associateCallback(thisIndex.x * thisIndex.y, startCb, endCb, completionDetector, 0);
+  }
+
   doneNewIter = true;
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   if(thisIndex.x==0 && thisIndex.y==0 ){
@@ -1339,6 +1355,16 @@ void CP_State_GSpacePlane::doFFT() {
 //============================================================================
 
 
+void CP_State_GSpacePlane::readyToStreamFFT()
+{
+    isStreamerReady = true;
+    if (isForwardFftSendPending)
+    {
+        sendFFTData();
+        isForwardFftSendPending = false;
+    }
+}
+
 //============================================================================
 // Send result to realSpacePlane : perform the transpose
 // Force data cannot be overwritten due to all to all nature of comm.
@@ -1398,12 +1424,23 @@ void CP_State_GSpacePlane::sendFFTData () {
     //******************    fprintf(fp,"Sending to realstate %d %d\n",thisIndex.x,z);
     real_proxy(thisIndex.x, z).acceptFFT(msg);  // same state,realspace index [z]
 
+    // Send a single datum to a realspace object via the meshStreamer
+    complex foo;
+    foo.re = thisIndex.x; foo.im = thisIndex.y;
+    CkArrayIndex2D destIdx(thisIndex.x, z);
+    fftStreamer.ckLocalBranch()->insertData(foo, destIdx);
+
    // progress engine baby
     CmiNetworkProgress();
 
   }//endfor
   //*********************  fclose(fp);
 
+  // Now that the streamer is grappling with this load of data,
+  // it will become ready only when we set it up for the next iteration
+  // This happens in doIFFT()
+  // Until then, its not ready for the next step
+  isStreamerReady = false;
 //============================================================================    
 // Finish up 
 #ifdef USE_COMLIB
@@ -1422,6 +1459,7 @@ void CP_State_GSpacePlane::sendFFTData () {
       contribute(sizeof(double),&gend,CkReduction::max_double, cb , forwardTimeKeep);
     }
 #endif
+
 
 //----------------------------------------------------------------------
   }//end routine 
@@ -1498,6 +1536,13 @@ void CP_State_GSpacePlane::doIFFT()
     #if CMK_TRACE_ENABLED
         double StartTime=CmiWallTimer();
     #endif
+
+    // Inform the meshStreamer to be ready for the forward FFT in the next step
+    CkCallback startCb(CkIndex_CP_State_GSpacePlane::readyToStreamFFT(), thisProxy);
+    CkCallback endCb(CkCallback::ignore);
+    if (thisIndex.x == 0 && thisIndex.y == 0)
+        fftStreamer.associateCallback(thisIndex.x * thisIndex.y, startCb, endCb, completionDetector, 0);
+
     eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     RunDescriptor *runs = eesData->GspData[iplane_ind]->runs;
     FFTcache *fftcache        = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
