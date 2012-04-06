@@ -109,7 +109,7 @@ extern int sizeX;
 extern int nchareG;              // number of g-space chares <= sizeX and >=nplane_x
 
 // Temporary global readonlys to hold the MeshStreamer group proxies
-extern CProxy_ArrayMeshStreamer<complex, CProxy_MeshStreamerArray2DClient<complex>, CkArrayIndex2D> fftStreamer;
+extern CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D> fftStreamer;
 extern CProxy_CompletionDetector completionDetector;
 
 void testeke(int ,complex *,int *,int *,int *, int ,int);
@@ -1424,19 +1424,20 @@ void CP_State_GSpacePlane::sendFFTData () {
     //******************    fprintf(fp,"Sending to realstate %d %d\n",thisIndex.x,z);
     real_proxy(thisIndex.x, z).acceptFFT(msg);  // same state,realspace index [z]
 
-    // Send a single datum to a realspace object via the meshStreamer
-    complex foo;
-    foo.re = thisIndex.x; foo.im = thisIndex.y;
-    CkArrayIndex2D destIdx(thisIndex.x, z);
-    fftStreamer.ckLocalBranch()->insertData(foo, destIdx);
-
-   // progress engine baby
-    CmiNetworkProgress();
-
+    // Hand over the fft data to the MeshStreamer chunk by chunk
+    for (int i=0, seq=0, idx=z; i < numLines; seq++)
+    {
+        streamedChunk fftchunk(thisIndex.y, thisIndex.x, z, numLines, seq);
+        for (int j = 0; i < numLines && j < streamedChunk::sz; i++, j++, idx+= sizeZ)
+            fftchunk.data[j] = data_out[idx];
+        CkArrayIndex2D destIdx(thisIndex.x, z);
+        fftStreamer.ckLocalBranch()->insertData(fftchunk, destIdx);
+    }
   }//endfor
   //*********************  fclose(fp);
 
   // Now that the streamer is grappling with this load of data,
+  fftStreamer.ckLocalBranch()->done();
   // it will become ready only when we set it up for the next iteration
   // This happens in doIFFT()
   // Until then, its not ready for the next step

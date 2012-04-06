@@ -167,7 +167,7 @@ public:
 
 #include "NDMeshStreamer.h"
 
-class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<complex> {
+class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<streamedChunk> {
  public:
      // coz meshStreamer won't let us inherit from the CBase version
      CProxy_CP_State_RealSpacePlane thisProxy;

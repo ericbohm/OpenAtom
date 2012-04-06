@@ -256,7 +256,7 @@ CkGroupID            mCastGrpId;
 CkReduction::reducerType complexVectorAdderType;
 
 // Temporary global readonlys to hold the MeshStreamer group proxies
-CProxy_ArrayMeshStreamer<complex, CProxy_MeshStreamerArray2DClient<complex>, CkArrayIndex2D> fftStreamer;
+CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D> fftStreamer;
 CProxy_CompletionDetector completionDetector;
 //============================================================================
 
@@ -1748,7 +1748,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
  //--------------------------------------------------------------------------------
  // Create the MeshStreamer group and the completion detector group that it needs
  int meshStreamerDims[3] = {CkNumPes(), 1, 1};
- fftStreamer = CProxy_ArrayMeshStreamer<complex, CProxy_MeshStreamerArray2DClient<complex>, CkArrayIndex2D>::ckNew(1024, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 1, 10);
+ fftStreamer = CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D>::ckNew(1024, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 1, 10);
  completionDetector = CProxy_CompletionDetector::ckNew();
 
   if(config.dumpMapFiles) {
