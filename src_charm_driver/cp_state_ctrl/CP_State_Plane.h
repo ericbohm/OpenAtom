@@ -171,8 +171,8 @@ class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<streamedChunk> 
  public:
      // coz meshStreamer won't let us inherit from the CBase version
      CProxy_CP_State_RealSpacePlane thisProxy;
-     void process(complex &item) {
-         CkPrintf("RSP[%d, %d] received datum (%g,%g)\n", thisIndex.x, thisIndex.y, item.re, item.im);
+     void process(streamedChunk &item) {
+         CkPrintf("RSP[%d, %d] received datum\n", thisIndex.x, thisIndex.y);
      }
 
 	CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
