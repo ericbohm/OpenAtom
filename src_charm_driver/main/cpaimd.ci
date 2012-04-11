@@ -547,5 +547,7 @@ mainmodule cpaimd {
 
     group ArrayMeshStreamer<streamedChunk,CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D>;
     group MeshStreamer<ArrayDataItem<streamedChunk, CkArrayIndex2D> >;
+    array[2D] MeshStreamerArray2DClient<streamedChunk>;
+    message MeshStreamerMessage<ArrayDataItem<streamedChunk,CkArrayIndex2D> >;
 };
 
