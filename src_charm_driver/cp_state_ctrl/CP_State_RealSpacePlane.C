@@ -110,6 +110,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
                   int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc,
 		  int _rfortime, int _rbacktime, UberCollection _instance)
   : thisProxy(this), thisInstance(_instance)
+  , nChunksRecvd(NULL)
 {
 //============================================================================
 //  ckout << "State R Space Constructor : "
@@ -148,8 +149,14 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
     setMigratable(false);
     cookie= new CkSectionInfo[rhoRsubplanes];
     iteration = 0;
-    run();
 
+    // Initialize the counter of num streamed FFT chunks received from each GSpace sender
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+    nChunksRecvd = new short[sim->nchareG];
+    for (int i=0; i < sim->nchareG; i++)
+        nChunksRecvd[i] = 0;
+
+    run();
 }
 //============================================================================
 

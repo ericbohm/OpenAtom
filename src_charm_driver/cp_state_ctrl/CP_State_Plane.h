@@ -172,7 +172,16 @@ class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<streamedChunk> 
      // coz meshStreamer won't let us inherit from the CBase version
      CProxy_CP_State_RealSpacePlane thisProxy;
      void process(streamedChunk &item) {
-         CkPrintf("RSP[%d, %d] received datum\n", thisIndex.x, thisIndex.y);
+         // If I have received as many chunks as expected from this sender...
+         if ( ++nChunksRecvd[item.i] == std::ceil((double)item.numDatums / streamedChunk::sz) )
+         {
+            CkPrintf("RSP[%d, %d] received %d chunks carrying %d datums\n", thisIndex.x, thisIndex.y, nChunksRecvd[item.i], item.numDatums);
+            nChunksRecvd[item.i] = 0;
+            // Determine if this chunk is full or only partially filled
+            // and copy that many datums into the appropriate locations
+            // Increment count (to indicate another sender has sent all its data)
+            // If all senders have completed all their chunks, proceed
+         }
      }
 
 	CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
@@ -208,6 +217,8 @@ class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<streamedChunk> 
         int ngridb;
         int ngridc;
 	int count;
+    // Array of size nChareG to keep track of num streamed chunks recved from each sending GSpace chare
+    short *nChunksRecvd;
 	int rsize;
 	int csize;
         int countProduct;
