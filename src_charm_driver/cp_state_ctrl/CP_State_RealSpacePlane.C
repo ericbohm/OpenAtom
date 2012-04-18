@@ -111,6 +111,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
 		  int _rfortime, int _rbacktime, UberCollection _instance)
   : thisProxy(this), thisInstance(_instance)
   , nChunksRecvd(NULL)
+  , streamedMsgs(NULL)
 {
 //============================================================================
 //  ckout << "State R Space Constructor : "
@@ -155,6 +156,10 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
     nChunksRecvd = new short[sim->nchareG];
     for (int i=0; i < sim->nchareG; i++)
         nChunksRecvd[i] = 0;
+    // Create space to hold the msg pointers
+    streamedMsgs = new RSFFTMsg*[sim->nchareG];
+    for (int i=0; i < sim->nchareG; i++)
+        streamedMsgs[i] = NULL;
 
     run();
 }
@@ -196,11 +201,30 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num){
 
 
 void CP_State_RealSpacePlane::process(streamedChunk &item) {
+    if (nChunksRecvd[item.i] == 0)
+    {
+        // Malloc and prio the message
+        CkAssert(streamedMsgs[item.i] == NULL);
+        streamedMsgs[item.i] = new (item.numDatums) RSFFTMsg;
+        streamedMsgs[item.i]->size        = item.numDatums;
+        streamedMsgs[item.i]->senderIndex = item.i;  // planenumber
+        streamedMsgs[item.i]->senderJndex = item.j;  // statenumber
+        streamedMsgs[item.i]->senderKndex = item.k;  // planenumber of rstate
+    }
+
+    // Copy the chunk into the msg
+    int startingDatumNum = item.chunkSeqNum * streamedChunk::sz;
+    int numDatumsFollowing = item.numDatums - startingDatumNum;
+    int numDatumsInChunk = (numDatumsFollowing >= streamedChunk::sz ? streamedChunk::sz : numDatumsFollowing);
+    memcpy(streamedMsgs[item.i]->data + startingDatumNum, item.data, sizeof(complex) * numDatumsInChunk);
+
     // If I have received as many chunks as expected from this sender...
     if ( ++nChunksRecvd[item.i] == std::ceil((double)item.numDatums / streamedChunk::sz) )
     {
-        CkPrintf("RSP[%d, %d] received %d chunks carrying %d datums\n", thisIndex.x, thisIndex.y, nChunksRecvd[item.i], item.numDatums);
+        //CkPrintf("RSP[%d, %d] received %d chunks carrying %d datums\n", thisIndex.x, thisIndex.y, nChunksRecvd[item.i], item.numDatums);
+        delete streamedMsgs[item.i];
         nChunksRecvd[item.i] = 0;
+        streamedMsgs[item.i] = NULL;
         // Determine if this chunk is full or only partially filled
         // and copy that many datums into the appropriate locations
         // Increment count (to indicate another sender has sent all its data)
