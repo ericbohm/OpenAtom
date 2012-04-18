@@ -24,7 +24,7 @@ struct streamedChunk
     streamedChunk(const short _i, const short _j, const short _k, int nDatum, int seqNum, complex *buf = NULL)
         : i(_i), j(_j), k(_k)
         , numDatums(nDatum)
-        , chunkSeqNum(chunkSeqNum)
+        , chunkSeqNum(seqNum)
     {
         if (buf)
             memcpy(data, buf, sz*sizeof(complex));
