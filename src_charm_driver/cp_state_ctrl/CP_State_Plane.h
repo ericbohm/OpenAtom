@@ -208,6 +208,8 @@ class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<streamedChunk> 
 	int count;
     // Array of size nChareG to keep track of num streamed chunks recved from each sending GSpace chare
     short *nChunksRecvd;
+    // Utility routine to copy incoming chunk into appropriate location
+    void copyFFTData(streamedChunk &item);
     /// @note: TEMPORARY. Array holding the incomplete msgs being reconstructed from streamed chunks
     RSFFTMsg **streamedMsgs;
 	int rsize;

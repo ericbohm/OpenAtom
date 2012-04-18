@@ -212,11 +212,8 @@ void CP_State_RealSpacePlane::process(streamedChunk &item) {
         streamedMsgs[item.i]->senderKndex = item.k;  // planenumber of rstate
     }
 
-    // Copy the chunk into the msg
-    int startingDatumNum = item.chunkSeqNum * streamedChunk::sz;
-    int numDatumsFollowing = item.numDatums - startingDatumNum;
-    int numDatumsInChunk = (numDatumsFollowing >= streamedChunk::sz ? streamedChunk::sz : numDatumsFollowing);
-    memcpy(streamedMsgs[item.i]->data + startingDatumNum, item.data, sizeof(complex) * numDatumsInChunk);
+    // Copy the incoming chunk into the appropriate location
+    copyFFTData(item);
 
     // If I have received as many chunks as expected from this sender...
     if ( ++nChunksRecvd[item.i] == std::ceil((double)item.numDatums / streamedChunk::sz) )
@@ -232,6 +229,15 @@ void CP_State_RealSpacePlane::process(streamedChunk &item) {
     }
 }
 
+
+void CP_State_RealSpacePlane::copyFFTData(streamedChunk &item)
+{
+    // Copy the chunk into the msg
+    int startingDatumNum = item.chunkSeqNum * streamedChunk::sz;
+    int numDatumsFollowing = item.numDatums - startingDatumNum;
+    int numDatumsInChunk = (numDatumsFollowing >= streamedChunk::sz ? streamedChunk::sz : numDatumsFollowing);
+    memcpy(streamedMsgs[item.i]->data + startingDatumNum, item.data, sizeof(complex) * numDatumsInChunk);
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
