@@ -1403,27 +1403,6 @@ void CP_State_GSpacePlane::sendFFTData () {
   ***********************************************/
 
   for(int z=0; z < sizeZ; z++) {
-
-   // Malloc and prio the message
-    RSFFTMsg *msg    = new (numLines,8*sizeof(int)) RSFFTMsg;
-    msg->size        = numLines;
-    msg->senderIndex = thisIndex.y;  // planenumber
-    msg->senderJndex = thisIndex.x;  // statenumber
-    msg->senderKndex = z;            // planenumber of rstate
-    msg->numPlanes   = gs.numNonZeroPlanes; // unity baby
-    
-    if(config.prioFFTMsg){
-       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-       *(int*)CkPriorityPtr(msg) = config.rsfftpriority + 
-                                   thisIndex.x*gs.planeSize[0]+thisIndex.y;
-    }//endif
-
-   // beam out all points with same z to chare array index z
-    complex *data    = msg->data;
-    for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = data_out[j];}
-    //******************    fprintf(fp,"Sending to realstate %d %d\n",thisIndex.x,z);
-    real_proxy(thisIndex.x, z).acceptFFT(msg);  // same state,realspace index [z]
-
     // Hand over the fft data to the MeshStreamer chunk by chunk
     for (int i=0, seq=0; i < numLines; seq++)
     {

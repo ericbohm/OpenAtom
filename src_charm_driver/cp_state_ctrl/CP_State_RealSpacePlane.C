@@ -222,7 +222,7 @@ void CP_State_RealSpacePlane::process(streamedChunk &item) {
     if ( ++nChunksRecvd[item.i] == std::ceil((double)item.numDatums / streamedChunk::sz) )
     {
         //CkPrintf("RSP[%d, %d] received %d chunks carrying %d datums\n", thisIndex.x, thisIndex.y, nChunksRecvd[item.i], item.numDatums);
-        delete streamedMsgs[item.i];
+        acceptFFT(streamedMsgs[item.i]);
         nChunksRecvd[item.i] = 0;
         streamedMsgs[item.i] = NULL;
         // Determine if this chunk is full or only partially filled
