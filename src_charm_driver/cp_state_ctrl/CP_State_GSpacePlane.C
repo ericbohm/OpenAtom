@@ -1425,14 +1425,18 @@ void CP_State_GSpacePlane::sendFFTData () {
     real_proxy(thisIndex.x, z).acceptFFT(msg);  // same state,realspace index [z]
 
     // Hand over the fft data to the MeshStreamer chunk by chunk
-    for (int i=0, seq=0, idx=z; i < numLines; seq++)
+    for (int i=0, seq=0; i < numLines; seq++)
     {
         streamedChunk fftchunk(thisIndex.y, thisIndex.x, z, numLines, seq);
-        for (int j = 0; i < numLines && j < streamedChunk::sz; i++, j++, idx+= sizeZ)
-            fftchunk.data[j] = data_out[idx];
+        do
+        {
+            fftchunk.data[i%streamedChunk::sz] = data_out[z+i*sizeZ];
+        } while( (++i < numLines) && (i % streamedChunk::sz != 0) );
+
         CkArrayIndex2D destIdx(thisIndex.x, z);
         fftStreamer.ckLocalBranch()->insertData(fftchunk, destIdx);
     }
+    //CkPrintf("GSpace[%d,%d] sending %d lines in %f chunks to RealSpace[%d,%d]\n", thisIndex.x, thisIndex.y, numLines, std::ceil((double)numLines/streamedChunk::sz),thisIndex.x,z);
   }//endfor
   //*********************  fclose(fp);
 
