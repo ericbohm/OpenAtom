@@ -599,7 +599,6 @@ main::main(CkArgMsg *msg) {
     UlsRhoRealProxy.reserve(config.numInstances);
     UlsRhoGProxy.reserve(config.numInstances);
     UavailProcs.reserve(config.numInstances);
-    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
     excludePes=NULL;
     mainProxy=thishandle;
     // make one controller chare per instance
