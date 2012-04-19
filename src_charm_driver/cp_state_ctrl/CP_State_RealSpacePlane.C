@@ -112,7 +112,6 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
 		  int _rfortime, int _rbacktime, UberCollection _instance)
   : thisProxy(this), thisInstance(_instance)
   , nChunksRecvd(NULL)
-  , streamedMsgs(NULL)
 {
 //============================================================================
 //  ckout << "State R Space Constructor : "
@@ -157,10 +156,6 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
     nChunksRecvd = new short[sim->nchareG];
     for (int i=0; i < sim->nchareG; i++)
         nChunksRecvd[i] = 0;
-    // Create space to hold the msg pointers
-    streamedMsgs = new RSFFTMsg*[sim->nchareG];
-    for (int i=0; i < sim->nchareG; i++)
-        streamedMsgs[i] = NULL;
 
     run();
 }

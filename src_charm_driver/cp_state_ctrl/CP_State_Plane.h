@@ -210,8 +210,6 @@ class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<streamedChunk> 
     short *nChunksRecvd;
     // Utility routine to copy incoming chunk into appropriate location
     void copyFFTData(streamedChunk &item);
-    /// @note: TEMPORARY. Array holding the incomplete msgs being reconstructed from streamed chunks
-    RSFFTMsg **streamedMsgs;
 	int rsize;
 	int csize;
         int countProduct;
