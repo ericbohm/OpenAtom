@@ -33,6 +33,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <numeric>
 
 
 
@@ -201,15 +202,10 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num){
 
 
 void CP_State_RealSpacePlane::process(streamedChunk &item) {
-    if (nChunksRecvd[item.i] == 0)
+    if(thisIndex.x >= config.nstates || thisIndex.y >= ngridc)
     {
-        // Malloc and prio the message
-        CkAssert(streamedMsgs[item.i] == NULL);
-        streamedMsgs[item.i] = new (item.numDatums) RSFFTMsg;
-        streamedMsgs[item.i]->size        = item.numDatums;
-        streamedMsgs[item.i]->senderIndex = item.i;  // planenumber
-        streamedMsgs[item.i]->senderJndex = item.j;  // statenumber
-        streamedMsgs[item.i]->senderKndex = item.k;  // planenumber of rstate
+        CkPrintf("A message has arrived to real state state char index %d %d\n", thisIndex.x,thisIndex.y);
+        CkAbort("This chare is out of range. Boy, you sure made a big boo-boo!!\n");
     }
 
     // Copy the incoming chunk into the appropriate location
@@ -217,26 +213,79 @@ void CP_State_RealSpacePlane::process(streamedChunk &item) {
 
     // If I have received as many chunks as expected from this sender...
     if ( ++nChunksRecvd[item.i] == std::ceil((double)item.numDatums / streamedChunk::sz) )
+        count++;
+
+    // If I have received all chunks from all senders
+    const int numSenders = CPcharmParaInfo::get()->nchareG;
+    if (count == numSenders)
     {
-        //CkPrintf("RSP[%d, %d] received %d chunks carrying %d datums\n", thisIndex.x, thisIndex.y, nChunksRecvd[item.i], item.numDatums);
-        acceptFFT(streamedMsgs[item.i]);
-        nChunksRecvd[item.i] = 0;
-        streamedMsgs[item.i] = NULL;
-        // Determine if this chunk is full or only partially filled
-        // and copy that many datums into the appropriate locations
-        // Increment count (to indicate another sender has sent all its data)
-        // If all senders have completed all their chunks, proceed
+        //CkPrintf("RSP[%d, %d] received all data from %d senders\n", thisIndex.x, thisIndex.y, numSenders);
+        count = 0;
+        bzero(nChunksRecvd, numSenders*sizeof(short));
+        iteration++;
+        #ifdef RSVKS_BARRIER
+        vksDone=false;
+        #endif
+
+        // Since every chareG has sent FFT data, you can resume/go on and do the FFT
+        RTH_Runtime_resume(run_thread);
     }
 }
 
 
-void CP_State_RealSpacePlane::copyFFTData(streamedChunk &item)
-{
+void CP_State_RealSpacePlane::copyFFTData(streamedChunk &item) {
+
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+
+    // If we've not received all data from even one sender
+    if (count == 0)
+    {
+        // Count the total number of chunks recvd so far
+        short totalChunksRecvd = std::accumulate(nChunksRecvd, nChunksRecvd + sim->nchareG, 0);
+        // And if we've received no chunks at all, then perform initial setup
+        if (totalChunksRecvd == 0)
+        {
+            // Notify the timekeeper that the FFT data has started arriving
+            #ifdef _CP_SUBSTEP_TIMING_
+                if(forwardTimeKeep>0)
+                {
+                    double rstart=CmiWallTimer();
+                    CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+                    contribute(sizeof(double), &rstart, CkReduction::min_double, cb, forwardTimeKeep);
+                }
+            #endif
+            // If we're conserving memory, (re)allocate the compute buffer
+            if(config.conserveMemory)
+                rs.allocate();
+            // Zero out the compute buffer
+            bzero(rs.planeArr, rs.size * sizeof(complex));
+        }
+    }
+
     // Copy the chunk into the msg
     int startingDatumNum = item.chunkSeqNum * streamedChunk::sz;
     int numDatumsFollowing = item.numDatums - startingDatumNum;
+    // Determine if this chunk is full or only partially filled
     int numDatumsInChunk = (numDatumsFollowing >= streamedChunk::sz ? streamedChunk::sz : numDatumsFollowing);
-    memcpy(streamedMsgs[item.i]->data + startingDatumNum, item.data, sizeof(complex) * numDatumsInChunk);
+
+    #ifdef _NAN_CHECK_
+    for(int i=0; i < numDatumsInChunk; i++)
+    {
+        CkAssert(isnan(item.data[i].re)==0);
+        CkAssert(isnan(item.data[i].im)==0);
+    }
+    #endif
+
+    // Copy the incoming datums into the appropriate locations
+    int **tranUnpack = sim->index_tran_upack;
+    for(int i = startingDatumNum; i < numDatumsInChunk; i++)
+    {
+      if(tranUnpack[item.i][i] < 0 || tranUnpack[item.i][i] >= rs.size){
+        CkPrintf("tranUnpack index out of range %d %d %d\n",i,item.i,tranUnpack[item.i][i]);
+        CkExit();
+      }
+      rs.planeArr[tranUnpack[item.i][i]] = item.data[i - startingDatumNum];
+    }
 }
 
 //============================================================================
