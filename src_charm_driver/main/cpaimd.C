@@ -454,6 +454,12 @@ main::main(CkArgMsg *msg) {
     
     // user event trace setup
     setTraceUserEvents();
+    // TODO timekeeper registerees will need to distinguish by instance
+    // timekeeper itself doesn't care.
+    TimeKeeperProxy = CProxy_TimeKeeper::ckNew();
+    // Create a multicast manager group that will handle many mcast/redns
+    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
+
 
      /* choose whether ortho should use local callback */
      Ortho_use_local_cb = true;
@@ -750,12 +756,6 @@ main::main(CkArgMsg *msg) {
     // availGlobG->dump();
     Timer = newtime;
     
-    // TODO timekeeper registerees will need to distinguish by instance
-    // timekeeper itself doesn't care.
-    TimeKeeperProxy = CProxy_TimeKeeper::ckNew();
-    // Create a multicast manager group that will handle many mcast/redns
-    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
-
     /*
 ===============================================================================
 Per Instance startup BEGIN
