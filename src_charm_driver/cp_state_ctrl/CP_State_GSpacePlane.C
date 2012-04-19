@@ -1185,7 +1185,7 @@ void CP_State_GSpacePlane::startNewIter ()  {
       CkCallback startCb(CkIndex_CP_State_GSpacePlane::readyToStreamFFT(), thisProxy);
       CkCallback endCb(CkCallback::ignore);
       if (thisIndex.x == 0 && thisIndex.y == 0)
-          fftStreamer.associateCallback(thisIndex.x * thisIndex.y, startCb, endCb, completionDetector, 0);
+          fftStreamer.associateCallback(nstates*nchareG, startCb, endCb, completionDetector, 0);
   }
 
   doneNewIter = true;
@@ -1525,7 +1525,7 @@ void CP_State_GSpacePlane::doIFFT()
     CkCallback startCb(CkIndex_CP_State_GSpacePlane::readyToStreamFFT(), thisProxy);
     CkCallback endCb(CkCallback::ignore);
     if (thisIndex.x == 0 && thisIndex.y == 0)
-        fftStreamer.associateCallback(thisIndex.x * thisIndex.y, startCb, endCb, completionDetector, 0);
+        fftStreamer.associateCallback(nstates*nchareG, startCb, endCb, completionDetector, 0);
 
     eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     RunDescriptor *runs = eesData->GspData[iplane_ind]->runs;
