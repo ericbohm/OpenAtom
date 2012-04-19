@@ -203,7 +203,8 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
   }//endif
 
 #ifdef _CP_SUBSTEP_TIMING_
-  if(forwardTimeKeep>0)
+  // If this is the first incoming FFT data, then start the fwd phase timing
+  if(forwardTimeKeep>0 && count == 0)
     {
       double rstart=CmiWallTimer();
       CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
