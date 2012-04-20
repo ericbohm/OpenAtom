@@ -937,6 +937,13 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
+  //-----------------------------------------------------------------------------
+  // 4)\streamFFTs{}
+    ind=9;
+    strcpy((*dict)[ind].keyword,"streamFFTs");
+    strcpy((*dict)[ind].keyarg,"off");
+    strcpy((*dict)[ind].error_mes,"on/off");
+    (*dict)[ind].iflag = 1;
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================

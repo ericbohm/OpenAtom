@@ -169,6 +169,7 @@ class Config {
    int fftprogresssplitReal;
    int useCommlib;
    int useGMulticast;
+   int streamFFTs;
    int numMulticastMsgs;
    int useCommlibMulticast;
    int atmOutput;

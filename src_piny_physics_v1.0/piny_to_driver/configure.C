@@ -1651,7 +1651,7 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 8;
+  num_dict[0] = 9;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_gen")-1;
 
 //=================================================================================
@@ -1720,6 +1720,12 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"atmOutput");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 9)\streamFFTs{}
+    ind=9;
+    strcpy((*dict)[ind].keyword,"streamFFTs");
+    strcpy((*dict)[ind].keyarg,"on");
+    strcpy((*dict)[ind].error_mes,"on/off");
 
 //----------------------------------------------------------------------------------
   }//end routine
@@ -1783,6 +1789,11 @@ void Config::set_config_params_gen (DICT_WORD *dict, char *fun_key, char *input_
         PRINTF("   You are in danger! Your atmOutput is off! \n");
         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
     }//
+  //-----------------------------------------------------------------------------
+  // 9)\streamFFTs{}
+    ind=9;
+    parse_on_off(dict[ind].keyarg,&streamFFTs,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
  
 //----------------------------------------------------------------------------------
   }//end routine
@@ -2948,6 +2959,7 @@ void Config::simpleRangeCheck(){
   rangeExit(lbgspace,"lbgspace",1);
   rangeExit(lbdensity,"lbgspace",1);
   rangeExit(useGMulticast,"useGMulticast",1);
+  rangeExit(streamFFTs,"streamFFTs",1);
   rangeExit(useCommlibMulticast,"useCommlibMulticast",1);
   rangeExit(useCommlib,"useCommlib",1);
   rangeExit(usePairEtoM,"usePairEtoM",1);
