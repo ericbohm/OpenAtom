@@ -901,6 +901,10 @@ Per Instance startup BEGIN
     // Initialize commlib strategies for later association and delegation
     if(config.numInstances>1)
 	CkPrintf("WARNING!!! Commlib does not work for multiple instances\n");
+    if (config.streamFFTs)
+        CkPrintf("GSpace will stream the forward FFT data to RealSpace\n");
+    else
+        CkPrintf("GSpace will send the forward FFT data via messages to RealSpace\n");
 
     init_commlib_strategies(sim->nchareRhoG, sim->sizeZ,nchareRhoRHart, thisInstance);
 

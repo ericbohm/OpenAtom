@@ -1180,7 +1180,7 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
   // Inform the meshStreamer to be ready for the forward FFT in the first step
   // Setup for subsequent steps happens in doIFFT()
-  if (iteration == 0)
+  if (iteration == 0 && config.streamFFTs)
   {
       CkCallback startCb(CkIndex_CP_State_GSpacePlane::readyToStreamFFT(), thisProxy);
       CkCallback endCb(CkCallback::ignore);
@@ -1373,81 +1373,102 @@ void CP_State_GSpacePlane::readyToStreamFFT()
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
-void CP_State_GSpacePlane::sendFFTData () {
+void CP_State_GSpacePlane::sendFFTData ()
+{
 
-#ifdef _CP_DEBUG_STATEG_VERBOSE_
-    CkPrintf("sendfft %d.%d \n",thisIndex.x,thisIndex.y);
-#endif
+    #ifdef _CP_DEBUG_STATEG_VERBOSE_
+        CkPrintf("sendfft %d.%d \n",thisIndex.x,thisIndex.y);
+    #endif
+    complex *data_out = gs.packedForceData;
+    int numLines = gs.numLines; // same amount of data to each realspace chare puppy
+    int sizeZ    = gs.planeSize[1];
 
-  complex *data_out = gs.packedForceData;
-  int numLines = gs.numLines; // same amount of data to each realspace chare puppy
-  int sizeZ    = gs.planeSize[1];
+    //============================================================================
+    // Do a Comlib Dance
+    #ifdef USE_COMLIB
+    #ifdef OLD_COMMLIB
+        if (config.useGssInsRealP){gssInstance.beginIteration();}
+    #else
+        // if (config.useGssInsRealP){ComlibBegin(real_proxy, 0);}
+    #endif
+    #endif
 
-//============================================================================
-// Do a Comlib Dance
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-  if (config.useGssInsRealP){gssInstance.beginIteration();}
-#else
- // if (config.useGssInsRealP){ComlibBegin(real_proxy, 0);}
-#endif
-#endif
-
-//============================================================================
-// Send your (x,y,z) to processors z.
-
-  /**********************************************
-  char junk[1000];
-  sprintf(junk,"gstate%d.%d.out",thisIndex.x,thisIndex.y);
-  FILE *fp = fopen(junk,"w");
-  ***********************************************/
-
-  for(int z=0; z < sizeZ; z++) {
-    // Hand over the fft data to the MeshStreamer chunk by chunk
-    for (int i=0, seq=0; i < numLines; seq++)
+    //============================================================================
+    // Send your (x,y,z) to processors z.
+    if (config.streamFFTs)
     {
-        streamedChunk fftchunk(thisIndex.y, thisIndex.x, z, numLines, seq);
-        do
+        for(int z=0; z < sizeZ; z++)
         {
-            fftchunk.data[i%streamedChunk::sz] = data_out[z+i*sizeZ];
-        } while( (++i < numLines) && (i % streamedChunk::sz != 0) );
+            // Hand over the fft data to the MeshStreamer chunk by chunk
+            for (int i=0, seq=0; i < numLines; seq++)
+            {
+                streamedChunk fftchunk(thisIndex.y, thisIndex.x, z, numLines, seq);
+                do
+                {
+                    fftchunk.data[i%streamedChunk::sz] = data_out[z+i*sizeZ];
+                } while( (++i < numLines) && (i % streamedChunk::sz != 0) );
 
-        CkArrayIndex2D destIdx(thisIndex.x, z);
-        fftStreamer.ckLocalBranch()->insertData(fftchunk, destIdx);
+                CkArrayIndex2D destIdx(thisIndex.x, z);
+                fftStreamer.ckLocalBranch()->insertData(fftchunk, destIdx);
+            }
+            //CkPrintf("GSpace[%d,%d] sending %d lines in %f chunks to RealSpace[%d,%d]\n",
+            //thisIndex.x, thisIndex.y, numLines, std::ceil((double)numLines/streamedChunk::sz),thisIndex.x,z);
+        }
+        // Now that the streamer is grappling with this load of data,
+        fftStreamer.ckLocalBranch()->done();
+        // it will become ready only when we set it up for the next iteration
+        // This happens in doIFFT(). Until then, its not ready for the next step
+        isStreamerReady = false;
     }
-    //CkPrintf("GSpace[%d,%d] sending %d lines in %f chunks to RealSpace[%d,%d]\n", thisIndex.x, thisIndex.y, numLines, std::ceil((double)numLines/streamedChunk::sz),thisIndex.x,z);
-  }//endfor
-  //*********************  fclose(fp);
-
-  // Now that the streamer is grappling with this load of data,
-  fftStreamer.ckLocalBranch()->done();
-  // it will become ready only when we set it up for the next iteration
-  // This happens in doIFFT()
-  // Until then, its not ready for the next step
-  isStreamerReady = false;
-//============================================================================    
-// Finish up 
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-  if (config.useGssInsRealP){gssInstance.endIteration();}
-#else
-   //if (config.useGssInsRealP){ComlibEnd(real_proxy, 0);}
-#endif
-#endif
-
-#ifdef _CP_SUBSTEP_TIMING_
-  if(forwardTimeKeep>0)
+    else
     {
-      double gend=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
-      contribute(sizeof(double),&gend,CkReduction::max_double, cb , forwardTimeKeep);
+        for(int z=0; z < sizeZ; z++)
+        {
+            // Malloc and prio the message
+            RSFFTMsg *msg    = new (numLines,8*sizeof(int)) RSFFTMsg;
+            msg->size        = numLines;
+            msg->senderIndex = thisIndex.y;  // planenumber
+            msg->senderJndex = thisIndex.x;  // statenumber
+            msg->senderKndex = z;            // planenumber of rstate
+            msg->numPlanes   = gs.numNonZeroPlanes; // unity baby
+
+            if(config.prioFFTMsg)
+            {
+                CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+                *(int*)CkPriorityPtr(msg) = config.rsfftpriority + thisIndex.x*gs.planeSize[0] + thisIndex.y;
+            }
+            // beam out all points with same z to chare array index z
+            complex *data = msg->data;
+            for (int i=0,j=z; i<numLines; i++,j+=sizeZ)
+                data[i] = data_out[j];
+            // send to same state,realspace index [z]
+            real_proxy(thisIndex.x, z).acceptFFT(msg);
+
+            // progress engine baby
+            CmiNetworkProgress();
+        }
     }
-#endif
 
+    //============================================================================
+    // Finish up
+    #ifdef USE_COMLIB
+    #ifdef OLD_COMMLIB
+        if (config.useGssInsRealP){gssInstance.endIteration();}
+    #else
+        //if (config.useGssInsRealP){ComlibEnd(real_proxy, 0);}
+    #endif
+    #endif
 
-//----------------------------------------------------------------------
-  }//end routine 
-//============================================================================
+    #ifdef _CP_SUBSTEP_TIMING_
+        if(forwardTimeKeep>0)
+        {
+            double gend = CmiWallTimer();
+            CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
+            contribute(sizeof(double),&gend,CkReduction::max_double, cb , forwardTimeKeep);
+        }
+    #endif
+}
+
 
 
 /**
@@ -1521,11 +1542,14 @@ void CP_State_GSpacePlane::doIFFT()
         double StartTime=CmiWallTimer();
     #endif
 
-    // Inform the meshStreamer to be ready for the forward FFT in the next step
-    CkCallback startCb(CkIndex_CP_State_GSpacePlane::readyToStreamFFT(), thisProxy);
-    CkCallback endCb(CkCallback::ignore);
-    if (thisIndex.x == 0 && thisIndex.y == 0)
-        fftStreamer.associateCallback(nstates*nchareG, startCb, endCb, completionDetector, 0);
+    if (config.streamFFTs)
+    {
+        // Inform the meshStreamer to be ready for the forward FFT in the next step
+        CkCallback startCb(CkIndex_CP_State_GSpacePlane::readyToStreamFFT(), thisProxy);
+        CkCallback endCb(CkCallback::ignore);
+        if (thisIndex.x == 0 && thisIndex.y == 0)
+            fftStreamer.associateCallback(nstates*nchareG, startCb, endCb, completionDetector, 0);
+    }
 
     eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     RunDescriptor *runs = eesData->GspData[iplane_ind]->runs;

@@ -44,7 +44,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
                 #ifndef _CP_DEBUG_VKS_OFF_ 
                     /// (D) FFT psi(gx,gy,gz)->psi(gx,gy,z)
                     c->myGSpaceObj->thisProxy(c->thisIndex.x,c->thisIndex.y).doFFT();
-                    if (c->myGSpaceObj->isStreamerReady)
+                    if (!config.streamFFTs || c->myGSpaceObj->isStreamerReady)
                         /// Send psi to RealSpace
                         c->myGSpaceObj->sendFFTData();
                     else
