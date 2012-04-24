@@ -48,6 +48,7 @@ setup_%: | proc_%
 	@echo "Setting up a job using $* cores on $(call numNodes,$*) nodes in directory: $|"
 	@$(LN) $(call realpath,$(perfDatabase)) $|/..
 	@$(LN) $(wildcard $(call realpath,$(perfDataset))/*) $|
+	@cd $| && $(call realpath,$(base)/utils/setup)
 	@touch $@
 
 proc_%:
