@@ -109,9 +109,10 @@ void CP_State_RealSpacePlane::run () {
 //============================================================================
 CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits, 
                   int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc,
-		  int _rfortime, int _rbacktime, UberCollection _instance)
+		  int _rfortime, int _rbacktime, int _fftFwdTimer, int _fftBwdTimer, UberCollection _instance)
   : thisProxy(this), thisInstance(_instance)
   , nChunksRecvd(NULL)
+  , fftFwdTimer(_fftFwdTimer), fftBwdTimer(_fftBwdTimer)
 {
 //============================================================================
 //  ckout << "State R Space Constructor : "
@@ -220,6 +221,15 @@ void CP_State_RealSpacePlane::process(streamedChunk &item) {
         iteration++;
         #ifdef RSVKS_BARRIER
         vksDone=false;
+        #endif
+        // Notify the timekeeper that my forward FFT comm phase is done
+        #ifdef _CP_SUBSTEP_TIMING_
+            if(fftFwdTimer > 0)
+            {
+                double fftEnd = CmiWallTimer();
+                CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
+                contribute(sizeof(double), &fftEnd, CkReduction::max_double, cb, fftFwdTimer);
+            }
         #endif
 
         // Since every chareG has sent FFT data, you can resume/go on and do the FFT
@@ -830,6 +840,14 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 #else
     if (config.useMssInsGP){ComlibBegin(gproxy,0);}
 #endif
+#endif
+#ifdef _CP_SUBSTEP_TIMING_
+  if(fftBwdTimer > 0)
+    {
+      double fftStart = CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+      contribute(sizeof(double),&fftStart, CkReduction::min_double, cb , fftBwdTimer);
+    }
 #endif
 
     for (int ic = 0; ic < nchareG; ic ++) { // chare arrays to which we will send

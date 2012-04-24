@@ -292,9 +292,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
                                            int    s_grain,
 					   int   _gforward,
 					   int   _gbackward,
+                       int   _fftFwd,
+                       int   _fftBwd,
 					   UberCollection _thisInstance
 					   ) :
   forwardTimeKeep(_gforward),  backwardTimeKeep(_gbackward),
+  fftFwdTimer(_fftFwd), fftBwdTimer(_fftBwd),
   thisInstance(_thisInstance)
 //============================================================================
    {//begin routine
@@ -1393,6 +1396,14 @@ void CP_State_GSpacePlane::sendFFTData ()
     #endif
     #endif
 
+    #ifdef _CP_SUBSTEP_TIMING_
+        if(fftFwdTimer > 0)
+        {
+            double fftStart = CmiWallTimer();
+            CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+            contribute(sizeof(double), &fftStart, CkReduction::min_double, cb, fftFwdTimer);
+        }
+    #endif
     //============================================================================
     // Send your (x,y,z) to processors z.
     if (config.streamFFTs)
@@ -1523,6 +1534,14 @@ void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg)
 // If you have recved from every z plane, go on
 
   if (countIFFT == gs.planeSize[1]) {
+    #ifdef _CP_SUBSTEP_TIMING_
+        if(fftBwdTimer > 0)
+        {
+            double fftEnd = CmiWallTimer();
+            CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
+            contribute(sizeof(double), &fftEnd, CkReduction::max_double, cb , fftBwdTimer);
+        }
+    #endif
     countIFFT = 0;
         UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
   }//endif : has everyone arrived?

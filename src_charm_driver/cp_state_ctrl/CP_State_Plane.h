@@ -173,7 +173,7 @@ class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<streamedChunk> 
      CProxy_CP_State_RealSpacePlane thisProxy;
      void process(streamedChunk &item);
 
-	CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
+	CP_State_RealSpacePlane(int, int, int, int, int, int, int, int, int, UberCollection);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
 	~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
 	void acceptFFT(RSFFTMsg *);
@@ -198,6 +198,7 @@ class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<streamedChunk> 
 	const UberCollection thisInstance;
 	int forwardTimeKeep;
 	int backwardTimeKeep;
+	int fftFwdTimer, fftBwdTimer;
         int iplane_ind;
         int ibead_ind,kpoint_ind, itemper_ind;
         int iteration;

@@ -117,7 +117,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         double ake_old;
         
         bool acceptedVPsi;
-        CP_State_GSpacePlane( int, int, int, int,int, int, UberCollection);
+        CP_State_GSpacePlane( int, int, int, int,int, int, int, int, UberCollection);
         CP_State_GSpacePlane(CkMigrateMessage *m);
         ~CP_State_GSpacePlane();
         /// Gets called from the PairCalc data receivers to confirm the setup of an RDMA link
@@ -184,6 +184,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         int gotHandles;
         int forwardTimeKeep;
         int backwardTimeKeep;
+        int fftFwdTimer, fftBwdTimer;
         int ireset_cg;
         int numReset_cg;
         int istart_typ_cp;

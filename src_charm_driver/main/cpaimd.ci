@@ -378,7 +378,7 @@ mainmodule cpaimd {
 
 	
 	array [2D] CP_State_RealSpacePlane : MeshStreamerArray2DClient<streamedChunk> {
-		entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int, UberCollection);
+		entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int, int, int, UberCollection);
 		entry void acceptFFT(RSFFTMsg *);
 		entry [local] void doFFT();
 		entry [nokeep] void acceptProduct(ProductMsg *m);

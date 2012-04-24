@@ -1641,8 +1641,15 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   std::ostringstream bwdstrm;
   bwdstrm << backwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
   int gbackward=keeperRegister(bwdstrm.str());
+
+  std::ostringstream fftFwdStrm, fftBwdStrm;
+  fftFwdStrm << "fftFwd(G-->R)." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z;
+  fftBwdStrm << "fftBwd(R-->G)." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z;
+  int fftFwdTimer = keeperRegister(fftFwdStrm.str());
+  int fftBwdTimer = keeperRegister(fftBwdStrm.str());
+
   gSpaceOpts.setMap(gsMap);
-  UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(sizeX, 1, 1, sGrainSize, gforward, gbackward, thisInstance, gSpaceOpts));
+  UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(sizeX, 1, 1, sGrainSize, gforward, gbackward, fftFwdTimer, fftBwdTimer, thisInstance, gSpaceOpts));
   UgSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
   // CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
 
@@ -1746,7 +1753,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   int rforward=keeperRegister(std::string("RealSpaceForward"));
   int rbackward=keeperRegister(std::string("RealSpaceBackward"));
 
-  UrealSpacePlaneProxy.push_back( CProxy_CP_State_RealSpacePlane::ckNew(1, 1, ngrida, ngridb, ngridc, rforward, rbackward, thisInstance, realSpaceOpts));
+  UrealSpacePlaneProxy.push_back( CProxy_CP_State_RealSpacePlane::ckNew(1, 1, ngrida, ngridb, ngridc, rforward, rbackward, fftFwdTimer, fftBwdTimer, thisInstance, realSpaceOpts));
     UrealSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();  
 
  //--------------------------------------------------------------------------------
