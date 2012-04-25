@@ -258,6 +258,9 @@ CkReduction::reducerType complexVectorAdderType;
 // Temporary global readonlys to hold the MeshStreamer group proxies
 CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D> fftStreamer;
 CProxy_CompletionDetector completionDetector;
+// file-scope global to take cmd line input abt streamer buffer size
+int streamerBufSize = 1024;
+
 //============================================================================
 
 /// The build system should define this macro to be the commit identifier
@@ -346,6 +349,8 @@ main::main(CkArgMsg *msg) {
     CkPrintf("  Cpaimd-Charm-Driver running on %d processors. \n", CkNumPes());
     CkPrintf("  Reading Physics input from %s\n",msg->argv[2]);
     CkPrintf("  Reading Driver  input from %s\n",msg->argv[1]);
+    if (msg->argc > 3)
+        streamerBufSize = atoi(msg->argv[3]);
 
     PRINT_LINE_DASH; CkPrintf("\n");
 
@@ -1759,7 +1764,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
  //--------------------------------------------------------------------------------
  // Create the MeshStreamer group and the completion detector group that it needs
  int meshStreamerDims[3] = {topoMgr->getDimNX() * topoMgr->getDimNT(), topoMgr->getDimNY(), topoMgr->getDimNZ()};
- fftStreamer = CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D>::ckNew(1024, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 0, 5);
+ fftStreamer = CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D>::ckNew(streamerBufSize, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 0, 5);
  completionDetector = CProxy_CompletionDetector::ckNew();
 
   if(config.dumpMapFiles) {
