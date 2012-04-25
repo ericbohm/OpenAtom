@@ -404,6 +404,16 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
     if (count == nchareG) {
       count=0;
       iteration++;
+      // Notify the timekeeper that my forward FFT comm phase is done
+      #ifdef _CP_SUBSTEP_TIMING_
+          if(fftFwdTimer > 0)
+          {
+              double fftEnd = CmiWallTimer();
+              CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
+              contribute(sizeof(double), &fftEnd, CkReduction::max_double, cb, fftFwdTimer);
+          }
+      #endif
+
       RTH_Runtime_resume(run_thread);
     }//endif
 
