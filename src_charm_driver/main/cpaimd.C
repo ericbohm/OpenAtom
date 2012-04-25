@@ -260,6 +260,8 @@ CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streame
 CProxy_CompletionDetector completionDetector;
 // file-scope global to take cmd line input abt streamer buffer size
 int streamerBufSize = 1024;
+// file-scope global to take cmd line input abt streamer flush period
+int streamerFlushPeriod = 5;
 
 //============================================================================
 
@@ -351,6 +353,8 @@ main::main(CkArgMsg *msg) {
     CkPrintf("  Reading Driver  input from %s\n",msg->argv[1]);
     if (msg->argc > 3)
         streamerBufSize = atoi(msg->argv[3]);
+    if (msg->argc > 4)
+        streamerFlushPeriod = atoi(msg->argv[4]);
 
     PRINT_LINE_DASH; CkPrintf("\n");
 
@@ -907,7 +911,10 @@ Per Instance startup BEGIN
     if(config.numInstances>1)
 	CkPrintf("WARNING!!! Commlib does not work for multiple instances\n");
     if (config.streamFFTs)
-        CkPrintf("GSpace will stream the forward FFT data to RealSpace\n");
+        CkPrintf("GSpace will stream the forward FFT data to RealSpace\n"
+                 "MeshStreamer: bufsize = %d; flushPeriod = %d\n"
+                 ,streamerBufSize, streamerFlushPeriod
+                );
     else
         CkPrintf("GSpace will send the forward FFT data via messages to RealSpace\n");
 
@@ -1764,7 +1771,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
  //--------------------------------------------------------------------------------
  // Create the MeshStreamer group and the completion detector group that it needs
  int meshStreamerDims[3] = {topoMgr->getDimNX() * topoMgr->getDimNT(), topoMgr->getDimNY(), topoMgr->getDimNZ()};
- fftStreamer = CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D>::ckNew(streamerBufSize, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 0, 5);
+ fftStreamer = CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D>::ckNew(streamerBufSize, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 0, streamerFlushPeriod);
  completionDetector = CProxy_CompletionDetector::ckNew();
 
   if(config.dumpMapFiles) {
