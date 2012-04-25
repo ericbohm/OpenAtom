@@ -75,7 +75,7 @@ RTH_Routine_code(CP_State_RealSpacePlane,run) {
   while(1) { 
     // constructor invokes run and then you suspend (no work yet)
     RTH_Suspend(); 
-    c->doFFT();    // state(g,z) from gstate arrives in dofft(msg) which resumes
+    c->thisProxy(c->thisIndex).doFFT();    // state(g,z) from gstate arrives in dofft(msg) which resumes
 #ifndef _CP_DEBUG_RHO_OFF_
     RTH_Suspend(); // after doreduction sends data to rhoreal, suspend
 #endif
