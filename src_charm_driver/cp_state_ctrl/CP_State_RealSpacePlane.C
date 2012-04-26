@@ -119,6 +119,8 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
 //	<< thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
 //============================================================================
 
+    myIndex.x = thisIndex.data()[0];
+    myIndex.y = thisIndex.data()[1];
     countProduct=0;
     count = 0;
     vksDone=false;

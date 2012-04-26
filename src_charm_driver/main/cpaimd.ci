@@ -324,7 +324,7 @@ mainmodule cpaimd {
 
     include "cp_state_ctrl/streamedChunk.h";
     // MeshStreamer related readonlys
-    readonly CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D> fftStreamer;
+    readonly CProxy_ArrayMeshStreamer<streamedChunk, CkArrayIndex2D> fftStreamer;
     readonly CProxy_CompletionDetector completionDetector;
 
 	message CompAtmForcMsg {double zmat[];};
@@ -377,7 +377,7 @@ mainmodule cpaimd {
 	};
 
 	
-	array [2D] CP_State_RealSpacePlane : MeshStreamerArray2DClient<streamedChunk> {
+	array [2D] CP_State_RealSpacePlane : MeshStreamerArrayClient<streamedChunk> {
 		entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int, int, int, UberCollection);
 		entry void acceptFFT(RSFFTMsg *);
 		entry [local] void doFFT();
@@ -545,9 +545,9 @@ mainmodule cpaimd {
 		entry eesCache(int,int,int,int,int,int,int, UberCollection);
 	};
 
-    group ArrayMeshStreamer<streamedChunk,CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D>;
+    group ArrayMeshStreamer<streamedChunk, CkArrayIndex2D>;
     group MeshStreamer<ArrayDataItem<streamedChunk, CkArrayIndex2D> >;
-    array[2D] MeshStreamerArray2DClient<streamedChunk>;
+    array[2D] MeshStreamerArrayClient<streamedChunk>;
     message MeshStreamerMessage<ArrayDataItem<streamedChunk,CkArrayIndex2D> >;
 };
 

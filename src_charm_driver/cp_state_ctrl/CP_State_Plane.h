@@ -167,10 +167,11 @@ public:
 
 #include "NDMeshStreamer.h"
 
-class CP_State_RealSpacePlane : public MeshStreamerArray2DClient<streamedChunk> {
+class CP_State_RealSpacePlane : public MeshStreamerArrayClient<streamedChunk> {
  public:
      // coz meshStreamer won't let us inherit from the CBase version
      CProxy_CP_State_RealSpacePlane thisProxy;
+     CkIndex2D myIndex;
      void process(streamedChunk &item);
 
 	CP_State_RealSpacePlane(int, int, int, int, int, int, int, int, int, UberCollection);

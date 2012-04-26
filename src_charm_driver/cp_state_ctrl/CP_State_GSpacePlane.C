@@ -109,7 +109,7 @@ extern int sizeX;
 extern int nchareG;              // number of g-space chares <= sizeX and >=nplane_x
 
 // Temporary global readonlys to hold the MeshStreamer group proxies
-extern CProxy_ArrayMeshStreamer<streamedChunk, CProxy_MeshStreamerArray2DClient<streamedChunk>, CkArrayIndex2D> fftStreamer;
+extern CProxy_ArrayMeshStreamer<streamedChunk, CkArrayIndex2D> fftStreamer;
 extern CProxy_CompletionDetector completionDetector;
 
 void testeke(int ,complex *,int *,int *,int *, int ,int);
