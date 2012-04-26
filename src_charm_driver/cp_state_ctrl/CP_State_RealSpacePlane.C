@@ -75,7 +75,7 @@ RTH_Routine_code(CP_State_RealSpacePlane,run) {
   while(1) { 
     // constructor invokes run and then you suspend (no work yet)
     RTH_Suspend(); 
-    c->thisProxy(c->thisIndex).doFFT();    // state(g,z) from gstate arrives in dofft(msg) which resumes
+    c->thisProxy(c->myIndex).doFFT();    // state(g,z) from gstate arrives in dofft(msg) which resumes
 #ifndef _CP_DEBUG_RHO_OFF_
     RTH_Suspend(); // after doreduction sends data to rhoreal, suspend
 #endif
@@ -85,7 +85,7 @@ RTH_Routine_code(CP_State_RealSpacePlane,run) {
       RTH_Suspend(); // wait for broadcast that all vks is done  
     }//endif
 #endif               //end pause
-    c->thisProxy(c->thisIndex.x,c->thisIndex.y).doVksFFT(); // vks(r) arrives in doproduct(msg) which resumes
+    c->thisProxy(c->myIndex.x,c->myIndex.y).doVksFFT(); // vks(r) arrives in doproduct(msg) which resumes
     c->sendFPsiToGSP();
   } //end while not done
 
@@ -116,11 +116,11 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
 {
 //============================================================================
 //  ckout << "State R Space Constructor : "
-//	<< thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
+//	<< myIndex.x << " " << myIndex.y << " " <<CkMyPe() << endl;
 //============================================================================
 
-    myIndex.x = thisIndex.data()[0];
-    myIndex.y = thisIndex.data()[1];
+    myIndex.x = thisIndex.data[0];
+    myIndex.y = thisIndex.data[1];
     countProduct=0;
     count = 0;
     vksDone=false;
@@ -136,8 +136,8 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
       csize = ngrida*ngridb; 
       rsize = 2*csize;
     }//endif
-    iplane_ind   = thisIndex.y;
-    istate       = thisIndex.x;
+    iplane_ind   = myIndex.y;
+    istate       = myIndex.x;
     ibead_ind    = thisInstance.idxU.x;
     kpoint_ind   = thisInstance.idxU.y;
     itemper_ind  = thisInstance.idxU.z;
@@ -145,7 +145,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
     forwardTimeKeep=_rfortime;
     backwardTimeKeep=_rbacktime;
     initRealStateSlab(&rs, ngrida, ngridb, ngridc, gSpaceUnits, 
-                       realSpaceUnits, thisIndex.x, thisIndex.y);
+                       realSpaceUnits, myIndex.x, myIndex.y);
 
     RhoReductionDest=thisInstance;
     if(config.UberJmax>1) RhoReductionDest.idxU.y=0; // not at the gamma point
@@ -200,9 +200,9 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num){
 
 
 void CP_State_RealSpacePlane::process(streamedChunk &item) {
-    if(thisIndex.x >= config.nstates || thisIndex.y >= ngridc)
+    if(myIndex.x >= config.nstates || myIndex.y >= ngridc)
     {
-        CkPrintf("A message has arrived to real state state char index %d %d\n", thisIndex.x,thisIndex.y);
+        CkPrintf("A message has arrived to real state state char index %d %d\n", myIndex.x,myIndex.y);
         CkAbort("This chare is out of range. Boy, you sure made a big boo-boo!!\n");
     }
 
@@ -217,7 +217,7 @@ void CP_State_RealSpacePlane::process(streamedChunk &item) {
     const int numSenders = CPcharmParaInfo::get()->nchareG;
     if (count == numSenders)
     {
-        //CkPrintf("RSP[%d, %d] received all data from %d senders\n", thisIndex.x, thisIndex.y, numSenders);
+        //CkPrintf("RSP[%d, %d] received all data from %d senders\n", myIndex.x, myIndex.y, numSenders);
         count = 0;
         bzero(nChunksRecvd, numSenders*sizeof(short));
         iteration++;
@@ -301,10 +301,10 @@ void CP_State_RealSpacePlane::copyFFTData(streamedChunk &item) {
 void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
 //============================================================================
 
-  if(thisIndex.x >= config.nstates || thisIndex.x < 0 || 
-     thisIndex.y >= ngridc         || thisIndex.y < 0){
+  if(myIndex.x >= config.nstates || myIndex.x < 0 || 
+     myIndex.y >= ngridc         || myIndex.y < 0){
     CkPrintf("A message has arrived to real state state char index %d %d\n",
-              thisIndex.x,thisIndex.y);
+              myIndex.x,myIndex.y);
     CkPrintf("This chare is out of range. Boy, you sure made a big boo-boo!!\n");
     CkExit();
   }//endif
@@ -348,7 +348,7 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
 
     /****************************************
     char junk[1000];
-    sprintf(junk,"rstate%d.%d.out",thisIndex.x,thisIndex.y);
+    sprintf(junk,"rstate%d.%d.out",myIndex.x,myIndex.y);
     FILE *fp = fopen(junk,"a");
     fprintf(fp,"Receiving from %d %d who is sending to %d %d : stuff %d of total %d\n",
 	    Jndex,Index,Jndex,Kndex,count,nchareG);
@@ -358,7 +358,7 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
     if (count > nchareG) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Mismatch in allowed gspace chare arrays : %d %d %d %d\n",
-                count,nchareG,thisIndex.x,thisIndex.y);
+                count,nchareG,myIndex.x,myIndex.y);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -385,7 +385,7 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
     if(size!=nline_per_chareG[Index]){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Dude, %d != %d for chare %d %d\n",size,nline_per_chareG[Index],
-                   thisIndex.y,Index);
+                   myIndex.y,Index);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -433,7 +433,7 @@ void CP_State_RealSpacePlane::doFFT(){
 //============================================================================
 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
-   ckout << "Real Space " << thisIndex.x << " " << thisIndex.y << " doing FFT" << endl;
+   ckout << "Real Space " << myIndex.x << " " << myIndex.y << " doing FFT" << endl;
 #endif
 
   CP           *cp           = CP::get();
@@ -467,7 +467,7 @@ void CP_State_RealSpacePlane::doFFT(){
     FILE *fp;
 
     /************************************
-    sprintf(junk,"rstate%d.%d_beforeFFT.out",thisIndex.x,thisIndex.y);
+    sprintf(junk,"rstate%d.%d_beforeFFT.out",myIndex.x,myIndex.y);
     fp = fopen(junk,"w");
     if(!config.doublePack){
       for(int i=0;i<ngridb;i++){
@@ -482,7 +482,7 @@ void CP_State_RealSpacePlane::doFFT(){
     fftcache->doStpFFTGtoR_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb,iplane_ind);
 
     /****************************************
-    sprintf(junk,"rstate%d.%d_afterFFT.out",thisIndex.x,thisIndex.y);
+    sprintf(junk,"rstate%d.%d_afterFFT.out",myIndex.x,myIndex.y);
     fp = fopen(junk,"w");
     if(!config.doublePack){
       for(int i=0;i<ngridb;i++){
@@ -530,7 +530,7 @@ void CP_State_RealSpacePlane::doFFT(){
     //    CkAssert(config.nchareG<=ngridc);
     int div    = (config.nchareG / ngridc);
     int rem    = (config.nchareG % ngridc);
-    int ind    = thisIndex.y+ngridc;    
+    int ind    = myIndex.y+ngridc;    
     if(div>1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("NchareG too large for ngridc for launch Scheme\n");
@@ -538,11 +538,11 @@ void CP_State_RealSpacePlane::doFFT(){
       CkExit();
     }//endif
 
-     if(thisIndex.y<config.nchareG){
-       UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).startNonLocalEes(iteration);
+     if(myIndex.y<config.nchareG){
+       UgSpaceDriverProxy[thisInstance.proxyOffset](myIndex.x,myIndex.y).startNonLocalEes(iteration);
      }//endif
-     if((div==1) && (thisIndex.y<rem)){
-	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,ind).startNonLocalEes(iteration);
+     if((div==1) && (myIndex.y<rem)){
+	UgSpaceDriverProxy[thisInstance.proxyOffset](myIndex.x,ind).startNonLocalEes(iteration);
      }//endif
 
   }//endif : eesnonlocal is on
@@ -552,7 +552,7 @@ void CP_State_RealSpacePlane::doFFT(){
 // Send off the reduction unless you are skipping rho, whence you call doproduct
 
 #ifdef _CP_DEBUG_RHO_OFF_
-  if(thisIndex.x==0 && thisIndex.y==0){
+  if(myIndex.x==0 && myIndex.y==0){
     CkPrintf("EHART       = OFF FOR DEBUGGING\n");
     CkPrintf("EExt        = OFF FOR DEBUGGING\n");
     CkPrintf("EWALD_recip = OFF FOR DEBUGGING\n");
@@ -591,7 +591,7 @@ void CP_State_RealSpacePlane::doReduction(){
    double *data        = fftcache->tmpDataR;
 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
-    CkPrintf("In StateRSpacePlane[%d %d] doReduction %d\n", thisIndex.x, thisIndex.y,
+    CkPrintf("In StateRSpacePlane[%d %d] doReduction %d\n", myIndex.x, myIndex.y,
                 CmiMemoryUsage());
 #endif
 
@@ -599,7 +599,7 @@ void CP_State_RealSpacePlane::doReduction(){
   for(int i=0;i<ngrida*ngridb ;i++){
       if(isnan(data[i])!=0){
 	CkPrintf("RS [%d %d] issuing nan at %d out of %d\n",
-           thisIndex.x, thisIndex.y, i, ngridb*ngrida);
+           myIndex.x, myIndex.y, i, ngridb*ngrida);
 	CkAbort("RS nan in the fftcache");
       }
   }//endif
@@ -624,7 +624,7 @@ void CP_State_RealSpacePlane::doReduction(){
     int dataSize = subSize*ngrida;
     if(subplane < subRem){dataSize += ngrida;}
     CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
-                  CkArrayIndex2D(thisIndex.y,subplane),UrhoRealProxy[RhoReductionDest.proxyOffset].ckGetArrayID());
+                  CkArrayIndex2D(myIndex.y,subplane),UrhoRealProxy[RhoReductionDest.proxyOffset].ckGetArrayID());
     mcastGrp->contribute(dataSize*sizeof(double),&(data[off]),
                          sumFastDoubleType,cookie[subplane],cb);
     off += dataSize;
@@ -680,7 +680,7 @@ void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
 //============================================================================
  
 #ifdef _CP_DEBUG_STATER_VERBOSE_
-  CkPrintf("In StateRSpacePlane[%d %d] doProd \n", thisIndex.x, thisIndex.y);
+  CkPrintf("In StateRSpacePlane[%d %d] doProd \n", myIndex.x, myIndex.y);
 #endif
 #ifdef _CP_SUBSTEP_TIMING_
   if(backwardTimeKeep>0)
@@ -706,7 +706,7 @@ void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
   int mychare    = msg->idx;
   int mysize     = msg->datalen;
   int myindex    = msg->subplane; // subplaneindex of rhor
-  CkAssert(mychare==thisIndex.y);
+  CkAssert(mychare==myIndex.y);
 
   int subSize    = (ngridb/rhoRsubplanes);
   int subRem     = (ngridb % rhoRsubplanes);
@@ -770,12 +770,12 @@ void CP_State_RealSpacePlane::doVksFFT() {
 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
   CkPrintf("In RealSpacePlane[%d %d] doProduct %d\n",
-             thisIndex.x, thisIndex.y,CmiMemoryUsage());
+             myIndex.x, myIndex.y,CmiMemoryUsage());
 #endif
 
 #ifndef _CP_DEBUG_RHO_OFF_  
 #ifdef _CP_DEBUG_VKS_RSPACE_
-  if(thisIndex.x==0 && thisIndex.y == 0){
+  if(myIndex.x==0 && myIndex.y == 0){
      FILE *fp = fopen("psivks_real_y0_state0.out","w");
       for(int i=0;i<(ngrida+2)*ngridb;i++){
         fprintf(fp,"%g\n",rho_rs.planeArrayR[i]);
@@ -832,7 +832,7 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 
     /****************************************
     char junk[1000];
-    sprintf(junk,"vks_on_state%d.%d_afterFFT.out",thisIndex.x,thisIndex.y);
+    sprintf(junk,"vks_on_state%d.%d_afterFFT.out",myIndex.x,myIndex.y);
     FILE *fp = fopen(junk,"w");
     if(!config.doublePack){
       for(int i=0;i<ngridb;i++){
@@ -867,16 +867,16 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
       int sendFFTDataSize = nlines_per_chareG[ic];
       GSIFFTMsg *msg      = new (sendFFTDataSize, 8 * sizeof(int)) GSIFFTMsg; 
       msg->size           = sendFFTDataSize;
-      msg->offset         = thisIndex.y;    // z-index
+      msg->offset         = myIndex.y;    // z-index
       complex *data       = msg->data;
 
       if(config.prioFFTMsg){
 	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = config.gsifftpriority+thisIndex.x*rs.ngrid_a;
+	  *(int*)CkPriorityPtr(msg) = config.gsifftpriority+myIndex.x*rs.ngrid_a;
       }//endif
 
       for(int i=0;i<sendFFTDataSize;i++){data[i] = vks_on_state[tranpack[ic][i]];}
-      gproxy(thisIndex.x, ic).acceptIFFT(msg); // send the message
+      gproxy(myIndex.x, ic).acceptIFFT(msg); // send the message
       CmiNetworkProgress();
 
     }//end for : chare sending
@@ -929,7 +929,7 @@ void CP_State_RealSpacePlane::init(ProductMsg *msg){
     CkGetSectionInfo(cookie[msg->subplane], msg);
     if(numCookies == config.rhoRsubplanes)
       {
-	//	CkPrintf("{%d} RSP [%d,%d] contributing numCookies %d = config.rhoRsubplanes %d\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y,numCookies, config.rhoRsubplanes);  
+	//	CkPrintf("{%d} RSP [%d,%d] contributing numCookies %d = config.rhoRsubplanes %d\n",thisInstance.proxyOffset, myIndex.x,myIndex.y,numCookies, config.rhoRsubplanes);  
 	contribute(sizeof(int), &numCookies, CkReduction::sum_int, 
 		   CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
       }
@@ -960,7 +960,7 @@ void CP_State_RealSpacePlane::ResumeFromSync(){
 //============================================================================
 void CP_State_RealSpacePlane::printData() {
     char str[20];
-    sprintf(str, "RSP%dx%d.out", thisIndex.x, thisIndex.y);
+    sprintf(str, "RSP%dx%d.out", myIndex.x, myIndex.y);
     FILE *outfile = fopen(str, "w");
     int ioff = 0;
     for (int i = 0; i < rs.ngrid_b; i++) {
