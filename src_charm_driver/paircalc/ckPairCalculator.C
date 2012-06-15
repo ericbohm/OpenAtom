@@ -2077,7 +2077,7 @@ void PairCalculator::bwMultiplyDynOrthoT()
   if(othernewData==NULL)
     {
 #ifdef _PAIRCALC_DEBUG_
-      CkPrintf("[%d,%d,%d,%d,%d] Allocated other %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedX,numPoints);
+      CkPrintf("[%d,%d,%d,%d,%d] Allocated other %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedX,numPoints);
 #endif
       othernewData = new inputType[numPoints*numExpectedX];
       bzero(othernewData,numPoints*numExpectedX * sizeof(inputType));
@@ -2087,7 +2087,7 @@ void PairCalculator::bwMultiplyDynOrthoT()
     {
       CkAssert(numPoints>0);
 #ifdef _PAIRCALC_DEBUG_
-      CkPrintf("[%d,%d,%d,%d,%d] Allocated mynewData %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedY,numPoints);
+      CkPrintf("[%d,%d,%d,%d,%d] Allocated mynewData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedY,numPoints);
 #endif
 
       mynewData = new inputType[numPoints*numExpectedY];
@@ -2107,7 +2107,8 @@ void PairCalculator::bwMultiplyDynOrthoT()
     CmiNetworkProgress();
 
     char transform='N';
-    int m_in=numPoints*2;
+    // If internal representation is as doubles, treat each complex as 2 doubles
+    int m_in=numPoints * pcDataSizeFactor;
     int n_in=grainSizeY;     // columns of op(B)==columns C
     int k_in=grainSizeX;     // columns op(A) == rows op(B)
 #ifdef PRINT_DGEMM_PARAMS
