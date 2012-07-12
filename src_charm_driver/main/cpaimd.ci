@@ -325,7 +325,6 @@ mainmodule cpaimd {
     include "cp_state_ctrl/streamedChunk.h";
     // MeshStreamer related readonlys
     readonly CProxy_ArrayMeshStreamer<streamedChunk, CkArrayIndex2D> fftStreamer;
-    readonly CProxy_CompletionDetector completionDetector;
 
 	message CompAtmForcMsg {double zmat[];};
 

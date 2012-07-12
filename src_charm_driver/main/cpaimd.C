@@ -257,7 +257,6 @@ CkReduction::reducerType complexVectorAdderType;
 
 // Temporary global readonlys to hold the MeshStreamer group proxies
 CProxy_ArrayMeshStreamer<streamedChunk, CkArrayIndex2D> fftStreamer;
-CProxy_CompletionDetector completionDetector;
 // file-scope global to take cmd line input abt streamer buffer size
 int streamerBufSize = 1024;
 // file-scope global to take cmd line input abt streamer flush period
@@ -1772,7 +1771,6 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
  // Create the MeshStreamer group and the completion detector group that it needs
  int meshStreamerDims[3] = {topoMgr->getDimNX() * topoMgr->getDimNT(), topoMgr->getDimNY(), topoMgr->getDimNZ()};
  fftStreamer = CProxy_ArrayMeshStreamer<streamedChunk, CkArrayIndex2D>::ckNew(streamerBufSize, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 0, streamerFlushPeriod);
- completionDetector = CProxy_CompletionDetector::ckNew();
 
   if(config.dumpMapFiles) {
     int size[2];
