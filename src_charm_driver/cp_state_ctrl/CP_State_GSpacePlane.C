@@ -1186,8 +1186,6 @@ void CP_State_GSpacePlane::startNewIter ()  {
   {
       CkCallback startCb(CkIndex_CP_State_GSpacePlane::readyToStreamFFT(), thisProxy);
       CkCallback endCb(CkCallback::ignore);
-      if (thisIndex.x == 0 && thisIndex.y == 0)
-          fftStreamer.associateCallback(nstates*nchareG, startCb, endCb, completionDetector, config.rsfftpriority);
   }
 
   doneNewIter = true;
@@ -1559,14 +1557,6 @@ void CP_State_GSpacePlane::doIFFT()
     #if CMK_TRACE_ENABLED
         double StartTime=CmiWallTimer();
     #endif
-
-    if (config.streamFFTs && thisIndex.x == 0 && thisIndex.y == 0)
-    {
-        // Inform the meshStreamer to be ready for the forward FFT in the next step
-        CkCallback startCb(CkIndex_CP_State_GSpacePlane::readyToStreamFFT(), thisProxy);
-        CkCallback endCb(CkCallback::ignore);
-        fftStreamer.associateCallback(nstates*nchareG, startCb, endCb, completionDetector, config.rsfftpriority);
-    }
 
     eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     RunDescriptor *runs = eesData->GspData[iplane_ind]->runs;
