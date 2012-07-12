@@ -1770,7 +1770,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
  //--------------------------------------------------------------------------------
  // Create the MeshStreamer group and the completion detector group that it needs
  int meshStreamerDims[3] = {topoMgr->getDimNX() * topoMgr->getDimNT(), topoMgr->getDimNY(), topoMgr->getDimNZ()};
- fftStreamer = CProxy_ArrayMeshStreamer<streamedChunk, CkArrayIndex2D>::ckNew(streamerBufSize, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 0, streamerFlushPeriod);
+ fftStreamer = CProxy_ArrayMeshStreamer<streamedChunk, CkArrayIndex2D>::ckNew(streamerBufSize, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 0);
 
   if(config.dumpMapFiles) {
     int size[2];
