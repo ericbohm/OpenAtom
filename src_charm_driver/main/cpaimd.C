@@ -1772,6 +1772,15 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
  int meshStreamerDims[3] = {topoMgr->getDimNX() * topoMgr->getDimNT(), topoMgr->getDimNY(), topoMgr->getDimNZ()};
  fftStreamer = CProxy_ArrayMeshStreamer<streamedChunk, CkArrayIndex2D>::ckNew(streamerBufSize, 3, meshStreamerDims, UrealSpacePlaneProxy[thisInstance.proxyOffset], 0);
 
+ if (config.streamFFTs)
+ {
+    CkCallback streamerReadyCB(CkIndex_CP_State_GSpacePlane::readyToStreamFFT()
+                              , UgSpacePlaneProxy[thisInstance.proxyOffset]);
+    CkCallback dummyCB(CkCallback::ignore);
+    fftStreamer.init(UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()
+                    , streamerReadyCB, dummyCB, config.rsfftpriority, false);
+ }
+
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareR;
