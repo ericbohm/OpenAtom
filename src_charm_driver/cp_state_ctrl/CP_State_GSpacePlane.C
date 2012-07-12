@@ -1424,9 +1424,6 @@ void CP_State_GSpacePlane::sendFFTData ()
         }
         // Now that the streamer is grappling with this load of data,
         fftStreamer.ckLocalBranch()->done();
-        // it will become ready only when we set it up for the next iteration
-        // This happens in doIFFT(). Until then, its not ready for the next step
-        isStreamerReady = false;
     }
     else
     {
