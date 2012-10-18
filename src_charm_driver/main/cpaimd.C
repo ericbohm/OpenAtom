@@ -3570,6 +3570,7 @@ void computeMapOffsets()
 #include "CPcharmParaInfo.def.h"
 #include "timeKeeper.def.h"
 #include "startupMessages.def.h"
+#include "cp_state_ctrl/CP_State_GSpacePlane.h"
 #include "cpaimd.def.h"
 
 //============================================================================
