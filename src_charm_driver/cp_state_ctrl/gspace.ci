@@ -1,6 +1,6 @@
 module gSpaceDriver
 {
-	class UberCollection;
+    include "uber/Uber.h";
 	array [2D] GSpaceDriver
 	{
 		// Constructor(s)
