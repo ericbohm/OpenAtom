@@ -1349,6 +1349,7 @@ void CP_State_GSpacePlane::doFFT() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
+#if USE_PERSISTENT
 void CP_State_GSpacePlane::setupFFTPersistent() {
 
     int numLines = gs.numLines; // same amount of data to each realspace chare puppy
@@ -1366,7 +1367,7 @@ void CP_State_GSpacePlane::setupFFTPersistent() {
     }
     CkPrintf("persistent handler  message count %d, size %d\n", sizeZ, size);
 }
-
+#endif
 void CP_State_GSpacePlane::sendFFTData () {
 
 #if USE_PERSISTENT

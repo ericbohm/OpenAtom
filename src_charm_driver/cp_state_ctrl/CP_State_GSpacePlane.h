@@ -245,6 +245,10 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
             complex *savedlambdaBf;
             complex *savedlambdaAf;
         #endif
+#if USE_PERSISTENT
+        PersistentHandle   *fftHandler;
+        void setupFFTPersistent();
+#endif
 };
 
 #endif // CP_STATE_GSPACE_PLANE_H
