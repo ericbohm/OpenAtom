@@ -81,7 +81,9 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
 //============================================================================
-
+#if CMK_PERSISTENT_COMM 
+#define USE_PERSISTENT      1
+#endif
 
 //============================================================================
 extern Config config;
@@ -300,6 +302,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 //        << thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
 //============================================================================
 
+  fftHandler = NULL;
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt  = sim->cp_min_opt;
   int gen_wave    = sim->gen_wave;
@@ -1090,7 +1093,6 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 #endif // HPM
 #endif // _CP_SUBSTEP_TIMING_
 
-
 //---------------------------------------------------------------------------
    
 }// end routine
@@ -1347,7 +1349,29 @@ void CP_State_GSpacePlane::doFFT() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
+void CP_State_GSpacePlane::setupFFTPersistent() {
+
+    int numLines = gs.numLines; // same amount of data to each realspace chare puppy
+    int sizeZ    = gs.planeSize[1];
+    CkArray *real_proxy_local = real_proxy.ckLocalBranch();
+    fftHandler = (PersistentHandle*) malloc( sizeof(PersistentHandle) * sizeZ);
+    int size;
+    for(int z=0; z < sizeZ; z++) {
+        int peer = real_proxy_local->homePe(CkArrayIndex2D(thisIndex.x, z)); 
+        int compress_start = sizeof(envelope) + sizeof(RSFFTMsg);
+        int compress_size = numLines*sizeof(complex);
+        size = compress_start + compress_size + sizeof(int);
+        fftHandler[z] = CmiCreatePersistent(peer, size, compress_start);
+        //fftHandler[z] = CmiCreateCompressPersistent(peer, size, compress_start, compress_size);
+    }
+    CkPrintf("persistent handler  message count %d, size %d\n", sizeZ, size);
+}
+
 void CP_State_GSpacePlane::sendFFTData () {
+
+#if USE_PERSISTENT
+    if(fftHandler == NULL) setupFFTPersistent();
+#endif
 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
     CkPrintf("sendfft %d.%d \n",thisIndex.x,thisIndex.y);
@@ -1372,7 +1396,7 @@ void CP_State_GSpacePlane::sendFFTData () {
 
   /**********************************************
   char junk[1000];
-  sprintf(junk,"gstate%d.%d.out",thisIndex.x,thisIndex.y);
+  sprintf(junk,"gstate%d.%d.out.%d",thisIndex.x,thisIndex.y, iteration);
   FILE *fp = fopen(junk,"w");
   ***********************************************/
 
@@ -1394,15 +1418,21 @@ void CP_State_GSpacePlane::sendFFTData () {
 
    // beam out all points with same z to chare array index z
     complex *data    = msg->data;
-    for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = data_out[j];}
-    //******************    fprintf(fp,"Sending to realstate %d %d\n",thisIndex.x,z);
+    //fprintf(fp,"%d\n%d ",numLines*2, iteration); 
+    for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = data_out[j]; }
+    //for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = data_out[j]; fprintf(fp,"%e %e ", data[i].re, data[i].im);}
+#if USE_PERSISTENT 
+    CmiUsePersistentHandle(&fftHandler[z], 1);
+#endif
     real_proxy(thisIndex.x, z).acceptFFT(msg);  // same state,realspace index [z]
-
+#if USE_PERSISTENT 
+    CmiUsePersistentHandle(NULL, 0);
+#endif
    // progress engine baby
     CmiNetworkProgress();
 
   }//endfor
-  //*********************  fclose(fp);
+  //fclose(fp);
 
 //============================================================================    
 // Finish up 
@@ -1834,9 +1864,13 @@ void  CP_State_GSpacePlane::sendLambda() {
     CkAssert(countLambdaO[i]==0);
 #endif
 #ifdef _CP_GS_DUMP_LAMBDA_
-    dumpMatrix("lambdaBf",(double *)force, 1, 
+  char name1[100];
+  char name2[100];
+  sprintf(name1, "lambdaBf.iter.%d", iteration);
+  sprintf(name2, "psiBf.iter.%d", iteration);
+  dumpMatrix(name1, (double *)force, 1, 
                      gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    dumpMatrix("psiBf",(double *)psi, 1, 
+    dumpMatrix(name2,(double *)psi, 1, 
                      gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
