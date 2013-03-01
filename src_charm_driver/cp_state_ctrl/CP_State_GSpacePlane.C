@@ -302,7 +302,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 //        << thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
 //============================================================================
 
+#ifdef USE_PERSISTENT
   fftHandler = NULL;
+#endif
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt  = sim->cp_min_opt;
   int gen_wave    = sim->gen_wave;

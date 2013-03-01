@@ -49,7 +49,6 @@ struct EnergyStruct;
  * shake performance bugs out of MSA, and pay attention to
  * partitioning considerations, we'll revisit it.  
 
- /* 
 
   CkCache could be considered here, but our use case is so simple that
   CkCache is wildly over engineered for our purposes.  The number of
