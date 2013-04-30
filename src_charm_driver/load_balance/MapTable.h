@@ -309,7 +309,7 @@ class SCalcMapTable : public MapTable4
 {
 
   int max_states, nchareG, grainsize;
-  CmiBool symmetric;
+  bool symmetric;
   int scalc_per_plane;
   int planes_per_pe;
   int numChunksAsym;
@@ -318,7 +318,7 @@ class SCalcMapTable : public MapTable4
     
  public:
     SCalcMapTable(MapType4  *_map, PeList *_availprocs, int _nstates, 
-	     int _nchareG,  int gs, CmiBool _flag, int _scalc_per_plane,
+	     int _nchareG, int gs, bool _flag, int _scalc_per_plane,
 	     int _planes_per_pe, int _numChunksA, int _numChunksS, MapType2  *_gmap, bool useCuboidMap, bool useCentroid, int boxSize);
 
   void dump()

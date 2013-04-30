@@ -573,7 +573,7 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
 
 SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs, 
 			     int _nstates, int _nchareG,  int _grainsize, 
-			     CmiBool _flag, int _scalc_per_plane,  
+			     bool _flag, int _scalc_per_plane,
 			     int _planes_per_pe, 
 			     int _numChunksA, 
 			     int _numChunksS, 
