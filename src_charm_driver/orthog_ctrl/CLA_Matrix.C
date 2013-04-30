@@ -188,7 +188,7 @@ CLA_Matrix::CLA_Matrix(int _M, int _K, int _N, int _m, int _k, int _n,
   //  correct for number of chunks
 
   algorithm = MM_ALG_2D;
-  usesAtSync = CmiFalse;
+  usesAtSync = false;
   setMigratable(false);
   /* figure out size of our sections */
   if(part == MULTARG_A){
@@ -269,7 +269,7 @@ CLA_Matrix::CLA_Matrix(CProxy_CLA_MM3D_multiplier p, int M, int K, int N,
   got_data = got_start = false;
   res_msg = NULL;
   algorithm = MM_ALG_3D;
-  usesAtSync = CmiFalse;
+  usesAtSync = false;
   setMigratable(false);
   /* figure out size of our sections */
   if(part == MULTARG_A){

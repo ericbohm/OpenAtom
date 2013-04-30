@@ -164,7 +164,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
 // No migration: No atSync load-balancing act
 
   setMigratable(false);
-  usesAtSync = CmiFalse;
+  usesAtSync = false;
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   savedprojpsiC=NULL;
   savedProjpsiCScr=NULL;

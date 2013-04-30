@@ -211,7 +211,7 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(
 
   setMigratable(false);
 
-  usesAtSync = CmiTrue;
+  usesAtSync = true;
   if(config.lbdensity){
     setMigratable(true);
   }else{

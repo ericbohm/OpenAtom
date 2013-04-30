@@ -34,7 +34,7 @@ class StructureFactor : public CBase_StructureFactor
       CmiMemcpy(destinations,_destinations, numdest *sizeof(int));
       
       gsSize=0;
-//      usesAtSync=CmiTrue; not until we come up with a migration scheme
+//      usesAtSync=true; not until we come up with a migration scheme
       setMigratable(false);
 #ifdef _CP_DEBUG_SF_CALC_
   CkPrintf("[%d %d %d] created SF\n",thisIndex.x, thisIndex.y, thisIndex.z);

@@ -679,7 +679,7 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
   step = 0;
   lbcaught=0;
   num_ready = 0;
-  usesAtSync=CmiTrue;
+  usesAtSync=true;
   setMigratable(false);
   got_start = false;
   toleranceCheckOrthoT=false;

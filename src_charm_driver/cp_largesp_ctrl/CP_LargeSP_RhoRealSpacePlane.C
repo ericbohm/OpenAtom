@@ -89,7 +89,7 @@ CP_LargeSP_RhoRealSpacePlane::CP_LargeSP_RhoRealSpacePlane(
 //============================================================================
 // Migration
 
-    usesAtSync = CmiTrue;
+    usesAtSync = true;
     setMigratable(false);
 
 

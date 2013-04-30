@@ -477,7 +477,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 //============================================================================
 // Load Balancing etc
 
-  usesAtSync = CmiTrue;
+  usesAtSync = true;
   if(config.lbgspace){
     setMigratable(true);
   }else{

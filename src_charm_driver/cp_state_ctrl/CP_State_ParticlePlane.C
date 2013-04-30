@@ -147,7 +147,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
 // No load balancing and no atsyncing either!
 
   setMigratable(false);
-  usesAtSync           = CmiFalse;
+  usesAtSync           = false;
 
 //============================================================================
 // report your status to main

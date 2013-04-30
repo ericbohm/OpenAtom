@@ -185,7 +185,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib,
 //============================================================================
 // Migration
 
-    usesAtSync = CmiTrue;
+    usesAtSync = true;
    //    if(config.lbdensity){
    //      setMigratable(true);
    //    }else{

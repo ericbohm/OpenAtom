@@ -172,7 +172,7 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX,
     }//endfor
 
 
-    usesAtSync = CmiTrue;
+    usesAtSync = true;
     if(config.lbdensity){
       setMigratable(true);
     }else{
