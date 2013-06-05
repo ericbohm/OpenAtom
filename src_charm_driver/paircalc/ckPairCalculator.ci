@@ -9,7 +9,7 @@ module pcMessages {
 	readonly ComlibInstanceHandle mcastInstanceCP;
 	readonly ComlibInstanceHandle mcastInstanceACP;
 
-	initproc registersumMatrixDouble(void);	
+	initnode registersumMatrixDouble(void);
 
 	message initResultMsg;
 

@@ -184,7 +184,7 @@ mainmodule cpaimd {
 	readonly int planes_per_pe;
 	readonly bool fakeTorus;
 	readonly CProxy_TimeKeeper TimeKeeperProxy;
-	initproc registersumFastDouble(void);	
+	initnode registersumFastDouble(void);
 	
 	extern module CPcharmParaInfo;
 	extern module PhysScratchCache;
