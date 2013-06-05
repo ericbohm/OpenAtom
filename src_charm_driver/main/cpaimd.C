@@ -62,6 +62,7 @@ UberCollection thisInstance;
  */
 int numPes;
 bool fakeTorus;
+extern void initFFTLock(void);
 
 //============================================================================
 //extern "C" {int get_memory_allocated_user_total();}
@@ -79,6 +80,8 @@ extern MDINTER      readonly_mdinter;
 extern MDINTRA      readonly_mdintra;
 extern GENERAL_DATA readonly_general_data;
 extern CP           readonly_cp; 
+
+
 /* @} */
 //============================================================================
 
