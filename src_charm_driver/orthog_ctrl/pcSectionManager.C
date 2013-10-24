@@ -7,6 +7,9 @@
 extern ComlibInstanceHandle mcastInstanceCP;
 extern ComlibInstanceHandle mcastInstanceACP;
 #endif
+/** @addtogroup Ortho
+    @{
+*/
 
 namespace cp {
     namespace ortho {
@@ -260,3 +263,4 @@ void PCSectionManager::sendMatrix(int n, internalType *ptr1, internalType *ptr2,
 
     } // end namespace ortho
 } // end namespace cp
+/*@}*/

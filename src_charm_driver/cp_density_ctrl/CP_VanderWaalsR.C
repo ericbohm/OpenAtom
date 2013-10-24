@@ -42,6 +42,11 @@ extern int       nstates;
 
 
 //#define _CP_DEBUG_VDWR_VERBOSE_
+
+/** @addtogroup VanderWaals
+    @{
+*/
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -92,3 +97,4 @@ void CP_VanderWaalsR::pup(PUP::er &p){
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
+/*@}*/

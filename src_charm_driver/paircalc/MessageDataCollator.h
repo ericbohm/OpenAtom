@@ -11,6 +11,11 @@
 #ifndef MESSAGE_DATA_COLLATOR_H
 #define MESSAGE_DATA_COLLATOR_H
 
+/*
+ * @addtogroup PairCalculator
+ *    @{
+ */
+
 namespace cp {
 namespace paircalc {
 
@@ -429,6 +434,6 @@ inline void MessageDataCollator<msgType,dataType>::expectNext()
 
 } // end namespace paircalc
 } // end namespace cp
-
+/*@}*/
 #endif // MESSAGE_DATA_COLLATOR_H
 

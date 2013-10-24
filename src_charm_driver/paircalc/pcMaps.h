@@ -4,6 +4,10 @@
 
 #ifndef PC_MAPS_H
 #define PC_MAPS_H
+/*
+ * @addtogroup mapping
+ *    @{
+ */
 
 /// Paircalc's map group that provides procNum() to place paircalc chares as determined by the map logic
 class SCalcMap : public CkArrayMap
@@ -35,6 +39,6 @@ class SCalcMap : public CkArrayMap
         /// Let local code access the paircalc maptable I store. (for use by Ortho mapping code)
         MapType4* getMapTable() { return &maptable; }
 };
-
+/*@}*/
 #endif // PC_MAPS_H
 

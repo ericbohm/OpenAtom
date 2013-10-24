@@ -3,6 +3,9 @@
 
 #ifndef ORTHO_MAP_H
 #define ORTHO_MAP_H
+/** @addtogroup mapping
+    @{
+*/
 
 /// Centroid based ortho map (actual map creation in MapTable.C)
 class OrthoMap : public CkArrayMap
@@ -72,6 +75,6 @@ class OrthoHelperMap : public CkArrayMap
                 return(proc);
         }
 };
-
+/*@}*/
 #endif // ORTHO_MAP_H
 

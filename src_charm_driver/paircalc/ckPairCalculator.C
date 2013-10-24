@@ -68,8 +68,6 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
   return CkReductionMsg::buildNew(size*sizeof(double),ret);
 }
 
-
-
 // A functor to simply delegate a gemm to either zgemm or dgemm based on how its instantiated
 void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex *A, int *lda, complex *B, int *ldb, double *beta, complex *C, int *ldc)
 {
@@ -83,7 +81,10 @@ void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double 
 }
 
 
-
+/*
+ * @addtogroup PairCalculator
+ *    @{
+ */
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
@@ -2931,7 +2932,7 @@ void manmult(int numRowsA, int numRowsB, int rowLength, double *A, double *B, do
 	}
     }
 }
-
+/*@}*/
 
 #include "pcMessages.def.h"
 #include "InputDataHandler.h"

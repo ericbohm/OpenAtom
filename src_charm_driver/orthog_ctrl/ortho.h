@@ -10,27 +10,12 @@
 //============================================================================
 /** \file ortho.h
  *
- *  Ortho is currently decomposed by sGrainSize.  Which makes sense for
- *  the old statewise only decomposition of the paircalculator.  For
- *  the new 4d decomposition it may make sense to decompose the
- *  paircalculator more along the numPoints axis than the states axis.
- *  Which may result in comparitively fewer Ortho objects.  Thereby
- *  further motivating the need to chop up Ortho by some unit smaller
- *  than grainsize.  So as to avoid Amdaling on the orthonormalization
- *  process.
- *
- *  If we allow orthograin to be entirely distinct from sGrainSize we
- *  have arbitrary overlap situations between orthograins and
- *  scalcgrains.  Supporting that requires a rather complicated (and
- *  therefore bug prone) contiguousReducer reduction/multicast
- *  stitcher/splitter implementation to reduce data from scalc->ortho
- *  and multicast data from ortho->scalc.  
+ *  Ortho is decomposed by orthoGrainSize.  
  * 
- *  We don't want to do that if we don't have to.  If we restrict
- *  orthograin to be a factor of sGrainsize then we have no section
- *  overlap issues.  Thereby leaving us with ortho sections that need a
- *  simple tiling split of the sgrain sections.  Mirrored by a
- *  stitching of the submatrix inputs for the backward path.  
+ *  We restrict orthograin to be a factor of sGrainsize then we have
+ *  no section overlap issues.  Thereby leaving us with ortho sections
+ *  that need a simple tiling split of the sgrain sections.  Mirrored
+ *  by a stitching of the submatrix inputs for the backward path.
  *
  *  This can be accomplished manually within the current codebase with
  *  some waste in data replication and computation replication to
@@ -114,8 +99,9 @@ class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 class orthoMtrigger : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 };
 
-/**
- */
+/** @addtogroup Ortho
+    @{
+*/
 class Ortho : public CBase_Ortho
 {
     public:

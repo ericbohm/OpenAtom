@@ -53,7 +53,9 @@ extern int       nstates;
 bool is_pow2(int );
 
 
-
+/** @addtogroup LargeSparse
+    @{
+*/
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -179,3 +181,4 @@ void CP_LargeSP_RhoRealSpacePlane::acceptLSPRhoG() {
 //============================================================================
 
 
+/*@}*/

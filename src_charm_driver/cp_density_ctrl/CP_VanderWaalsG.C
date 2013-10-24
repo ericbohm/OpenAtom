@@ -2,7 +2,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /** \file CP_VanderWaalsG.C
- *
+ * @defgroup VanderWaals VanderWaals
  *  This is a description of the "life" of a CP_VanderWaalsG  object
  *
  * --Marcello please insert a description--
@@ -37,6 +37,9 @@ extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
 
 //============================================================================
 
+/** @addtogroup VanderWaals
+    @{
+*/
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -86,3 +89,4 @@ void CP_VanderWaalsG::pup(PUP::er &p){
    }//end routine
 //============================================================================
 
+/*@}*/

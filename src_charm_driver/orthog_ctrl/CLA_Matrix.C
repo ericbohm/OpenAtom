@@ -24,6 +24,9 @@ void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double 
 extern CkReduction::reducerType sumFastDoubleType;
 #include "load_balance/MapTable.h"
 #include "orthog_ctrl/ortho.h"
+/** @addtogroup Ortho
+    @{
+*/
 
 /******************************************************************************/
 /* helper functions */
@@ -757,6 +760,6 @@ void CLA_MM3D_multiplier::multiply(internalType *A, internalType *B){
    sectionCookie, reduce_CB);
   delete [] C;
 }
-
+/*@}*/
 #include "CLA_Matrix.def.h"
 

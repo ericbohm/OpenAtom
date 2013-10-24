@@ -62,6 +62,9 @@ bool is_pow2(int );
 
 //#define  _CP_RHO_RSP_VERBOSE_OFF
 
+/** @addtogroup Density
+    @{
+*/
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -2472,6 +2475,7 @@ void CP_Rho_RealSpacePlane::ResumeFromSync(){
 }
 //============================================================================
 
+/*@}*/
 
 
 //============================================================================

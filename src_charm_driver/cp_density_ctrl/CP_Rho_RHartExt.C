@@ -42,7 +42,10 @@ extern Config config;
 
 //#define _CP_RHART_VERBOSE_
 
-
+/** \file CP_Rho_RHartExt.C
+ * @addtogroup Density
+    @{
+*/
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -1243,3 +1246,4 @@ void CP_Rho_RHartExt::exitForDebugging(){
   }//endif
 }
 //============================================================================
+/*@}*/

@@ -5,7 +5,7 @@
  */      
 
 /** \mainpage
- * OpenAtom <A HREF="http://charm.cs.illinois.edu/OpenAtom">Webpage</A>.
+ * OpenAtom <a href="http://charm.cs.illinois.edu/OpenAtom">Webpage</a>.
  *
  * Car-Parrinello Ab-Initio Molecular Dynamics software
  *                 developed by the

@@ -8,6 +8,9 @@
 #include "ortho.decl.h"
 
 #include "ckmulticast.h"
+/** @addtogroup Ortho
+    @{
+*/
 
 namespace cp {
     namespace ortho {
@@ -305,3 +308,4 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, const startup::
     } // end namespace ortho
 } // end namespace cp
 
+/*@}*/

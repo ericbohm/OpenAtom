@@ -85,6 +85,10 @@ void ZGEMM (char *, char *, int *, int *, int *,complex *,complex *, int *, comp
 
 
 /**
+ * @defgroup PairCalculator PairCalculator
+ * @addtogroup PairCalculator
+ *    @{
+ * 
  * PairCalculator (PC) is a 4D chare array that is, at its heart, a glorified wrapper
  * for a bunch of matrix multiplications. It serves the function of managing the
  * complexity of the decomposition and communication logic that is required to
@@ -508,5 +512,7 @@ CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs);
 CkReductionMsg *sumBlockGrain(int nMsg, CkReductionMsg **msgs);
 
 void manmult(int numrowsA, int numRowsB, int rowLength, double *A, double *B, double *C, double alpha);
+/*@}*/
+
 #endif // CK_PAIR_CALCULATOR_H
 

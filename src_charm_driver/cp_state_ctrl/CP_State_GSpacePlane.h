@@ -14,6 +14,9 @@ using namespace cp::gspace; ///< @note: Should be temporary until GSpace chares 
 
 #ifndef CP_STATE_GSPACE_PLANE_H
 #define CP_STATE_GSPACE_PLANE_H
+/** @addtogroup GSpaceState
+    @{
+*/
 
 /// Forward declarations 
 class GStateSlab;
@@ -250,7 +253,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void setupFFTPersistent();
 #endif
 };
-
+/*@}*/
 #endif // CP_STATE_GSPACE_PLANE_H
 
 

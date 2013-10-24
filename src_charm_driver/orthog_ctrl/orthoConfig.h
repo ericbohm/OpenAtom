@@ -3,6 +3,9 @@
 
 #ifndef ORTHO_CONFIG_H
 #define ORTHO_CONFIG_H
+/** @addtogroup Ortho
+    @{
+*/
 
 namespace cp {
     namespace ortho {
@@ -58,6 +61,7 @@ class orthoConfig
 
     } // end ortho
 } // end namespace cp
-
+/*@}*/
 #endif // ORTHO_CONFIG_H
+
 

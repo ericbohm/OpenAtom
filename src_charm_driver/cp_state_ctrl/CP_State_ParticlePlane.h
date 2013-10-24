@@ -52,6 +52,9 @@ class GSPPIFFTMsg: public CMessage_GSPPIFFTMsg
 
 
 
+/** @addtogroup Particle
+    @{
+*/
 
 class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane
 {
@@ -132,6 +135,6 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane
             complex *savedprojpsiGBf;
         #endif
 };
-
+/*@}*/
 
 #endif // CP_STATE_PARTICLE_PLANE_H

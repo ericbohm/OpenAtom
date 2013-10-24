@@ -9,7 +9,9 @@
 
 #ifndef PC_BUILDER_H
 #define PC_BUILDER_H
-
+/** @addtogroup PairCalculator
+    @{
+*/
 
 namespace cp {
     namespace paircalc {
@@ -38,6 +40,6 @@ class Builder
 
     } // end namespace paircalc
 } // end namespace cp
-
+/*@}*/
 #endif // PC_BUILDER_H
 

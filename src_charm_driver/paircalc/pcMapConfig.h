@@ -4,6 +4,9 @@
 
 #ifndef PC_MAP_CONFIG_H
 #define PC_MAP_CONFIG_H
+/** @addtogroup PairCalculator
+    @{
+*/
 
 namespace cp {
     namespace startup {
@@ -22,6 +25,6 @@ struct PCMapConfig
 
     } // end namespace startup
 } // end namespace cp
-
+/*@}*/
 #endif // PC_MAP_CONFIG_H
 

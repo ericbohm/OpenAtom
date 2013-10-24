@@ -5,6 +5,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /** \file CP_State_RealSpacePlane.C
+ * @defgroup RealSpaceState RealSpaceState
  * This is a description of the "life" of a CP_State_RealSpacePlane object.
  *
  * At the start of the program, the constructor CP_State_RealSpacePlane() is called.
@@ -63,6 +64,9 @@ extern CkReduction::reducerType sumFastDoubleType;
 //============================================================================
 
 //#define _CP_DEBUG_STATER_VERBOSE_
+/** @addtogroup RealSpaceState
+    @{
+*/
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -863,3 +867,4 @@ void CP_State_RealSpacePlane::rdoneVks(CkReductionMsg *msg){
       RTH_Runtime_resume(run_thread);
   }
 //============================================================================
+/*@}*/

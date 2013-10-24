@@ -3,6 +3,10 @@
 
 #ifndef PC_CONFIG_H
 #define PC_CONFIG_H
+/*
+ * @addtogroup PairCalculator
+ *    @{
+ */
 
 namespace cp {
     namespace paircalc {
@@ -170,6 +174,6 @@ class pcConfig
 
     } // end namespace paircalc
 } // end namespace cp
-
+/*@}*/
 #endif // PC_CONFIG_H
 

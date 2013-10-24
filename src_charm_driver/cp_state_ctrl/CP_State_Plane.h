@@ -165,7 +165,9 @@ public:
 };
 //============================================================================
 
-
+/** @addtogroup RealSpaceState
+    @{
+*/
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  public:
 	CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
@@ -214,8 +216,11 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	RTH_Runtime* run_thread;
 };
 //============================================================================
+/*@}*/
 
-
+/** @addtogroup Density
+    @{
+*/
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -308,7 +313,11 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	RTH_Runtime* run_thread;
 };
 //============================================================================
+/*@}*/
 
+/** @addtogroup Density
+    @{
+*/
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -361,8 +370,11 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         CProxy_CP_Rho_RealSpacePlane rhoRealProxyByrd_com;
 };
 //============================================================================
+/*@}*/
 
-
+/** @addtogroup Density
+    @{
+*/
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -443,7 +455,11 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
         void exitForDebugging();
 };
 //============================================================================
+/*@}*/
 
+/** @addtogroup Density
+    @{
+*/
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -515,7 +531,11 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 	int **index_pack_tran;
 };
 //============================================================================
+/*@}*/
 
+/** @addtogroup Particle
+    @{
+*/
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -613,6 +633,11 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    void recvZMatEesSimp(int , double *,int,int,int);
 };
 //============================================================================
+/*@}*/
+
+/** @addtogroup LargeSparse
+    @{
+*/
 
 //============================================================================  
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  
@@ -635,6 +660,11 @@ class CP_LargeSP_RhoGSpacePlane: public CBase_CP_LargeSP_RhoGSpacePlane {
 
 };
 //============================================================================
+/*@}*/
+
+/** @addtogroup LargeSparse
+    @{
+*/
 
 //============================================================================  
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  
@@ -663,6 +693,11 @@ class CP_LargeSP_RhoRealSpacePlane: public CBase_CP_LargeSP_RhoRealSpacePlane {
 
 //============================================================================
 
+/*@}*/
+
+/** @addtogroup VanderWaals
+    @{
+*/
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -680,6 +715,11 @@ class CP_VanderWaalsR:public CBase_CP_VanderWaalsR{
 };
 //============================================================================
 
+/*@}*/
+
+/** @addtogroup VanderWaals
+    @{
+*/
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -695,7 +735,7 @@ class CP_VanderWaalsG:  public CBase_CP_VanderWaalsG {
 	const UberCollection thisInstance;
 };
 //============================================================================
-
+/*@}*/
 
 //============================================================================
 #endif // #ifndef _PLANE_H_

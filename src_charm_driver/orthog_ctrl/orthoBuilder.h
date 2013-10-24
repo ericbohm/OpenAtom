@@ -6,6 +6,9 @@
 
 #ifndef ORTHO_BUILDER_H
 #define ORTHO_BUILDER_H
+/** @addtogroup Ortho
+    @{
+*/
 
 namespace cp {
     namespace ortho {
@@ -26,6 +29,6 @@ class Builder
 
     } // end namespace ortho
 } // end namespace cp
-
+/*@}*/
 #endif // ORTHO_BUILDER_H
 

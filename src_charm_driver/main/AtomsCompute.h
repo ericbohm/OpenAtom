@@ -21,7 +21,9 @@ struct EnergyStruct;
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-/** AtomsCompute class.
+/**
+ * @defgroup Atoms Atoms
+ * AtomsCompute class.
  *
  * Accepts reduction of forces from AtomsCache
  * Integrates forces to produce new coordinates.
@@ -32,7 +34,8 @@ struct EnergyStruct;
 
  * If Tempers, then Temperature exchange is done before producing the
  * updated coordinates.
-
+ * @addtogroup Atoms
+ * @{ 
  */
 //==========================================================================
 class AtomsCompute: public CBase_AtomsCompute {
@@ -226,5 +229,5 @@ class AtomsCompute: public CBase_AtomsCompute {
 //==========================================================================
  }; //end class
 //==========================================================================
-
+/*@}*/
 #endif // ATOMSCOMPUTE_H

@@ -9,6 +9,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /** \file CP_LargeSP_RhoGSpacePlane.C
+ * @defgroup LargeSparse LargeSparse
  * This is the description of the "life" of a CP_LargeSP_RhoGSpacePlane object.
  *
  * At the start of the program, the constructor CP_LargeSP_RhoGSpacePlane() is called.
@@ -48,6 +49,9 @@ extern int       nstates;
 bool is_pow2(int );
 
 
+/** @addtogroup LargeSparse
+    @{
+*/
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -173,4 +177,4 @@ void CP_LargeSP_RhoGSpacePlane::acceptMDSg() {
   }//end routine
 //============================================================================
 
-
+/*@}*/

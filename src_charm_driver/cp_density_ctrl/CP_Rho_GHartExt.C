@@ -2,7 +2,6 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /** \file CP_Rho_GHartExt.C
- *
  *  This is a description of the "life" of a CP_Rho_GHartExc  object
  * 
  *  At the start of the program, the constructor CP_Rho_GHartExc is
@@ -62,6 +61,10 @@ extern ComlibInstanceHandle         commGHartRHartIns1;
 
 //#define _DEBUG_INT_TRANS_FWD_
 //#define _CP_GHART_VERBOSE_
+
+/** @addtogroup Density
+    @{
+*/
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1221,3 +1224,4 @@ void CP_Rho_GHartExt::exitForDebugging(){
 //============================================================================
   }//end routine
 //============================================================================
+/*@}*/

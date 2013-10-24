@@ -2,6 +2,9 @@
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=========================================================================
 /** \file CP_State_ParticlePlane.C
+ * @addtogroup Particle
+ *    @{
+ *
  * Life-cycle of a CP_State_ParticlePlane:
  *
  * The particle-plane array is a shadow of the g-space planes. This means
@@ -71,6 +74,7 @@ extern Config config;
 //#define _CP_DEBUG_STATE_GPP_VERBOSE_
 
 //=========================================================================
+
 
 
 
@@ -1372,6 +1376,6 @@ void CP_State_ParticlePlane::computeNLEesForces(){
 
 }
 //==========================================================================
-
+/*@}*/
 #include "gParticlePlane.def.h"
 

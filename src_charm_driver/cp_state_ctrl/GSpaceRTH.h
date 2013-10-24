@@ -4,7 +4,9 @@
 #define GSPACE_RTH_H
 
 extern Config config;
-
+/** @addtogroup GSpaceState
+    @{
+*/
 /// This routine defines the control flow of GSpacePlane
 RTH_Routine_locals(GSpaceDriver,driveGSpace)
 RTH_Routine_code(GSpaceDriver,driveGSpace)
@@ -188,5 +190,5 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
         */
     }
 RTH_Routine_end(GSpaceDriver,driveGSpace)
-
+/*@}*/
 #endif // GSPACE_RTH_H

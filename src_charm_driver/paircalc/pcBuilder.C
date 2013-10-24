@@ -7,6 +7,10 @@
 #include "ckmulticast.h"
 
 extern Config config;
+/*
+ * @addtogroup PairCalculator
+ *    @{
+ */
 
 namespace cp {
     namespace paircalc {
@@ -212,6 +216,6 @@ void Builder::createPairCalcs()
 
     } // end namespace paircalc
 } // end namespace cp
-
+/*@}*/
 #include "pcMaps.def.h"
 

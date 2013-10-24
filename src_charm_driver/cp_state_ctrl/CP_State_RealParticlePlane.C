@@ -4,7 +4,9 @@
 /** \file CP_State_RealParticlePlane.C
  * Life-cycle of a CP_State_RealParticlePlane:
  *
- * Insert descriptive comment here please
+ * Driven by the CP_State_GSpaceParticlePlane, this implements the
+ * Real space side of the fft based Euler Exponential Spline method
+ * for computing the non-local quantities.
  */ 
 //=========================================================================
 
@@ -46,6 +48,9 @@ extern Config config;
 
 //=========================================================================
 
+/** @addtogroup Particle
+    @{
+*/
 
 //============================================================================
 // Energy reduction client for ees method!
@@ -1486,3 +1491,4 @@ void CP_State_RealParticlePlane::pup(PUP::er &p) {
 //---------------------------------------------------------------------------
   }//end routine
 //============================================================================
+/*@}*/

@@ -78,7 +78,8 @@ struct EnergyStruct;
   execute releaseGSP.  So, AtomsCache's nodegroupness needs to be 1:1
   with eesCache's nodegroupness, or an alternate launch scheme put
   in place for releaseGSP to break that dependency.
-
+ * @addtogroup Atoms
+ * @{ 
  */
 
 class AtomsCache: public Group {
@@ -111,5 +112,5 @@ class AtomsCache: public Group {
   }//end routine
 };
 
-
+/*@}*/
 #endif // ATOMSCACHE_H

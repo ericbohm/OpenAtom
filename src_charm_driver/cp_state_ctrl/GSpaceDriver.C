@@ -13,6 +13,9 @@ extern CkVec <CProxy_CP_State_ParticlePlane> 	UparticlePlaneProxy;
 extern CkVec <CProxy_StructureFactor> 			UsfCompProxy;
 extern CProxy_InstanceController      instControllerProxy;
 
+/** @addtogroup GSpaceState
+    @{
+*/
 /// Constructor
 GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance): 
 			thisInstance(_thisInstance),
@@ -335,6 +338,6 @@ void GSpaceDriver::releaseSFComputeZ()
 	/// Call on corresponding particle plane chare to launch all the Z matrix computations
 	myParticlePlaneObj->launchComputeZs();
 }
-
+/*@}*/
 #include "gSpaceDriver.def.h"
 

@@ -14,6 +14,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /** \file CP_State_GSpacePlane.C
+ * @defgroup GSpaceState GSpaceState
  * This is a description of the 'life' of a CP_State_GSpacePlane object.
  *
  *  At the beginning of the program, the constructor CP_State_GSpacePlane() is 
@@ -117,7 +118,9 @@ void testeke(int ,complex *,int *,int *,int *, int ,int);
 //#define _CP_DEBUG_WARN_SUSPEND_
 
 
-
+/** @addtogroup GSpaceState
+    @{
+*/
 //============================================================================
 // Entry method to resume execution after computing reduction over all planes
 // and states to form psiCgOvlap (cg only) and magforPsi
@@ -4197,6 +4200,6 @@ void CP_State_GSpacePlane::completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApa
 	delete msg;
 	#endif // PC_USE_RDMA
 }
-
+/*@}*/
 #include "gStatePlane.def.h"
 

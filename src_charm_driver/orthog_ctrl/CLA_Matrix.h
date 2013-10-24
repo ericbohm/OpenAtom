@@ -4,6 +4,10 @@
 #include "CLA_Matrix.decl.h"
 #include "ckmulticast.h"
 
+/** @addtogroup Ortho
+    @{
+*/
+
 /*
  * The CLA_Matrix class should not be used directy by the user. See comments
  * below regarding CLA_Matrix_interface
@@ -247,5 +251,5 @@ void transpose(T *data, int m, int n)
     delete [] tmp;
   }
 }
-
+/*@}*/
 #endif

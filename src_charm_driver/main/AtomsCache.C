@@ -47,6 +47,8 @@ extern CProxy_CPcharmParaInfoGrp   scProxy;
 /** Constructor
  *
  *
+ * @addtogroup Atoms
+ * @{ 
  */
 //==============================================================================
 AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstance) : natm(_natm), natm_nl(n_nl), thisInstance(_thisInstance)
@@ -273,3 +275,4 @@ AtomsCache::~AtomsCache(){
   delete [] fastAtoms.fzu;
 }
 //=========================================
+/*@}*/

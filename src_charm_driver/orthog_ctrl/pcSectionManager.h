@@ -6,6 +6,9 @@
 /// Forward declarations
 class Ortho; 
 
+/** @addtogroup Ortho
+    @{
+*/
 
 namespace cp {
     namespace ortho {
@@ -94,6 +97,7 @@ inline CkIndex2D PCSectionManager::computePCStateIndices(const int orthoX, const
 
     } // end namespace ortho
 } // end namespace cp
-
+/*@}*/
 #endif // PC_SECTION_MANAGER
+
 

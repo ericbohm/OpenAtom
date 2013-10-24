@@ -10,6 +10,9 @@
 class CP_State_GSpacePlane;
 struct ckcomplex;
 typedef ckcomplex complex;
+/** @addtogroup GSpaceState
+    @{
+*/
 
 namespace cp {
     namespace gspace {
@@ -127,5 +130,6 @@ inline void PCCommManager::sendRightData(int n, complex* ptr, bool psiV)
 
     } // end namespace gspace
 } // end namespace cp
+/*@}*/
 #endif // PC_COMM_MANAGER_H
 

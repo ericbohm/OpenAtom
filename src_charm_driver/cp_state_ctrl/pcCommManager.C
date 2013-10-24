@@ -16,7 +16,9 @@
 #endif
 // Do not use comlib for multicasts within paircalc
 #define _PC_COMMLIB_MULTI_ 0
-
+/** @addtogroup GSpaceState
+    @{
+*/
 namespace cp {
     namespace gspace {
 
@@ -622,4 +624,4 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(int chunk)
 } // end namespace cp
 
 #include "RDMAMessages.def.h"
-
+/*@}*/

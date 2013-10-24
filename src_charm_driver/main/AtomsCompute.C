@@ -59,6 +59,8 @@ extern CProxy_PhysScratchCache pScratchProxy;
 /** Constructor
  *
  *
+ * @addtogroup Atoms
+ * @{ 
  */
 //==============================================================================
 AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
@@ -1238,6 +1240,6 @@ void AtomsCompute::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI){
 //==============================================================================
   }//end routine
 //==============================================================================
-
+/*@}*/
 #include "Atoms.def.h"
 

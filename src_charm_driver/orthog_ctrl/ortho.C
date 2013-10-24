@@ -2,6 +2,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /** \file ortho.C
+ * @defgroup Ortho Ortho
  * The Ortho object is basically used to accept the rows of the "S" matrix,
  * use the orthoTransform subroutine to obtain the "T" matrix, and send the
  * rows of the "T" matrix back to all the GSpace states.
@@ -11,9 +12,10 @@
  * Once the conversion from S to T is done, the preparation for the 
  * broadcast back to the S-Calculators is done.
  * 
- * This method also takes of performing the load-balancing step.
+ * This method also takes of performing the load-balancing step for
+ * the experimental cases where that is in play.
  * 
- * 2D version of ortho is permit better parallelization of the diagonal
+ * 2D version of ortho permits better parallelization of the diagonal
  * and to facilitate pair calculator communication.
  *
  * Each pair calculator will perform its multiply and reduce the
@@ -68,6 +70,9 @@ extern ComlibInstanceHandle orthoInstance;
 
 //============================================================================
 
+/** @addtogroup Ortho
+    @{
+*/
 
 Ortho::~Ortho()
 {
@@ -875,3 +880,4 @@ void Ortho::pup(PUP::er &p){
 #include "orthoMap.h"
 #include "ortho.def.h"
 
+/*@}*/

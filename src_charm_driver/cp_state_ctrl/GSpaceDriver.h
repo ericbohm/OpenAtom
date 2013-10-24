@@ -12,6 +12,9 @@
 // Forward declarations
 class CP_State_GSpacePlane;
 class CP_State_ParticlePlane;
+/** @addtogroup GSpaceState
+    @{
+*/
 
 /** A 2D chare array bound to CP_State_GspacePlane that manages the driver logic and related communication details.
  * 
@@ -103,5 +106,5 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		/// Array section of the structure factor chares that I will be triggering
 		CProxySection_StructureFactor sfCompSectionProxy;
 };
-
+/*@}*/
 #endif // GSPACE_DRIVER_H
