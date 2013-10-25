@@ -44,8 +44,7 @@ extern CProxy_CPcharmParaInfoGrp   scProxy;
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** Constructor
- *
+/**
  *
  * @addtogroup Atoms
  * @{ 

@@ -16,18 +16,16 @@ struct EnergyStruct;
 
 
 #include "uber/Uber.h"
-
-
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-/**
- * @defgroup Atoms Atoms
- * AtomsCompute class.
- *
- * Accepts reduction of forces from AtomsCache
- * Integrates forces to produce new coordinates.
- * Distributes new coordinates to AtomsCache.
+
+
+/** \file AtomsCompute.h
+
+ * \brief Accepts reduction of forces from AtomsCache,
+ * integrates forces to produce new coordinates,
+ * distributes new coordinates to AtomsCache.
 
  * If PIMD, then PIMD coordination is done before producing the
  * updated coordinates.

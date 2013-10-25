@@ -12,7 +12,11 @@ struct EnergyStruct;
 #include "uber/Uber.h"
 
 
-/** AtomsCache class.
+/** \file AtomsCache.h 
+ * @defgroup Atoms Atoms
+ *
+ * \brief Handles coordinate and force integration for Atoms, keeping a distributed coordinate cache in AtomsCache and computing updates in AtomsCompute 
+ *
  *
  * AtomsCache is a mostly passive structure for handling data
  * replication of the atom coordinates and write-back collation of

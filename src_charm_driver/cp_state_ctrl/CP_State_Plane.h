@@ -166,7 +166,12 @@ public:
 //============================================================================
 
 /** @addtogroup RealSpaceState
-    @{
+ *  @{
+ *
+ * \brief Chare Array 2D chare array nplanex X nstates.  Handles
+ * electronic structure in real space. The points of plane-wave
+ * pseudo-potential are cut along the x-dimension for finer
+ * parallelization.
 */
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  public:

@@ -2,7 +2,9 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /** \file CP_Rho_GSpacePlane.C
- * @defgroup Density Density
+ ** @addtogroup Density
+ *  @{
+ *
  *  This is a description of the "life" of a CP_Rho_GSpacePlane  object
  * 
  *  At the start of the program, the constructor CP_Rho_GSpacePlane is called.
@@ -57,9 +59,6 @@ extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
 //#define _CP_DEBUG_RHOG_VERBOSE_
 //============================================================================
 
-/** @addtogroup Density
-    @{
-*/
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

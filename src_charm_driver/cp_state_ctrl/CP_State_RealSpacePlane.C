@@ -6,21 +6,32 @@
 //============================================================================
 /** \file CP_State_RealSpacePlane.C
  * @defgroup RealSpaceState RealSpaceState
+ *
+ * \brief Handles electronic structure in real space, creates input
+ * for \ref Density computation in CP_RhoRealSpacePlane.  The points
+ * of plane-wave pseudo-potential are cut along the x-dimension for
+ * finer parallelization.
+ *
+ * Chare Array 2D chare array nplanex X nstates. 
+ * 
  * This is a description of the "life" of a CP_State_RealSpacePlane object.
  *
- * At the start of the program, the constructor CP_State_RealSpacePlane() is called.
- * The CP_State_GSpacePlane objects send data to CP_State_RealSpacePlane 
- * after doing FFT in the y direction. The data is sent through the doFFT() method. 
- * In this method FFTs in the z and x directions are performed. After this the 
- * squared magnitudes of the psi_r values are sent to RealSpaceDensity. The 
- * CP_State_RealSpacePlane object is idle until further messages are sent to it.
+ * At the start of the program, the constructor
+ * CP_State_RealSpacePlane() is called.  The CP_State_GSpacePlane
+ * objects send data to CP_State_RealSpacePlane after doing FFT in the
+ * y direction. The data is sent through the doFFT() method.  In this
+ * method FFTs in the z and x directions are performed. After this the
+ * squared magnitudes of the psi_r values are sent to
+ * RealSpaceDensity. The CP_State_RealSpacePlane object is idle until
+ * further messages are sent to it.
  *
- * The idle period of the CP_State_RealSpacePlane is ended by a message from 
- * RealSpaceDensity objects - doProduct(). In this method the Slab of data
- * in CP_State_RealSpacePlane, psi_r, is multiplied with the data sent from 
- * RealSpaceDensity. Then, inverse ffts in z and x directions are performed.
- * Then the slab of data is send to CP_State_GSpacePlanes so that the inverse fft
- * in the x direction can be performed.
+ * The idle period of the CP_State_RealSpacePlane is ended by a
+ * message from RealSpaceDensity objects - doProduct(). In this method
+ * the Slab of data in CP_State_RealSpacePlane, psi_r, is multiplied
+ * with the data sent from RealSpaceDensity. Then, inverse ffts in z
+ * and x directions are performed.  Then the slab of data is send to
+ * CP_State_GSpacePlanes so that the inverse fft in the x direction
+ * can be performed.
  */
 //============================================================================
 

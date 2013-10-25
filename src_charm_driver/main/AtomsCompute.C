@@ -56,11 +56,11 @@ extern CProxy_PhysScratchCache pScratchProxy;
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** Constructor
- *
+/**
  *
  * @addtogroup Atoms
  * @{ 
+ *
  */
 //==============================================================================
 AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,

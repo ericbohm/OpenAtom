@@ -2,6 +2,15 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /** \file CP_Rho_RealSpacePlane.C
+ *
+ * @defgroup Density Density
+ *
+ * \brief Computes electron density in real space, transforming to
+ * CP_Rho_GSpacePlane which will utilize CP_Rho_GHartExt and
+ * CP_Rho_RHartExt to compute the density based components. Each plane
+ * may be further subdivided into subplanes at runtime for additional
+ * parallelism.
+
  * This is the description of the "life" of a CP_Rho_RealSpacePlane object.
  *
  * At the start of the program, the constructor CP_Rho_RealSpacePlane() is called.

@@ -16,6 +16,7 @@
 
 /** \defgroup mapping Mapping Framework
  *
+ * \brief All array objects in OpenAtom are mapped onto the physical processor grid based on heuristics about their interaction patterns, each array has its own CkArrayMap, generally based on MapTable array indexed by the CkArray indices to map each index onto the preferred processor element.  
  */
 //@{
 

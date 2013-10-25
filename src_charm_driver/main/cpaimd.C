@@ -62,22 +62,21 @@ std::vector <std::string> TimeKeeperNames;
 UberCollection thisInstance;
 //============================================================================
 /** 
- * \defgroup torus_vars Defining the size of the torus, handy when debugging 
+ * \addtogroup mapping 
+ * torus_vars Defining the size of the torus, handy when debugging 
  * torus map logic on non torus architectures.
  */
 int numPes;
 bool fakeTorus;
 
-//============================================================================
-//extern "C" {int get_memory_allocated_user_total();}
-//============================================================================
-/** 
- * \defgroup  piny_vars Defining all Charm++ readonly variables for PINY physics 
+
+/**@defgroup piny_vars piny_vars  
+ * \brief Defining all Charm++ readonly variables for PINY physics 
  *
  */
 //============================================================================
+/** \addtogroup piny_vars
 /* @{ */
-
 extern MDINTEGRATE  readonly_mdintegrate;
 extern MDATOMS      readonly_mdatoms;
 extern MDINTER      readonly_mdinter;

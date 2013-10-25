@@ -2,8 +2,10 @@
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=========================================================================
 /** \file CP_State_ParticlePlane.C
- * @addtogroup Particle
+ * @defgroup Particle
  *    @{
+ *
+ * \brief Compute nonlocal forces based on the particle view of the system, triggered by \ref GSpaceState and overlaps with those computations when possible.
  *
  * Life-cycle of a CP_State_ParticlePlane:
  *

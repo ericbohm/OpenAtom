@@ -16,6 +16,11 @@ class CP_State_ParticlePlane;
     @{
 */
 
+/** @brief 2D chare array [\ref nchareG][\ref nstates]
+ * Handles flow of control within an instance, always same dimensional cardinality
+ * and mapping as \ref CP_Gspace_State_Plane
+*/
+
 /** A 2D chare array bound to CP_State_GspacePlane that manages the driver logic and related communication details.
  * 
  * Implements entry methods that are primarily used by other chares for notifying progress on different portions 

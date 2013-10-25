@@ -3,6 +3,9 @@
 //============================================================================
 /** \file CP_VanderWaalsG.C
  * @defgroup VanderWaals VanderWaals
+ *
+ * \brief Extension module to compute VanderWaals forces at high fidelity for simulations strongly influenced by them.
+
  *  This is a description of the "life" of a CP_VanderWaalsG  object
  *
  * --Marcello please insert a description--

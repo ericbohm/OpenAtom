@@ -10,6 +10,9 @@
 //============================================================================
 /** \file CP_LargeSP_RhoGSpacePlane.C
  * @defgroup LargeSparse LargeSparse
+ *
+ * \brief Extension module to support QM/MM computations by using a dual grid interpolation scheme between the small box (QM) and large box (MM) scheme.
+ *
  * This is the description of the "life" of a CP_LargeSP_RhoGSpacePlane object.
  *
  * At the start of the program, the constructor CP_LargeSP_RhoGSpacePlane() is called.
