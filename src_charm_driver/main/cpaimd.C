@@ -16,7 +16,7 @@
  *               IBM, NYU, and Yale
  * 
  * see also the [OpenAtom webpage](http://\charm.cs.illinois.edu/OpenAtom)
-
+ * ![OverView Image](controlFlowAmongstChareArrays_small.png "OverView Of OpenAtom Control Flow")
  */
 
 #include "cpaimd.h"
