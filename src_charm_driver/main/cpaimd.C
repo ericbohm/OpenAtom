@@ -66,9 +66,10 @@ UberCollection thisInstance;
  * torus_vars Defining the size of the torus, handy when debugging 
  * torus map logic on non torus architectures.
  */
+/**@{*/
 int numPes;
 bool fakeTorus;
-
+/**@}*/
 
 /**@defgroup piny_vars piny_vars  
  * \brief Defining all Charm++ readonly variables for PINY physics 
@@ -76,26 +77,26 @@ bool fakeTorus;
  */
 //============================================================================
 /** \addtogroup piny_vars
-/* @{ */
+/**@{*/
 extern MDINTEGRATE  readonly_mdintegrate;
 extern MDATOMS      readonly_mdatoms;
 extern MDINTER      readonly_mdinter;
 extern MDINTRA      readonly_mdintra;
 extern GENERAL_DATA readonly_general_data;
 extern CP           readonly_cp; 
-/* @} */
+/**@}*/
 //============================================================================
 
 
 //============================================================================
 /**
- * \defgroup proxy_comlib_vars
+ * @defgroup proxy_vars proxy_vars
  * Defining all the Charm++ readonly variables, which include proxies
  * to access the arrays and groups and the Communication Library
  * handles.
  */
 //============================================================================
-
+/**@{*/
 bool firstInstance = true;  
 int numInst=0;
 // INT_MAPs are the ones actually used so
@@ -144,9 +145,14 @@ CProxy_TimeKeeper                 TimeKeeperProxy;
 CProxy_InstanceController         instControllerProxy;
 CProxy_TemperController         temperControllerProxy;
 CProxy_ENL_EKE_Collector          ENLEKECollectorProxy;
+CPcharmParaInfo simReadOnly;
+/**@}*/
 
 //============================================================================
-/** Uber proxies for all the things which change per step 
+/** @defgroup Uber Uber
+ * \brief Ubers provide a multidimensional collection of CkArray proxies such that a complete instance of all objects necessary for a simulation are accessible at each unique tuple of indices. 
+ * 
+ *  Uber proxies for all the things which change per step 
  *  Indexed by PathIntegral Bead.  Each Bead has its own set of
  *  proxies.  Charm driver startup will construct a different set of
  *  arrays for each bead.  
@@ -162,7 +168,9 @@ CProxy_ENL_EKE_Collector          ENLEKECollectorProxy;
  *  one bead.
  */
 
-CPcharmParaInfo simReadOnly;
+
+/** \addtogroup Uber */
+/**@{*/
 CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
 CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
@@ -187,7 +195,8 @@ CkVec <CProxy_CP_VanderWaalsG>      UVdWGProxy;
 
 CkVec <UberCollection>			  UberAlles;
 CkVec < PeList * >                        UavailProcs;
-//============================================================================
+
+/**@}*/
 
 
 //============================================================================
@@ -274,13 +283,16 @@ const char OpenAtomRevision[] = INQUOTES(OPENATOM_REVISION);
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/** The Main of CPAIMD. It calls all the init functions.
- *
+
+/**
+ * \brief The Main of CPAIMD, it calls all the init functions.
  */
 main::main(CkArgMsg *msg) {
   topoMgr = NULL;
 //============================================================================
-/** Check arguments : Tell people what we are doing */
+/**
+ # Sequential startup within Main */
+/* Check arguments : Verbose output about startup procedures */
 
     done_init=0;
     if (msg->argc < 3) {
@@ -349,7 +361,7 @@ main::main(CkArgMsg *msg) {
     PRINT_LINE_DASH; CkPrintf("\n");
 
 //============================================================================    
-// check the debug flags for consistency
+/* check the debug flags for consistency*/
 
 #ifdef _CP_DEBUG_NON_LOCAL_ONLY_
 #ifdef _CP_DEBUG_SFNL_OFF_
@@ -402,8 +414,20 @@ main::main(CkArgMsg *msg) {
 #endif
 #endif
 
-//============================================================================    
-/* Invoke PINY input class */
+//============================================================================  
+
+
+/** @defgroup startup startup
+ * \brief Startup parses the physics simulation input, parses the parallel driver config file, constructs chares, computes chare placement, coordinates the launch of chares in parallel, the reading of input, and initiates computation when everything is initialized and ready to start timestepping.
+
+ 
+1)  Read PINY config and the rest of the physical system parameter
+    files to set the constants which determine problem size.  These are
+    stored in the CPcharmParaInfo class object named sim (for
+    simulation).*/
+/**@{*/
+
+ /* Invoke PINY input class */
 
     CkCallback piny_callback (CkCallback::ignore);
     Interface_ctrl piny_interface (msg->argv[2],piny_callback);
@@ -417,9 +441,16 @@ main::main(CkArgMsg *msg) {
     int nchareRhoRHart = sim->ngrid_eext_c;
     int fftopt         = sim->fftopt;
     int natm_typ       = sim->natm_typ;
-
-//============================================================================    
+    /**@}*/
+//============================================================================  
 /* Invoke parallel driver input class */
+/** \addtogroup startup
+2)  Read the cpaimd_config file which determines parallel
+    decomposition.  This is mostly stored in the config object, but a
+    bunch of readonly globals also get instantiated with this
+    information.
+ */
+/**@{*/
 
     PRINT_LINE_STAR;
     CkPrintf("Cpaimd-Charm-Driver input started \n");
@@ -432,6 +463,7 @@ main::main(CkArgMsg *msg) {
                       sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
                       ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c,
                       sim->doublepack,sim->pi_beads,sim->nkpoint,sim->ntemper,sim->nspin);
+
     fakeTorus        = config.fakeTorus>0;
 
     if(fakeTorus)
@@ -552,13 +584,13 @@ main::main(CkArgMsg *msg) {
 
 //============================================================================    
 // Compute structure factor grp parameters and static map for chare arrays
-
+/**@}*/
     sim->numSfGrps   = numSfGrps;
     int natm_nl_grp_max;
     PhysicsParamTransfer::get_Sfgrp_max(natm_nl,config.numSfGrps, 
                                         &natm_nl_grp_max);
     sim->natm_nl_grp_max = natm_nl_grp_max;
-
+    /* @} */
     create_line_decomp_descriptor(sim);
 
     PhysicsParamTransfer::control_new_mapping_function(sim,doublePack);
@@ -566,6 +598,8 @@ main::main(CkArgMsg *msg) {
     make_rho_runs(sim);
 
     pScratchProxy = CProxy_PhysScratchCache::ckNew();
+    /** \addtogroup Uber */
+    /**@{*/
     // bump all the INT_MAPs to the right size
     AtomImaptable.resize(config.numInstances);
     PIBImaptable.resize(config.numInstances);
@@ -618,11 +652,15 @@ main::main(CkArgMsg *msg) {
     ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, config.UberKmax, enlopts);
     ENLEKECollectorProxy.doneInserting();
 
-
+    /**@}*/
 //============================================================================    
-// Create the multicast/reduction manager for array sections
-// Create the parainfo group from sim
-// Initialize chare arrays for real and g-space of states 
+/* Create the multicast/reduction manager for array sections
+ Create the parainfo group from sim
+ Initialize chare arrays for real and g-space of states 
+*/
+/** \addtogroup startup
+ 3) Topological map setup : we initialize several structures which will be useful for using network topology for more optimal chare placement */
+/**@{*/
 
     CkPrintf("Initializing TopoManager\n");
     if(config.fakeTorus) {
@@ -758,7 +796,7 @@ main::main(CkArgMsg *msg) {
     CkPrintf("Pelist initialized in %g with %d elements\n", newtime-Timer, availGlobG->count());
     // availGlobG->dump();
     Timer = newtime;
-    
+    /**@}*/    
     /*
 ===============================================================================
 Per Instance startup BEGIN
@@ -769,6 +807,21 @@ Per Instance startup BEGIN
 
     // maps will have a transform function to compute the placement
     // for instances after the first.
+
+/** \addtogroup startup 
+4) Parallel Object Proxy Creation 
+ We loop through a four deep nested launcher by integral, kpoint,
+ temper, and spin to construct the appropriate chare arrays for each
+ instance.
+    + We setup the State chares (GS, RS, PP, RPP) along with their maps.
+    + We setup the Paircalc and ortho chares (SymPC, AsymmPC, ortho, CLA) 
+    + We setup the Density chares (rho, vanderwaals)
+    + We setup the non-local chares for Ees (if configured)
+
+    In each case we are constructing the proxy and calling for parallel
+    object construction of the elements in each of those arrays.  Note that while we are inside Main the chares for PE 0 will be constructed inline in program order.  No assumptions should be made about chares constructed on other PEs until we exit main and pass control to the Charm++ scheduler for parallel launch.
+    */
+    /**@{*/
     CkPrintf("NumInstances %d: Beads %d  * Kpoints %d * Tempers %d * Spin %d\n",config.numInstances, config.UberImax, config.UberJmax, config.UberKmax,config.UberMmax);
     for(int integral=0; integral< config.UberImax; integral++)
       {
@@ -926,7 +979,7 @@ Per Instance startup BEGIN
     PRINT_LINE_DASH;CkPrintf("\n");
     CkPrintf("user mem %d\n",CmiMemoryUsage());
     Timer=newtime;
-
+    /**@}*/
 //============================================================================
    }// end Main
 //============================================================================
@@ -1593,7 +1646,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   int y=mapOffsets[numInst].gety();
   int z=mapOffsets[numInst].getz();
 
-
+  /** addtogroup mapping */
+  /**@{*/
   if (firstInstance) {
     GSImaptable[numInst].buildMap(nstates, nchareG);
     int success = 0;
@@ -1627,6 +1681,9 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   // its own map group
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew(thisInstance);
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
+  /**@}*/
+  /** addtogroup GSpaceState */
+  /**@{*/
   CkArrayOptions gSpaceOpts(nstates,nchareG);
   std::string forwardname("GSpaceForward");
   std::ostringstream fwdstrm;
@@ -1640,16 +1697,18 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(sizeX, 1, 1, sGrainSize, gforward, gbackward, thisInstance, gSpaceOpts));
   UgSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
   // CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
-
+  /**@}*/
  //--------------------------------------------------------------------------------
  // Bind the GSpaceDriver array to the GSpacePlane array so that they migrate together
  CkArrayOptions gspDriverOpts(nstates,nchareG);
  gspDriverOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
  UgSpaceDriverProxy.push_back( CProxy_GSpaceDriver::ckNew(thisInstance,gspDriverOpts) );
  UgSpaceDriverProxy[thisInstance.proxyOffset].doneInserting();
+  /**@}*/
  //--------------------------------------------------------------------------------
  // We bind the particlePlane array to the gSpacePlane array migrate together
-
+  /** addtogroup Particle */
+  /**@{*/
   //  CkArrayOptions particleOpts(nstates,nchareG);
   CkArrayOptions particleOpts(nstates,nchareG);
   particleOpts.setMap(gsMap); // the maps for both the arrays are the same
@@ -1693,8 +1752,9 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   // state r-space
 
   // correction to accomodate multiple instances
-
-
+  /**@}*/
+  /** addtogroup mapping */
+  /**@{*/
   if(firstInstance) {
     RSImaptable[numInst].buildMap(nstates, nchareR);
     Timer=CmiWallTimer();
@@ -1737,9 +1797,11 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts(nstates,nchareR);
   realSpaceOpts.setMap(rsMap);
+  /**@}*/
   int rforward=keeperRegister(std::string("RealSpaceForward"));
   int rbackward=keeperRegister(std::string("RealSpaceBackward"));
-
+  /** \addtogroup RealSpaceState */
+  /**@{*/
   UrealSpacePlaneProxy.push_back( CProxy_CP_State_RealSpacePlane::ckNew(1, 1, ngrida, ngridb, ngridc, rforward, rbackward, thisInstance, realSpaceOpts));
     UrealSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();  
 
@@ -1767,7 +1829,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
     delete mf;
 
   }
-
+  /**@}*/
  //--------------------------------------------------------------------------------
  // state r-particleplane
 
@@ -1918,6 +1980,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
     }//end routine
 //============================================================================
 
+/** /addtogroup Particle */
+/**@{*/
 //============================================================================
 // Creating arrays CP_StateRealParticlePlane
 //============================================================================
@@ -2060,14 +2124,16 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
   PRINT_LINE_STAR;printf("\n");
 
 }
+/**@}*/
 
+/** \addtogroup Density */
+/**@{*/
 //============================================================================
 // Creating arrays CP_Rho_GSpacePlane, CP_Rho_GSpacePlaneHelper 
 // and CP_Rho_RealSpacePlane
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
 int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 //============================================================================
 {//begin routine
@@ -2535,7 +2601,10 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   //===========================================================================
 }//end routine
 //============================================================================
+/**@}*/
 
+/** \addtogroup VanderWaals */
+/**@{*/
 //============================================================================
 // Creating arrays CP_VanderWallsR, CP_VanderWallsG 
 // these are basically part of density, but init_rho_chares is already huge
@@ -2800,7 +2869,7 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 //============================================================================
 }//end routine
 //============================================================================
-
+/**@}*/
 
 //============================================================================
 // Get the atoms and the parainfo
@@ -2955,7 +3024,8 @@ void get_grp_params(int natm_nl, int numSfDups, int indexSfGrp, int planeIndex,
 //============================================================================
 
 
-
+/** \addtogroup mapping */
+/**@{*/
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -3338,7 +3408,7 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 
 }
 //============================================================================
-
+/**@}*/
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

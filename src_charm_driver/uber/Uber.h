@@ -1,4 +1,7 @@
-/** Uber Arrays connect multiple arrays by referring to them by Uber Indexed
+/** addtogroup Uber
+ *  @{ 
+ *
+ * Uber Arrays connect multiple arrays by referring to them by Uber Indexed
  * collections.  So all elements which have Uarr[i][j][k] are one logical
  * instance.
  *
@@ -103,4 +106,5 @@ class UberCollection {
   inline unsigned char setPO(int inPO){ proxyOffset=inPO; return proxyOffset;}
 
 };
+/* @} */
 #endif
