@@ -1,17 +1,22 @@
 /** \file cpaimd.C
  *                         cpaimd-charm-driver
+ * \brief
  *    This file contains cpaimd-charm-driver main. It creates and 
  *    initializes all the arrays and libraries. 
  */      
 
 /** \mainpage
- * OpenAtom <a href="http://charm.cs.illinois.edu/OpenAtom">Webpage</a>.
- *
- * Car-Parrinello Ab-Initio Molecular Dynamics software
- *                 developed by the
- *        Parallel Programing Laboratory, UIUC
- *               in collaboration with
- *                   IBM and NYU
+
+ # OpenAtom
+
+ *        Car-Parrinello Ab-Initio Molecular Dynamics 
+ *           software developed by the  
+ *        Parallel Programing Laboratory, UIUC  
+ *               in collaboration with  
+ *               IBM, NYU, and Yale
+ * 
+ * see also the [OpenAtom webpage](http://\charm.cs.illinois.edu/OpenAtom)
+
  */
 
 #include "cpaimd.h"
