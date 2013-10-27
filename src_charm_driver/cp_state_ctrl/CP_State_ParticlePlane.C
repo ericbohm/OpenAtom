@@ -5,7 +5,7 @@
  * @defgroup Particle
  *    @{
  *
- * \brief Compute nonlocal forces based on the particle view of the system, triggered by \ref GSpaceState and overlaps with those computations when possible.
+ * \brief Compute kinetic energy of the non-interacting electrons and non-local forces based on the particle view of the system, triggered by \ref GSpaceState and overlaps with those computations when possible.
  *
  * Life-cycle of a CP_State_ParticlePlane:
  *

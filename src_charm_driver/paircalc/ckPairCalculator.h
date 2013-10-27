@@ -88,7 +88,7 @@ void ZGEMM (char *, char *, int *, int *, int *,complex *,complex *, int *, comp
  * @defgroup PairCalculator PairCalculator
  * @addtogroup PairCalculator
  *    @{
- * \brief PairCalculator computes the electron state pairwise force and coefficient updates for CP_State_GSpacePlane.  It can be directed to enact orthonormalization constraints via \ref Ortho, which are then applied to the input states and returned to CP_State_GSpacePlane.  In the dynamics case it performs additional functions based on additional inputs.   
+ * \brief PairCalculator computes the electron state pairwise psi and force updates for CP_State_GSpacePlane.  It can be directed to enact orthonormalization constraints on Psi via \ref Ortho, which are then applied to the input states and returned to CP_State_GSpacePlane.  In the dynamics case it performs additional functions based on additional inputs.   
  *
  * PairCalculator (PC) is a 4D chare array that is, at its heart, a glorified wrapper
  * for a bunch of matrix multiplications. It serves the function of managing the

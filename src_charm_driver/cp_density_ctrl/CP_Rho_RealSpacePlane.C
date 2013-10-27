@@ -5,9 +5,9 @@
  *
  * @defgroup Density Density
  *
- * \brief Computes electron density in real space, transforming to
+ * \brief Computes electron density in real space, (exchange correlation energy) for transforming to
  * CP_Rho_GSpacePlane which will utilize CP_Rho_GHartExt and
- * CP_Rho_RHartExt to compute the density based components. Each plane
+ * CP_Rho_RHartExt (Hartree and external energies). Each plane
  * may be further subdivided into subplanes at runtime for additional
  * parallelism.
 
