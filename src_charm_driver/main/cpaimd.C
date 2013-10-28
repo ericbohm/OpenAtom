@@ -70,7 +70,7 @@
  *        ./build charm++ net-linux-x86_64 --with-production -j8 (production version)
  *        ./build charm++ net-linux-x86_64 -j8 -g (debug version)
  *
- * You will also need double precision FFTW library to compile OpenAtom.
+ * You will also need FFTW library, configured for double precision, to compile OpenAtom.
  * 
  * The INSTALL file in OpenAtom provides detailed instruction for its compilation. Here
  * is a quick summary:
@@ -78,38 +78,42 @@
  * 1. Copy a machine specific configuration file (*config.MACHINE.mk*) from 
  *    the *makefiles* directory to the OpenAtom base directory and rename it to
  *    *config.mk*.
- * 2. Update the values of **CHARMBASE** and **FFT_HOME** in the beginning of 
- *    the newly created *config.mk*. Depending on how FFTW was build, you may need
- *    to update the value of **DUAL_FFTW** also.
+ * 2. Update the values of **CHARMBASE** and **FFT_HOME** in the
+ *    beginning of the newly created *config.mk*. If FFTW was built
+ *    with --enable-type-prefix, you must enable DUAL_FFTW, otherwise
+ *    set DUAL_FFTW_OFF.
  * 3. Customize the config.mk for any desired compilation/link flags etc.
  * 4. Now type "make", which should create a binary called *OpenAtom* in *build*
  *    directory on successful compilation.  
  *
  *###Running OpenAtom###
  *
- *Before executing OpenAtom, obtain a dataset using the *git* command mentioned
- *in the download section, and either place it in the *data* directory, or modify
- *the **w3210** variable in *config.mk*.
+ *Before executing OpenAtom, obtain a dataset using the *git* command
+ *mentioned in the download section, and either place it in the *data*
+ *directory, or modify the **w3210** variable in *config.mk*.
  *
- * If the dataset uses the old format, you will need to execute *setup* in dataset
- * directory. *setup* is located in *BASEDIR/util* directory.
+ * If the dataset uses the old format, you will need to execute
+ * *setup* in dataset directory. *setup* is located in *BASEDIR/util*
+ * directory.
  *
- * OpenAtom is to be executed as a Charm++ application, which is explained in detail
- * at [this link](http://\charm.cs.illinois.edu/manuals/html/\charm++/C.html). The general
- * syntax is as follows:
+ * OpenAtom is to be executed as a Charm++ application, which is
+ * explained in detail at 
+ * [this link](http://\charm.cs.illinois.edu/manuals/html/\charm++/C.html). The
+ * general syntax is as follows:
  *
  *       ./charmrum +p<N> ./OpenAtom <path to cpaimd config> <path to water input> (N 
  *       is the number of processors to execute the job on)
  *
- * On most machine layers (excluding net), a Charm++ application can be launched
- * in the same manner as an MPI application. For example, if build on top of MPI, one
- * can launch OpenAtom as follows
+ * On most machine layers (excluding net), a Charm++ application can
+ * be launched in the same manner as an MPI application. For example,
+ * if built on top of MPI, one can launch OpenAtom as follows
  *
  *       mpirun -np <N> ./OpenAtom <path to cpaimd config> <path to water input>
  *       
- * In the datasets downloaded using the command listed above, these files are 
- * located in *regression* directory. You can also use *tidy* located in the *util*
- * directory to clean up the dataset directory before performing a new run. 
+ * In the datasets downloaded using the command listed above, these
+ * files are located in *regression* directory. You can also use
+ * *tidy* located in the *util* directory to clean up the dataset
+ * directory before performing a new run.
  * 
  * ![Overview Of OpenAtom Control Flow](controlFlowAmongstChareArrays_small.gif)
  */
