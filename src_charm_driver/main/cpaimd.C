@@ -84,6 +84,32 @@
  * 3. Customize the config.mk for any desired compilation/link flags etc.
  * 4. Now type "make", which should create a binary called *OpenAtom* in *build*
  *    directory on successful compilation.  
+ *
+ *###Running OpenAtom###
+ *
+ *Before executing OpenAtom, obtain a dataset using the *git* command mentioned
+ *in the download section, and either place it in the *data* directory, or modify
+ *the **w3210** variable in *config.mk*.
+ *
+ * If the dataset uses the old format, you will need to execute *setup* in dataset
+ * directory. *setup* is located in *BASEDIR/util* directory.
+ *
+ * OpenAtom is to be executed as a Charm++ application, which is explained in detail
+ * at [this link](http://\charm.cs.illinois.edu/manuals/html/\charm++/C.html). The general
+ * syntax is as follows:
+ *
+ *       ./charmrum +p<N> ./OpenAtom <path to cpaimd config> <path to water input> (N 
+ *       is the number of processors to execute the job on)
+ *
+ * On most machine layers (excluding net), a Charm++ application can be launched
+ * in the same manner as an MPI application. For example, if build on top of MPI, one
+ * can launch OpenAtom as follows
+ *
+ *       mpirun -np <N> ./OpenAtom <path to cpaimd config> <path to water input>
+ *       
+ * In the datasets downloaded using the command listed above, these files are 
+ * located in *regression* directory. You can also use *tidy* located in the *util*
+ * directory to clean up the dataset directory before performing a new run. 
  * 
  * ![Overview Of OpenAtom Control Flow](controlFlowAmongstChareArrays_small.gif)
  */
