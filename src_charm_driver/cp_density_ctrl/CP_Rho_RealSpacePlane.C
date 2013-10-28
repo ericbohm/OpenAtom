@@ -10,7 +10,7 @@
  * CP_Rho_RHartExt (Hartree and external energies). Each plane
  * may be further subdivided into subplanes at runtime for additional
  * parallelism.
-
+ *
  * This is the description of the "life" of a CP_Rho_RealSpacePlane object.
  *
  * At the start of the program, the constructor CP_Rho_RealSpacePlane() is called.

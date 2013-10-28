@@ -7,6 +7,12 @@
  *
  * \brief Compute kinetic energy of the non-interacting electrons and non-local forces based on the particle view of the system, triggered by \ref GSpaceState and overlaps with those computations when possible.
  *
+ * The kinetic energy of non-interacting electrons is expressed (in
+ * the computer science parlance) as a ``point by point multiply'' and
+ * reduction operation.
+ * \f$$(\hbar^2/2m_e)\sum_{g_x,g_y,g_z\epsilon
+ * |{\bf g}|<g_{cut}}\sum_s f_sg^2 |\Psi(s,g_x,g_y,g_z)|^2$\f$
+ *
  * Life-cycle of a CP_State_ParticlePlane:
  *
  * The particle-plane array is a shadow of the g-space planes. This means
