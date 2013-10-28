@@ -39,6 +39,52 @@
  * exhibited portable performance across three generations of the IBM Blue Gene family, 
  * apart from other supercomputing platforms.
  *
+ * ###Downloading OpenAtom
+ * OpenAtom is hosted using git and can be downloaded using the following command:
+ *
+ *        git clone git://Charm.cs.uiuc.edu/openatom.git
+ *
+ * Recent commit history can be view 
+ * [here](http://\charm.cs.illinois.edu/cgi-bin/gitweb.cgi?p=openatom.git;a=summary).
+ *
+ * You will also need to download either a stable version of Charm++ from this 
+ * [weblink](http://\charm.cs.uiuc.edu/software) or the nightly version using the
+ * following command:
+ * 
+ *        git clone git://Charm.cs.uiuc.edu/charm.git
+ * 
+ * Sample data sets can be obtained using one of the following commands:
+ * 
+ *        git clone git://Charm.cs.uiuc.edu/datasets/openatom/water_32M_10Ry.git
+ *        git clone git://Charm.cs.uiuc.edu/datasets/openatom/water_32M_70Ry.git
+ *        git clone git://Charm.cs.uiuc.edu/datasets/openatom/water_64M_70Ry.git
+ *        git clone git://Charm.cs.uiuc.edu/datasets/openatom/water_128_70Ry.git
+ *
+ * ###Compilation###
+ * Before OpenAtom is compiled, one needs to get access to a compiled version of 
+ * Charm++. Detailed instructions on compiling Charm++ can be obtained 
+ * [here](http://\charm.cs.illinois.edu/manuals/html/charm++/A.html). On a typical
+ * 64-bit linux machine, Charm++ can be compiled using the following command (executed
+ * within Charm++ directory):
+ *
+ *        ./build charm++ net-linux-x86_64 --with-production -j8 (production version)
+ *        ./build charm++ net-linux-x86_64 -j8 -g (debug version)
+ *
+ * You will also need double precision FFTW library to compile OpenAtom.
+ * 
+ * The INSTALL file in OpenAtom provides detailed instruction for its compilation. Here
+ * is a quick summary:
+ *
+ * 1. Copy a machine specific configuration file (*config.MACHINE.mk*) from 
+ *    the *makefiles* directory to the OpenAtom base directory and rename it to
+ *    *config.mk*.
+ * 2. Update the values of **CHARMBASE** and **FFT_HOME** in the beginning of 
+ *    the newly created *config.mk*. Depending on how FFTW was build, you may need
+ *    to update the value of **DUAL_FFTW** also.
+ * 3. Customize the config.mk for any desired compilation/link flags etc.
+ * 4. Now type "make", which should create a binary called *OpenAtom* in *build*
+ *    directory on successful compilation.  
+ * 
  * ![Overview Of OpenAtom Control Flow](controlFlowAmongstChareArrays_small.gif)
  */
 
@@ -100,7 +146,7 @@ bool fakeTorus;
  */
 //============================================================================
 /** \addtogroup piny_vars
-/**@{*/
+**@{*/
 extern MDINTEGRATE  readonly_mdintegrate;
 extern MDATOMS      readonly_mdatoms;
 extern MDINTER      readonly_mdinter;
