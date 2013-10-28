@@ -7,16 +7,39 @@
 
 /** \mainpage
 
- # OpenAtom
-
- *        Car-Parrinello Ab-Initio Molecular Dynamics 
- *           software developed by the  
- *        Parallel Programing Laboratory, UIUC  
- *               in collaboration with  
- *               IBM, NYU, and Yale
+ * OpenAtom is a **Car-Parrinello Ab-Initio Molecular Dynamics**
+ * software developed by the **Parallel Programing Laboratory, UIUC**
+ * in collaboration with **IBM, NYU, and Yale**. See also the 
+ * [OpenAtom webpage](http://\charm.cs.illinois.edu/OpenAtom).
+ *
+ * ###Introduction###
+ * OpenAtom is parallel simulation software for studying atomic and molecular 
+ * systems based on quantum chemical principles. In contrast to classical
+ * computational molecular dynamics based on Newtonian mechanims, it uses 
+ * the Car-Parrinello Ab Initio Molecular Dynamics (CPAIMD) approach.
+ * Instead of using an empirical force function, the CPAIMD algorithm 
+ * computes the forces acting on each atom as the summation of multiple 
+ * terms derived from plane-wave density functional theory. This allows 
+ * OpenAtom to study complex atomic and electronic physics in semiconductor, 
+ * metallic, biological and other molecular systems.
  * 
- * see also the [OpenAtom webpage](http://\charm.cs.illinois.edu/OpenAtom)
- * ![OverView Image](controlFlowAmongstChareArrays_small.png "OverView Of OpenAtom Control Flow")
+ * OpenAtom is implemented on top of [Charm++](http://\charm.cs.illinois.edu),
+ * which is an over-decomposition based parallel programming framework that provides
+ * 
+ * support for message-driven execution of migratable entities empowered by an
+ * adaptive runtime system. Charm++ encourages decomposition of parallel computation
+ * using units that are natural to the application domain, instead of dividing 
+ * data into as many pieces as processors. In particular, OpenAtom decomposes the data 
+ * and the computation across a number of *chare* objects, whose type and/or number 
+ * only depend on the CPAIMD algorithm and the desired grainsize. This allows OpenAtom 
+ * to exploit the underlying mathematics via a seamless mix of both data and functional 
+ * decompositions resulting in greater expressed parallelism, and several overlapping 
+ * phases of computation combined with a longer critical path of dependent computations.
+ * The current implementation of OpenAtom in Charm++ is highly scalable, and has 
+ * exhibited portable performance across three generations of the IBM Blue Gene family, 
+ * apart from other supercomputing platforms.
+ *
+ * ![Overview Of OpenAtom Control Flow](controlFlowAmongstChareArrays_small.gif)
  */
 
 #include "cpaimd.h"
@@ -92,6 +115,7 @@ extern CP           readonly_cp;
 /**
  * @defgroup proxy_vars proxy_vars
  * Defining all the Charm++ readonly variables, which include proxies
+ * 
  * to access the arrays and groups and the Communication Library
  * handles.
  */
@@ -153,6 +177,7 @@ CPcharmParaInfo simReadOnly;
  * \brief Ubers provide a multidimensional collection of CkArray proxies such that a complete instance of all objects necessary for a simulation are accessible at each unique tuple of indices. 
  * 
  *  Uber proxies for all the things which change per step 
+ *  
  *  Indexed by PathIntegral Bead.  Each Bead has its own set of
  *  proxies.  Charm driver startup will construct a different set of
  *  arrays for each bead.  
