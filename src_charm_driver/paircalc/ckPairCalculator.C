@@ -2626,8 +2626,10 @@ void PairCalculator::dumpMatrix(const char *infilename, double *matrix, int xdim
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000);
   strncpy(fmt,infilename,999);
-  strncat(fmt,"_%d_%d_%d_%d_%d_%d_%d.out",999);
+  strncat(fmt,"_%d_%d_%d_%d_%d_%d_%d.out\0",999);
   sprintf(filename, fmt, thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z,
 	  xtra1, xtra2, cfg.isSymmetric);
   FILE *loutfile = fopen(filename, "w");
@@ -2641,6 +2643,8 @@ void PairCalculator::dumpMatrix(const char *infilename, complex *matrix, int xdi
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000); 
   strncpy(fmt,infilename,999);
   strncat(fmt,"_%d_%d_%d_%d_%d_%d_%d.out",999);
   sprintf(filename, fmt, thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z,
@@ -2656,6 +2660,8 @@ void PairCalculator::dumpMatrixComplex(const char *infilename, complex *matrix, 
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000);
   strncpy(fmt,infilename,999);
   strncat(fmt,"_%d_%d_%d_%d_%d_%d.out",999);
   sprintf(filename, fmt, thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, iter ,cfg.isSymmetric);

@@ -271,6 +271,7 @@ void HPM_Print(int node_id, int local_rank)
     }
     fprintf(fp, "\n");
     }
+    fclose(fp);
     return;
 }
 
@@ -280,7 +281,7 @@ void HPM_Print(int node_id, int local_rank)
 /*===========================================*/
 int index_from_label(char * this_label)
 {
-   int i, match;
+   int i=0, match;
    char * ptr;
 
    if (code_block < MAX_CODE_BLOCKS)

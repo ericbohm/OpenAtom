@@ -2482,6 +2482,8 @@ FILE *openScreenfWrite(const char *dirnameBase, const char *fname, int temper, i
   char subdir[1024];
   char lfname[1024];
   char beadname[1024];
+  memset(dirPath, 0 , 1024);
+  memset(lfname, 0 , 1024);
   snprintf(subdir,1023,"/Temper.%d/",temper);
   strncpy(dirPath, dirnameBase, 1023);
   strncpy(lfname, fname, 1023);

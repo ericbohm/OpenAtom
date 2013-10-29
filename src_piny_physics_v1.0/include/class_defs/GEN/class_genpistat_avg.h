@@ -78,7 +78,7 @@ class GENPISTAT_AVG {
      fprintf(fp,"kinet_nhc_bead %g\n",kinet_nhc_bead);
      fprintf(fp,"aikinet_nhc_bead %g\n",aikinet_nhc_bead);
      fprintf(fp,"akinet_nhc_bead %g\n",akinet_nhc_bead);
-
+     fclose(fp);
   }// end output state of class
 
 }; // GENPISTAT_AVG;

@@ -28,7 +28,7 @@ class PhysScratchCache: public Group {
   PSSCRATCH *psscratch;
   PhysScratchCache();
   PhysScratchCache(CkMigrateMessage *m) {}
-  ~PhysScratchCache(){}
+  ~PhysScratchCache(){ delete psscratch; }
 
 };
 

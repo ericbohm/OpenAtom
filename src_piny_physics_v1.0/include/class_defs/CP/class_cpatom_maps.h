@@ -126,7 +126,7 @@ class CPATOM_MAPS {
     for(i=1;i<=nab_initio;i++){
          fprintf(fp,"mdclatom_maps: cp_atm_lst[%d] %d\n",
                    i,cp_atm_lst[i]);}
-
+    fclose(fp);
  }// End print out state of class 
 
 

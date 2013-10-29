@@ -57,6 +57,9 @@ int main(){
     fclose(fp_out);
 
   }//endfor
+  free(kx);
+  free(ky);
+  free(kz);
 
   return 1;
 
@@ -208,7 +211,13 @@ void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
     data[i].re =  data[j].re;
     data[i].im = -data[j].im;
   }
-
+  free(kx);
+  free(ky);
+  free(kz);
+  free(kxt);
+  free(kyt);
+  free(kzt);
+  free(datat);
 //==========================================================================
     }//end routine
 //==========================================================================

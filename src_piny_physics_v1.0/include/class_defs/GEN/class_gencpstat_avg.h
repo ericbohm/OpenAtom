@@ -170,7 +170,7 @@ class GENCPSTAT_AVG {
      fprintf(fp,"count_diag_srot %g\n",count_diag_srot);
      fprintf(fp,"max_diag %g\n",max_diag);
      fprintf(fp,"max_off_diag %g\n",max_off_diag);
-
+     fclose(fp);
   }// end output state of class
 
 //---------------------------------------------------------------------

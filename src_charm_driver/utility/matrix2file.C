@@ -6,6 +6,8 @@ void dumpMatrix(const char *infilename, double *matrix, int xdim, int ydim,int w
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000);
   strncpy(fmt,infilename,999);
   strncat(fmt,"_%d_%d_%d_%d_%d.out",999);
   sprintf(filename,fmt, w, x, y, z, symmetric);
@@ -25,6 +27,8 @@ void dumpMatrix(const char *infilename, complex *matrix, int xdim, int ydim,int 
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000);
   strncpy(fmt,infilename,999);
   strncat(fmt,"_%d_%d_%d_%d_%d.out",999);
   sprintf(filename,fmt, w, x, y, z, symmetric);
@@ -44,6 +48,8 @@ void loadMatrix(const char *infilename, double *matrix, int xdim, int ydim,int w
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000);
   strncpy(fmt,infilename,999);
   strncat(fmt,"_%d_%d_%d_%d_%d.out",999);
   sprintf(filename,fmt, w, x, y, z, symmetric);
@@ -68,6 +74,8 @@ void loadMatrix(const char *infilename, complex *matrix, int xdim, int ydim,int 
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000);
   strncpy(fmt,infilename,999);
   strncat(fmt,"_%d_%d_%d_%d_%d.out",999);
   sprintf(filename,fmt, w, x, y, z, symmetric);
@@ -91,6 +99,8 @@ void dumpMatrix2DDouble(const char *infilename, double **matrix, int xdim, int y
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000);
   strncpy(fmt,infilename,999);
   strncat(fmt,"_%d_%d_%d_%d_%d.out",999);
   sprintf(filename,fmt, w, x, y, z, symmetric);
@@ -104,6 +114,8 @@ void loadMatrix2DDouble(const char *infilename, double **matrix, int xdim, int y
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000);
   strncpy(fmt,infilename,999);
   strncat(fmt,"_%d_%d_%d_%d_%d.out",999);
   sprintf(filename,fmt, w, x, y, z, symmetric);
@@ -128,6 +140,8 @@ void dumpMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,in
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000);
   strncpy(fmt,infilename,999);
   strncat(fmt,"_%d_%d_%d_%d_%d.out",999);
   sprintf(filename,fmt, w, x, y, z, symmetric);
@@ -141,6 +155,8 @@ void loadMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,in
 {
   char fmt[1000];
   char filename[1000];
+  memset(fmt, 0 , 1000);
+  memset(filename, 0 , 1000);
   strncpy(fmt,infilename,999);
   strncat(fmt,"_%d_%d_%d_%d_%d.out",999);
   sprintf(filename,fmt, w, x, y, z, symmetric);

@@ -172,8 +172,8 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 	      CkPrintf("   CP wavefunction force tolerence reached!   \n");
 	      CkPrintf("----------------------------------------------\n");
 	    }//endif
-	  }
 #endif // _CP_DEBUG_SCALC_ONLY_ 
+	  }
 	}
       else
 	{
@@ -492,8 +492,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
       CkVec <int> usedVec;
       CkVec <int> peUsedByNLZ;
       CkVec <int> planeUsedByNLZ;
-      FILE *fp;
-      if(thisIndex.x+1==nstates){fp=fopen();}
       for(int state=0; state<thisIndex.x;state++){
         redPlane=nchareG-1;
         while(redPlane>=0){
