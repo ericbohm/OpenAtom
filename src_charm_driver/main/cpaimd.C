@@ -101,7 +101,7 @@
  * [this link](http://\charm.cs.illinois.edu/manuals/html/\charm++/C.html). The
  * general syntax is as follows:
  *
- *       ./charmrum +p<N> ./OpenAtom <path to cpaimd config> <path to water input> (N 
+ *       ./charmrun +p<N> ./OpenAtom <path to cpaimd config> <path to water input> (N 
  *       is the number of processors to execute the job on)
  *
  * On most machine layers (excluding net), a Charm++ application can
