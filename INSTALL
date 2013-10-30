@@ -14,7 +14,6 @@ INSTALLATION
    config.mk.
 
    Linux Workstations	config.mk
-   Blue Gene/L		config.bgl.mk
    Blue Gene/P		config.bgp.mk
    Ranger (TACC)	config.ranger.mk
    XT4/XT5		config.xt5.mk
