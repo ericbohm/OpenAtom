@@ -1668,21 +1668,13 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
   // 1)\fftprogresssplit{}
     ind=1;
     strcpy((*dict)[ind].keyword,"fftprogresssplit");
-#ifdef CMK_BLUEGENEL
-    strcpy((*dict)[ind].keyarg,"20");    
-#else
     strcpy((*dict)[ind].keyarg,"1000");    
-#endif  
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 2)\fftprogresssplitReal{}
     ind=2;
     strcpy((*dict)[ind].keyword,"fftprogresssplitReal");
-#ifdef CMK_BLUEGENEL
-    strcpy((*dict)[ind].keyarg,"10");    
-#else
     strcpy((*dict)[ind].keyarg,"1000");    
-#endif  
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 3)\useCommlib{}
@@ -2629,27 +2621,6 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       sprintf(dict_map[16].keyarg, "%d", useStrictCuboid);
     }
 
-//============================================================================
-// Turn torusMap on on BG/L
-
-#ifdef CMK_BLUEGENEL
-    igo = dict_map[1].iuset;
-
-    if(igo==0) {
-      torusMap = 1; 
-      sprintf(dict_map[1].keyarg, "%d", torusMap);
-      useCuboidMap = 1;
-      sprintf(dict_map[2].keyarg, "%d", useCuboidMap);
-      useCuboidMapRS = 1;
-      sprintf(dict_map[3].keyarg, "%d", useCuboidMapRS);
-      useCentroidMap = 1;
-      sprintf(dict_map[4].keyarg, "%d", useCentroidMap);
-      useCentroidMapRho = 1;
-      sprintf(dict_map[5].keyarg, "%d", useCentroidMapRho);
-    }
-#endif
-
-
 //===================================================================================
 // Clean up 
 
@@ -3041,15 +3012,6 @@ void Config::rangeExit(int param, const char *name, int iopt){
 //===================================================================================
 // Mapping checks
 
-/*#ifndef CMK_BLUEGENEL
-    if(!fakeTorus && (useCuboidMap || useCuboidMapRS)){
-       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("   useCuboidMap requires CMK_BLUEGENEL\n");
-       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       EXIT(1);
-    }//endif
-#endif
-*/
     if(Gstates_per_pe<1 || Gstates_per_pe>nstates){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("   The number of Gstates per pe must be >=1 < num states\n");

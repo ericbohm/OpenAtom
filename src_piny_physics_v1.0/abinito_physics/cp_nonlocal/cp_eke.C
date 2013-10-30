@@ -76,13 +76,7 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
        forces[i].re = 0.0;
        forces[i].im = 0.0;
      }//endif
-#ifdef CMK_BLUEGENEL
-     if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
    }/* endfor */
-#ifdef CMK_BLUEGENEL
-       CmiNetworkProgress();
-#endif
 
 //============================================================================
 // I. Forces and energy (kinetic energy contribution) : gx>=0
@@ -116,13 +110,7 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
        forces[i].re = 0.0;
        forces[i].im = 0.0;
      }//endif
-#ifdef CMK_BLUEGENEL
-     if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
    }/* endfor */
-#ifdef CMK_BLUEGENEL
-       CmiNetworkProgress();
-#endif
 
 //============================================================================
 // Energy return value

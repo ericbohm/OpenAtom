@@ -348,9 +348,6 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
      frac_b[i] = btemp - (double) (ibtemp[i]);
      frac_c[i] = ctemp - (double) (ictemp[i]);
    }//endfor
-#ifdef CMK_BLUEGENEL
-        CmiNetworkProgress();
-#endif
 
 //==========================================================================
 // II) Using current fraction, find the grid points on which M_n is non-zero 
@@ -360,10 +357,6 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
      sizeA = (ngrid_a+2);
    }//endif
    for(j=1;j<=n_interp;j++){
-#ifdef CMK_BLUEGENEL
-     if(j%100==0)
-       CmiNetworkProgress();
-#endif
      for(i=0;i<natm;i++){
        ua[j][i] = frac_a[i] + aj[j];
        ub[j][i] = frac_b[i] + aj[j];
@@ -383,9 +376,6 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
        igrid_c[j][i] = (ic - 1);  // use to assign to planes
      }//endfor
    }//endfor
-#ifdef CMK_BLUEGENEL
-   CmiNetworkProgress();
-#endif
   
 //==========================================================================
 // III) Initialize M2 and get the Mn's using the recursion relation         
@@ -400,9 +390,6 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
      mn_b[2][i] = 1.0 - fabs(ub[2][i]-1.0);
      mn_c[2][i] = 1.0 - fabs(uc[2][i]-1.0);
    }//endfor
-#ifdef CMK_BLUEGENEL
-   CmiNetworkProgress();
-#endif
    for(j=3;j<=n_interp;j++){
      for(i=0;i<natm;i++){
        mn_a[j][i]   = 0.0;
@@ -410,9 +397,6 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
        mn_c[j][i]   = 0.0;
      }//endfor
    }//endfor
-#ifdef CMK_BLUEGENEL
-        CmiNetworkProgress();
-#endif
 
    for(n=3;n<=n_interp;n++){
 
@@ -426,18 +410,12 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
          mn_b[j][i] = mn_b_tmp;
          mn_c[j][i] = mn_c_tmp;
        }//end for: i
-#ifdef CMK_BLUEGENEL
-       CmiNetworkProgress();
-#endif
      }//end for: j
      for(i=0;i<natm;i++){
        mn_a[1][i] = ua[1][i]*mn_a[1][i]*rn1[n];
        mn_b[1][i] = ub[1][i]*mn_b[1][i]*rn1[n];
        mn_c[1][i] = uc[1][i]*mn_c[1][i]*rn1[n];
      }//endfor 
-#ifdef CMK_BLUEGENEL
-        CmiNetworkProgress();
-#endif
      if(n==(n_interp-1)){
        for(i=0;i<natm;i++){
          dmn_a[1][i] = mn_a[1][i];
@@ -451,9 +429,6 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
            dmn_b[j][i] = mn_b[j][i] - mn_b[j1][i];
            dmn_c[j][i] = mn_c[j][i] - mn_c[j1][i];
          }//endfor: i
-#ifdef CMK_BLUEGENEL
-        CmiNetworkProgress();
-#endif
        }//endfor : j
      }//endif : get derivative
 
@@ -477,10 +452,6 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
        }//endfor
      }//endif
    }//endfor
-
-#ifdef CMK_BLUEGENEL
-        CmiNetworkProgress();
-#endif
 
    for(i=0;i<natm;i++){
      igo[i] = 0;
@@ -551,9 +522,6 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
           if(sBreakJ[i][(ib+1)]!=num+1){PRINTF("Help.1 %d\n",num); EXIT(1);}
         }//endif
         if(num!=n_interp2){PRINTF("Help %d\n",num); EXIT(1);}
-#endif
-#ifdef CMK_BLUEGENEL
-        CmiNetworkProgress();
 #endif
        }//endif : this jc is cool
       }//endfor jc
@@ -682,13 +650,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
     double vnow = ((v3*h+v2)*h+v1)*h+v0;
     dyp_re[i]  *= vnow;
     dyp_im[i]  *= vnow;
-#ifdef CMK_BLUEGENEL
-    if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
   }//endfor
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
-#endif
   for(int i=ii+1;i<ncoef;i++){
     int ind_now = ind_off + ind_gspl[kpt][i];
     double h    = h_gspl[kpt][i];
@@ -699,9 +661,6 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
     double vnow = ((v3*h+v2)*h+v1)*h+v0;
     dyp_re[i]  *= vnow;
     dyp_im[i]  *= vnow;
-#ifdef CMK_BLUEGENEL
-    if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
   }//endfor
 
 //==========================================================================
@@ -716,14 +675,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
       fprintf(fp,"%d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],projPsiG[ig].re,projPsiG[ig].im);
      }/*endif*/
 #endif
-#ifdef CMK_BLUEGENEL
-    if(ig%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
   }//endfor
-
-#ifdef CMK_BLUEGENEL
-       CmiNetworkProgress();
-#endif
 
 //==========================================================================
 // close any debug files
@@ -805,9 +757,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         y00      = rt_fpi;
         dy_re[i] = d_re[i]*y00;
         dy_im[i] = d_im[i]*y00;
-#ifdef CMK_BLUEGENEL
-        if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
       }//endfor
     break;
     //-----------------------------------------------------------
@@ -835,9 +784,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }
-#ifdef CMK_BLUEGENEL
-           if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
 	  }//endfor
         break;
         case 1:
@@ -864,9 +810,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         case -1:
@@ -893,9 +836,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
       }//end : switch m : l = 0
@@ -925,9 +865,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }
-#ifdef CMK_BLUEGENEL
-           if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         // ------------------------------------------------------
@@ -956,9 +893,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         // ------------------------------------------------------
@@ -987,9 +921,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         // ------------------------------------------------------
@@ -1017,9 +948,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         // ------------------------------------------------------
@@ -1047,9 +975,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
       }//end : switch m : l = 2
@@ -1079,9 +1004,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }
-#ifdef CMK_BLUEGENEL
-           if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         // ------------------------------------------------------
@@ -1112,9 +1034,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         // ------------------------------------------------------
@@ -1145,9 +1064,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         // ------------------------------------------------------
@@ -1177,9 +1093,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         // ------------------------------------------------------
@@ -1209,9 +1122,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         // ------------------------------------------------------
@@ -1239,9 +1149,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
         // ------------------------------------------------------
@@ -1269,18 +1176,11 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_BLUEGENEL
-            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
           }//endfor
         break;
       }//end : switch m : l = 3
     break;
   }//end swithc : l
-
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
-#endif
 
 //==========================================================================
   }//end routine
@@ -1377,9 +1277,6 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
          double p   = projPsiR[igrid[iatm][j]]*mn[iatm][j]; // projection operator
          zmat[jatm] += p;                                   // add to zmatrix
        }//endfor : B-spline interp to get Zmat contributions
-#ifdef CMK_BLUEGENEL
-       CmiNetworkProgress();
-#endif
      }//endif
    }//endfor : atoms of this type
 
@@ -1500,9 +1397,6 @@ void CPNONLOCAL::eesZmatRchareC(complex *projPsiR, int iter_nl, complex *zmat,
          complex p   = projPsiR[igrid[iatm][j]]*mn[iatm][j]; // projection operator
          zmat[jatm] += p;                                   // add to zmatrix
        }//endfor : B-spline interp to get Zmat contributions
-#ifdef CMK_BLUEGENEL
-       CmiNetworkProgress();
-#endif
      }//endif
    }//endfor : atoms of this type
 
@@ -1626,10 +1520,6 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
    for(int j=jstrt;j<natm;j++){cp_enl += (zmat[j]*zmat[j]);}
 
    cp_enl_tot[0] += (cp_enl*vnormVol*wght_now);
-
-#ifdef CMK_BLUEGENEL
-       CmiNetworkProgress();
-#endif
 
 //==========================================================================
 // Atom forces
@@ -1762,9 +1652,6 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
          fzt[jatm] -= pz*dmn_z[iatm][j];
        }//endif
 #endif
-#ifdef CMK_BLUEGENEL
-       //       CmiNetworkProgress();
-#endif
      }//endif : atom is interpolated on this plane
    }//endfor : iatm
 
@@ -1891,11 +1778,6 @@ void CPNONLOCAL::eesEnergyAtmForcRchareC(int iter_nl, double *cp_enl_tot, comple
    for(int j=jstrt;j<natm;j++){cp_enl += (zmat[j].getMagSqr());}
 
    cp_enl_tot[0] += (cp_enl*vnormVol*wght_now);
-
-
-#ifdef CMK_BLUEGENEL
-       CmiNetworkProgress();
-#endif
 
 //==========================================================================
 // Atom forces
@@ -2029,9 +1911,6 @@ void CPNONLOCAL::eesEnergyAtmForcRchareC(int iter_nl, double *cp_enl_tot, comple
          fzt[jatm] -= pz*dmn_z[iatm][j];
        }//endif
 #endif
-#ifdef CMK_BLUEGENEL
-       //       CmiNetworkProgress();
-#endif
      }//endif : atom is interpolated on this plane
    }//endfor : iatm
 
@@ -2109,14 +1988,7 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
     if(istate==0){fprintf(fp,"%d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
                  fPsiG[ig].re,fPsiG[ig].im);}
 #endif
-#ifdef CMK_BLUEGENEL
-    if(ig%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
   }//endfor
-
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
-#endif
 
 //==========================================================================
 // Gx!=0 : Compute Psi forces : projPsiG is FFT3Dinv(projPsiR)
@@ -2130,14 +2002,7 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
     if(istate==0){fprintf(fp,"%d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
                  fPsiG[ig].re,fPsiG[ig].im);}
 #endif
-#ifdef CMK_BLUEGENEL
-    if(ig%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
   }//endfor
-
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
-#endif
 
 //==========================================================================
 // Close the files if debugging

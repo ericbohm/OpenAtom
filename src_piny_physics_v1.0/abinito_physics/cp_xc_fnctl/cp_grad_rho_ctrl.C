@@ -74,10 +74,6 @@ void CPXCFNCTS::CP_getGGAFunctional(
    for(int x = 0; x < nf1; x++){
 
      int i = y*(nf1+2) + x;
-#ifdef CMK_BLUEGENEL
-     if((i+1)%nfreq_cmi_update==0){CmiNetworkProgress();}
-#endif
-
 //----------------------------------------------------------
 // Get density and decide if the loop should be done
 

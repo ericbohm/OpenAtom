@@ -894,21 +894,13 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
   // 1)\fftprogresssplit{}
     ind=1;
     strcpy((*dict)[ind].keyword,"fftprogresssplit");
-#ifdef CMK_BLUEGENEL
-    strcpy((*dict)[ind].keyarg,"20");    
-#else
     strcpy((*dict)[ind].keyarg,"1000");    
-#endif  
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 2)\fftprogresssplitReal{}
     ind=2;
     strcpy((*dict)[ind].keyword,"fftprogresssplitReal");
-#ifdef CMK_BLUEGENEL
-    strcpy((*dict)[ind].keyarg,"10");    
-#else
     strcpy((*dict)[ind].keyarg,"1000");    
-#endif  
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 3)\useCommlib{}
