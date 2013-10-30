@@ -916,8 +916,6 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
 #endif
       if(p.isUnpacking()){
 	  if(sizeX<0|sizeY<0|sizeZ<0|RhosortedRunDescriptors[0].size()<=0){
-	    int *p=NULL;
-	    *p=12;  //segfault now please
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
 	  }else{
 	    CkPrintf("unpacked RhosortedRunDescriptors[0].size()=%d\n",

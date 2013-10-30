@@ -17,7 +17,7 @@ int main(){
   printf("\n");
   for(i=1;i<=nlen;i++){printf("in main : %d %d\n",i,junk[i]);}
   printf("\n");
-
+  free(&junk[1]);
 }
 
 

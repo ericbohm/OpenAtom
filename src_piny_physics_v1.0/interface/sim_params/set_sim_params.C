@@ -187,7 +187,7 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
         PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         EXIT(1);
       }//endif
-      fclose(fp);
+      fclose(fpck);
     }/*endfor*/
 
     cfree(fname,"set_sim_params_ctrl_temper"); /* file not needed again */

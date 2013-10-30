@@ -176,25 +176,9 @@ void ATOMOUTPUT::write_atom_output_dump(int natm, int len_nhc,int pi_beads,
     }//endfor
    }//endfor
 
-#ifdef JUNK
-   if(iextended_on==1){
-     fprintf(fp,"number of atm nhc, length of nhc\n");
-     fprintf(fp,"%d %d\n",num_nhc,len_nhc);
-     fprintf(fp,"atm nhc velocities\n");
-     for(j=0;j<len_nhc;j++){
-       for(i=0;i<natm;i++){
-         fprintf(fp,"%.13g\n",atomsNHC[i].vx[j]);
-         fprintf(fp,"%.13g\n",atomsNHC[i].vy[j]);
-         fprintf(fp,"%.13g\n",atomsNHC[i].vz[j]);
-       }//endfor
-     }//endfor
-   }else{
-#endif
-     fprintf(fp,"number of atm nhc, length of nhc\n");
-     fprintf(fp,"0 %d\n",len_nhc);
-     fprintf(fp,"atm nhc velocities\n");
-
-//   }//endif
+   fprintf(fp,"number of atm nhc, length of nhc\n");
+   fprintf(fp,"0 %d\n",len_nhc);
+   fprintf(fp,"atm nhc velocities\n");
 
 //==========================================================================
 // IV)Vol and Vol NHC Velocities                                            

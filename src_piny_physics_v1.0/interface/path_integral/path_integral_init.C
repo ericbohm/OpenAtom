@@ -83,7 +83,7 @@ void path_integral_init(MDCLATOMS_INFO *clatoms_info,
 #endif
 
    dpi_beads = (double)pi_beads;
-
+   prekf         = clatoms_pimd->prekf;
    veig          = clatoms_pimd->path_eig;
 
 
