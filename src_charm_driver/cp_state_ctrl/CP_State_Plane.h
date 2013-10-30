@@ -700,47 +700,6 @@ class CP_LargeSP_RhoRealSpacePlane: public CBase_CP_LargeSP_RhoRealSpacePlane {
 
 /*@}*/
 
-/** @addtogroup VanderWaals
-    @{
-*/
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class CP_VanderWaalsR:public CBase_CP_VanderWaalsR{
- public:	
-	CP_VanderWaalsR(CkMigrateMessage *m){}
-	CP_VanderWaalsR(UberCollection);
-	void init();
-       ~CP_VanderWaalsR();
-	void pup(PUP::er &);
- private:
-	const UberCollection thisInstance;
-	RTH_Runtime* run_thread;
-};
-//============================================================================
-
-/*@}*/
-
-/** @addtogroup VanderWaals
-    @{
-*/
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class CP_VanderWaalsG:  public CBase_CP_VanderWaalsG {
- public:
-	CP_VanderWaalsG(CkMigrateMessage *m) {}
-	CP_VanderWaalsG(UberCollection);
-	~CP_VanderWaalsG();
-	void init();
-	void pup(PUP::er &p);
- private:
-	const UberCollection thisInstance;
-};
-//============================================================================
-/*@}*/
 
 //============================================================================
 #endif // #ifndef _PLANE_H_

@@ -212,8 +212,6 @@ mainmodule cpaimd {
 	readonly CkHashtableT<intdual, int> RPPmaptable;
 	readonly CkHashtableT<intdual, int> RhoGSmaptable;
 	readonly CkHashtableT<intdual, int> RhoRSmaptable;
-	readonly CkHashtableT<intdual, int> VdWGSmaptable;
-	readonly CkHashtableT<inttriple, int> VdWRSmaptable;
 	readonly CkHashtableT<intdual, int> RhoGHartmaptable;
 	readonly CkHashtableT<inttriple, int> RhoRHartmaptable;
 	readonly CkHashtableT<intdual, int> Orthomaptable;
@@ -229,8 +227,6 @@ mainmodule cpaimd {
 	readonly CkVec <MapType2> RhoRSImaptable;
 	readonly CkVec <MapType2> RhoGHartImaptable;
 	readonly CkVec <MapType3> RhoRHartImaptable;
-	readonly CkVec <MapType2> VdWGSImaptable;
-	readonly CkVec <MapType3> VdWRSImaptable;
 
 
 	readonly Config config;
@@ -263,10 +259,6 @@ mainmodule cpaimd {
 
 	readonly CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
 	readonly CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
-
-	readonly CkVec <CProxy_CP_VanderWaalsR>      UVdWRealProxy;
-	readonly CkVec <CProxy_CP_VanderWaalsG>      UVdWGProxy;
-
 
 	readonly CkVec <UberCollection> UberAlles;
 	
@@ -446,18 +438,6 @@ mainmodule cpaimd {
 		entry void acceptRhoR();
 	};	
 
-
-       array [3D] CP_VanderWaalsR {
-		entry CP_VanderWaalsR(UberCollection);
-		entry [nokeep] void init();
-	};
-
-
-       array [3D] CP_VanderWaalsG {
-		entry CP_VanderWaalsG(UberCollection);
-		entry [nokeep] void init();
-	};
-
 	group AtomComputeMap : CkArrayMap {
 		entry AtomComputeMap(UberCollection);
 	};
@@ -468,14 +448,6 @@ mainmodule cpaimd {
 
 	group RhoRSMap : CkArrayMap {
 		entry RhoRSMap(UberCollection);
-	};
-
-	group VdWGSMap : CkArrayMap {
-		entry VdWGSMap(UberCollection);
-	};
-
-	group VdWRSMap : CkArrayMap {
-		entry VdWRSMap(UberCollection);
 	};
 
 	group RhoGHartMap : CkArrayMap {

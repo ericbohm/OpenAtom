@@ -72,8 +72,6 @@ extern CkVec <MapType1> AtomImaptable;
 extern CkVec <MapType2> GSImaptable;
 extern CkVec <MapType2> RSImaptable;
 extern CkVec <MapType2> RPPImaptable;
-extern CkVec <MapType2> VdWGSImaptable;
-extern CkVec <MapType3> VdWRSImaptable;
 extern CkVec <MapType2> RhoGSImaptable;
 extern CkVec <MapType2> RhoRSImaptable;
 extern CkVec <MapType2> RhoGHartImaptable;
@@ -82,8 +80,6 @@ extern CkVec <MapType3> RhoRHartImaptable;
 extern CkHashtableT <intdual, int> GSmaptable;
 extern CkHashtableT <intdual, int> RSmaptable;
 extern CkHashtableT <intdual, int> RPPmaptable;
-extern CkHashtableT <intdual, int> VdWGSmaptable;
-extern CkHashtableT <inttriple, int> VdWRSmaptable;
 extern CkHashtableT <intdual, int> RhoGSmaptable;
 extern CkHashtableT <intdual, int> RhoRSmaptable;
 extern CkHashtableT <intdual, int> RhoGHartmaptable;
@@ -631,98 +627,6 @@ class RhoRHartMap : public CkArrayMapTable3 {
 
 };
 
-//============================================================================
-/**
- * provide procnum mapping for RhoR
- */
-class VdWRSMap : public CkArrayMapTable3 {
-  public:
-    int nchareRhoR;
-    VdWRSMap(UberCollection _instance)
-    {
-	thisInstance=_instance;
-#ifdef USE_INT_MAP
-      maptable= &VdWRSImaptable[thisInstance.getPO()];
-#else
-      maptable= &VdWRSmaptable;
-#endif
-    }
-    
-    ~VdWRSMap() {
-    }
-  
-    void pup(PUP::er &p)
-      {
-	CkArrayMapTable3::pup(p);
-#ifdef USE_INT_MAP
-	maptable= &VdWRSImaptable[thisInstance.getPO()];
-#else
-	maptable= &VdWRSmaptable;
-#endif
-      }
-    
-    //    int procNum(int arrayHdl, const CkArrayIndex &idx);
-  inline int procNum(int, const CkArrayIndex &iIndex){
-    int *index=(int *) iIndex.data();
-    int proc;
-    
-#ifdef USE_INT_MAP
-    proc=maptable->get(index[0],index[1],index[2]);
-#else
-    proc=maptable->get(inttriple(index[0],index[1],index[2]));
-#endif
-    CkAssert(proc>=0);
-    if(numPes!=CkNumPes())
-      return(proc%CkNumPes());
-    else
-      return(proc);
-  }
-
-};
-
-
-/**
- * provide procnum mapping for VdWG
- */
-class VdWGSMap : public CkArrayMapTable2 {
-  public:
-  VdWGSMap(UberCollection _instance)
-    {
-	thisInstance=_instance;
-#ifdef USE_INT_MAP
-      maptable= &VdWGSImaptable[thisInstance.getPO()];
-#else
-      maptable= &VdWGSmaptable;
-#endif
-    }
-    
-    ~VdWGSMap() {
-    }
-    
-    //    int procNum(int arrayHdl, const CkArrayIndex &idx);
-  inline int procNum(int, const CkArrayIndex &iIndex){
-    int *index=(int *) iIndex.data();
-    int proc;
-    
-#ifdef USE_INT_MAP
-    proc=maptable->get(index[0],index[1]);
-#else
-    proc=maptable->get(intdual(index[0],index[1]));
-#endif
-    CkAssert(proc>=0);
-    if(numPes!=CkNumPes())
-      return(proc%CkNumPes());
-    else
-      return(proc);
-
-  }
-    
-    void pup(PUP::er &p)
-      {
-	CkArrayMapTable2::pup(p);
-      }
-};
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -804,7 +708,6 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
                        int doublePack, PeList *exclusion, CPcharmParaInfo *sim, UberCollection thisInstance);
 int init_rho_chares(CPcharmParaInfo*, UberCollection thisInstance);
-void init_VdW_chares(CPcharmParaInfo*, UberCollection thisInstance);
 void control_physics_to_driver(UberCollection thisInstance);
 void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
 		    int *n_ret, int *istrt_ret, int *iend_ret);
