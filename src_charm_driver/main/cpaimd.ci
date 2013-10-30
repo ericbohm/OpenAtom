@@ -338,7 +338,7 @@ mainmodule cpaimd {
 	message NLFFTMsg {complex data[];};
 
 	mainchare main {
-		entry main();
+		entry main(CkArgMsg *);
 	};
 
 	// This is where the real component lives when using ees for nonlocal
