@@ -32,23 +32,6 @@
 	#endif
 #endif
 
-
-/* If the machine is a BGL, split the GEMMs to intersperse them with CmiNetworkProgress calls
- *
- * To set split values, use the config parameters: gemmSplitFWk, gemmSplitFWm, etc ... 
- * 16 for happier align, factor of 6 good for BG/L?
- */
-#ifdef CMK_BLUEGENEL
-    #define ALIGN16(x)        (int)((~15)&((x)+15))
-    #define BUNDLE_USER_EVENT
-    #define PC_FWD_DGEMM_SPLIT 1
-    #define PC_BWD_DGEMM_SPLIT 1
-#else
-    #define PC_FWD_DGEMM_SPLIT 0
-    #define PC_BWD_DGEMM_SPLIT 0
-#endif
-
-
 // Define the GEMM macros that paircalc will use to invoke the appropriate matrix multiplys
 #ifdef FORTRANUNDERSCORE
     #define ZGEMM zgemm_

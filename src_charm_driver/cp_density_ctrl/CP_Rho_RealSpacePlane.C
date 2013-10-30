@@ -594,10 +594,6 @@ void CP_Rho_RealSpacePlane::energyComputation(){
 
    CPXCFNCTS::CP_exc_calc(npts,nf1,nf2,nf3,density,Vks,exc_ret,muxc_ret,config.nfreq_xcfnctl);
 
-#ifdef CMK_BLUEGENEL
-   CmiNetworkProgress();
-#endif
-
    if(cp_grad_corr_on==0){
      double exc[2];
      exc[0]=rho_rs.exc_ret;
@@ -657,11 +653,6 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(RhoRtoGFFT_, StartTime, CmiWallTimer());    
 #endif
-
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
-#endif
-
 
 //============================================================================
 // Launch the transpose :go directly to rhog if the 1 transpose method is on.
@@ -846,9 +837,6 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
       }//end switch
 #endif
 
-#ifdef CMK_BLUEGENEL
-      CmiNetworkProgress();
-#endif
     }//end for : chare sending
 
   //-----------------------------------------------------------------------------
@@ -1120,11 +1108,6 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 	    }//end switch
 	  }//endif
 	}//end if nonzero
-#ifdef CMK_BLUEGENEL
-      if(ic%4==0)
-	CmiNetworkProgress();
-#endif
-
     }//end for : chare sending
 
 //============================================================================
@@ -1225,9 +1208,6 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoGall(){
 	 // Send the message
           UrhoGProxy[thisInstance.proxyOffset](ic,0).acceptWhiteByrdAll(msg);
       }//end if : nonzero msg
-#ifdef CMK_BLUEGENEL
-      if(ic%4==0){CmiNetworkProgress();}
-#endif
    }//end for : send to rhog(ic)
 
 //---------------------------------------------------------------------------
@@ -1654,10 +1634,6 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
       }//end switch
 #endif
 
-#ifdef CMK_BLUEGENEL
-      if(ic%3==0)
-       CmiNetworkProgress();
-#endif
     }//end for : chare sending
 
   //-----------------------------------------------------------------------------
@@ -1861,10 +1837,6 @@ void CP_Rho_RealSpacePlane::GradCorr(){
     traceUserBracketEvent(GradCorrGGA_, StartTime, CmiWallTimer());    
 #endif
 
-#ifdef CMK_BLUEGENEL
-     CmiNetworkProgress();
-#endif
-
 #endif // GGA ON
 
 //============================================================================
@@ -1948,10 +1920,6 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
     traceUserBracketEvent(WhiteByrdFFTX_, StartTime, CmiWallTimer());    
 #endif
 
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
-#endif
-
 //============================================================================
 // II) rhoIRY : Scale, real to complex FFT, perform FFT, transpose
 
@@ -1973,10 +1941,6 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
     traceUserBracketEvent(WhiteByrdFFTY_, StartTime, CmiWallTimer());    
 #endif
 
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
-#endif
-
 //============================================================================
 // III) rhoIRZ : Scale, real to complex FFT, perform FFT, transpose
 
@@ -1995,10 +1959,6 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(WhiteByrdFFTZ_, StartTime, CmiWallTimer());    
-#endif
-
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
 #endif
 
 //============================================================================

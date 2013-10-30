@@ -1964,22 +1964,11 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 // Add the forces 
 
   //---------------------------------------------------
-  // A) BGL STuff
-#ifdef CMK_BLUEGENEL
-#pragma disjoint(*force, *data)
-  //      __alignx(16,force);
-  //      __alignx(16,data);
-#endif
-
-  //---------------------------------------------------
-  // B) Double Pack 
+  // A) Double Pack 
   if(config.doublePack==1){
    if(cp_min_opt==1){
      double overlap = (cp_lsda==0 ? 2.0 : 1.0);
      double ws = 1.0/overlap; double wd = 2.0/overlap;
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-#endif
 #ifndef PAIRCALC_TEST_DUMP
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        double wght  = (k_x[idest]==0 ? ws : wd);
@@ -1989,14 +1978,8 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 #endif
    }else{
      if(countLambdaO[offset]<1){
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-#endif
        for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
      }else{
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-#endif
        for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
      }// coutlambda
    }//endif : cpmin
@@ -2004,35 +1987,26 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   }//endif : double pack
 
   //---------------------------------------------------
-  // C) Double Pack is off
+  // B) Double Pack is off
   if(config.doublePack==0){
    if(cp_min_opt==1){
      double overlap = (cp_lsda==0 ? 2.0 : 1.0);
      double ws = 1.0/overlap;
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-#endif
     for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        force[idest].re -= ws*data[i].re;
        force[idest].im -= ws*data[i].im;
     }//endfor
    }else{
      if(countLambdaO[offset]<1){
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-#endif
        for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
      }else{
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-#endif
        for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
      }// endif : 1st guy
    }//endif : minimization
   }//endif : singlePack = kpts
 
   //---------------------------------------------------
-  // D) Cleanup
+  // C) Cleanup
   delete msg;  
 
 //==============================================================================
@@ -2091,21 +2065,10 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 // (II) Add it in to our forces : Careful about offsets, doublepack and cpmin/cp
 
  //----------------------------------------------------------
- //A) BlueGene nonsense
-
-#ifdef CMK_BLUEGENEL
-#pragma disjoint(*force, *data)
-  //      __alignx(16,force);
-  //      __alignx(16,data);
-#endif
- //----------------------------------------------------------
- //B) Double Pack
+ //A) Double Pack
 
   if(config.doublePack==1){
    if(cp_min_opt==1){
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-#endif
 #ifndef PAIRCALC_TEST_DUMP
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        double wght  = (k_x[idest]==0 ? 0.5 : 1);
@@ -2115,26 +2078,17 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 #endif
    }else{
      if(countLambdaO[offset]<1){
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-#endif
         for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
      }else{
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-#endif
         for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
      }//endif : off set thingy
    }//endif : cp_min_on
   }//endif : double pack
 
  //----------------------------------------------------------
- //C) Single pack
+ //B) Single pack
 
   if(config.doublePack==0){
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-#endif
     for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        force[idest].re -= 0.5*data[i].re;
        force[idest].im -= 0.5*data[i].im;
@@ -2143,7 +2097,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
   }//endif : single pack
 
  //----------------------------------------------------------
- //D) Clean up
+ //C) Clean up
 
   delete msg;  
 

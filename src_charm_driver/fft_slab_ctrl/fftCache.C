@@ -532,21 +532,9 @@ void FFTcache::expandGSpace(complex* data, complex *packedData,
     int joff3 = joff2+runs[r1].length;
     for(int j=joff3;j<joff1;j++){data[j]=0.0;}
 #endif
-
-#ifdef CMK_BLUEGENEL
-    if(r % 40==0){
-      CmiNetworkProgress();
-    }//endif
-#endif
-
   }//endfor
 
   CkAssert(numPoints == koff);
-
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
-#endif
-
 //------------------------------------------------------------------------------
   }//end routine
 //==============================================================================
@@ -589,18 +577,9 @@ void FFTcache::packGSpace(complex* data, complex *packedData,
       packedData[k] = data[j];
     }//endfor
     koff += runs[r1].length;
-
-#ifdef CMK_BLUEGENEL
-    if(r % 40==0){CmiNetworkProgress();}
-#endif
-
   }//endfor
 
   CkAssert(numPoints == koff);
-
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
-#endif
 
 //------------------------------------------------------------------------------
   }//end routine
@@ -1735,9 +1714,6 @@ void fft_split(FFTplanHolder *fftplanholder, int howmany,
       inoff  += idist*(thismany);  
       outoff += odist*(thismany);
       inleft -= thismany;      
-#ifdef CMK_BLUEGENEL
-      CmiNetworkProgress();
-#endif
   }//endfor
 
 //------------------------------------------------------------------------------
@@ -1828,9 +1804,7 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
       inoff  += idist*(thismany);  
       outoff += odist*(thismany);
       inleft -= thismany;      
-#ifdef CMK_BLUEGENEL
-      CmiNetworkProgress();
-#endif
+
     }//endfor
 
 //------------------------------------------------------------------------------
@@ -1920,9 +1894,7 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
       inoff  += idist*(thismany);  
       outoff += odist*(thismany);
       inleft -= thismany;      
-#ifdef CMK_BLUEGENEL
-      CmiNetworkProgress();
-#endif
+
     }// endfor
 
 //----------------------------------------------------------------------------

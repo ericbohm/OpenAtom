@@ -55,29 +55,6 @@ public:
       factorB=infactorB;
       factorC=infactorC;
     }
-
-#ifdef CMK_BLUEGENEL
-  // if we use our own allocator we can get 16 byte alignment
-  // to please BGL
-#define ALIGN16(x)        (int)((~15)&((x)+15))
- static  void *alloc(int msgnum, size_t sz, int *sizes, int pb) {
-    int offsets[3];
-    offsets[0] = ALIGN16(sz);
-    if(sizes==0)
-      offsets[1] = offsets[0];
-    else
-      offsets[1] = offsets[0] + ALIGN16(sizeof(internalType)*sizes[0]);
-    if(sizes==0)
-      offsets[2] = offsets[0];
-    else
-      offsets[2] = offsets[1] + ALIGN16(sizeof(internalType)*sizes[1]);
-    OrthoHelperMsg *newmsg = (OrthoHelperMsg *) CkAllocMsg(msgnum, offsets[2], pb);
-    newmsg->A = (internalType *) ((char *)newmsg + offsets[0]);
-    newmsg->B = (internalType *) ((char *)newmsg + offsets[1]);
-    return (void *) newmsg;
-  }
-
-#endif
  friend class CMessage_OrthoHelperMsg;
 };
 //============================================================================

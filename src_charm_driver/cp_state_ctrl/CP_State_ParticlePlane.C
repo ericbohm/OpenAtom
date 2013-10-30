@@ -1105,9 +1105,6 @@ void CP_State_ParticlePlane::sendToEesRPP(){
      /// @todo: realPP_proxy is initialized in initKVectors only if nloc_on is true. Should we check the same here too?
      for (int i=0,j=z; i<numLines; i++,j+=ngridcNL){data[i] = projPsiG[j];}
      realPP_proxy(thisIndex.x, z).recvFromEesGPP(msg);  // same state, realspace char[z]
-#ifdef CMK_BLUEGENEL
-       CmiNetworkProgress();
-#endif
    }//endfor
 
 //============================================================================

@@ -20,11 +20,6 @@
 #include "utility/util.h"
 #include "PeList.h"
 
-
-#ifdef CMK_BLUEGENEL
-#include "BGLTorus.h"
-#endif
-
 /** 
  * Function for GSpace objects
  * Does a hybrid chunking of the GSpace grid. Depending on the 

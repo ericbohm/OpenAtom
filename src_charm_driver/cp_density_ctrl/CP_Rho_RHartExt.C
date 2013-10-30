@@ -549,10 +549,6 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
       UrhoRHartExtProxy[thisInstance.proxyOffset](ix,ic,thisIndex.z).recvAtmSfRyToGy(msg);
 #endif
 
-#ifdef CMK_BLUEGENEL
-      if(ic%3==0)
-       CmiNetworkProgress();
-#endif
     }//end for : chare sending
 
   //-----------------------------------------------------------------------------
@@ -729,10 +725,6 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 	    UrhoGHartExtProxy[thisInstance.proxyOffset](ic,thisIndex.z).recvAtmSFFromRhoRHart(msg); // send the message
 	  }//endif
 	}
-#ifdef CMK_BLUEGENEL
-      if(ic%4==0)
-       CmiNetworkProgress();
-#endif
     }//end for : chare sending
 
  //----------------------------------------------------------------
@@ -1005,10 +997,6 @@ void CP_Rho_RHartExt::sendAtmForcGxToRx(int iopt){
       }//end switch
 #endif
 
-#ifdef CMK_BLUEGENEL
-      if(ic%3==0)
-       CmiNetworkProgress();
-#endif
     }//end for : chare sending
 
   //-----------------------------------------------------------------------------

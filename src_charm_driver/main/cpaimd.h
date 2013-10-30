@@ -41,11 +41,6 @@ typedef IntMap2 IntMap4;
 
 #include "load_balance/MapTable.h"
 
-#ifdef CMK_BLUEGENEL
-//#include "builtins.h"
-#endif
-
-
 //#define BARRIER_CP_GSPACE_PSI 1
 
 #define LOAD_BALANCE_STEP 100000000

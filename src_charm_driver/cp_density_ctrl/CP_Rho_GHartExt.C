@@ -612,9 +612,6 @@ void CP_Rho_GHartExt::sendVks() {
 
       } //endif
   }//endfor : subplanes
-#ifdef CMK_BLUEGENEL
-  CmiNetworkProgress();
-#endif
   }//endfor : z plane parallel index
 
 //============================================================================
@@ -1065,9 +1062,6 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 
     }// endif : we need to send to this subplane
   }// endfor : subplane loop
-#ifdef CMK_BLUEGENEL
-  if(z%8==0){CmiNetworkProgress();}
-#endif
   }//endfor : z-plane parallel loop
 
 //============================================================================

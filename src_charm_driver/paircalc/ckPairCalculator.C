@@ -25,9 +25,6 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
   double *ret=(double *)msgs[0]->getData();
 
   //  CkAssert ((unsigned int) ret % 8 == 0);
-#ifdef CMK_BLUEGENEL
-  //      __alignx(16,ret);
-#endif
   int size0=msgs[0]->getSize();
   int size=size0/sizeof(double);
 
@@ -37,10 +34,6 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
     {
       int i=1;
       // idea here is to have only 1 store for 4 loads
-#ifdef CMK_BLUEGENEL
-#pragma unroll(10)
-      // how much doth XLC sucketh?
-#endif
       for(int d=0;d<size;d++)
 	{
 	  for(i=1; i<nMsg-3;i+=3)
@@ -56,11 +49,6 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
     {
 
       inmatrix=(double *) msgs[i]->getData();
-#ifdef CMK_BLUEGENEL
-      //      __alignx(16,inmatrix);
-#pragma disjoint(*ret,*inmatrix)
-#pragma unroll(16)
-#endif
 	for(int d=0;d<size;d++)
 	  ret[d]+=inmatrix[d];
     }
@@ -838,173 +826,116 @@ PairCalculator::sendTiles(bool flag_dp)
  */
 void PairCalculator::multiplyForward(bool flag_dp)
 {
-    #ifdef _PAIRCALC_DEBUG_
-        CkPrintf("[%d,%d,%d,%d,%d] PairCalculator::multiplyForward() Starting forward path computations.\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
-    #endif
+#ifdef _PAIRCALC_DEBUG_
+  CkPrintf("[%d,%d,%d,%d,%d] PairCalculator::multiplyForward() Starting forward path computations.\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
+#endif
 
-    // Allocate space for the fw path results if needed
-    if(!existsOut)
+  // Allocate space for the fw path results if needed
+  if(!existsOut)
     {
-        CkAssert(outData==NULL);
-        outData = new internalType[grainSizeX * grainSizeY];
-        bzero(outData, sizeof(internalType)* grainSizeX * grainSizeY);
-        existsOut=true;
-        #ifdef _PAIRCALC_DEBUG_
-            CkPrintf("[%d,%d,%d,%d,%d] Allocated outData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,grainSizeX, grainSizeY);
-        #endif
+      CkAssert(outData==NULL);
+      outData = new internalType[grainSizeX * grainSizeY];
+      bzero(outData, sizeof(internalType)* grainSizeX * grainSizeY);
+      existsOut=true;
+#ifdef _PAIRCALC_DEBUG_
+      CkPrintf("[%d,%d,%d,%d,%d] Allocated outData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,grainSizeX, grainSizeY);
+#endif
     }
 
-    // Configure the inputs to the GEMM describing the matrix dimensions and operations
-    #ifdef CP_PAIRCALC_USES_COMPLEX_MATH
-        char transformT = 'C';           // Transpose and conjugate of matrix A
-    #else
-        char transformT = 'T';           // Transpose matrix A
-    #endif
-    char transform  = 'N';           // Retain matrix B as it is
-    int m_in        = numExpectedY;  // Rows of op(A)    = Rows of C
-    int k_in        = numPoints;     // Columns of op(A) = Rows of op(B)
-    int n_in        = numExpectedX;  // Columns of op(B) = Columns of C
-    double alpha    = double(1.0);   // Scale B.A by this scalar factor
-    double beta     = double(0.0);   // Scale initial value of C by this factor
+  // Configure the inputs to the GEMM describing the matrix dimensions and operations
+#ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+  char transformT = 'C';           // Transpose and conjugate of matrix A
+#else
+  char transformT = 'T';           // Transpose matrix A
+#endif
+  char transform  = 'N';           // Retain matrix B as it is
+  int m_in        = numExpectedY;  // Rows of op(A)    = Rows of C
+  int k_in        = numPoints;     // Columns of op(A) = Rows of op(B)
+  int n_in        = numExpectedX;  // Columns of op(B) = Columns of C
+  double alpha    = double(1.0);   // Scale B.A by this scalar factor
+  double beta     = double(0.0);   // Scale initial value of C by this factor
 
-    // Get handles to the input and output matrices
-    internalType *matrixC = outData;
-    internalType *matrixB = reinterpret_cast<internalType*> ( msgLeft->data() );
-    internalType *matrixA;
-    if(!symmetricOnDiagonal)
-        matrixA = reinterpret_cast<internalType*> ( msgRight->data() );
-    else
+  // Get handles to the input and output matrices
+  internalType *matrixC = outData;
+  internalType *matrixB = reinterpret_cast<internalType*> ( msgLeft->data() );
+  internalType *matrixA;
+  if(!symmetricOnDiagonal)
+    matrixA = reinterpret_cast<internalType*> ( msgRight->data() );
+  else
     {
-        // Symm PC chares on the array diagonal only get a left matrix. For these B serves as A too
-        matrixA = matrixB;
-        // Redundant, as numExpectedX == numExpectedY (except for the border chares?)
-        m_in    = numExpectedX;
+      // Symm PC chares on the array diagonal only get a left matrix. For these B serves as A too
+      matrixA = matrixB;
+      // Redundant, as numExpectedX == numExpectedY (except for the border chares?)
+      m_in    = numExpectedX;
     }
-    #ifdef TEST_ALIGN
-        CkAssert((unsigned int)matrixA%16==0);
-        CkAssert((unsigned int)matrixB%16==0);
-        CkAssert((unsigned int)matrixC%16==0);
-    #endif
+#ifdef TEST_ALIGN
+  CkAssert((unsigned int)matrixA%16==0);
+  CkAssert((unsigned int)matrixB%16==0);
+  CkAssert((unsigned int)matrixC%16==0);
+#endif
 
-    // If internal representation is as doubles, treat each complex as 2 doubles
-    k_in *= pcDataSizeFactor;
-    // Double packing (possible only in symm PC for real input) entails a scaling factor for psi
-    if (flag_dp)
-        alpha = 2.0;
+  // If internal representation is as doubles, treat each complex as 2 doubles
+  k_in *= pcDataSizeFactor;
+  // Double packing (possible only in symm PC for real input) entails a scaling factor for psi
+  if (flag_dp)
+    alpha = 2.0;
 
-    // with dgemm splitting
-    #if PC_FWD_DGEMM_SPLIT > 0
-        // Results of each smaller gemm must be accumulated in C, not overwritten
-        double betap = 1.0;
-        // Determine the num of rows of output (C) to compute in each smaller gemm
-        int Ksplit_m = gemmSplitFWk;
-        int Ksplit   = (k_in > Ksplit_m) ? Ksplit_m : k_in;
-        // Calculate the number of gemms that will be required to compute the whole output
-        int Krem     = k_in % Ksplit;
-        int Kloop    = k_in/Ksplit-1;
+#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+  dumpMatrix("fwlmdata", matrixB, numExpectedX, numPoints*2, thisIndex.x, 0);
+  dumpMatrix("fwrmdata", matrixA, numExpectedY, numPoints*2, thisIndex.y, 0);
+#endif
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, k_in, k_in, m_in);
+#endif
 
-        #ifdef PRINT_DGEMM_PARAMS
-            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, Ksplit, alpha, beta, k_in, k_in, m_in);
-        #endif
+  // Invoke the DGEMM (and bracket it in projections)
+#ifndef CMK_TRACE_ENABLED
+  double StartTime=CmiWallTimer();
+#endif
+  myGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &k_in, matrixB, &k_in, &beta, matrixC, &m_in);
+#ifndef CMK_TRACE_ENABLED
+  traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
 
-        // Invoke the first split gemm, but with beta=0 so that outData is overwritten (and bracket it in projections)
-        #ifndef CMK_TRACE_ENABLED
-            double StartTime=CmiWallTimer();
-        #endif
-        myGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, matrixB, &k_in, &beta, matrixC, &m_in);
-        CmiNetworkProgress();
-        #ifndef CMK_TRACE_ENABLED
-            traceUserBracketEvent(210, StartTime, CmiWallTimer());
-        #endif
+#ifndef CMK_TRACE_ENABLED
+  StartTime=CmiWallTimer();
+#endif
 
-        // Call each split gemm until all the output is accumulated (beta=1)
-        for(int i=1;i<=Kloop;i++)
+  // Do the slicing and dicing, and contribute the appropriate bits to the redn that reaches Ortho
+  contributeSubTiles(matrixC);
+#ifdef _CP_SUBSTEP_TIMING_
+  if(cfg.forwardTimerID > 0)
+    {
+      double pstart=CmiWallTimer();
+      contribute(sizeof(double),&pstart,CkReduction::max_double, cfg.endTimerCB , cfg.forwardTimerID);
+    }
+#endif
+#ifndef CMK_TRACE_ENABLED
+  traceUserBracketEvent(220, StartTime, CmiWallTimer());
+#endif
+
+  // Mirror our input data to the phantoms so that they can use it in the bw path
+  if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)
+    {
+      CkAssert(existsRight);
+      paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,flag_dp,msgRight->data(),false,blkSize,numExpectedY);
+      bool prioPhan=false;
+      if(prioPhan)
         {
-            int off     = i * Ksplit;
-            int KsplitU = (i==Kloop) ? Ksplit+Krem : Ksplit;
-            #ifdef TEST_ALIGN
-                CkAssert((unsigned int)&(matrixA[off])%16==0);
-                CkAssert((unsigned int)&(matrixB[off]) %16==0);
-                CkAssert((unsigned int)matrixC%16==0);
-            #endif
-            #ifdef PRINT_DGEMM_PARAMS
-                CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, KsplitU, alpha, beta, k_in, k_in, m_in);
-            #endif
-
-            #ifndef CMK_TRACE_ENABLED
-                StartTime=CmiWallTimer();
-            #endif
-            myGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &matrixB[off], &k_in, &betap, matrixC, &m_in);
-            CmiNetworkProgress();
-            #ifndef CMK_TRACE_ENABLED
-                traceUserBracketEvent(210, StartTime, CmiWallTimer());
-            #endif
-        } //endfor
-
-    // without dgemm splitting
-    #else
-        #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-            dumpMatrix("fwlmdata", matrixB, numExpectedX, numPoints*2, thisIndex.x, 0);
-            dumpMatrix("fwrmdata", matrixA, numExpectedY, numPoints*2, thisIndex.y, 0);
-        #endif
-        #ifdef PRINT_DGEMM_PARAMS
-            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, k_in, k_in, m_in);
-        #endif
-
-        // Invoke the DGEMM (and bracket it in projections)
-        #ifndef CMK_TRACE_ENABLED
-            double StartTime=CmiWallTimer();
-        #endif
-        myGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &k_in, matrixB, &k_in, &beta, matrixC, &m_in);
-        #ifndef CMK_TRACE_ENABLED
-            traceUserBracketEvent(210, StartTime, CmiWallTimer());
-        #endif
-
-    #endif  // gemm splitting
-
-
-    #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-        dumpMatrix("fwgmodata",matrixC,grainSizeX, grainSizeY,thisIndex.x, thisIndex.y);
-    #endif
-    #ifndef CMK_TRACE_ENABLED
-        StartTime=CmiWallTimer();
-    #endif
-
-    // Do the slicing and dicing, and contribute the appropriate bits to the redn that reaches Ortho
-    contributeSubTiles(matrixC);
-    #ifdef _CP_SUBSTEP_TIMING_
-        if(cfg.forwardTimerID > 0)
-        {
-            double pstart=CmiWallTimer();
-            contribute(sizeof(double),&pstart,CkReduction::max_double, cfg.endTimerCB , cfg.forwardTimerID);
+	  CkSetQueueing(msg2phantom, CK_QUEUEING_IFIFO);
+	  *(int*)CkPriorityPtr(msg2phantom) = 1; // just make it slower than non prioritized
         }
-    #endif
-    #ifndef CMK_TRACE_ENABLED
-        traceUserBracketEvent(220, StartTime, CmiWallTimer());
-    #endif
-
-    // Mirror our input data to the phantoms so that they can use it in the bw path
-    if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)
-    {
-        CkAssert(existsRight);
-        paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,flag_dp,msgRight->data(),false,blkSize,numExpectedY);
-        bool prioPhan=false;
-        if(prioPhan)
-        {
-            CkSetQueueing(msg2phantom, CK_QUEUEING_IFIFO);
-            *(int*)CkPriorityPtr(msg2phantom) = 1; // just make it slower than non prioritized
-        }
-        thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptRightData(msg2phantom);
+      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptRightData(msg2phantom);
     }
 
-    /** If this is an asymmetric loop, dynamics case AND Ortho has already sent T,
-     * call bwMultiplyDynOrthoT() as we must also multiply orthoT by Fpsi
-	 *
-	 * @note: This if condition originally lived in acceptPairData(). Has been shoveled here
-	 * to reduce branching over there.
-	 */
-    if(expectOrthoT && numRecdBWOT==numOrtho)
-        thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
+  /** If this is an asymmetric loop, dynamics case AND Ortho has already sent T,
+   * call bwMultiplyDynOrthoT() as we must also multiply orthoT by Fpsi
+   *
+   * @note: This if condition originally lived in acceptPairData(). Has been shoveled here
+   * to reduce branching over there.
+   */
+  if(expectOrthoT && numRecdBWOT==numOrtho)
+    thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
 }
 
 
@@ -1780,268 +1711,241 @@ void PairCalculator::bwbarrier(CkReductionMsg *msg)
  */
 void PairCalculator::bwMultiplyHelper(int size, internalType *matrix1, internalType *matrix2, internalType *amatrix, internalType *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int orthoGrainSizeX, int orthoGrainSizeY)
 {
-    #ifdef _PAIRCALC_DEBUG_
-        if(numRecdBW==numOrtho|| cfg.orthoGrainSize==cfg.grainSize || cfg.areBWTilesCollected)
-            streamCaughtR++;
-        CkPrintf("[%d,%d,%d,%d,%d]: bwMultiplyHelper with size %d numRecdBW %d actionType %d orthoX %d orthoY %d orthoGrainSizeX %d orthoGrainSizeY %d BTCoffset %d BNCoffset %d m_in %d n_in %d k_in %d iter %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, size, numRecdBW, actionType, orthoX, orthoY,orthoGrainSizeX, orthoGrainSizeY, BTCoffset, BNCoffset, m_in, n_in, k_in, streamCaughtR);
-    #endif
-    #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-        if(cfg.orthoGrainSize==cfg.grainSize || cfg.areBWTilesCollected)
-        {
-            dumpMatrix("bwm1cidata",amatrix,grainSizeX,grainSizeY,0,0,0,streamCaughtR);
-            // CG non minimization case
-            if(!unitcoef)
-                dumpMatrix("bwm2cidata",amatrix2,grainSizeX, grainSizeY,0,0,0,streamCaughtR);
-        }
-    #endif
-
-    int  matrixSize=grainSizeX*cfg.grainSize;
-
-    /* If I will be running a PsiV step immediately after this, reuse outData to hold onto ortho
-     * It is safe to reuse this memory. The normal backward path has no use for outData
-     * and the forward path won't be called again until after we're done with it
-     */
-    if(cfg.isSymmetric && actionType==KEEPORTHO)
+#ifdef _PAIRCALC_DEBUG_
+  if(numRecdBW==numOrtho|| cfg.orthoGrainSize==cfg.grainSize || cfg.areBWTilesCollected)
+    streamCaughtR++;
+  CkPrintf("[%d,%d,%d,%d,%d]: bwMultiplyHelper with size %d numRecdBW %d actionType %d orthoX %d orthoY %d orthoGrainSizeX %d orthoGrainSizeY %d BTCoffset %d BNCoffset %d m_in %d n_in %d k_in %d iter %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, size, numRecdBW, actionType, orthoX, orthoY,orthoGrainSizeX, orthoGrainSizeY, BTCoffset, BNCoffset, m_in, n_in, k_in, streamCaughtR);
+#endif
+#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
+  if(cfg.orthoGrainSize==cfg.grainSize || cfg.areBWTilesCollected)
     {
-        if(outData==NULL)
+      dumpMatrix("bwm1cidata",amatrix,grainSizeX,grainSizeY,0,0,0,streamCaughtR);
+      // CG non minimization case
+      if(!unitcoef)
+	dumpMatrix("bwm2cidata",amatrix2,grainSizeX, grainSizeY,0,0,0,streamCaughtR);
+    }
+#endif
+
+  int  matrixSize=grainSizeX*cfg.grainSize;
+
+  /* If I will be running a PsiV step immediately after this, reuse outData to hold onto ortho
+   * It is safe to reuse this memory. The normal backward path has no use for outData
+   * and the forward path won't be called again until after we're done with it
+   */
+  if(cfg.isSymmetric && actionType==KEEPORTHO)
+    {
+      if(outData==NULL)
         {
-            CkAssert(!existsOut);
-            outData=new internalType[matrixSize];
-            bzero(outData,sizeof(internalType)*matrixSize);
-            existsOut=true;
+	  CkAssert(!existsOut);
+	  outData=new internalType[matrixSize];
+	  bzero(outData,sizeof(internalType)*matrixSize);
+	  existsOut=true;
         }
-        // Keep the orthoT we just received in matrix1
-        if(!cfg.areBWTilesCollected && cfg.orthoGrainSize!=cfg.grainSize)
-            collectTile(true, false, true,orthoX, orthoY, orthoGrainSizeX, orthoGrainSizeY, numRecdBW, matrixSize, matrix1, matrix2);
-        else
-            CmiMemcpy(outData, amatrix, size*sizeof(internalType));
+      // Keep the orthoT we just received in matrix1
+      if(!cfg.areBWTilesCollected && cfg.orthoGrainSize!=cfg.grainSize)
+	collectTile(true, false, true,orthoX, orthoY, orthoGrainSizeX, orthoGrainSizeY, numRecdBW, matrixSize, matrix1, matrix2);
+      else
+	CmiMemcpy(outData, amatrix, size*sizeof(internalType));
     }
 
 
-    // Allocate memory for mynewData and othernewData
-    if(!amPhantom && mynewData==NULL)
+  // Allocate memory for mynewData and othernewData
+  if(!amPhantom && mynewData==NULL)
     {
-        CkAssert(numPoints>0);
-        #ifdef _PAIRCALC_DEBUG_
-            CkPrintf("[%d,%d,%d,%d,%d] Allocated mynewData %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedY,numPoints);
-        #endif
-        mynewData = new inputType[numPoints*numExpectedY];
-        bzero(mynewData,numPoints*numExpectedY* sizeof(inputType));
-        existsNew=true;
-        if(!amPhantom && ((cfg.isSymmetric || !unitcoef) && notOnDiagonal))
+      CkAssert(numPoints>0);
+#ifdef _PAIRCALC_DEBUG_
+      CkPrintf("[%d,%d,%d,%d,%d] Allocated mynewData %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedY,numPoints);
+#endif
+      mynewData = new inputType[numPoints*numExpectedY];
+      bzero(mynewData,numPoints*numExpectedY* sizeof(inputType));
+      existsNew=true;
+      if(!amPhantom && ((cfg.isSymmetric || !unitcoef) && notOnDiagonal))
         {
-            if(othernewData==NULL)
+	  if(othernewData==NULL)
             {
-                #ifdef _PAIRCALC_DEBUG_
-                    CkPrintf("[%d,%d,%d,%d,%d] Allocated other %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedX,numPoints);
-                #endif
-                othernewData = new inputType[numPoints*numExpectedX];
-                bzero(othernewData,numPoints*numExpectedX * sizeof(inputType));
+#ifdef _PAIRCALC_DEBUG_
+	      CkPrintf("[%d,%d,%d,%d,%d] Allocated other %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedX,numPoints);
+#endif
+	      othernewData = new inputType[numPoints*numExpectedX];
+	      bzero(othernewData,numPoints*numExpectedX * sizeof(inputType));
             }
         }
     }
-    else if(amPhantom)
+  else if(amPhantom)
     {
-        if(othernewData==NULL)
+      if(othernewData==NULL)
         {
-            #ifdef _PAIRCALC_DEBUG_
-                CkPrintf("[%d,%d,%d,%d,%d] Allocated other %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedY,numPoints);
-            #endif
-            // Phantoms live in a bizarre reverso world
-            othernewData = new inputType[numPoints*numExpectedY];
-            bzero(othernewData,numPoints*numExpectedY * sizeof(inputType));
+#ifdef _PAIRCALC_DEBUG_
+	  CkPrintf("[%d,%d,%d,%d,%d] Allocated other %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedY,numPoints);
+#endif
+	  // Phantoms live in a bizarre reverso world
+	  othernewData = new inputType[numPoints*numExpectedY];
+	  bzero(othernewData,numPoints*numExpectedY * sizeof(inputType));
         }
     }
 
 
-    internalType *mynewDatad= reinterpret_cast<internalType*> (mynewData);
+  internalType *mynewDatad= reinterpret_cast<internalType*> (mynewData);
 
-    // GEMM configuration
-    double alpha(1.0);
-    char transform='N';
-    // Configure the inputs to the GEMM describing the matrix dimensions and operations
-    #ifdef CP_PAIRCALC_USES_COMPLEX_MATH
-        char transformT = 'C';           // Transpose and conjugate of amatrix
-    #else
-        char transformT = 'T';           // Transpose amatrix
-    #endif
+  // GEMM configuration
+  double alpha(1.0);
+  char transform='N';
+  // Configure the inputs to the GEMM describing the matrix dimensions and operations
+#ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+  char transformT = 'C';           // Transpose and conjugate of amatrix
+#else
+  char transformT = 'T';           // Transpose amatrix
+#endif
 
-    #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-        int chunksize=blkSize/cfg.numChunks;
-        int ystart=chunksize*thisIndex.z;
-        if(!amPhantom)
-            dumpMatrix("bwmlodata",inDataLeft,numExpectedX,numPoints*2,thisIndex.x,0);
-        if(!unitcoef||amPhantom)
-        { // CG non minimization case
-            dumpMatrix("bwmrodata",inDataRight,numExpectedY,numPoints*2,thisIndex.y,0);
-        }
-    #endif
-    #ifndef CMK_TRACE_ENABLED
-        double StartTime=CmiWallTimer();
-    #endif
+#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
+  int chunksize=blkSize/cfg.numChunks;
+  int ystart=chunksize*thisIndex.z;
+  if(!amPhantom)
+    dumpMatrix("bwmlodata",inDataLeft,numExpectedX,numPoints*2,thisIndex.x,0);
+  if(!unitcoef||amPhantom)
+    { // CG non minimization case
+      dumpMatrix("bwmrodata",inDataRight,numExpectedY,numPoints*2,thisIndex.y,0);
+    }
+#endif
+#ifndef CMK_TRACE_ENABLED
+  double StartTime=CmiWallTimer();
+#endif
 
-    // First multiply to apply the T or L matrix
-    if(!amPhantom)
+  // First multiply to apply the T or L matrix
+  if(!amPhantom)
     {
-        int lk_in=k_in;
-        int ln_in=n_in;
-        if(symmetricOnDiagonal && orthoX!=orthoY && !cfg.areBWTilesCollected && actionType!=PSIV )
+      int lk_in=k_in;
+      int ln_in=n_in;
+      if(symmetricOnDiagonal && orthoX!=orthoY && !cfg.areBWTilesCollected && actionType!=PSIV )
         {
-            // here is where we need some more juggling
-            lk_in=n_in;
-            ln_in=k_in;
+	  // here is where we need some more juggling
+	  lk_in=n_in;
+	  ln_in=k_in;
         }
-        #if PC_BWD_DGEMM_SPLIT > 0
-            if(cfg.isSymmetric)
-            {
-                dgemmSplitBwdM(m_in, ln_in, lk_in, &transform, &transform, &alpha,
-                        &(inDataLeft[BNAoffset]),  amatrix, &beta,
-                        &(mynewDatad[BNCoffset]));
-            }
-            else
-            {
-                dgemmSplitBwdM(m_in, n_in, k_in, &transform, &transformT, &alpha,
-                        &(inDataLeft[BTAoffset]),  amatrix, &beta,
-                        &(mynewDatad[BTCoffset]));
-            }
-        #else
-            #ifdef TEST_ALIGN
-                CkAssert((unsigned int) &(inDataLeft[BNAoffset] )%16==0);
-                CkAssert((unsigned int) amatrix %16==0);
-                CkAssert((unsigned int)&(mynewDatad[BNCoffset] )%16==0);
-            #endif
-            if(cfg.isSymmetric)
-            {
-                #ifdef PRINT_DGEMM_PARAMS
-                    CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d BNAoffset %d BNCoffset %d\n", transform, transform, m_in, n_in, k_in, alpha, beta, m_in, n_in, m_in, BNAoffset, BNCoffset);
-                #endif
-                // Note, your choice of k_in or n_in only matters on the border column, elsewhere k_in==n_in
-                //orig no valgrind invalid read 8 on A
-                myGEMM(&transform, &transform, &m_in, &ln_in, &lk_in, &alpha, &(inDataLeft[BNAoffset]), &m_in, amatrix, &lk_in, &beta, &(mynewDatad[BNCoffset]), &m_in);
-            }
-            else
-            {
-                #ifdef PRINT_DGEMM_PARAMS
-                    CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transformT, m_in, n_in, k_in, alpha, beta, m_in, n_in, m_in);
-                #endif
-                    myGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset]), &m_in,  amatrix, &n_in, &beta, &(mynewDatad[BTCoffset]), &m_in);
-            }
-            #ifndef CMK_TRACE_ENABLED
-                traceUserBracketEvent(230, StartTime, CmiWallTimer());
-            #endif
-        #endif // end of else clause for split
-
-        #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-            char snark[80];
-            snprintf(snark,80,"bwgmodata_%d_%d:",orthoX,orthoY);
-            if(cfg.isSymmetric)
-                dumpMatrixComplex(snark,mynewData,numExpectedY,numPoints,0,ystart,streamCaughtR);
-            else
-                dumpMatrixComplex(snark,mynewData,numExpectedY,numPoints,0,ystart,streamCaughtR);
-        #endif
+#ifdef TEST_ALIGN
+      CkAssert((unsigned int) &(inDataLeft[BNAoffset] )%16==0);
+      CkAssert((unsigned int) amatrix %16==0);
+      CkAssert((unsigned int)&(mynewDatad[BNCoffset] )%16==0);
+#endif
+      if(cfg.isSymmetric)
+	{
+#ifdef PRINT_DGEMM_PARAMS
+	  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d BNAoffset %d BNCoffset %d\n", transform, transform, m_in, n_in, k_in, alpha, beta, m_in, n_in, m_in, BNAoffset, BNCoffset);
+#endif
+	  // Note, your choice of k_in or n_in only matters on the border column, elsewhere k_in==n_in
+	  //orig no valgrind invalid read 8 on A
+	  myGEMM(&transform, &transform, &m_in, &ln_in, &lk_in, &alpha, &(inDataLeft[BNAoffset]), &m_in, amatrix, &lk_in, &beta, &(mynewDatad[BNCoffset]), &m_in);
+	}
+      else
+	{
+#ifdef PRINT_DGEMM_PARAMS
+	  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transformT, m_in, n_in, k_in, alpha, beta, m_in, n_in, m_in);
+#endif
+	  myGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset]), &m_in,  amatrix, &n_in, &beta, &(mynewDatad[BTCoffset]), &m_in);
+	}
+#ifndef CMK_TRACE_ENABLED
+      traceUserBracketEvent(230, StartTime, CmiWallTimer());
+#endif
+#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
+      char snark[80];
+      snprintf(snark,80,"bwgmodata_%d_%d:",orthoX,orthoY);
+      if(cfg.isSymmetric)
+	dumpMatrixComplex(snark,mynewData,numExpectedY,numPoints,0,ystart,streamCaughtR);
+      else
+	dumpMatrixComplex(snark,mynewData,numExpectedY,numPoints,0,ystart,streamCaughtR);
+#endif
     }// end of !amPhantom
 
-    #ifndef CMK_TRACE_ENABLED
-        StartTime=CmiWallTimer();
-    #endif
+#ifndef CMK_TRACE_ENABLED
+  StartTime=CmiWallTimer();
+#endif
 
-    // Multiply to compensate for the missing triangle in symmetric case
-    if((amPhantom || (!cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)) && existsRight)
+  // Multiply to compensate for the missing triangle in symmetric case
+  if((amPhantom || (!cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)) && existsRight)
     {
-        internalType *othernewDatad = reinterpret_cast <internalType*> (othernewData);
-        if(amPhantom)
+      internalType *othernewDatad = reinterpret_cast <internalType*> (othernewData);
+      if(amPhantom)
         {
-            int swap= n_in;
-            n_in=k_in;
-            k_in=swap;
+	  int swap= n_in;
+	  n_in=k_in;
+	  k_in=swap;
         }
-        #if PC_BWD_DGEMM_SPLIT > 0
-            dgemmSplitBwdM(m_in, k_in, n_in, &transform, &transformT, &alpha, &(inDataRight[BTAoffset]),  amatrix, &beta, &(othernewDatad[BTCoffset]));
-        #else // no split
-            CmiNetworkProgress();
-            #ifdef TEST_ALIGN
-                CkAssert((unsigned int) &(inDataRight[BTAoffset] )%16==0);
-                CkAssert((unsigned int) amatrix %16==0);
-                CkAssert((unsigned int)&(othernewDatad[BTCoffset] )%16==0);
-            #endif
-            #ifdef PRINT_DGEMM_PARAMS
-                CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transformT, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
-            #endif
-            myGEMM(&transform, &transformT, &m_in, &k_in, &n_in, &alpha, &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(othernewDatad[BTCoffset]), &m_in);
-            #ifndef CMK_TRACE_ENABLED
-                traceUserBracketEvent(250, StartTime, CmiWallTimer());
-            #endif
-            #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-                char snark[80];
-                snprintf(snark,80,"bwgomodata_%d_%d:",orthoX,orthoY);
-                if(amPhantom)
-                    dumpMatrixComplex(snark,othernewData,numExpectedY,numPoints,0,ystart,streamCaughtR);
-                else
-                    dumpMatrixComplex(snark,othernewData,numExpectedX,numPoints,0,ystart,streamCaughtR);
-            #endif
-        #endif  // end of split
+#ifdef TEST_ALIGN
+      CkAssert((unsigned int) &(inDataRight[BTAoffset] )%16==0);
+      CkAssert((unsigned int) amatrix %16==0);
+      CkAssert((unsigned int)&(othernewDatad[BTCoffset] )%16==0);
+#endif
+#ifdef PRINT_DGEMM_PARAMS
+      CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transformT, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
+#endif
+      myGEMM(&transform, &transformT, &m_in, &k_in, &n_in, &alpha, &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(othernewDatad[BTCoffset]), &m_in);
+#ifndef CMK_TRACE_ENABLED
+      traceUserBracketEvent(250, StartTime, CmiWallTimer());
+#endif
+#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
+      char snark[80];
+      snprintf(snark,80,"bwgomodata_%d_%d:",orthoX,orthoY);
+      if(amPhantom)
+	dumpMatrixComplex(snark,othernewData,numExpectedY,numPoints,0,ystart,streamCaughtR);
+      else
+	dumpMatrixComplex(snark,othernewData,numExpectedX,numPoints,0,ystart,streamCaughtR);
+#endif
     }
 
-    // CG non minimization case  GAMMA
-    if(!unitcoef)
+  // CG non minimization case  GAMMA
+  if(!unitcoef)
     {
-        CkAssert(cfg.areBWTilesCollected || cfg.orthoGrainSize==cfg.grainSize);
-        // this code is only correct in the non streaming case
-        // output modified by subtracting an application of orthoT
-        // C = alpha*A*B + beta*C
-        // C= -1 * inRight * orthoT + C
-        internalType *othernewDatad;
-        alpha=-1.0;  //comes in with a minus sign
-        if(notOnDiagonal)
+      CkAssert(cfg.areBWTilesCollected || cfg.orthoGrainSize==cfg.grainSize);
+      // this code is only correct in the non streaming case
+      // output modified by subtracting an application of orthoT
+      // C = alpha*A*B + beta*C
+      // C= -1 * inRight * orthoT + C
+      internalType *othernewDatad;
+      alpha=-1.0;  //comes in with a minus sign
+      if(notOnDiagonal)
         {
-            // setting beta to 0 here means you cannot stream process the
-            // application of orthoT by tile, you can only process them once
-            // the completed column has been accumulated in inResult2
-            beta=0.0; // new contribution off-diagonal
-            if(!cfg.areBWTilesCollected && cfg.orthoGrainSize!=cfg.grainSize)
-                beta=1.0; // need to accumulate
-            othernewDatad= reinterpret_cast <internalType *> (othernewData);
+	  // setting beta to 0 here means you cannot stream process the
+	  // application of orthoT by tile, you can only process them once
+	  // the completed column has been accumulated in inResult2
+	  beta=0.0; // new contribution off-diagonal
+	  if(!cfg.areBWTilesCollected && cfg.orthoGrainSize!=cfg.grainSize)
+	    beta=1.0; // need to accumulate
+	  othernewDatad= reinterpret_cast <internalType *> (othernewData);
         }
-        else
+      else
         {
-            beta=1.0; //subtract contribution from existing on diagonal
-            othernewDatad=mynewDatad;
+	  beta=1.0; //subtract contribution from existing on diagonal
+	  othernewDatad=mynewDatad;
         }//endif
 
-        // Funny thing here, this logic works unchanged for remainder case.
-        // off diagonals use the usual funny size othernewData
-        // diagonals use a MxM newData
-        CmiNetworkProgress();
-        #ifdef PRINT_DGEMM_PARAMS
-            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transform, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
-        #endif
+      // Funny thing here, this logic works unchanged for remainder case.
+      // off diagonals use the usual funny size othernewData
+      // diagonals use a MxM newData
+      CmiNetworkProgress();
+#ifdef PRINT_DGEMM_PARAMS
+      CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transform, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
+#endif
 
-        #if PC_BWD_DGEMM_SPLIT > 0
-            dgemmSplitBwdM(m_in, k_in, n_in, &transform, &transform, &alpha,
-                    &(inDataRight[BNAoffset]),  amatrix, &beta,
-                    &(othernewDatad[BNCoffset]));
-        #else // no split
-            #ifndef CMK_TRACE_ENABLED
-                StartTime=CmiWallTimer();
-            #endif
-            myGEMM(&transform, &transform, &m_in, &k_in, &n_in, &alpha, &(inDataRight[BNAoffset]), &m_in, amatrix2, &n_in, &beta, &(othernewDatad[BNCoffset]), &m_in);
-            #ifndef CMK_TRACE_ENABLED
-                traceUserBracketEvent(240, StartTime, CmiWallTimer());
-            #endif
-        #endif
+#ifndef CMK_TRACE_ENABLED
+      StartTime=CmiWallTimer();
+#endif
+      myGEMM(&transform, &transform, &m_in, &k_in, &n_in, &alpha, &(inDataRight[BNAoffset]), &m_in, amatrix2, &n_in, &beta, &(othernewDatad[BNCoffset]), &m_in);
+#ifndef CMK_TRACE_ENABLED
+      traceUserBracketEvent(240, StartTime, CmiWallTimer());
+#endif
 
-        #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-            if(notOnDiagonal)  // exists right matrix
-                if(amPhantom)
-                    dumpMatrixComplex("bwg2modata",othernewData,numExpectedY,numPoints,0,ystart,streamCaughtR);
-                else
-                    dumpMatrixComplex("bwg2modata",othernewData,numExpectedX,numPoints,0,ystart,streamCaughtR);
-        #endif
+#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
+      if(notOnDiagonal)  // exists right matrix
+	if(amPhantom)
+	  dumpMatrixComplex("bwg2modata",othernewData,numExpectedY,numPoints,0,ystart,streamCaughtR);
+	else
+	  dumpMatrixComplex("bwg2modata",othernewData,numExpectedX,numPoints,0,ystart,streamCaughtR);
+#endif
     } // end  CG case
 
-    #ifdef _PAIRCALC_VALID_OUT_
-        CkPrintf("[PAIRCALC] [%d,%d,%d,%d,%d] backward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,cfg.isSymmetric, mynewDatad[0],mynewDatad[1],mynewData[numPoints*grainSizeX-1].re,mynewData[numPoints*grainSizeX-1].im);
-    #endif
+#ifdef _PAIRCALC_VALID_OUT_
+  CkPrintf("[PAIRCALC] [%d,%d,%d,%d,%d] backward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,cfg.isSymmetric, mynewDatad[0],mynewDatad[1],mynewData[numPoints*grainSizeX-1].re,mynewData[numPoints*grainSizeX-1].im);
+#endif
 }
 
 
@@ -2115,22 +2019,12 @@ void PairCalculator::bwMultiplyDynOrthoT()
 #ifdef PRINT_DGEMM_PARAMS
     CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transform, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
 #endif
-
-#if PC_BWD_DGEMM_SPLIT > 0
-
-    dgemmSplitBwdM(m_in, k_in, n_in, &transform, &transform, &alpha,
-		   inDataRight, inResult2, &beta,
-		   othernewDatad);
-#else
     myGEMM(&transform, &transform, &m_in, &k_in, &n_in, &alpha, inDataRight,
     	  &m_in, inResult2, &n_in, &beta, othernewDatad, &m_in);
 
 #ifndef CMK_TRACE_ENABLED
     traceUserBracketEvent(240, StartTime, CmiWallTimer());
 #endif
-
-#endif
-
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
     int chunksize=blkSize/cfg.numChunks;
     int ystart=chunksize*thisIndex.z;

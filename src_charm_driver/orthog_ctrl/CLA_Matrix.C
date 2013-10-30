@@ -534,94 +534,8 @@ void CLA_Matrix::multiply()
     // Multiply
     char trans = 'T';
 
-    //#define ORTHO_DGEMM_SPLIT
     #define BUNDLE_USER_EVENTS
 
-    #ifdef ORTHO_DGEMM_SPLIT
-        double betap = 1.0;
-        int Ksplit_m=gemmSplitOrtho;
-        int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
-        int Krem     = (K % Ksplit);
-        int Kloop    = K/Ksplit-1;
-        #ifndef CMK_TRACE_ENABLED
-            double StartTime=CmiWallTimer();
-        #endif
-        #ifdef TEST_ALIGN
-            CkAssert((unsigned int) tmpA %16==0);
-            CkAssert((unsigned int) tmpB %16==0);
-            CkAssert((unsigned int) dest %16==0);
-        #endif
-        #ifdef PRINT_DGEMM_PARAMS
-            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, beta, K, n, m);
-        #endif
-        #ifdef _NAN_CHECK_
-            for(int in=0; in<Ksplit; in++)
-                for(int jn=0; jn<m; jn++)
-                    CkAssert(isfinite(tmpA[in*m+jn]));
-            for(int in=0; in<n; in++)
-                for(int jn=0; jn<Ksplit; jn++)
-                    CkAssert(isfinite(tmpB[in*K+jn]));
-        #endif
-        myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta, dest,&m);
-        #ifdef _NAN_CHECK_
-            for(int in=0; in<m; in++)
-                for(int jn=0; jn<n; jn++)
-                    CkAssert(isfinite(dest[in*n+jn]));
-        #endif
-        #ifndef BUNDLE_USER_EVENTS
-            #ifndef CMK_TRACE_ENABLED
-                traceUserBracketEvent(401, StartTime, CmiWallTimer());
-            #endif
-        #endif
-        CmiNetworkProgress();
-
-        for(int i=1;i<=Kloop;i++)
-        {
-            int aoff = Ksplit*i;
-            int boff = n*i*Ksplit;
-            if(i==Kloop){Ksplit+=Krem;}
-            #ifndef BUNDLE_USER_EVENTS
-                #ifndef CMK_TRACE_ENABLED
-                    StartTime=CmiWallTimer();
-                #endif
-            #endif
-            #ifdef TEST_ALIGN
-                CkAssert((unsigned int) &(tmpA[aoff]) %16==0);
-                CkAssert((unsigned int) &(tmpB[boff]) %16==0);
-                CkAssert((unsigned int) dest %16==0);
-            #endif
-            #ifdef PRINT_DGEMM_PARAMS
-                CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, betap, K, n, m);
-            #endif
-            #ifdef _NAN_CHECK_
-                for(int in=0; in<Ksplit; in++)
-                    for(int jn=0; jn<m; jn++)
-                        CkAssert(isfinite(tmpA[aoff+in*m+jn]));
-                for(int in=0; in<n; in++)
-                    for(int jn=0; jn<Ksplit; jn++)
-                        CkAssert(isfinite(tmpB[boff+in*Ksplit+jn]));
-            #endif
-            myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, &tmpB[boff], &n, &betap, dest, &m);
-            #ifdef _NAN_CHECK_
-                for(int in=0; in<m; in++)
-                    for(int jn=0; jn<n; jn++)
-                        CkAssert(isfinite(dest[in*n+jn]));
-            #endif
-            #ifndef BUNDLE_USER_EVENTS
-                #ifndef CMK_TRACE_ENABLED
-                    traceUserBracketEvent(401, StartTime, CmiWallTimer());
-                #endif
-            #endif
-            CmiNetworkProgress();
-        }
-
-        #ifdef BUNDLE_USER_EVENTS
-            #ifndef CMK_TRACE_ENABLED
-                traceUserBracketEvent(401, StartTime, CmiWallTimer());
-            #endif
-        #endif
-    #else
-        // Old unsplit version
         #ifndef CMK_TRACE_ENABLED
             double StartTime=CmiWallTimer();
         #endif
@@ -645,8 +559,6 @@ void CLA_Matrix::multiply()
         #ifndef CMK_TRACE_ENABLED
             traceUserBracketEvent(401, StartTime, CmiWallTimer());
         #endif
-    #endif
-
     // Transpose the result
     transpose(dest, n, m);
     // Tell caller we are done
