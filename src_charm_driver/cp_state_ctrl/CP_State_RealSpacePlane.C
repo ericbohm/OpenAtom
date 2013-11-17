@@ -172,7 +172,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealSpacePlane::pup(PUP::er &p){
-  ArrayElement2D::pup(p);
+  CBase_CP_State_RealSpacePlane::pup(p);
 
   p|iplane_ind;
   p|istate;
