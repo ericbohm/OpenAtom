@@ -471,7 +471,7 @@ void CP_Rho_RealSpacePlane::handleDensityReduction() {
 
 //============================================================================
 // 2nd Launch real-space external-hartree and the G-space non-local
-// The energy comp through RhoG is he more expensive critical path.
+// The energy comp through RhoG is the more expensive critical path.
    launchEextRNlG();
 
 
