@@ -366,6 +366,36 @@ mainmodule cpaimd {
 	
 	array [2D] CP_State_RealSpacePlane {
 		entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int, UberCollection);
+
+		entry void run() {
+		  while (true) {
+		    for (count = 0; count < nchareG; count++) {
+		      when acceptFFT(RSFFTMsg *m) serial { unpackFFT(m); }
+		    }
+		    serial {
+		      iteration++;
+		      doFFT();
+		    }
+
+		    for (countProduct = 0; countProduct < rhoRsubplanes; ++countProduct) {
+		      when acceptProduct(ProductMsg *m) serial { unpackProduct(m); }
+		    }
+
+#ifdef RSVKS_BARRIER
+		    serial {
+		      contribute(CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),
+					    UrealSpacePlaneProxy[thisInstance.proxyOffset]));
+		    }
+		    when rdoneVks(CkReductionMsg *m) serial { delete m; }
+#endif
+
+		    serial {
+		      thisProxy[thisIndex].doVksFFT();
+		      sendFPsiToGSP();
+		    }
+		  }
+		};
+
 		entry void acceptFFT(RSFFTMsg *);
 		entry [local] void doFFT();
 		entry [nokeep] void acceptProduct(ProductMsg *m);
