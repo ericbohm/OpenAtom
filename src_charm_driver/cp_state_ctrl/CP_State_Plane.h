@@ -174,14 +174,15 @@ public:
  * parallelization.
 */
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
+	CP_State_RealSpacePlace_SDAG_CODE
  public:
 	CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
 	~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
-	void acceptFFT(RSFFTMsg *);
+	void unpackFFT(RSFFTMsg *);
 	void doFFT();
         void doVksFFT();
-	void acceptProduct(ProductMsg *);
+	void unpackProduct(ProductMsg *);
 	void doProductThenFFT();
         void sendFPsiToGSP();
 	void run();
@@ -191,11 +192,6 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	void doReduction();
 	void ResumeFromSync();	
 	void pup(PUP::er &);
-	void rdoneVks(CkReductionMsg *msg);
-	bool allVksDone()
-	  {
-	    return vksDone;
-	  }
  private:
 	const UberCollection thisInstance;
 	int forwardTimeKeep;
@@ -214,11 +210,9 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	int numCookies;
         int istate;
 	UberCollection RhoReductionDest;
-	bool vksDone;
 	RealStateSlab rs;
 	CkSectionInfo *cookie;
 	CProxy_CP_State_GSpacePlane gproxy;
-	RTH_Runtime* run_thread;
 };
 //============================================================================
 /*@}*/
