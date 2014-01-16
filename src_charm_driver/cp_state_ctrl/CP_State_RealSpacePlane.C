@@ -111,10 +111,10 @@ RTH_Routine_code(CP_State_RealSpacePlane,run) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealSpacePlane::run () {
-  run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_State_RealSpacePlane,run),this);
-  RTH_Runtime_resume(run_thread);
-}
+//void CP_State_RealSpacePlane::run () {
+//  run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_State_RealSpacePlane,run),this);
+//  RTH_Runtime_resume(run_thread);
+//}
 //============================================================================
 
 
@@ -822,6 +822,5 @@ void CP_State_RealSpacePlane::printData() {
     fclose(outfile);
 }
 //============================================================================
-
 
 /*@}*/
