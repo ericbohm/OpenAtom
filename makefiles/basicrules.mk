@@ -85,7 +85,7 @@ endif
 # Rule to generate dependency info for charm++ interface (ci) definition files
 %.di: %.ci
 	$(info-dep)
-	@$(CHARMC) -M $< > $@
+	@$(CHARMC) -M -preprocess $(CPPFLAGS) $< > $@
 
 
 # Pattern rules copied from the built-in make rules
@@ -119,4 +119,4 @@ endif
 
 %.ci.stamp: %.ci
 	$(info-ci)
-	$q$(CHARMC) $< && touch $@
+	$q$(CHARMC) -preprocess $(CPPFLAGS) $< && touch $@
