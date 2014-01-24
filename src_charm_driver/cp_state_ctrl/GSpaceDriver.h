@@ -37,6 +37,7 @@ class CP_State_ParticlePlane;
 class GSpaceDriver: public CBase_GSpaceDriver
 {
 	public:
+		GSpaceDriver_SDAG_CODE
 		/// Constructors
 		GSpaceDriver() {}
 		GSpaceDriver(CkMigrateMessage *msg);
@@ -75,7 +76,9 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		/// Triggers nonlocal energy computations
 		void releaseSFComputeZ(); 					
 		
-		
+		// TODO(mikida2): Delete this before committing
+		bool tempFlag;
+
 		/// True if this is the first step
 		bool isFirstStep;
 		///
