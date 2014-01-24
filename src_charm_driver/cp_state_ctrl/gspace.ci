@@ -6,6 +6,193 @@ module gSpaceDriver
 		// Constructor(s)
 		entry GSpaceDriver(const UberCollection _thisInstance);
 		
+		// Temp SDAG method for RTH to SDAG translation
+		entry void run() {
+			// (I) Starts here
+			serial {
+				tempFlag = (CPcharmParaInfo::get()->cp_min_opt==1 && CPcharmParaInfo::get()->gen_wave==0) || isFirstStep == false;
+			}
+			if (tempFlag) {
+				serial {
+					isEnergyReductionDone = false;
+					isAtomIntegrationDone = false;
+#ifndef _CP_DEBUG_PSI_OFF_
+					myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
+				}
+#ifndef _CP_DEBUG_SFNL_OFF_
+				serial {
+					tempFlag = ees_nonlocal==0 && CPcharmParaInfo::get()->natm_nl!=0;
+				}
+				if (tempFlag) {
+					serial {
+						releaseSFComputeZ();
+					}
+#ifdef BARRIER_CP_PARTICLEPLANE_NONLOCAL
+					//when doneNLForces(); // or allDoneNLForces(); ... use a case block
+					when resumeControl() {}
+#endif
+				}
+#endif	// _CP_DEBUG_SFNL_OFF_
+
+#ifndef _CP_DEBUG_VKS_OFF_
+				serial {
+					myGSpaceObj->thisProxy(thisIndex.x, thisIndex.y).doFFT();
+					myGSpaceObj->sendFFTData();
+				}
+				when resumeControl() {}
+				
+				serial {
+					myGSpaceObj->thisProxy(thisIndex.x, thisIndex.y).doIFFT();
+				}
+#ifdef BARRIER_CP_GSPACE_IFFT
+				//when allDoneIFFT();
+				when resumeControl() {}
+#endif
+
+#else
+#ifndef _CP_DEBUG_SFNL_OFF_
+				serial {
+					tempFlag = ees_nonlocal==1 && CPcharmParaInfo::get()->natm_nl!=0;
+				}
+				if (tempFlag) {
+					startNonLocalEes(myGSpaceObj->iteration);
+				}
+#endif
+				serial {
+					myGSpaceObj->doneDoingIFFT = true;
+				}
+#endif	// _CP_DEBUG_VKS_OFF_
+
+#ifndef _CP_DEBUG_SFNL_OFF
+				if (areNLForcesDone) {
+					// when doneNLForces() or allDoneNLForces()
+					when resumeControl() {}
+				}
+#endif
+				serial {
+					myGSpaceObj->combineForcesGetEke();
+				}
+
+				serial {
+#endif	// _CP_DEBUG_PSI_OFF_
+					myGSpaceObj->launchAtoms();
+				}				
+
+#ifndef _CP_DEBUG_PSI_OFF_
+				serial {
+					tempFlag = CPcharmParaInfo::get()->natm_nl!=0;
+				}
+				if (tempFlag) serial {
+					areNLForcesDone = false;
+				}
+				serial {
+					myGSpaceObj->sendLambda();
+				}
+#ifndef _CP_DEBUG_ORTHO_OFF_
+				when resumeControl() {}
+#endif
+				serial {
+					myGSpaceObj->computeCgOverlap();
+				}
+				when resumeControl() {}
+				
+				serial {
+					tempFlag = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt!=0 && myGSpaceObj->iteration > 1;
+				}
+				if (tempFlag) {
+					serial {
+						tempFlag = (myGSpaceObj->iteration-1)%CPcharmParaInfo::get()->ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->outputFlag==1;
+					}
+					if (tempFlag) {
+						serial {
+							myGSpaceObj->writeStateDumpFile();
+						}
+						//when allDoneWritingPsi()
+						when resumeControl() {}
+					}
+				}
+				serial {
+					myGSpaceObj->integrateModForce();
+					myGSpaceObj->sendRedPsi();
+				}
+				serial {
+					tempFlag = myGSpaceObj->iRecvRedPsi==0;
+				}
+				if (myGSpaceObj->iRecvRedPsi==0) {
+					when resumeControl() {}
+				}
+				serial {
+					myGSpaceObj->doneRedPsiIntegrate();
+				}
+#endif	//_CP_DEBUG_PSI_OFF_
+			}
+			// (II) Starts here
+#ifndef _CP_DEBUG_PSI_OFF_
+			serial {
+				myGSpaceObj->sendPsi();
+			}
+#ifndef _CP_DEBUG_ORTHO_OFF_
+			when resumeControl() {}
+#endif
+			serial {
+				tempFlag = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt==1 && myGSpaceObj->iteration > 0;
+			}
+			if (tempFlag) {
+				serial {
+					tempFlag = myGSpaceObj->iteration % CPcharmParaInfo::get()->ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1;
+				}
+				if (tempFlag) {
+					serial {
+						myGSpaceObj->writeStateDumpFile();
+					}
+					when resumeControl() {}
+				}
+			}
+			serial {
+				tempFlag = CPcharmParaInfo::get()->cp_min_opt==0 && myGSpaceObj->iteration > 1 && myGSpaceObj->iteration <= config.maxIter;
+			}
+			if (tempFlag) {
+				if (isPsiVupdateNeeded) {
+					serial {
+						myGSpaceObj->acceptedVPsi = false;
+						myGSpaceObj->sendRedPsiV();
+					}
+					if (myGSpaceObj->iRecvRedPsiV==0) {
+						when resumeControl() {}
+					}
+					serial {
+						myGSpaceObj->doneRedPsiVIntegrate();
+						myGSpaceObj->sendPsiV();
+					}
+					when resumeControl() {}
+					serial {
+						isPsiVupdateNeeded = false;
+					}
+				}
+			}
+			if (isEnergyReductionDone==false && myGSpaceObj->iteration>0) serial {
+				waitingForEnergy = true;
+			}
+#endif	// _CP_DEBUG_PSI_OFF
+			if (isAtomIntegrationDone==false && myGSpaceObj->iteration>0) serial {
+				waitingForAtoms = true;
+			}
+			if (waitingForAtoms || waitingForEnergy) {
+#ifdef _CP_DEBUG_WARN_SUSPEND_
+				serial {
+					CkPrintf("GSpace[%d,%d] Suspending atm/energy on proc %d : atom:%d energy:%d\n", thisIndex.x, thisIndex.y, CkMyPe(), waitingForAtoms, waitingForEnergy);
+				}
+#endif
+				when resumeControl() {}
+			}
+			if (myGSpaceObj->cleanExitCalled==1) {
+				when resumeControl() {}
+			}
+			serial {
+				isFirstStep = false;
+			}
+		};
+
 		// Create, invoke, resume, and kill RTH threads
 		entry void startControl();
 		entry [local] void resumeControl();
