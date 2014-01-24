@@ -381,13 +381,13 @@ mainmodule cpaimd {
 		      when acceptProduct(ProductMsg *m) serial { unpackProduct(m); }
 		    }
 
-//#ifdef RSVKS_BARRIER
-//		    serial {
-//		      contribute(CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),
-//					    UrealSpacePlaneProxy[thisInstance.proxyOffset]));
-//		    }
-//		    when rdoneVks(CkReductionMsg *m) serial { delete m; }
-//#endif
+#ifdef RSVKS_BARRIER
+		    serial {
+				contribute(CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),
+					    UrealSpacePlaneProxy[thisInstance.proxyOffset]));
+		    }
+		    when rdoneVks(CkReductionMsg *m) serial { delete m; }
+#endif
 
 		    serial {
 		      thisProxy[thisIndex].doVksFFT();
