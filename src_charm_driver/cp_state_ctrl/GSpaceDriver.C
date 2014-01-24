@@ -57,6 +57,7 @@ GSpaceDriver::GSpaceDriver(CkMigrateMessage *msg):
 /// PUP method
 void GSpaceDriver::pup(PUP::er &p)
 {
+	__sdag_pup(p);
 	p|isFirstStep;
 	p|ees_nonlocal;
         p|areNLForcesDone;
@@ -66,11 +67,11 @@ void GSpaceDriver::pup(PUP::er &p)
 	p|isEnergyReductionDone;
         p|isPsiVupdateNeeded;
 	p|sfCompSectionProxy;
-	if( p.isUnpacking() )
-	{
-		controlThread = RTH_Runtime_create(RTH_Routine_lookup(GSpaceDriver,driveGSpace),this);
-	}
-	RTH_Runtime_pup(controlThread,p,this);
+	//if( p.isUnpacking() )
+	//{
+	//	controlThread = RTH_Runtime_create(RTH_Routine_lookup(GSpaceDriver,driveGSpace),this);
+	//}
+	//RTH_Runtime_pup(controlThread,p,this);
 }
 
 
