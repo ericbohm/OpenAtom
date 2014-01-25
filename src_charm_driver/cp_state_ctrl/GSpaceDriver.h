@@ -50,7 +50,7 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		/// @entry Creates and invokes the RTH thread that controls GSpace execution. 
  		void startControl();
 		/// @entry local. Called by a compute chare to give control back to this driver logic
-		inline void resumeControl() 					{ RTH_Runtime_resume(controlThread); }
+		//inline void resumeControl() 					{ RTH_Runtime_resume(controlThread); }
 		/// @entry local. GSpace notifies me that its ready to exit by calling this method
 		void readyToExit();
 		/// @entry local. GSpace notifies me that the energy reduction is done by calling this method
