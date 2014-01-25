@@ -9,6 +9,7 @@ module gSpaceDriver
 		// Temp SDAG method for RTH to SDAG translation
 		entry void run() {
 			// (I) Starts here
+			while(1) {
 			serial {
 				tempFlag = (CPcharmParaInfo::get()->cp_min_opt==1 && CPcharmParaInfo::get()->gen_wave==0) || isFirstStep == false;
 			}
@@ -64,7 +65,7 @@ module gSpaceDriver
 #endif	// _CP_DEBUG_VKS_OFF_
 
 #ifndef _CP_DEBUG_SFNL_OFF
-				if (areNLForcesDone) {
+				if (!areNLForcesDone) {
 					// when doneNLForces() or allDoneNLForces()
 					when resumeControl() {}
 				}
@@ -190,6 +191,7 @@ module gSpaceDriver
 			}
 			serial {
 				isFirstStep = false;
+			}
 			}
 		};
 
