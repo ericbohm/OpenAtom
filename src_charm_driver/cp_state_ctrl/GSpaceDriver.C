@@ -118,8 +118,9 @@ void GSpaceDriver::startControl()
     /// Do other initialization chores
 	init();
     /// Create an RTH thread and give it control
-	controlThread = RTH_Runtime_create(RTH_Routine_lookup(GSpaceDriver,driveGSpace),this);
-	resumeControl();
+	//controlThread = RTH_Runtime_create(RTH_Routine_lookup(GSpaceDriver,driveGSpace),this);
+	//resumeControl();
+	run();
 }
 
 
