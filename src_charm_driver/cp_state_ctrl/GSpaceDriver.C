@@ -1,7 +1,7 @@
 #include "GSpaceDriver.h"
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_ParticlePlane.h"
-#include "GSpaceRTH.h"
+//#include "GSpaceRTH.h"
 #include "main/TimeKeeper.h"
 
 extern int nstates;
@@ -26,8 +26,8 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 			isAtomIntegrationDone(false),
 			isEnergyReductionDone(false),
 			areNLForcesDone(false),
-			isPsiVupdateNeeded(false),
-			controlThread(0)
+			isPsiVupdateNeeded(false)
+			//controlThread(0)
 {
 	#ifdef DEBUG_CP_GSPACE_CREATION
 		CkPrintf("GSpaceDriver[%d,%d] born\n",thisIndex.x,thisIndex.y);
@@ -47,8 +47,8 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 
 ///
 GSpaceDriver::GSpaceDriver(CkMigrateMessage *msg): 
-			myGSpaceObj(0),
-			controlThread(0)
+			myGSpaceObj(0)
+//			controlThread(0)
 {}
 
 
@@ -120,7 +120,7 @@ void GSpaceDriver::startControl()
     /// Create an RTH thread and give it control
 	//controlThread = RTH_Runtime_create(RTH_Routine_lookup(GSpaceDriver,driveGSpace),this);
 	//resumeControl();
-	run();
+	driveGSpace();
 }
 
 
