@@ -7,7 +7,7 @@ module gSpaceDriver
 		entry GSpaceDriver(const UberCollection _thisInstance);
 		
 		// Temp SDAG method for RTH to SDAG translation
-		entry void run() {
+		entry void driveGSpace() {
 			// (I) Starts here
 			while(1) {
 			serial {
