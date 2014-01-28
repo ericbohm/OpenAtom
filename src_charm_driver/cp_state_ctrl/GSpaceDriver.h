@@ -1,7 +1,7 @@
 #include "debug_flags.h"
 #include "gSpaceDriver.decl.h"
 #include "structureFactor.decl.h"
-#include "RTH.h"
+//#include "RTH.h"
 #include "main/CPcharmParaInfoGrp.h"
 #include "charm++.h"
 #include "uber/Uber.h"
@@ -110,7 +110,7 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		/// A marker tying this class to a particular instance of interacting chares
 		const UberCollection thisInstance;
 		/// An RTH runtime thread that executes all the control logic
-		RTH_Runtime* controlThread;
+//		RTH_Runtime* controlThread;
 		/// Array section of the structure factor chares that I will be triggering
 		CProxySection_StructureFactor sfCompSectionProxy;
 };
