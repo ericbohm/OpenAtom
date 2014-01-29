@@ -148,7 +148,7 @@ void GSpaceDriver::readyToExit()
 
 
 /// GSpace notifies me that the energy reduction is done by calling this method
-void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter) 				
+void GSpaceDriver::finishEnergy(int AtomsGrpIter) 				
 {
 
   
@@ -169,7 +169,6 @@ void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter)
 	  if (!waitingForAtoms) {
 	    if (myGSpaceObj->cleanExitCalled==1)
 	      readyToExit();
-	    resumeControl(); 
 	  }
 	} 
 }
@@ -184,7 +183,7 @@ void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter)
  * would then know which chares upon which to invoke this method. Careful, careful with migration with this 
  * alternative scheme. Enable config.localAtomBarrier to trigger that behavior
  */
-void GSpaceDriver::doneMovingAtoms(const int AtomsGrpIter)
+void GSpaceDriver::finishAtoms(int AtomsGrpIter)
 {
   //  CkPrintf("{%d}[%d] GSpaceDriver::doneMovingAtoms()\n ", thisInstance.proxyOffset, CkMyPe());     
   /// Ensure the iterations are synced @todo: Should this be an if condition? It was when it lived in GSpace
@@ -200,7 +199,6 @@ void GSpaceDriver::doneMovingAtoms(const int AtomsGrpIter)
   if (waitingForAtoms) 
     {
       waitingForAtoms = false; 
-      if (!waitingForEnergy) resumeControl(); 
     } 
 }
 
@@ -228,11 +226,11 @@ void GSpaceDriver::allDonePsi(CkReductionMsg *msg)
 
 
 /// All GSpace objects have finished writing coefs : NECESSARY
-void GSpaceDriver::allDoneWritingPsi(CkReductionMsg *msg)
-{
-    delete msg;
-    resumeControl();
-}
+//void GSpaceDriver::allDoneWritingPsi(CkReductionMsg *msg)
+//{
+//    delete msg;
+//    resumeControl();
+//}
 
 
 
