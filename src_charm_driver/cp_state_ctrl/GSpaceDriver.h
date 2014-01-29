@@ -58,7 +58,7 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		/// @entry local. GSpace notifies me when the atom integration is complete via this method
 		void doneMovingAtoms(const int AtomsGrpIter);
 		/// @entry local. GSpace notifies me when the nonlocal force computations are done
-		void doneNLForces();
+		//void doneNLForces();
         /// @entry Reduction barrier at the end of the Psi loop for all GSpace chares
         void allDonePsi(CkReductionMsg *msg);
         /// @entry Reduction barrier at the end of the Psi write process for all GSpace chares
@@ -66,9 +66,9 @@ class GSpaceDriver: public CBase_GSpaceDriver
         /// @entry Reduction barrier at the end of the PsiV update loop for all GSpace chares
         void allDonePsiV(CkReductionMsg *msg);
 		/// @entry Reduction barrier at the end of the inverse FFT for all GSpace chares
-		void allDoneIFFT(CkReductionMsg *msg);
+		//void allDoneIFFT(CkReductionMsg *msg);
         /// @entry Reduction barrier at the end of the nonlocal computations for all ParticlePlane chares
-        void allDoneNLForces(CkReductionMsg *msg);
+        //void allDoneNLForces(CkReductionMsg *msg);
         /// @entry Ortho notifies us that GSpace needs a tolerance update (velocity rotation)
         void needUpdatedPsiV();
 		/// @entry Triggers nonlocal energy computations
