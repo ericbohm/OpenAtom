@@ -207,12 +207,12 @@ void GSpaceDriver::doneMovingAtoms(const int AtomsGrpIter)
 
 
 /// GSpace notifies me when the non-local results have arrived
-void GSpaceDriver::doneNLForces() 					
-{
-    areNLForcesDone = true;
-    if (myGSpaceObj->doneDoingIFFT)
-        resumeControl();
-}
+//void GSpaceDriver::doneNLForces() 					
+//{
+//    areNLForcesDone = true;
+//    if (myGSpaceObj->doneDoingIFFT)
+//        resumeControl();
+//}
 
 
 
@@ -251,24 +251,25 @@ void GSpaceDriver::allDonePsiV(CkReductionMsg *msg)
 
 
 /// All GSpace objects finished Inverse FFT : For debugging only
-void GSpaceDriver::allDoneIFFT(CkReductionMsg *msg)
-{
-	delete msg;
-    myGSpaceObj->doneDoingIFFT = true;
-	resumeControl();
-}
+//void GSpaceDriver::allDoneIFFT(CkReductionMsg *msg)
+//{
+//	delete msg;
+//    myGSpaceObj->doneDoingIFFT = true;
+//	resumeControl();
+//}
 
 
 
 
-/// All ParticlePlane chares finished the nonlocal computations : For debugging only
-void GSpaceDriver::allDoneNLForces(CkReductionMsg *msg)
-{
-    delete msg;
-    areNLForcesDone = true;
-    if (myGSpaceObj->doneDoingIFFT)
-        resumeControl();
-}
+// TODO: Remove these methods and anyone that calls them. They were buggy.
+///// All ParticlePlane chares finished the nonlocal computations : For debugging only
+//void GSpaceDriver::allDoneNLForces(CkReductionMsg *msg)
+//{
+//    delete msg;
+//    areNLForcesDone = true;
+//    if (myGSpaceObj->doneDoingIFFT)
+//        resumeControl();
+//}
 
 
 
