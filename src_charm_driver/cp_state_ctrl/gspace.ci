@@ -22,16 +22,9 @@ module gSpaceDriver
 				}
 #ifndef _CP_DEBUG_SFNL_OFF_
 				serial {
-					tempFlag = ees_nonlocal==0 && CPcharmParaInfo::get()->natm_nl!=0;
-				}
-				if (tempFlag) {
-					serial {
+					if (ees_nonlocal==0 && CPcharmParaInfo::get()->natm_nl!=0) {
 						releaseSFComputeZ();
 					}
-#ifdef BARRIER_CP_PARTICLEPLANE_NONLOCAL
-					//when doneNLForces(); // or allDoneNLForces(); ... use a case block
-					when resumeControl() {}
-#endif
 				}
 #endif	// _CP_DEBUG_SFNL_OFF_
 
@@ -40,23 +33,22 @@ module gSpaceDriver
 					myGSpaceObj->thisProxy(thisIndex.x, thisIndex.y).doFFT();
 					myGSpaceObj->sendFFTData();
 				}
-				when resumeControl() {}
-				
-				serial {
+				when resumeControl() serial {
 					myGSpaceObj->thisProxy(thisIndex.x, thisIndex.y).doIFFT();
 				}
 #ifdef BARRIER_CP_GSPACE_IFFT
-				//when allDoneIFFT();
-				when resumeControl() {}
+				when allDoneIFFT(CkReductionMsg *msg) serial {
+					delete msg;
+					myGSpaceObj->doneDoingIFFT = true;
+				}
 #endif
 
 #else
 #ifndef _CP_DEBUG_SFNL_OFF_
 				serial {
-					tempFlag = ees_nonlocal==1 && CPcharmParaInfo::get()->natm_nl!=0;
-				}
-				if (tempFlag) {
-					startNonLocalEes(myGSpaceObj->iteration);
+					if (ees_nonlocal==1 && CPcharmParaInfo::get()->natm_nl!=0) {
+						startNonLocalEes(myGSpaceObj->iteration);
+					}
 				}
 #endif
 				serial {
@@ -66,15 +58,21 @@ module gSpaceDriver
 
 #ifndef _CP_DEBUG_SFNL_OFF
 				if (!areNLForcesDone) {
-					// when doneNLForces() or allDoneNLForces()
-					when resumeControl() {}
+					// TODO: Possibly also need to wait for IFFT to be done.
+					// TODO: Figure out what the define flag is that picks which of these will be called.
+					case {
+						when doneNLForces() serial {
+							areNLForcesDone = true;
+						}
+						when allDoneNLForces(CkReductionMsg *msg) serial {
+							delete msg;
+							areNLForcesDone = true;
+						}
+					}
 				}
 #endif
 				serial {
 					myGSpaceObj->combineForcesGetEke();
-				}
-
-				serial {
 #endif	// _CP_DEBUG_PSI_OFF_
 					myGSpaceObj->launchAtoms();
 				}				
@@ -213,7 +211,9 @@ module gSpaceDriver
 		entry void allDonePsi(CkReductionMsg *msg);
 		entry void allDoneWritingPsi(CkReductionMsg *msg);
 		entry void allDonePsiV(CkReductionMsg *msg);
+#ifdef BARRIER_CP_GSPACE_IFFT
 		entry void allDoneIFFT(CkReductionMsg *msg);
+#endif
 		entry void allDoneNLForces(CkReductionMsg *msg);
 	};
 };
