@@ -224,7 +224,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
      }//endif
   }//endif
 
-  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
+  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneComputingCgOverlap();
 //============================================================================
   }// end routine
 //============================================================================
@@ -1497,7 +1497,7 @@ void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg)
 
   if (countIFFT == gs.planeSize[1]) {
     countIFFT = 0;
-        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
+        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedIFFT();
   }//endif : has everyone arrived?
 
 //----------------------------------------------------------------------------
@@ -2215,7 +2215,7 @@ void CP_State_GSpacePlane::doLambda() {
 //==============================================================================
 // Back to the threaded loop
 
-  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
+  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneLambda();
 
 //==============================================================================
   }//end routine
@@ -2833,7 +2833,7 @@ void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
     }//endif
     // If sent before I received then I resume
     if(iSentRedPsi==1){ 
-      UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl(); 
+      UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedRedPsi(); 
     }//endif
   }//endif
 
@@ -3235,7 +3235,7 @@ void CP_State_GSpacePlane::doNewPsi(){
   int wehaveours=1;
   contribute(sizeof(int),&wehaveours,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDonePsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
 #else
-  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
+  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsi();
 #endif
 
 //----------------------------------------------------------------------------
@@ -3430,7 +3430,7 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
     }//endif
     // If sent before I received then I resume
     if(iSentRedPsiV == 1){
-        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
+        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedRedPsiV();
     }//endif
   }//endif
 
@@ -3711,7 +3711,7 @@ void CP_State_GSpacePlane::doNewPsiV(){
 	contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
 	CkCallback(CkIndex_GSpaceDriver::allDonePsiV(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
 #else
-	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
+	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsiV();
 #endif
 
 //------------------------------------------------------------------------------
