@@ -60,11 +60,11 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		/// @entry local. GSpace notifies me when the nonlocal force computations are done
 		//void doneNLForces();
         /// @entry Reduction barrier at the end of the Psi loop for all GSpace chares
-        void allDonePsi(CkReductionMsg *msg);
+        //void allDonePsi(CkReductionMsg *msg);
         /// @entry Reduction barrier at the end of the Psi write process for all GSpace chares
         //void allDoneWritingPsi(CkReductionMsg *msg);
         /// @entry Reduction barrier at the end of the PsiV update loop for all GSpace chares
-        void allDonePsiV(CkReductionMsg *msg);
+        //void allDonePsiV(CkReductionMsg *msg);
 		/// @entry Reduction barrier at the end of the inverse FFT for all GSpace chares
 		//void allDoneIFFT(CkReductionMsg *msg);
         /// @entry Reduction barrier at the end of the nonlocal computations for all ParticlePlane chares
