@@ -219,7 +219,7 @@ void GSpaceDriver::finishAtoms(int AtomsGrpIter)
 void GSpaceDriver::allDonePsi(CkReductionMsg *msg)
 {
     delete msg;
-    resumeControl();
+    //resumeControl();
 }
 
 
@@ -242,7 +242,7 @@ void GSpaceDriver::allDonePsiV(CkReductionMsg *msg)
         CkPrintf("GSpaceDriver[%d,%d] allDonePsiV: PsiV update step complete in iteration %d. Barrier reduction reached.\n",thisIndex.x,thisIndex.y,myGSpaceObj->iteration);
     #endif
     delete msg;
-    resumeControl();
+    //resumeControl();
 }
 
 

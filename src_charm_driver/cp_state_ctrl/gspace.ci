@@ -9,7 +9,7 @@ module gSpaceDriver
 		// Temp SDAG method for RTH to SDAG translation
 		entry void driveGSpace() {
 			// (I) Starts here
-			while(1) {
+			while(myGSpaceObj->cleanExitCalled!=1) {
 				serial {
 					tempFlag = (CPcharmParaInfo::get()->cp_min_opt==1 && CPcharmParaInfo::get()->gen_wave==0) || isFirstStep == false;
 				}
@@ -17,49 +17,48 @@ module gSpaceDriver
 					serial {
 						isEnergyReductionDone = false;
 						isAtomIntegrationDone = false;
-	#ifndef _CP_DEBUG_PSI_OFF_
+#ifndef _CP_DEBUG_PSI_OFF_
 						myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
-					}
-	#ifndef _CP_DEBUG_SFNL_OFF_
-					serial {
+#ifndef _CP_DEBUG_SFNL_OFF_
 						if (ees_nonlocal==0 && CPcharmParaInfo::get()->natm_nl!=0) {
 							releaseSFComputeZ();
 						}
+#endif
 					}
-	#endif	// _CP_DEBUG_SFNL_OFF_
 
-	#ifndef _CP_DEBUG_VKS_OFF_
+#ifndef _CP_DEBUG_VKS_OFF_
 					serial {
 						myGSpaceObj->thisProxy(thisIndex.x, thisIndex.y).doFFT();
 						myGSpaceObj->sendFFTData();
 					}
-					when resumeControl() serial {
+					when receivedIFFT() serial {
 						myGSpaceObj->thisProxy(thisIndex.x, thisIndex.y).doIFFT();
 					}
-	#ifdef BARRIER_CP_GSPACE_IFFT
+#ifdef BARRIER_CP_GSPACE_IFFT
 					when allDoneIFFT(CkReductionMsg *msg) serial {
 						delete msg;
 						myGSpaceObj->doneDoingIFFT = true;
 					}
-	#endif
+#endif
 
-	#else
-	#ifndef _CP_DEBUG_SFNL_OFF_
+#else
+#ifndef _CP_DEBUG_SFNL_OFF_
 					serial {
 						if (ees_nonlocal==1 && CPcharmParaInfo::get()->natm_nl!=0) {
 							startNonLocalEes(myGSpaceObj->iteration);
 						}
 					}
-	#endif
+#endif
 					serial {
 						myGSpaceObj->doneDoingIFFT = true;
 					}
-	#endif	// _CP_DEBUG_VKS_OFF_
+#endif	// _CP_DEBUG_VKS_OFF_
 
-	#ifndef _CP_DEBUG_SFNL_OFF
+#ifndef _CP_DEBUG_SFNL_OFF
 					if (!areNLForcesDone) {
 						// TODO: Possibly also need to wait for IFFT to be done.
 						// TODO: Figure out what the define flag is that picks which of these will be called.
+						// TODO: Something seems fishy with how waiting for IFFT was done compared to waiting for NL forces.
 						case {
 							when doneNLForces() serial {
 								areNLForcesDone = true;
@@ -70,29 +69,27 @@ module gSpaceDriver
 							}
 						}
 					}
-	#endif
+#endif
 					serial {
 						myGSpaceObj->combineForcesGetEke();
-	#endif	// _CP_DEBUG_PSI_OFF_
+#endif	// _CP_DEBUG_PSI_OFF_
 						myGSpaceObj->launchAtoms();
 					}				
 
-	#ifndef _CP_DEBUG_PSI_OFF_
+#ifndef _CP_DEBUG_PSI_OFF_
 					serial {
 						if (CPcharmParaInfo::get()->natm_nl!=0) {
 							areNLForcesDone = false;
 						}
 						myGSpaceObj->sendLambda();
 					}
-	#ifndef _CP_DEBUG_ORTHO_OFF_
-					when resumeControl() {}
-	#endif
+#ifndef _CP_DEBUG_ORTHO_OFF_
+					when doneLambda() {}
+#endif
 					serial {
 						myGSpaceObj->computeCgOverlap();
 					}
-					when resumeControl() {}
-					
-					serial {
+					when doneComputingCgOverlap() serial {
 						tempFlag = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt!=0 && myGSpaceObj->iteration > 1;
 					}
 					if (tempFlag) {
@@ -113,21 +110,21 @@ module gSpaceDriver
 						myGSpaceObj->sendRedPsi();
 					}
 					if (myGSpaceObj->iRecvRedPsi==0) {
-						when resumeControl() {}
+						when receivedRedPsi() {}
 					}
 					serial {
 						myGSpaceObj->doneRedPsiIntegrate();
 					}
-	#endif	//_CP_DEBUG_PSI_OFF_
+#endif	//_CP_DEBUG_PSI_OFF_
 				}
 				// (II) Starts here
-	#ifndef _CP_DEBUG_PSI_OFF_
+#ifndef _CP_DEBUG_PSI_OFF_
 				serial {
 					myGSpaceObj->sendPsi();
 				}
-	#ifndef _CP_DEBUG_ORTHO_OFF_
-				when resumeControl() {}
-	#endif
+#ifndef _CP_DEBUG_ORTHO_OFF_
+				when donePsi() {}
+#endif
 				serial {
 					tempFlag = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt==1 && myGSpaceObj->iteration > 0;
 				}
@@ -154,30 +151,24 @@ module gSpaceDriver
 							myGSpaceObj->sendRedPsiV();
 						}
 						if (myGSpaceObj->iRecvRedPsiV==0) {
-							when resumeControl() {}
+							when receivedRedPsiV() {}
 						}
 						serial {
 							myGSpaceObj->doneRedPsiVIntegrate();
 							myGSpaceObj->sendPsiV();
 						}
-						when resumeControl() serial {
+						when donePsiV() serial {
 							isPsiVupdateNeeded = false;
 						}
 					}
 				}
-				if (isEnergyReductionDone==false && myGSpaceObj->iteration>0) {
-					serial {
-						waitingForEnergy = true;
-					}
-					when doneComputingEnergy(const int AtomGrpIter) serial { finishEnergy(AtomGrpIter); }
-				}
-	#endif	// _CP_DEBUG_PSI_OFF
-				if (isAtomIntegrationDone==false && myGSpaceObj->iteration>0) {
-					serial {
-						waitingForAtoms = true;
-					}
-					when doneMovingAtoms(const int AtomsGrpIter) serial { finishAtoms(AtomsGrpIter); }
-				}
+				//overlap {
+				//	when doneComputingEnergy(const int AtomGrpIter) serial { finishEnergy(AtomGrpIter); }
+				//	when doneMovingAtoms(const int AtomsGrpIter) serial { finishAtoms(AtomsGrpIter); }
+				//}
+				when doneComputingEnergy(const int AtomGrpIter) serial { finishEnergy(AtomGrpIter); }
+#endif	// _CP_DEBUG_PSI_OFF
+				when doneMovingAtoms(const int AtomsGrpIter) serial { finishAtoms(AtomsGrpIter); }
 				// TODO: Do we now need to wait for both? Otherwise we may have a memory leak?
 				// TODO: We may no longer need this or, and just have a when waiting on both messages...
 	//			if (waitingForAtoms || waitingForEnergy) {
@@ -187,9 +178,12 @@ module gSpaceDriver
 	//				}
 	//#endif
 	//			}
-				if (myGSpaceObj->cleanExitCalled==1) {
-					when resumeControl() {}
-				}
+				//if (myGSpaceObj->cleanExitCalled==1) {
+				//	//when resumeControl() {}
+				//	tempFlag = false;
+				//} else {
+				//	tempFlag = true;
+				//}
 				serial {
 					isFirstStep = false;
 				}
@@ -198,7 +192,7 @@ module gSpaceDriver
 
 		// Create, invoke, resume, and kill RTH threads
 		entry void startControl();
-		entry [local] void resumeControl();
+		//entry [local] void resumeControl();
 		entry [local] void readyToExit();
 		
 		// Requests to trigger things
@@ -206,8 +200,15 @@ module gSpaceDriver
 		entry void startNonLocalEes(int iteration_loc);
 		
 		// Incoming notifications of task completion
+		entry void receivedIFFT();
+		entry void receivedRedPsi();
+		entry void receivedRedPsiV();
 		entry void doneComputingEnergy(const int AtomGrpIter);
-		entry  void doneMovingAtoms(const int AtomGrpIter);
+		entry void doneMovingAtoms(const int AtomGrpIter);
+		entry void doneComputingCgOverlap();
+		entry void doneLambda();
+		entry void donePsi();
+		entry void donePsiV();
 		entry [local] void doneNLForces();
 		
 		// Incoming reduction barrier notifications
