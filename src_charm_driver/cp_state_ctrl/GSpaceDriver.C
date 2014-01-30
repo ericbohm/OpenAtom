@@ -216,11 +216,11 @@ void GSpaceDriver::finishAtoms(int AtomsGrpIter)
 
 
 /// All GSpace objects have finished psi : For debugging only
-void GSpaceDriver::allDonePsi(CkReductionMsg *msg)
-{
-    delete msg;
-    //resumeControl();
-}
+//void GSpaceDriver::allDonePsi(CkReductionMsg *msg)
+//{
+//    delete msg;
+//    resumeControl();
+//}
 
 
 
@@ -236,14 +236,14 @@ void GSpaceDriver::allDonePsi(CkReductionMsg *msg)
 
 
 /// All GSpace objects have finished velocity rotation : For debugging only
-void GSpaceDriver::allDonePsiV(CkReductionMsg *msg)
-{
-    #ifdef DEBUG_CP_GSPACE_PSIV
-        CkPrintf("GSpaceDriver[%d,%d] allDonePsiV: PsiV update step complete in iteration %d. Barrier reduction reached.\n",thisIndex.x,thisIndex.y,myGSpaceObj->iteration);
-    #endif
-    delete msg;
-    //resumeControl();
-}
+//void GSpaceDriver::allDonePsiV(CkReductionMsg *msg)
+//{
+//    #ifdef DEBUG_CP_GSPACE_PSIV
+//        CkPrintf("GSpaceDriver[%d,%d] allDonePsiV: PsiV update step complete in iteration %d. Barrier reduction reached.\n",thisIndex.x,thisIndex.y,myGSpaceObj->iteration);
+//    #endif
+//    delete msg;
+//    //resumeControl();
+//}
 
 
 
