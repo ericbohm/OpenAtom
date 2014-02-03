@@ -83,6 +83,8 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		bool isFirstStep;
 		///
 		int ees_nonlocal;
+		///
+		int natm_nl;
         /// Indicates if the nonlocal computation loop has completed. Replaces GPP::doneGettingForces
         bool areNLForcesDone;
         /// 

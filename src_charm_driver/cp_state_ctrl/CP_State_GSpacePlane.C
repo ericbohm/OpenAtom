@@ -1551,7 +1551,7 @@ void CP_State_GSpacePlane::doIFFT()
         contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
         CkCallback(CkIndex_GSpaceDriver::allDoneIFFT(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
     #else
-        doneDoingIFFT = true;
+  		UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneIFFT();
     #endif
 }//end routine
 //=============================================================================================================
@@ -2825,16 +2825,16 @@ void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
   countRedPsi++;
   if(countRedPsi==numRecvRedPsi){
     countRedPsi=0;
-    iRecvRedPsi=1;
+    //iRecvRedPsi=1;
     if(jtemp!=gs.nkx0_red){
       CkPrintf("Error in GSchare recv cnt %d %d : %d %d\n",thisIndex.x,thisIndex.y,
  	                                                   gs.nkx0_red,jtemp);
       CkExit();
     }//endif
     // If sent before I received then I resume
-    if(iSentRedPsi==1){ 
+    //if(iSentRedPsi==1){ 
       UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedRedPsi(); 
-    }//endif
+    //}//endif
   }//endif
 
 //-----------------------------------------------------------------------------
@@ -3422,16 +3422,16 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
 		CkPrintf("GSpace[%d,%d] acceptRedPsiV received all %d GSRedPsi messages carrying redundant PsiV data\n",thisIndex.x,thisIndex.y,countRedPsiV);
 #endif
     countRedPsiV = 0;
-    iRecvRedPsiV  = 1;
+    //iRecvRedPsiV  = 1;
     if(jtemp!=gs.nkx0_red){
       CkPrintf("Error in GSchare recv cnt %d %d : %d %d\n",thisIndex.x,thisIndex.y,
  	                                                   gs.nkx0_red,jtemp);
       CkExit();
     }//endif
     // If sent before I received then I resume
-    if(iSentRedPsiV == 1){
+    //if(iSentRedPsiV == 1){
         UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedRedPsiV();
-    }//endif
+    //}//endif
   }//endif
 
 //-----------------------------------------------------------------------------
