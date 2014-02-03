@@ -36,7 +36,8 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 	/// state
         CPcharmParaInfo *sim  = CPcharmParaInfo::get();
 	ees_nonlocal = sim->ees_nloc_on;
-        int natm_nl  = sim->natm_nl;
+        //int natm_nl  = sim->natm_nl;
+		natm_nl = sim->natm_nl;
         if(natm_nl==0){
 	  areNLForcesDone=true;
         }//endif
@@ -288,7 +289,7 @@ void GSpaceDriver::startNonLocalEes(int iteration_loc)
 {
 
     CPcharmParaInfo *sim  = CPcharmParaInfo::get();
-    int natm_nl  = sim->natm_nl;
+    //int natm_nl  = sim->natm_nl;
 
     if(iteration_loc!=myGSpaceObj->iteration)
         CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
