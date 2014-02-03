@@ -2215,7 +2215,9 @@ void CP_State_GSpacePlane::doLambda() {
 //==============================================================================
 // Back to the threaded loop
 
+#ifndef _CP_DEBUG_ORTHO_OFF_
   UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneLambda();
+#endif
 
 //==============================================================================
   }//end routine
@@ -3231,11 +3233,13 @@ void CP_State_GSpacePlane::doNewPsi(){
 
 //==============================================================================
 // Back to the threaded loop.
+#ifndef _CP_DEBUG_ORTHO_OFF_
 #ifdef BARRIER_CP_GSPACE_PSI
   int wehaveours=1;
   contribute(sizeof(int),&wehaveours,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDonePsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
 #else
   UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsi();
+#endif
 #endif
 
 //----------------------------------------------------------------------------
