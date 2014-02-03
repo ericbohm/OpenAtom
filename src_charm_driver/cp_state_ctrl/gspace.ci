@@ -32,10 +32,7 @@ module gSpaceDriver
 							releaseSFComputeZ();
 						}
 #ifdef BARRIER_CP_PARTICLE_PLANE_NONLOCAL
-						when allDoneNLForces(CkReductionMsg *msg) serial {
-							delete msg;
-							areNLForcesDone = true;
-						}
+						when allDoneNLForces(CkReductionMsg *msg) serial { areNLForcesDone = true; }
 #endif
 					}
 
@@ -54,10 +51,7 @@ module gSpaceDriver
 					}
 
 #ifdef BARRIER_CP_GSPACE_IFFT
-					when allDoneIFFT(CkReductionMsg *msg) serial {
-						delete msg;
-						myGSpaceObj->doneDoingIFFT = true;
-					}
+					when allDoneIFFT(CkReductionMsg *msg) serial { myGSpaceObj->doneDoingIFFT = true; }
 #endif
 
 #else
@@ -78,10 +72,7 @@ module gSpaceDriver
 #ifndef _CP_DEBUG_SFNL_OFF_
 					if (!areNLForcesDone) {
 #ifdef BARRIER_CP_PARTICLE_PLANE_NONLOCAL
-						when allDoneNLForces(CkReductionMsg *msg) serial {
-							delete msg;
-							areNLForcesDone = true;
-						}
+						when allDoneNLForces(CkReductionMsg *msg) serial { areNLForcesDone = true; }
 #else
 						when doneNLForces() serial { areNLForcesDone = true; }
 #endif
@@ -132,9 +123,7 @@ module gSpaceDriver
 							serial {
 								myGSpaceObj->writeStateDumpFile();
 							}
-							when allDoneWritingPsi(CkReductionMsg *msg) serial {
-								delete msg;
-							}
+							when allDoneWritingPsi(CkReductionMsg *msg) {}
 						}
 					}
 					serial {
@@ -157,7 +146,7 @@ module gSpaceDriver
 				}
 #ifndef _CP_DEBUG_ORTHO_OFF_
 #ifdef BARRIER_CP_GSPACE_PSI
-				when allDonePsi(CkReductionMsg *msg) serial { delete msg; }
+				when allDonePsi(CkReductionMsg *msg) {}
 #else
 				when donePsi() {}
 #endif
@@ -173,9 +162,7 @@ module gSpaceDriver
 						serial {
 							myGSpaceObj->writeStateDumpFile();
 						}
-						when allDoneWritingPsi(CkReductionMsg *msg) serial {
-							delete msg;
-						}
+						when allDoneWritingPsi(CkReductionMsg *msg) {}
 					}
 				}
 				serial {
@@ -188,6 +175,7 @@ module gSpaceDriver
 							myGSpaceObj->sendRedPsiV();
 						}
 						if (myGSpaceObj->iRecvRedPsiV==0) {
+							// To avoid a race, iRecvRedPsiV needs to be set here, rather than in myGSpaceObj::acceptRedPsiV()
 							when receivedRedPsiV() serial { myGSpaceObj->iRecvRedPsiV = 1; }
 						}
 						serial {
@@ -195,10 +183,7 @@ module gSpaceDriver
 							myGSpaceObj->sendPsiV();
 						}
 #ifdef BARRIER_CP_GSPACE_PSIV
-						when allDonePsiV(CkReductionMsg *msg) serial { 
-							delete msg; 
-							isPsiVupdateNeeded = false;
-						}
+						when allDonePsiV(CkReductionMsg *msg) serial { isPsiVupdateNeeded = false; }
 #else
 						when donePsiV() serial { isPsiVupdateNeeded = false; }
 #endif
@@ -242,17 +227,17 @@ module gSpaceDriver
 		
 		// Incoming reduction barrier notifications
 #ifdef BARRIER_CP_GSPACE_PSI
-		entry void allDonePsi(CkReductionMsg *msg);
+		entry [nokeep] void allDonePsi(CkReductionMsg *msg);
 #endif
 #ifdef BARRIER_CP_GSPACE_PSIV
-		entry void allDonePsiV(CkReductionMsg *msg);
+		entry [nokeep] void allDonePsiV(CkReductionMsg *msg);
 #endif
-		entry void allDoneWritingPsi(CkReductionMsg *msg);
+		entry [nokeep] void allDoneWritingPsi(CkReductionMsg *msg);
 #ifdef BARRIER_CP_GSPACE_IFFT
-		entry void allDoneIFFT(CkReductionMsg *msg);
+		entry [nokeep] void allDoneIFFT(CkReductionMsg *msg);
 #endif
 #ifdef BARRIER_CP_PARTICLEPLANE_NONLOCAL
-		entry void allDoneNLForces(CkReductionMsg *msg);
+		entry [nokeep] void allDoneNLForces(CkReductionMsg *msg);
 #endif
 	};
 };
