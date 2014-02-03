@@ -17,15 +17,33 @@ module gSpaceDriver
 					serial {
 						isEnergyReductionDone = false;
 						isAtomIntegrationDone = false;
+					}
+// (A) ////////
 #ifndef _CP_DEBUG_PSI_OFF_
+					serial {
 						myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
+					}
+// (A.1) //////
+// releaseSFComputeZ() will send messages to compute non-local forces, which will
+// eventually result in a doneNLForces() message being sent to this chare.
 #ifndef _CP_DEBUG_SFNL_OFF_
-						if (ees_nonlocal==0 && CPcharmParaInfo::get()->natm_nl!=0) {
+					if (ees_nonlocal==0 && natm_nl!=0) {
+						serial {
 							releaseSFComputeZ();
+						}
+#ifdef BARRIER_CP_PARTICLE_PLANE_NONLOCAL
+						when allDoneNLForces(CkReductionMsg *msg) serial {
+							delete msg;
+							areNLForcesDone = true;
 						}
 #endif
 					}
 
+#endif
+// (A.2) //////
+// Do FFT and IFFT computations. The FFT communications will require non-local forces to
+// be computed if ees_nonlocal==1. If we don't do FFT/IFFT computations, we still need
+// to do the nonlocal forces if ees_nonlocal==1.
 #ifndef _CP_DEBUG_VKS_OFF_
 					serial {
 						myGSpaceObj->thisProxy(thisIndex.x, thisIndex.y).doFFT();
@@ -34,6 +52,7 @@ module gSpaceDriver
 					when receivedIFFT() serial {
 						myGSpaceObj->thisProxy(thisIndex.x, thisIndex.y).doIFFT();
 					}
+
 #ifdef BARRIER_CP_GSPACE_IFFT
 					when allDoneIFFT(CkReductionMsg *msg) serial {
 						delete msg;
@@ -43,10 +62,8 @@ module gSpaceDriver
 
 #else
 #ifndef _CP_DEBUG_SFNL_OFF_
-					serial {
-						if (ees_nonlocal==1 && CPcharmParaInfo::get()->natm_nl!=0) {
-							startNonLocalEes(myGSpaceObj->iteration);
-						}
+					if (ees_nonlocal==1 && natm_nl!=0) serial {
+						startNonLocalEes(myGSpaceObj->iteration);
 					}
 #endif
 					serial {
@@ -54,31 +71,45 @@ module gSpaceDriver
 					}
 #endif	// _CP_DEBUG_VKS_OFF_
 
-#ifndef _CP_DEBUG_SFNL_OFF
+// (A.3) //////
+// Here we catch doneNLForces messages. One will be produced by (A.1) if ees_nonlocal==0.
+// Otherwise, one will be produced in (A.2). We only wait for the message if
+// areNLForcesDone hasn't already been set previously (ie: by the debug barrier).
+#ifndef _CP_DEBUG_SFNL_OFF_
 					if (!areNLForcesDone) {
-						// TODO: Possibly also need to wait for IFFT to be done.
-						// TODO: Figure out what the define flag is that picks which of these will be called.
-						// TODO: Something seems fishy with how waiting for IFFT was done compared to waiting for NL forces.
-						case {
-							when doneNLForces() serial {
-								areNLForcesDone = true;
-							}
-							when allDoneNLForces(CkReductionMsg *msg) serial {
-								delete msg;
-								areNLForcesDone = true;
-							}
+#ifdef BARRIER_CP_PARTICLE_PLANE_NONLOCAL
+						when allDoneNLForces(CkReductionMsg *msg) serial {
+							delete msg;
+							areNLForcesDone = true;
 						}
+#else
+						when doneNLForces() serial { areNLForcesDone = true; }
+#endif
 					}
 #endif
+
+// (A.4) //////
+// Here we ensure that the IFFT has completed before moving on.
+#ifndef _CP_DEBUG_VKS_OFF_
+					if (!myGSpaceObj->doneDoingIFFT) {
+						when doneIFFT() serial { myGSpaceObj->doneDoingIFFT = true; }
+					}
+#endif
+
 					serial {
 						myGSpaceObj->combineForcesGetEke();
+					}
 #endif	// _CP_DEBUG_PSI_OFF_
+
+					serial {
 						myGSpaceObj->launchAtoms();
 					}				
 
+// (B) ////////
 #ifndef _CP_DEBUG_PSI_OFF_
 					serial {
-						if (CPcharmParaInfo::get()->natm_nl!=0) {
+						// TODO: Do we need to catch another doneNLForces message()?
+						if (natm_nl!=0) {
 							areNLForcesDone = false;
 						}
 						myGSpaceObj->sendLambda();
@@ -110,7 +141,7 @@ module gSpaceDriver
 						myGSpaceObj->sendRedPsi();
 					}
 					if (myGSpaceObj->iRecvRedPsi==0) {
-						when receivedRedPsi() {}
+						when receivedRedPsi() serial { myGSpaceObj->iRecvRedPsi = 1; }
 					}
 					serial {
 						myGSpaceObj->doneRedPsiIntegrate();
@@ -123,6 +154,7 @@ module gSpaceDriver
 					myGSpaceObj->sendPsi();
 				}
 #ifndef _CP_DEBUG_ORTHO_OFF_
+				// TODO: Get rid of case
 				case {
 					when donePsi() {}
 					when allDonePsi(CkReductionMsg *msg) serial { delete msg; }
@@ -154,12 +186,13 @@ module gSpaceDriver
 							myGSpaceObj->sendRedPsiV();
 						}
 						if (myGSpaceObj->iRecvRedPsiV==0) {
-							when receivedRedPsiV() {}
+							when receivedRedPsiV() serial { myGSpaceObj->iRecvRedPsiV = 1; }
 						}
 						serial {
 							myGSpaceObj->doneRedPsiVIntegrate();
 							myGSpaceObj->sendPsiV();
 						}
+						// TODO: Get rid of case
 						case {
 							when donePsiV() {}
 							when allDonePsiV(CkReductionMsg *msg) serial { delete msg; }
@@ -169,13 +202,14 @@ module gSpaceDriver
 						}
 					}
 				}
-				//overlap {
-				//	when doneComputingEnergy(const int AtomGrpIter) serial { finishEnergy(AtomGrpIter); }
-				//	when doneMovingAtoms(const int AtomsGrpIter) serial { finishAtoms(AtomsGrpIter); }
-				//}
-				when doneComputingEnergy(const int AtomGrpIter) serial { finishEnergy(AtomGrpIter); }
+				overlap {
+					when doneComputingEnergy(const int AtomGrpIter) serial { finishEnergy(AtomGrpIter); }
 #endif	// _CP_DEBUG_PSI_OFF
-				when doneMovingAtoms(const int AtomsGrpIter) serial { finishAtoms(AtomsGrpIter); }
+					when doneMovingAtoms(const int AtomsGrpIter) serial { finishAtoms(AtomsGrpIter); }
+#ifndef _CP_DEBUG_PSI_OFF
+				}
+#endif
+
 				serial {
 					isFirstStep = false;
 				}
@@ -201,7 +235,8 @@ module gSpaceDriver
 		entry void doneLambda();
 		entry void donePsi();
 		entry void donePsiV();
-		entry [local] void doneNLForces();
+		entry void doneNLForces();
+		entry void doneIFFT();
 		
 		// Incoming reduction barrier notifications
 		entry void allDonePsi(CkReductionMsg *msg);
@@ -210,7 +245,9 @@ module gSpaceDriver
 #ifdef BARRIER_CP_GSPACE_IFFT
 		entry void allDoneIFFT(CkReductionMsg *msg);
 #endif
+#ifdef BARRIER_CP_PARTICLEPLANE_NONLOCAL
 		entry void allDoneNLForces(CkReductionMsg *msg);
+#endif
 	};
 };
 
