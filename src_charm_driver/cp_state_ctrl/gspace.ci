@@ -99,14 +99,15 @@ module gSpaceDriver
 // (B) ////////
 #ifndef _CP_DEBUG_PSI_OFF_
 					serial {
-						// TODO: Do we need to catch another doneNLForces message()?
 						if (natm_nl!=0) {
 							// Reset this flag for the next step. Other flags are reset in myGSpaceObj::sendLambda()
 							areNLForcesDone = false;
 						}
-						myGSpaceObj->sendLambda();
-					}
-#ifndef _CP_DEBUG_ORTHO_OFF_
+						//myGSpaceObj->sendLambda();
+						CkPrintf("%d\n", __LINE__);
+						myGSpaceObj->blockB();
+					} when doneBlockB() serial {}
+/*#ifndef _CP_DEBUG_ORTHO_OFF_
 					when doneLambda() {}
 #endif
 					serial {
@@ -136,12 +137,16 @@ module gSpaceDriver
 					}
 					serial {
 						myGSpaceObj->doneRedPsiIntegrate();
-					}
+					}*/
 #endif	//_CP_DEBUG_PSI_OFF_
 				}
 				// (II) Starts here
 #ifndef _CP_DEBUG_PSI_OFF_
 				serial {
+					bool updateNeeded = CPcharmParaInfo::get()->cp_min_opt && myGSpaceObj->iteration > 1 && myGSpaceObj->iteration <= config.maxIter && isPsiVupdateNeeded;
+					myGSpaceObj->blockC(updateNeeded);
+				} when doneBlockC() serial { isPsiVupdateNeeded = false; }
+				/*serial {
 					myGSpaceObj->sendPsi();
 				}
 #ifndef _CP_DEBUG_ORTHO_OFF_
@@ -188,14 +193,14 @@ module gSpaceDriver
 						when donePsiV() serial { isPsiVupdateNeeded = false; }
 #endif
 					}
-				}
-				overlap {
-					when doneComputingEnergy(const int AtomGrpIter) serial { finishEnergy(AtomGrpIter); }
-#endif	// _CP_DEBUG_PSI_OFF
-					when doneMovingAtoms(const int AtomsGrpIter) serial { finishAtoms(AtomsGrpIter); }
-#ifndef _CP_DEBUG_PSI_OFF
-				}
+				}*/
 #endif
+				overlap {
+#ifndef _CP_DEBUG_PSI_OFF
+					when doneComputingEnergy(const int AtomGrpIter) serial { finishEnergy(AtomGrpIter); }
+#endif
+					when doneMovingAtoms(const int AtomsGrpIter) serial { finishAtoms(AtomsGrpIter); }
+				}
 
 				serial {
 					isFirstStep = false;
@@ -214,16 +219,18 @@ module gSpaceDriver
 		
 		// Incoming notifications of task completion
 		entry void receivedIFFT();
-		entry void receivedRedPsi();
-		entry void receivedRedPsiV();
+		//entry void receivedRedPsi();
+		//entry void receivedRedPsiV();
 		entry void doneComputingEnergy(const int AtomGrpIter);
 		entry void doneMovingAtoms(const int AtomGrpIter);
-		entry void doneComputingCgOverlap();
-		entry void doneLambda();
-		entry void donePsi();
-		entry void donePsiV();
+		//entry void doneComputingCgOverlap();
+		//entry void doneLambda();
+		//entry void donePsi();
+		//entry void donePsiV();
 		entry void doneNLForces();
 		entry void doneIFFT();
+		entry void doneBlockB();
+		entry void doneBlockC();
 		
 		// Incoming reduction barrier notifications
 #ifdef BARRIER_CP_GSPACE_PSI
@@ -232,7 +239,7 @@ module gSpaceDriver
 #ifdef BARRIER_CP_GSPACE_PSIV
 		entry [nokeep] void allDonePsiV(CkReductionMsg *msg);
 #endif
-		entry [nokeep] void allDoneWritingPsi(CkReductionMsg *msg);
+		entry [nokeep] void allDoneWritingPsi(CkReductionMsg *msg) {};
 #ifdef BARRIER_CP_GSPACE_IFFT
 		entry [nokeep] void allDoneIFFT(CkReductionMsg *msg);
 #endif
@@ -282,6 +289,7 @@ module gStatePlane
     class pcSetupMsg;
 	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
 	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
+						// TODO: Do we need to catch another doneNLForces message()?
 	message RSFFTMsg     { complex data[]; };
 	message GSIFFTMsg    { complex data[]; };
 	message GSRedPsiMsg  { complex data[]; };
@@ -313,7 +321,9 @@ module gStatePlane
 		entry void acceptRedPsi(GSRedPsiMsg *msg);	
 		entry [local] void doNewPsi();
 		entry [local] void doNewPsiV();
-		entry [local] void doLambda();
+		// TODO: Refactor out done methods
+		// TODO: Add in barriers
+		entry [local] void doneCgOverlap();
 		entry void acceptLambda(CkReductionMsg *msg);
 		entry void acceptLambda(partialResultMsg *msg);
 
@@ -332,5 +342,70 @@ module gStatePlane
 		entry [nokeep] void minimizeSync(ICCookieMsg *msg);
 		entry void setExitFlag();
 
+// SDAG ////////
+		entry void blockB() {
+			serial { sendLambda(); }
+#ifndef CP_DEBUG_ORTHO_OFF_
+			while (countLambda != AllLambdaExpected) {
+				case {
+					when acceptLambda(CkReductionMsg *msg) serial { unpackLambda(msg); }
+					when acceptLambda(partialResultMsg *msg) serial { unpackLambda(msg); }
+				}
+			}
+			serial { doLambda(); }
+#endif
+			serial { computeCgOverlap(); }
+			when doneCgOverlap() serial {
+				//writeStateDumpFile();
+				integrateModForce();
+				sendRedPsi();
+			}
+			while (iRecvRedPsi == 0) {
+				when acceptRedPsi(GSRedPsiMsg *msg) serial { unpackRedPsi(msg); }
+			}
+			serial {
+				doneRedPsiIntegrate();
+				UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneBlockB();
+			}
+		};
+
+		entry void blockC(bool isPsiVupdateNeeded) {
+			serial { sendPsi(); }
+#ifndef CP_DEBUG_ORTHO_OFF_
+			while (countPsi != AllPsiExpected) {
+				case {
+					when acceptNewPsi(CkReductionMsg *msg) serial { unpackNewPsi(msg); }
+					when acceptNewPsi(partialResultMsg *msg) serial { unpackNewPsi(msg); }
+				}
+			}
+			serial { doNewPsi(); }
+#endif
+			serial {
+				//writeStateDumpFile();
+			}
+			if (isPsiVupdateNeeded) {
+				serial {
+					acceptedVPsi = false;
+					sendRedPsiV();
+				}
+				while (iRecvRedPsiV == 0) {
+					when acceptRedPsiV(GSRedPsiMsg *msg) serial { unpackRedPsiV(msg); }
+				}
+				serial {
+					doneRedPsiIntegrate();
+					sendPsiV();
+				}
+				while (countVPsi != AllPsiExpected) {
+					case {
+						when acceptNewPsiV(CkReductionMsg *msg) serial { unpackNewPsiV(msg); }
+						when acceptNewPsiV(partialResultMsg *msg) serial { unpackNewPsiV(msg); }
+					}
+				}
+				serial { doNewPsiV(); }
+			}
+			serial {
+				UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneBlockC();
+			}
+		};
 	};
 };
