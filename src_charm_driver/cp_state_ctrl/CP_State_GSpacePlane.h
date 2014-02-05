@@ -118,6 +118,7 @@ public:
 class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane 
 {
     public:
+		CP_State_GSpacePlane_SDAG_CODE
         friend class CP_State_ParticlePlane;
         // ----------- Flags and counters used in the GSpace driver code -----------
         /// My state index
@@ -184,23 +185,23 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         /// @entry This is used to receive data from all the corresponding RealSpacePlanes, upon which the inverse FFTs are triggered
         void acceptIFFT(GSIFFTMsg *);
         void doIFFT();
-        void acceptNewPsi(CkReductionMsg *msg);
-        void acceptNewPsi(partialResultMsg  *msg);
+        void unpackNewPsi(CkReductionMsg *msg);
+        void unpackNewPsi(partialResultMsg  *msg);
         /// @RTH resume
         void doNewPsi();
         void collectFileOutput(GStateOutMsg *msg);
-        void acceptNewPsiV(CkReductionMsg *msg);
-        void acceptNewPsiV(partialResultMsg *msg);
+        void unpackNewPsiV(CkReductionMsg *msg);
+        void unpackNewPsiV(partialResultMsg *msg);
         /// @RTH resume
         void doNewPsiV();
         /// @entry @RTH resume
         void psiCgOvlap(CkReductionMsg *msg);
-        void acceptLambda(CkReductionMsg *msg);
-        void acceptLambda(partialResultMsg *msg);
+        void unpackLambda(CkReductionMsg *msg);
+        void unpackLambda(partialResultMsg *msg);
         /// @RTH resume
         void doLambda();
         /// @RTH resume
-        void acceptRedPsi(GSRedPsiMsg *msg);
+        void unpackRedPsi(GSRedPsiMsg *msg);
         
 	void initBeadCookie(ICCookieMsg *m);
 	void minimizeSync(ICCookieMsg *m);
@@ -211,7 +212,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void computeEnergies(int p, double d);
         void startFFT(CkReductionMsg *msg);
         void sendRedPsiV();
-        void acceptRedPsiV(GSRedPsiMsg *msg);
+        void unpackRedPsiV(GSRedPsiMsg *msg);
         void doneRedPsiVIntegrate();
         void screenPrintWallTimes();
 	void acceptNewTemperature(double temp);
