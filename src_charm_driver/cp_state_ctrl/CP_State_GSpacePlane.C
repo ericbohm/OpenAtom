@@ -224,7 +224,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
      }//endif
   }//endif
 
-  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneComputingCgOverlap();
+	doneCgOverlap();
 //============================================================================
   }// end routine
 //============================================================================
@@ -1921,7 +1921,7 @@ void  CP_State_GSpacePlane::sendLambda() {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
+void CP_State_GSpacePlane::unpackLambda(CkReductionMsg *msg) {
 //==============================================================================
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt    = sim->cp_min_opt;
@@ -2013,13 +2013,13 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 // Do we have everything?
 
   countLambdaO[offset]++;
-  if(countLambda==AllLambdaExpected){ 
-    thisProxy(thisIndex.x,thisIndex.y).doLambda();
+/*  if(countLambda==AllLambdaExpected){ 
+    thisProxy(thisIndex.x,thisIndex.y).receivedLambda();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
-  }//endif
+  }//endif*/
 
 //==============================================================================
    }//end routine
@@ -2028,7 +2028,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
+void CP_State_GSpacePlane::unpackLambda(partialResultMsg *msg) {
 //==============================================================================
 // 0) unpack the message : pop out variables from groups
 
@@ -2105,13 +2105,13 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 // are we done?
 
   countLambdaO[offset]++;
-  if(countLambda==AllLambdaExpected){ 
-    thisProxy(thisIndex.x,thisIndex.y).doLambda();
+/*  if(countLambda==AllLambdaExpected){ 
+    thisProxy(thisIndex.x,thisIndex.y).receivedLambda();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
-  }//endif
+  }//endif*/
 
 //==============================================================================
     }//end routine
@@ -2215,9 +2215,9 @@ void CP_State_GSpacePlane::doLambda() {
 //==============================================================================
 // Back to the threaded loop
 
-#ifndef _CP_DEBUG_ORTHO_OFF_
-  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneLambda();
-#endif
+//#ifndef _CP_DEBUG_ORTHO_OFF_
+//  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneLambda();
+//#endif
 
 //==============================================================================
   }//end routine
@@ -2781,12 +2781,12 @@ void CP_State_GSpacePlane::sendRedPsi() {
 //-----------------------------------------------------------------------------
    }//end routine
 //==============================================================================
-
+//
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
+void CP_State_GSpacePlane::unpackRedPsi(GSRedPsiMsg *msg) {
 //==============================================================================
 
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
@@ -2827,15 +2827,16 @@ void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
   countRedPsi++;
   if(countRedPsi==numRecvRedPsi){
     countRedPsi=0;
-    //iRecvRedPsi=1;
+    iRecvRedPsi=1;
     if(jtemp!=gs.nkx0_red){
       CkPrintf("Error in GSchare recv cnt %d %d : %d %d\n",thisIndex.x,thisIndex.y,
  	                                                   gs.nkx0_red,jtemp);
       CkExit();
     }//endif
+	//thisProxy[thisIndex].doneRedPsi();
     // If sent before I received then I resume
     //if(iSentRedPsi==1){ 
-      UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedRedPsi(); 
+    //  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedRedPsi(); 
     //}//endif
   }//endif
 
@@ -2965,7 +2966,7 @@ void CP_State_GSpacePlane::sendPsi() {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
+void CP_State_GSpacePlane::unpackNewPsi(CkReductionMsg *msg){
 //=============================================================================
 // (0) Fuss with the redundant psis
 
@@ -3025,7 +3026,7 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   countPsi++;//psi arrives in as many as 2 *numblock reductions
   countPsiO[offset]++;//psi arrives in as many as 2 
   if(countPsi==AllPsiExpected){ 
-    thisProxy(thisIndex.x,thisIndex.y).doNewPsi();
+    //thisProxy(thisIndex.x,thisIndex.y).receivedPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("acceptpsi %d %d\n",thisIndex.y,cleanExitCalled);
@@ -3044,7 +3045,7 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
  * When the psi calculator is sending to us directly
  */
 //==============================================================================
-void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
+void CP_State_GSpacePlane::unpackNewPsi(partialResultMsg *msg){
 //=============================================================================
 // (0) Fuss with the redundant psis
 
@@ -3110,7 +3111,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
   countPsiO[offset]++;//psi arrives in as many as 2 * numgrain
   //
   if(countPsi==AllPsiExpected){ 
-    thisProxy(thisIndex.x,thisIndex.y).doNewPsi();
+    //thisProxy(thisIndex.x,thisIndex.y).receivedPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
     if(thisIndex.x==0){CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);}
 #endif
@@ -3235,10 +3236,10 @@ void CP_State_GSpacePlane::doNewPsi(){
 // Back to the threaded loop.
 #ifndef _CP_DEBUG_ORTHO_OFF_
 #ifdef BARRIER_CP_GSPACE_PSI
-  int wehaveours=1;
-  contribute(sizeof(int),&wehaveours,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDonePsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
+  //int wehaveours=1;
+  //contribute(sizeof(int),&wehaveours,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDonePsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
 #else
-  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsi();
+  //UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsi();
 #endif
 #endif
 
@@ -3378,7 +3379,7 @@ void CP_State_GSpacePlane::sendRedPsiV(){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
+void CP_State_GSpacePlane::unpackRedPsiV(GSRedPsiMsg *msg) {
 //==============================================================================
 
   CPcharmParaInfo *sim       = CPcharmParaInfo::get();
@@ -3426,15 +3427,16 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
 		CkPrintf("GSpace[%d,%d] acceptRedPsiV received all %d GSRedPsi messages carrying redundant PsiV data\n",thisIndex.x,thisIndex.y,countRedPsiV);
 #endif
     countRedPsiV = 0;
-    //iRecvRedPsiV  = 1;
+    iRecvRedPsiV  = 1;
     if(jtemp!=gs.nkx0_red){
       CkPrintf("Error in GSchare recv cnt %d %d : %d %d\n",thisIndex.x,thisIndex.y,
  	                                                   gs.nkx0_red,jtemp);
       CkExit();
     }//endif
+	//doneRedPsiV();
     // If sent before I received then I resume
     //if(iSentRedPsiV == 1){
-        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedRedPsiV();
+        //UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedRedPsiV();
     //}//endif
   }//endif
 
@@ -3523,7 +3525,7 @@ void  CP_State_GSpacePlane::sendPsiV() {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
+void CP_State_GSpacePlane::unpackNewPsiV(CkReductionMsg *msg){
 //=============================================================================
 // (I) Local pointers
 
@@ -3567,7 +3569,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
 #ifdef DEBUG_CP_GSPACE_PSIV
 	CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d reductions).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
 #endif
-    thisProxy(thisIndex.x,thisIndex.y).doNewPsiV();
+    //thisProxy(thisIndex.x,thisIndex.y).receivedPsiV();
   }//endif
 
 //----------------------------------------------------------------------------
@@ -3577,7 +3579,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
+void CP_State_GSpacePlane::unpackNewPsiV(partialResultMsg *msg){
 //=============================================================================
 // (I) Local pointers
 
@@ -3630,7 +3632,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
 #ifdef DEBUG_CP_GSPACE_PSIV
 		CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d messages).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
 #endif
-    thisProxy(thisIndex.x,thisIndex.y).doNewPsiV();
+    //thisProxy(thisIndex.x,thisIndex.y).receivedPsiV();
   }//endif
 
 //----------------------------------------------------------------------------
@@ -3711,11 +3713,11 @@ void CP_State_GSpacePlane::doNewPsiV(){
 /// II) A Barrier for debugging
 
 #ifdef BARRIER_CP_GSPACE_PSIV
-	int wehaveours=1;
-	contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-	CkCallback(CkIndex_GSpaceDriver::allDonePsiV(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
+	//int wehaveours=1;
+	//contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+	//CkCallback(CkIndex_GSpaceDriver::allDonePsiV(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
 #else
-	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsiV();
+	//UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsiV();
 #endif
 
 //------------------------------------------------------------------------------
