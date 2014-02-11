@@ -224,7 +224,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
      }//endif
   }//endif
 
-	doneCgOverlap();
+	//doneCgOverlap();
 //============================================================================
   }// end routine
 //============================================================================
@@ -1448,7 +1448,7 @@ void CP_State_GSpacePlane::sendFFTData () {
  * Force cannot be overwitten because we can't receive until all chares send. The beauty of all to all comm
  * Forces are initialized HERE. No need to zero them etc. elsewhere.
  */
-void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg) 
+void CP_State_GSpacePlane::unpackIFFT(GSIFFTMsg *msg) 
 {
 #ifdef _CP_SUBSTEP_TIMING_
   if(backwardTimeKeep>0)
@@ -1491,16 +1491,6 @@ void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg)
   for(int i=0,j=offset; i< numLines; i++,j+=sizeZ){data_in[j] = partlyIFFTd[i];}
 
   delete msg;
-
-//============================================================================
-// If you have recved from every z plane, go on
-
-  if (countIFFT == gs.planeSize[1]) {
-    countIFFT = 0;
-        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedIFFT();
-  }//endif : has everyone arrived?
-
-//----------------------------------------------------------------------------
   }//end routine
 //============================================================================
 
@@ -1549,9 +1539,7 @@ void CP_State_GSpacePlane::doIFFT()
         //put contribute here to reduction with a broadcast client
         int wehaveours=1;
         contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-        CkCallback(CkIndex_GSpaceDriver::allDoneIFFT(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-    #else
-  		UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneIFFT();
+        	CkCallback(CkIndex_CP_State_GSpacePlane::allDoneIFFT(NULL),thisProxy));
     #endif
 }//end routine
 //=============================================================================================================
@@ -2013,13 +2001,12 @@ void CP_State_GSpacePlane::unpackLambda(CkReductionMsg *msg) {
 // Do we have everything?
 
   countLambdaO[offset]++;
-/*  if(countLambda==AllLambdaExpected){ 
-    thisProxy(thisIndex.x,thisIndex.y).receivedLambda();
+  if(countLambda==AllLambdaExpected){ 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
-  }//endif*/
+  }//endif
 
 //==============================================================================
    }//end routine
@@ -2105,13 +2092,12 @@ void CP_State_GSpacePlane::unpackLambda(partialResultMsg *msg) {
 // are we done?
 
   countLambdaO[offset]++;
-/*  if(countLambda==AllLambdaExpected){ 
-    thisProxy(thisIndex.x,thisIndex.y).receivedLambda();
+  if(countLambda==AllLambdaExpected){ 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
-  }//endif*/
+  }//endif
 
 //==============================================================================
     }//end routine
@@ -2211,15 +2197,6 @@ void CP_State_GSpacePlane::doLambda() {
     }/*endfor*/
     fclose(fp);
 #endif
-
-//==============================================================================
-// Back to the threaded loop
-
-//#ifndef _CP_DEBUG_ORTHO_OFF_
-//  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneLambda();
-//#endif
-
-//==============================================================================
   }//end routine
 //==============================================================================
 
@@ -2260,7 +2237,7 @@ void CP_State_GSpacePlane::computeCgOverlap() {
    redforc[0] = fovlap_loc;
    redforc[1] = force_sq_sum_loc;
    contribute(2*sizeof(double),redforc,CkReduction::sum_double,
-	     CkCallback(CkIndex_CP_State_GSpacePlane::psiCgOvlap(NULL),thisProxy));
+	     CkCallback(CkIndex_CP_State_GSpacePlane::acceptCgOverlap(NULL),thisProxy));
 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
@@ -2367,7 +2344,7 @@ void CP_State_GSpacePlane::writeStateDumpFile()
     else
       {
 	int i = 0;
-	contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDoneWritingPsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
+	contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_CP_State_GSpacePlane::allDoneWritingPsi(NULL),thisProxy));
       }
   }//endif
 }//write the file
@@ -2452,8 +2429,7 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
 	  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
 	else{
    	  int i=0;
-	  contribute(sizeof(int),&i,CkReduction::sum_int,
-          CkCallback(CkIndex_GSpaceDriver::allDoneWritingPsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
+	contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_CP_State_GSpacePlane::allDoneWritingPsi(NULL),thisProxy));
 	}//endif
     }//endif
 
@@ -2833,11 +2809,6 @@ void CP_State_GSpacePlane::unpackRedPsi(GSRedPsiMsg *msg) {
  	                                                   gs.nkx0_red,jtemp);
       CkExit();
     }//endif
-	//thisProxy[thisIndex].doneRedPsi();
-    // If sent before I received then I resume
-    //if(iSentRedPsi==1){ 
-    //  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedRedPsi(); 
-    //}//endif
   }//endif
 
 //-----------------------------------------------------------------------------
@@ -3026,7 +2997,6 @@ void CP_State_GSpacePlane::unpackNewPsi(CkReductionMsg *msg){
   countPsi++;//psi arrives in as many as 2 *numblock reductions
   countPsiO[offset]++;//psi arrives in as many as 2 
   if(countPsi==AllPsiExpected){ 
-    //thisProxy(thisIndex.x,thisIndex.y).receivedPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("acceptpsi %d %d\n",thisIndex.y,cleanExitCalled);
@@ -3111,7 +3081,6 @@ void CP_State_GSpacePlane::unpackNewPsi(partialResultMsg *msg){
   countPsiO[offset]++;//psi arrives in as many as 2 * numgrain
   //
   if(countPsi==AllPsiExpected){ 
-    //thisProxy(thisIndex.x,thisIndex.y).receivedPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
     if(thisIndex.x==0){CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);}
 #endif
@@ -3236,10 +3205,9 @@ void CP_State_GSpacePlane::doNewPsi(){
 // Back to the threaded loop.
 #ifndef _CP_DEBUG_ORTHO_OFF_
 #ifdef BARRIER_CP_GSPACE_PSI
-  //int wehaveours=1;
-  //contribute(sizeof(int),&wehaveours,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDonePsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-#else
-  //UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsi();
+	int wehaveours=1;
+	contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+		CkCallback(CkIndex_CP_State_GSpacePlane::allDonePsi(NULL),thisProxy));
 #endif
 #endif
 
@@ -3433,11 +3401,6 @@ void CP_State_GSpacePlane::unpackRedPsiV(GSRedPsiMsg *msg) {
  	                                                   gs.nkx0_red,jtemp);
       CkExit();
     }//endif
-	//doneRedPsiV();
-    // If sent before I received then I resume
-    //if(iSentRedPsiV == 1){
-        //UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).receivedRedPsiV();
-    //}//endif
   }//endif
 
 //-----------------------------------------------------------------------------
@@ -3569,7 +3532,6 @@ void CP_State_GSpacePlane::unpackNewPsiV(CkReductionMsg *msg){
 #ifdef DEBUG_CP_GSPACE_PSIV
 	CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d reductions).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
 #endif
-    //thisProxy(thisIndex.x,thisIndex.y).receivedPsiV();
   }//endif
 
 //----------------------------------------------------------------------------
@@ -3632,7 +3594,6 @@ void CP_State_GSpacePlane::unpackNewPsiV(partialResultMsg *msg){
 #ifdef DEBUG_CP_GSPACE_PSIV
 		CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d messages).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
 #endif
-    //thisProxy(thisIndex.x,thisIndex.y).receivedPsiV();
   }//endif
 
 //----------------------------------------------------------------------------
@@ -3713,11 +3674,9 @@ void CP_State_GSpacePlane::doNewPsiV(){
 /// II) A Barrier for debugging
 
 #ifdef BARRIER_CP_GSPACE_PSIV
-	//int wehaveours=1;
-	//contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-	//CkCallback(CkIndex_GSpaceDriver::allDonePsiV(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-#else
-	//UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsiV();
+	int wehaveours=1;
+	contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+		CkCallback(CkIndex_CP_State_GSpacePlane::allDonePsiV(NULL),thisProxy));
 #endif
 
 //------------------------------------------------------------------------------

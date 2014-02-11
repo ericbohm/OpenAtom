@@ -49,26 +49,8 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		
 		/// @entry Creates and invokes the RTH thread that controls GSpace execution. 
  		void startControl();
-		/// @entry local. Called by a compute chare to give control back to this driver logic
-		//inline void resumeControl() 					{ RTH_Runtime_resume(controlThread); }
 		/// @entry local. GSpace notifies me that its ready to exit by calling this method
 		void readyToExit();
-		/// @entry local. GSpace notifies me that the energy reduction is done by calling this method
-		void finishEnergy(int AtomsGrpIter); 				
-		/// @entry local. GSpace notifies me when the atom integration is complete via this method
-		void finishAtoms(int AtomsGrpIter);
-		/// @entry local. GSpace notifies me when the nonlocal force computations are done
-		//void doneNLForces();
-        /// @entry Reduction barrier at the end of the Psi loop for all GSpace chares
-        //void allDonePsi(CkReductionMsg *msg);
-        /// @entry Reduction barrier at the end of the Psi write process for all GSpace chares
-        //void allDoneWritingPsi(CkReductionMsg *msg);
-        /// @entry Reduction barrier at the end of the PsiV update loop for all GSpace chares
-        //void allDonePsiV(CkReductionMsg *msg);
-		/// @entry Reduction barrier at the end of the inverse FFT for all GSpace chares
-		//void allDoneIFFT(CkReductionMsg *msg);
-        /// @entry Reduction barrier at the end of the nonlocal computations for all ParticlePlane chares
-        //void allDoneNLForces(CkReductionMsg *msg);
         /// @entry Ortho notifies us that GSpace needs a tolerance update (velocity rotation)
         void needUpdatedPsiV();
 		/// @entry Triggers nonlocal energy computations
@@ -76,31 +58,18 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		/// Triggers nonlocal energy computations
 		void releaseSFComputeZ(); 					
 		
-		// TODO(mikida2): Delete this before committing
-		bool tempFlag;
-
 		/// True if this is the first step
 		bool isFirstStep;
 		///
 		int ees_nonlocal;
 		///
 		int natm_nl;
-        /// Indicates if the nonlocal computation loop has completed. Replaces GPP::doneGettingForces
-        bool areNLForcesDone;
+		///
+		int cp_min_opt;
+		///
+		int gen_wave;
         /// 
         bool isPsiVupdateNeeded;
-		/** Indicates if the atom integration is done and has returned in the current iteration. 
-		 * False after I launch, True after return of atoms. Replaces myatom_integrate_flag
-		 */
-		bool isAtomIntegrationDone;
-		/** Indicates if the energy reduction is done and has returned in the current iteration.
-		 *  False after I launch eke, True after return of energy. Replaces myenergy_reduc_flagg
-		 */
-		bool isEnergyReductionDone;
-		/// True if we've suspended control while waiting for the energy computations in GSpace. Replaces isuspend_energy
-		bool waitingForEnergy;
-		/// True if we've suspended control while waiting for the completion of atom integration. Replaces isuspend_atms
-		bool waitingForAtoms;
 
 		/// Pointer to the GSpacePlane object that I am driving (controlling) 
 		CP_State_GSpacePlane *myGSpaceObj;
