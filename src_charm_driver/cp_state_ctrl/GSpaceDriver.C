@@ -1,7 +1,6 @@
 #include "GSpaceDriver.h"
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_ParticlePlane.h"
-//#include "GSpaceRTH.h"
 #include "main/TimeKeeper.h"
 
 extern int nstates;
@@ -21,13 +20,7 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 			thisInstance(_thisInstance),
 			myGSpaceObj(0),
 			isFirstStep(true),
-			waitingForEnergy(false),
-			waitingForAtoms(false),
-			isAtomIntegrationDone(false),
-			isEnergyReductionDone(false),
-			areNLForcesDone(false),
 			isPsiVupdateNeeded(false)
-			//controlThread(0)
 {
 	#ifdef DEBUG_CP_GSPACE_CREATION
 		CkPrintf("GSpaceDriver[%d,%d] born\n",thisIndex.x,thisIndex.y);
@@ -35,12 +28,10 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 	/// Initialize flags and counters that record the control
 	/// state
         CPcharmParaInfo *sim  = CPcharmParaInfo::get();
-	ees_nonlocal = sim->ees_nloc_on;
-        //int natm_nl  = sim->natm_nl;
+		ees_nonlocal = sim->ees_nloc_on;
 		natm_nl = sim->natm_nl;
-        if(natm_nl==0){
-	  areNLForcesDone=true;
-        }//endif
+		cp_min_opt = sim->cp_min_opt;
+		gen_wave = sim->gen_wave;
 }//end routine
 
 
@@ -49,7 +40,6 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 ///
 GSpaceDriver::GSpaceDriver(CkMigrateMessage *msg): 
 			myGSpaceObj(0)
-//			controlThread(0)
 {}
 
 
@@ -61,18 +51,11 @@ void GSpaceDriver::pup(PUP::er &p)
 	__sdag_pup(p);
 	p|isFirstStep;
 	p|ees_nonlocal;
-        p|areNLForcesDone;
-	p|waitingForEnergy;
-	p|waitingForAtoms;
-	p|isAtomIntegrationDone;
-	p|isEnergyReductionDone;
-        p|isPsiVupdateNeeded;
+	p|natm_nl;
+	p|cp_min_opt;
+	p|gen_wave;
+	p|isPsiVupdateNeeded;
 	p|sfCompSectionProxy;
-	//if( p.isUnpacking() )
-	//{
-	//	controlThread = RTH_Runtime_create(RTH_Routine_lookup(GSpaceDriver,driveGSpace),this);
-	//}
-	//RTH_Runtime_pup(controlThread,p,this);
 }
 
 
@@ -118,9 +101,7 @@ void GSpaceDriver::startControl()
     CkAssert(myParticlePlaneObj);
     /// Do other initialization chores
 	init();
-    /// Create an RTH thread and give it control
-	//controlThread = RTH_Runtime_create(RTH_Routine_lookup(GSpaceDriver,driveGSpace),this);
-	//resumeControl();
+	/// Call the SDAG method in charge of control flow
 	driveGSpace();
 }
 
@@ -128,149 +109,13 @@ void GSpaceDriver::startControl()
 
 
 /// GSpace notifies me that its ready to exit by calling this method
+// TODO: This might not be needed anymore...GSpace can just set the flag.
+// TODO: What if this msg isn't seen until the next iteration? Setting the flag in GSpace might be better?
 void GSpaceDriver::readyToExit()
 {
 	/// Set a flag that indicates this chare is ready to exit
 	myGSpaceObj->cleanExitCalled = 1;
-	/// Check if this chare is not waiting for any steps in this iteration before hitting an exit reduction barrier
-	if(isAtomIntegrationDone && isEnergyReductionDone)
-	{
-		#ifdef _CP_SUBSTEP_TIMING_
-			#if USE_HPM
-				(TimeKeeperProxy.ckLocalBranch())->printHPM();
-			#endif
-		#endif
-		int i=0;
-		contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
-	}
 }
-
-
-
-
-/// GSpace notifies me that the energy reduction is done by calling this method
-void GSpaceDriver::finishEnergy(int AtomsGrpIter) 				
-{
-
-  
-	/// Ensure the iterations are synced
-  /*	if (myGSpaceObj->iteration != AtomsGrpIter)
-	  {
-	    CkPrintf("{%d}[%d,%d] GSpaceDriver::doneComputingEnergy: GSpace iteration %d and Atoms group iteration number %d are not in sync.\n ", myGSpaceObj->thisInstance.proxyOffset, myGSpaceObj->thisIndex.x, myGSpaceObj->thisIndex.y, myGSpaceObj->iteration, AtomsGrpIter);
-	    CkAbort("GSpaceDriver::doneComputingEnergy: GSpace iteration and Atoms group iteration number are not in sync. Aborting...");
-	  }
-  */
-	///
-	isEnergyReductionDone = true;
-	/// If GSpace has already called for an exit, check if we can exit again
-	/// If we were waiting for the energy (and the atoms have been moved) resume the driver logic
-	if (waitingForEnergy) 
-	{
-	  waitingForEnergy = false; 
-	  if (!waitingForAtoms) {
-	    if (myGSpaceObj->cleanExitCalled==1)
-	      readyToExit();
-	  }
-	} 
-}
-
-
-
-
-
-/** Probe for atom completion : Could have atom group invoke this function directly on all chares for which 
- * it is responsible. There is an atom group on each proc. Some number of driver chares reside on each proc. 
- * This information is known by main and could be put into atom constructor. The atom group
- * would then know which chares upon which to invoke this method. Careful, careful with migration with this 
- * alternative scheme. Enable config.localAtomBarrier to trigger that behavior
- */
-void GSpaceDriver::finishAtoms(int AtomsGrpIter)
-{
-  //  CkPrintf("{%d}[%d] GSpaceDriver::doneMovingAtoms()\n ", thisInstance.proxyOffset, CkMyPe());     
-  /// Ensure the iterations are synced @todo: Should this be an if condition? It was when it lived in GSpace
-  CkAssert(myGSpaceObj->iteration == AtomsGrpIter);
-
-  ///
-  isAtomIntegrationDone = true;
-  myGSpaceObj->screenPrintWallTimes();
-  /// If GSpace has already called for an exit, check if we can exit again
-  if (myGSpaceObj->cleanExitCalled==1)
-    readyToExit();
-  /// If we were waiting for the atom integration (and the energy computation was done) resume the driver logic
-  if (waitingForAtoms) 
-    {
-      waitingForAtoms = false; 
-    } 
-}
-
-
-
-/// GSpace notifies me when the non-local results have arrived
-//void GSpaceDriver::doneNLForces() 					
-//{
-//    areNLForcesDone = true;
-//    if (myGSpaceObj->doneDoingIFFT)
-//        resumeControl();
-//}
-
-
-
-
-/// All GSpace objects have finished psi : For debugging only
-//void GSpaceDriver::allDonePsi(CkReductionMsg *msg)
-//{
-//    delete msg;
-//    resumeControl();
-//}
-
-
-
-
-/// All GSpace objects have finished writing coefs : NECESSARY
-//void GSpaceDriver::allDoneWritingPsi(CkReductionMsg *msg)
-//{
-//    delete msg;
-//    resumeControl();
-//}
-
-
-
-
-/// All GSpace objects have finished velocity rotation : For debugging only
-//void GSpaceDriver::allDonePsiV(CkReductionMsg *msg)
-//{
-//    #ifdef DEBUG_CP_GSPACE_PSIV
-//        CkPrintf("GSpaceDriver[%d,%d] allDonePsiV: PsiV update step complete in iteration %d. Barrier reduction reached.\n",thisIndex.x,thisIndex.y,myGSpaceObj->iteration);
-//    #endif
-//    delete msg;
-//    //resumeControl();
-//}
-
-
-
-
-/// All GSpace objects finished Inverse FFT : For debugging only
-//void GSpaceDriver::allDoneIFFT(CkReductionMsg *msg)
-//{
-//	delete msg;
-//    myGSpaceObj->doneDoingIFFT = true;
-//	resumeControl();
-//}
-
-
-
-
-// TODO: Remove these methods and anyone that calls them. They were buggy.
-///// All ParticlePlane chares finished the nonlocal computations : For debugging only
-//void GSpaceDriver::allDoneNLForces(CkReductionMsg *msg)
-//{
-//    delete msg;
-//    areNLForcesDone = true;
-//    if (myGSpaceObj->doneDoingIFFT)
-//        resumeControl();
-//}
-
-
 
 /// Ortho notifies us that GSpace needs a tolerance update (velocity rotation)
 void GSpaceDriver::needUpdatedPsiV()
@@ -297,7 +142,6 @@ void GSpaceDriver::startNonLocalEes(int iteration_loc)
     /// Set to false, just before I spawn the nonlocal work
 
     if(natm_nl!=0){
-      areNLForcesDone = false;
       #define _NLEES_PRIO_START_
       #ifdef _NLEES_PRIO_START_OFF_
          myParticlePlaneObj->startNLEes(iteration);
@@ -326,7 +170,6 @@ void GSpaceDriver::releaseSFComputeZ()
 	#endif
     
     /// Set to false, just before I spawn the nonlocal work
-    areNLForcesDone = false;
     /// Tell the structure factor chares to do their work	
 	if(thisIndex.x==0)
 	{
@@ -342,4 +185,3 @@ void GSpaceDriver::releaseSFComputeZ()
 }
 /*@}*/
 #include "gSpaceDriver.def.h"
-

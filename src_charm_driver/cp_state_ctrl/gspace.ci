@@ -5,86 +5,57 @@ module gSpaceDriver
 	{
 		// Constructor(s)
 		entry GSpaceDriver(const UberCollection _thisInstance);
+
+		// Start and stop the flow control using SDAG
+		entry void startControl();
+		entry [local] void readyToExit();
 		
-		// Temp SDAG method for RTH to SDAG translation
+		// Requests to trigger things
+		entry void needUpdatedPsiV();
+		entry void startNonLocalEes(int iteration_loc);
+		
+		// Incoming notifications of task completion
+		entry void doneComputingEnergy(const int AtomGrpIter);
+		entry void doneMovingAtoms(const int AtomGrpIter);
+		entry void doneBlockA();
+		entry void doneBlockB();
+		entry void doneBlockC();
+		entry void doneNLForces();
+
+		// Incoming reduction barrier notifications
+		entry [nokeep] void allDoneNLForces(CkReductionMsg *msg) { serial { doneNLForces(); } };
+		
+		// SDAG method for flow control of the Driver and its associated GSpace object
 		entry void driveGSpace() {
-			// (I) Starts here
 			while(myGSpaceObj->cleanExitCalled!=1) {
-				serial {
-					tempFlag = (CPcharmParaInfo::get()->cp_min_opt==1 && CPcharmParaInfo::get()->gen_wave==0) || isFirstStep == false;
-				}
-				if (tempFlag) {
-					serial {
-						isEnergyReductionDone = false;
-						isAtomIntegrationDone = false;
-					}
-// (A) ////////
+				if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
 #ifndef _CP_DEBUG_PSI_OFF_
 					serial {
 						myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
 					}
-// (A.1) //////
-// releaseSFComputeZ() will send messages to compute non-local forces, which will
-// eventually result in a doneNLForces() message being sent to this chare.
+
 #ifndef _CP_DEBUG_SFNL_OFF_
 					if (ees_nonlocal==0 && natm_nl!=0) {
 						serial {
 							releaseSFComputeZ();
 						}
-#ifdef BARRIER_CP_PARTICLE_PLANE_NONLOCAL
-						when allDoneNLForces(CkReductionMsg *msg) serial { areNLForcesDone = true; }
-#endif
 					}
-
 #endif
-// (A.2) //////
-// Do FFT and IFFT computations. The FFT communications will require non-local forces to
-// be computed if ees_nonlocal==1. If we don't do FFT/IFFT computations, we still need
-// to do the nonlocal forces if ees_nonlocal==1.
+
 #ifndef _CP_DEBUG_VKS_OFF_
 					serial {
-						myGSpaceObj->thisProxy(thisIndex.x, thisIndex.y).doFFT();
-						myGSpaceObj->sendFFTData();
-					}
-					when receivedIFFT() serial {
-						myGSpaceObj->thisProxy(thisIndex.x, thisIndex.y).doIFFT();
-					}
-
-#ifdef BARRIER_CP_GSPACE_IFFT
-					when allDoneIFFT(CkReductionMsg *msg) serial { myGSpaceObj->doneDoingIFFT = true; }
-#endif
-
+						myGSpaceObj->blockA();
+					} when doneBlockA() {}
 #else
 #ifndef _CP_DEBUG_SFNL_OFF_
 					if (ees_nonlocal==1 && natm_nl!=0) serial {
 						startNonLocalEes(myGSpaceObj->iteration);
 					}
 #endif
-					serial {
-						myGSpaceObj->doneDoingIFFT = true;
-					}
-#endif	// _CP_DEBUG_VKS_OFF_
+#endif
 
-// (A.3) //////
-// Here we catch doneNLForces messages. One will be produced by (A.1) if ees_nonlocal==0.
-// Otherwise, one will be produced in (A.2). We only wait for the message if
-// areNLForcesDone hasn't already been set previously (ie: by the debug barrier).
 #ifndef _CP_DEBUG_SFNL_OFF_
-					if (!areNLForcesDone) {
-#ifdef BARRIER_CP_PARTICLE_PLANE_NONLOCAL
-						when allDoneNLForces(CkReductionMsg *msg) serial { areNLForcesDone = true; }
-#else
-						when doneNLForces() serial { areNLForcesDone = true; }
-#endif
-					}
-#endif
-
-// (A.4) //////
-// Here we ensure that the IFFT has completed before moving on.
-#ifndef _CP_DEBUG_VKS_OFF_
-					if (!myGSpaceObj->doneDoingIFFT) {
-						when doneIFFT() serial { myGSpaceObj->doneDoingIFFT = true; }
-					}
+					when doneNLForces() serial {}
 #endif
 
 					serial {
@@ -96,156 +67,46 @@ module gSpaceDriver
 						myGSpaceObj->launchAtoms();
 					}				
 
-// (B) ////////
 #ifndef _CP_DEBUG_PSI_OFF_
 					serial {
-						if (natm_nl!=0) {
-							// Reset this flag for the next step. Other flags are reset in myGSpaceObj::sendLambda()
-							areNLForcesDone = false;
-						}
-						//myGSpaceObj->sendLambda();
-						CkPrintf("%d\n", __LINE__);
-						myGSpaceObj->blockB();
-					} when doneBlockB() serial {}
-/*#ifndef _CP_DEBUG_ORTHO_OFF_
-					when doneLambda() {}
-#endif
-					serial {
-						myGSpaceObj->computeCgOverlap();
+						bool doOutput = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt!=0 && myGSpaceObj->iteration > 1;
+						doOutput = doOutput && ((myGSpaceObj->iteration-1)%CPcharmParaInfo::get()->ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->outputFlag==1);
+						myGSpaceObj->blockB(doOutput);
 					}
-					when doneComputingCgOverlap() serial {
-						tempFlag = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt!=0 && myGSpaceObj->iteration > 1;
-					}
-					if (tempFlag) {
-						serial {
-							tempFlag = (myGSpaceObj->iteration-1)%CPcharmParaInfo::get()->ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->outputFlag==1;
-						}
-						if (tempFlag) {
-							serial {
-								myGSpaceObj->writeStateDumpFile();
-							}
-							when allDoneWritingPsi(CkReductionMsg *msg) {}
-						}
-					}
-					serial {
-						myGSpaceObj->integrateModForce();
-						myGSpaceObj->sendRedPsi();
-					}
-					if (myGSpaceObj->iRecvRedPsi==0) {
-						// To avoid a race, iRecvRedPsi needs to be set here, rather than in myGSpaceObj::acceptRedPsi()
-						when receivedRedPsi() serial { myGSpaceObj->iRecvRedPsi = 1; }
-					}
-					serial {
-						myGSpaceObj->doneRedPsiIntegrate();
-					}*/
+					when doneBlockB() {}
 #endif	//_CP_DEBUG_PSI_OFF_
 				}
-				// (II) Starts here
 #ifndef _CP_DEBUG_PSI_OFF_
 				serial {
+					bool doOutput = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt==1 && myGSpaceObj->iteration > 0;
+					doOutput = doOutput && ((myGSpaceObj->iteration)%CPcharmParaInfo::get()->ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1);
 					bool updateNeeded = CPcharmParaInfo::get()->cp_min_opt && myGSpaceObj->iteration > 1 && myGSpaceObj->iteration <= config.maxIter && isPsiVupdateNeeded;
-					myGSpaceObj->blockC(updateNeeded);
-				} when doneBlockC() serial { isPsiVupdateNeeded = false; }
-				/*serial {
-					myGSpaceObj->sendPsi();
+					myGSpaceObj->blockC(doOutput, updateNeeded);
 				}
-#ifndef _CP_DEBUG_ORTHO_OFF_
-#ifdef BARRIER_CP_GSPACE_PSI
-				when allDonePsi(CkReductionMsg *msg) {}
-#else
-				when donePsi() {}
-#endif
-#endif
-				serial {
-					tempFlag = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt==1 && myGSpaceObj->iteration > 0;
-				}
-				if (tempFlag) {
-					serial {
-						tempFlag = myGSpaceObj->iteration % CPcharmParaInfo::get()->ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1;
-					}
-					if (tempFlag) {
-						serial {
-							myGSpaceObj->writeStateDumpFile();
-						}
-						when allDoneWritingPsi(CkReductionMsg *msg) {}
-					}
-				}
-				serial {
-					tempFlag = CPcharmParaInfo::get()->cp_min_opt==0 && myGSpaceObj->iteration > 1 && myGSpaceObj->iteration <= config.maxIter;
-				}
-				if (tempFlag) {
-					if (isPsiVupdateNeeded) {
-						serial {
-							myGSpaceObj->acceptedVPsi = false;
-							myGSpaceObj->sendRedPsiV();
-						}
-						if (myGSpaceObj->iRecvRedPsiV==0) {
-							// To avoid a race, iRecvRedPsiV needs to be set here, rather than in myGSpaceObj::acceptRedPsiV()
-							when receivedRedPsiV() serial { myGSpaceObj->iRecvRedPsiV = 1; }
-						}
-						serial {
-							myGSpaceObj->doneRedPsiVIntegrate();
-							myGSpaceObj->sendPsiV();
-						}
-#ifdef BARRIER_CP_GSPACE_PSIV
-						when allDonePsiV(CkReductionMsg *msg) serial { isPsiVupdateNeeded = false; }
-#else
-						when donePsiV() serial { isPsiVupdateNeeded = false; }
-#endif
-					}
-				}*/
+				when doneBlockC() serial { isPsiVupdateNeeded = false; }
 #endif
 				overlap {
 #ifndef _CP_DEBUG_PSI_OFF
-					when doneComputingEnergy(const int AtomGrpIter) serial { finishEnergy(AtomGrpIter); }
+					when doneComputingEnergy(const int AtomGrpIter) {}
 #endif
-					when doneMovingAtoms(const int AtomsGrpIter) serial { finishAtoms(AtomsGrpIter); }
+					when doneMovingAtoms(const int AtomsGrpIter) serial { myGSpaceObj->screenPrintWallTimes(); }
 				}
 
 				serial {
 					isFirstStep = false;
 				}
 			}
+			// Let the instance controller know we are finished
+			serial {
+				#ifdef _CP_SUBSTEP_TIMING_
+					#if USE_HPM
+						(TimeKeeperProxy.ckLocalBranch())->printHPM();
+					#endif
+				#endif
+				int i=0;
+				contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+			}
 		};
-
-		// Create, invoke, resume, and kill RTH threads
-		entry void startControl();
-		//entry [local] void resumeControl();
-		entry [local] void readyToExit();
-		
-		// Requests to trigger things
-		entry void needUpdatedPsiV();
-		entry void startNonLocalEes(int iteration_loc);
-		
-		// Incoming notifications of task completion
-		entry void receivedIFFT();
-		//entry void receivedRedPsi();
-		//entry void receivedRedPsiV();
-		entry void doneComputingEnergy(const int AtomGrpIter);
-		entry void doneMovingAtoms(const int AtomGrpIter);
-		//entry void doneComputingCgOverlap();
-		//entry void doneLambda();
-		//entry void donePsi();
-		//entry void donePsiV();
-		entry void doneNLForces();
-		entry void doneIFFT();
-		entry void doneBlockB();
-		entry void doneBlockC();
-		
-		// Incoming reduction barrier notifications
-#ifdef BARRIER_CP_GSPACE_PSI
-		entry [nokeep] void allDonePsi(CkReductionMsg *msg);
-#endif
-#ifdef BARRIER_CP_GSPACE_PSIV
-		entry [nokeep] void allDonePsiV(CkReductionMsg *msg);
-#endif
-		entry [nokeep] void allDoneWritingPsi(CkReductionMsg *msg) {};
-#ifdef BARRIER_CP_GSPACE_IFFT
-		entry [nokeep] void allDoneIFFT(CkReductionMsg *msg);
-#endif
-#ifdef BARRIER_CP_PARTICLEPLANE_NONLOCAL
-		entry [nokeep] void allDoneNLForces(CkReductionMsg *msg);
-#endif
 	};
 };
 
@@ -289,7 +150,6 @@ module gStatePlane
     class pcSetupMsg;
 	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
 	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
-						// TODO: Do we need to catch another doneNLForces message()?
 	message RSFFTMsg     { complex data[]; };
 	message GSIFFTMsg    { complex data[]; };
 	message GSRedPsiMsg  { complex data[]; };
@@ -311,39 +171,66 @@ module gStatePlane
 		entry CP_State_GSpacePlane(int sizeX, int numG, int numR, int s_grain, int timekeepf, int timekeepb, UberCollection);
         entry void acceptPairCalcAIDs(pcSetupMsg *msg);
 		entry void initGSpace(int m, complex pts[m], int mv, complex vpts[mv], int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL, int istart_cp);
-		entry void acceptIFFT(GSIFFTMsg *);
-		entry [local] void doIFFT();
-		entry [local] void doFFT();
+		entry void acceptIFFT(GSIFFTMsg *msg);
 		entry void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
 		entry void collectFileOutput(GStateOutMsg *msg);
-		entry void acceptNewPsi(CkReductionMsg *msg);	
-		entry void acceptNewPsi(partialResultMsg *msg);	
-		entry void acceptRedPsi(GSRedPsiMsg *msg);	
-		entry [local] void doNewPsi();
-		entry [local] void doNewPsiV();
-		// TODO: Refactor out done methods
-		// TODO: Add in barriers
-		entry [local] void doneCgOverlap();
+
+#ifndef CP_DEBUG_ORTHO_OFF_
 		entry void acceptLambda(CkReductionMsg *msg);
 		entry void acceptLambda(partialResultMsg *msg);
-
+		entry void acceptNewPsi(CkReductionMsg *msg);	
+		entry void acceptNewPsi(partialResultMsg *msg);	
+#endif
+		entry void acceptRedPsi(GSRedPsiMsg *msg);	
 		entry void acceptNewPsiV(CkReductionMsg *msg);
 		entry void acceptNewPsiV(partialResultMsg *msg);
 		entry void acceptRedPsiV(GSRedPsiMsg *msg);
 
 		entry void makePCproxies();
-		entry [local] void startNewIter ();
+		entry [local] void startNewIter();
 
 		entry void computeEnergies(int p, double d);
-		entry void psiCgOvlap(CkReductionMsg *);
+		entry void acceptCgOverlap(CkReductionMsg *msg);
 		entry void acceptNewTemperature(double temp);
 		entry void readFile();
 		entry [nokeep] void initBeadCookie(ICCookieMsg *msg);
 		entry [nokeep] void minimizeSync(ICCookieMsg *msg);
 		entry void setExitFlag();
 
+		// Barriers
+		entry [nokeep] void allDoneWritingPsi(CkReductionMsg *msg);
+#ifdef BARRIER_CP_GSPACE_IFFT
+		entry [nokeep] void allDoneIFFT(CkReductionMsg *msg);
+#endif
+#ifdef BARRIER_CP_GSPACE_PSI
+		entry [nokeep] void allDonePsi(CkReductionMsg *msg);
+#endif
+#ifdef BARRIER_CP_GSPACE_PSIV
+		entry [nokeep] void allDonePsiV(CkReductionMsg *msg);
+#endif
+
 // SDAG ////////
-		entry void blockB() {
+		entry void blockA() {
+			serial {
+				doFFT();
+				sendFFTData();	
+			}
+			while (countIFFT != gs.planeSize[1]) {
+				when acceptIFFT(GSIFFTMsg *msg) serial { unpackIFFT(msg); }
+			}
+			serial { 
+				countIFFT = 0;
+				doIFFT();
+			}
+#ifdef BARRIER_CP_GSPACE_IFFT
+			when allDoneIFFT(CkReductionMsg* msg) {}
+#endif
+			serial {
+				UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneBlockA();
+			}
+		};
+
+		entry void blockB(bool doOutput) {
 			serial { sendLambda(); }
 #ifndef CP_DEBUG_ORTHO_OFF_
 			while (countLambda != AllLambdaExpected) {
@@ -355,8 +242,15 @@ module gStatePlane
 			serial { doLambda(); }
 #endif
 			serial { computeCgOverlap(); }
-			when doneCgOverlap() serial {
-				//writeStateDumpFile();
+			when acceptCgOverlap(CkReductionMsg *msg) serial {
+				psiCgOvlap(msg);
+			}
+			if (doOutput) {
+				serial {
+					writeStateDumpFile();
+				} when allDoneWritingPsi(CkReductionMsg *msg) {}
+			}
+			serial {
 				integrateModForce();
 				sendRedPsi();
 			}
@@ -369,7 +263,7 @@ module gStatePlane
 			}
 		};
 
-		entry void blockC(bool isPsiVupdateNeeded) {
+		entry void blockC(bool doOutput, bool isPsiVupdateNeeded) {
 			serial { sendPsi(); }
 #ifndef CP_DEBUG_ORTHO_OFF_
 			while (countPsi != AllPsiExpected) {
@@ -379,9 +273,14 @@ module gStatePlane
 				}
 			}
 			serial { doNewPsi(); }
+#ifdef BARRIER_CP_GSPACE_PSI
+			when allDonePsi(CkReductionMsg *msg) {}
 #endif
-			serial {
-				//writeStateDumpFile();
+#endif
+			if (doOutput) {
+				serial {
+					writeStateDumpFile();
+				} when allDoneWritingPsi(CkReductionMsg *msg) {}
 			}
 			if (isPsiVupdateNeeded) {
 				serial {
@@ -402,6 +301,9 @@ module gStatePlane
 					}
 				}
 				serial { doNewPsiV(); }
+#ifdef BARRIER_CP_GSPACE_PSIV
+				when allDonePsiV(CkReductionMsg *msg) {}
+#endif
 			}
 			serial {
 				UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneBlockC();
