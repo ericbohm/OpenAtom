@@ -1,7 +1,7 @@
 #===============================================================================
 #------------------------- Path to Charm++ and FFTW ----------------------------
   # Location of the charm installation
-  CHARMBASE	= $(HOME)/charm
+  CHARMBASE	= $(CHARM_DIR)
   # Location of the FFTW library installation
   FFT_HOME	= /dcsdata/home/bohm/fftw64
 
