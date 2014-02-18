@@ -17,9 +17,9 @@ module gSpaceDriver
 		// Incoming notifications of task completion
 		entry void doneComputingEnergy(const int AtomGrpIter);
 		entry void doneMovingAtoms(const int AtomGrpIter);
-		entry void doneBlockA();
-		entry void doneBlockB();
-		entry void doneBlockC();
+		entry void donePsiFandVKS();
+		entry void doneLambdaAndCgAndRedPsi();
+		entry void doneNewPsiAndPsiV();
 		entry void doneNLForces();
 
 		// Incoming reduction barrier notifications
@@ -44,8 +44,8 @@ module gSpaceDriver
 
 #ifndef _CP_DEBUG_VKS_OFF_
 					serial {
-						myGSpaceObj->blockA();
-					} when doneBlockA() {}
+						myGSpaceObj->doPsiFandVKS();
+					} when donePsiFandVKS() {}
 #else
 #ifndef _CP_DEBUG_SFNL_OFF_
 					if (ees_nonlocal==1 && natm_nl!=0) serial {
@@ -71,9 +71,8 @@ module gSpaceDriver
 					serial {
 						bool doOutput = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt!=0 && myGSpaceObj->iteration > 1;
 						doOutput = doOutput && ((myGSpaceObj->iteration-1)%CPcharmParaInfo::get()->ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->outputFlag==1);
-						myGSpaceObj->blockB(doOutput);
-					}
-					when doneBlockB() {}
+						myGSpaceObj->doLambdaAndCgAndRedPsi(doOutput);
+					} when doneLambdaAndCgAndRedPsi() {}
 #endif	//_CP_DEBUG_PSI_OFF_
 				}
 #ifndef _CP_DEBUG_PSI_OFF_
@@ -81,9 +80,8 @@ module gSpaceDriver
 					bool doOutput = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt==1 && myGSpaceObj->iteration > 0;
 					doOutput = doOutput && ((myGSpaceObj->iteration)%CPcharmParaInfo::get()->ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1);
 					bool updateNeeded = CPcharmParaInfo::get()->cp_min_opt && myGSpaceObj->iteration > 1 && myGSpaceObj->iteration <= config.maxIter && isPsiVupdateNeeded;
-					myGSpaceObj->blockC(doOutput, updateNeeded);
-				}
-				when doneBlockC() serial { isPsiVupdateNeeded = false; }
+					myGSpaceObj->doNewPsiAndPsiV(doOutput, updateNeeded);
+				} when doneNewPsiAndPsiV() serial { isPsiVupdateNeeded = false; }
 #endif
 				overlap {
 #ifndef _CP_DEBUG_PSI_OFF
@@ -210,7 +208,7 @@ module gStatePlane
 #endif
 
 // SDAG ////////
-		entry void blockA() {
+		entry void doPsiFandVKS() {
 			serial {
 				doFFT();
 				sendFFTData();	
@@ -226,11 +224,11 @@ module gStatePlane
 			when allDoneIFFT(CkReductionMsg* msg) {}
 #endif
 			serial {
-				UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneBlockA();
+				UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsiFandVKS();
 			}
 		};
 
-		entry void blockB(bool doOutput) {
+		entry void doLambdaAndCgAndRedPsi(bool doOutput) {
 			serial { sendLambda(); }
 #ifndef CP_DEBUG_ORTHO_OFF_
 			while (countLambda != AllLambdaExpected) {
@@ -259,11 +257,11 @@ module gStatePlane
 			}
 			serial {
 				doneRedPsiIntegrate();
-				UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneBlockB();
+				UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneLambdaAndCgAndRedPsi();
 			}
 		};
 
-		entry void blockC(bool doOutput, bool isPsiVupdateNeeded) {
+		entry void doNewPsiAndPsiV(bool doOutput, bool isPsiVupdateNeeded) {
 			serial { sendPsi(); }
 #ifndef CP_DEBUG_ORTHO_OFF_
 			while (countPsi != AllPsiExpected) {
@@ -306,7 +304,7 @@ module gStatePlane
 #endif
 			}
 			serial {
-				UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneBlockC();
+				UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneNewPsiAndPsiV();
 			}
 		};
 	};
