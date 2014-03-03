@@ -81,7 +81,7 @@ void testDGEMM() {
     std::cout << "Lovely! We've finished!\n";
 }
 
-/*void cudaDGEMM(char* opA, char* opB, int *m, int *n, int *k,
+void cudaDGEMM(char* opA, char* opB, int *m, int *n, int *k,
         double* alpha, double* A, int* lda, double* B, int* ldb,
         double* beta, double* C, int* ldc) {
     double *d_A = 0;
@@ -94,28 +94,14 @@ void testDGEMM() {
     cublasOperation_t d_opA;
     if (*opA == 'N' || *opA == 'n') {
         d_opA = CUBLAS_OP_N;
-        if (*lda != *m) {
-            ckout << "SHIT!!!!!\n";
-        }
-        //ckout << "SHIT!!!!!\n";
     } else {
         d_opA = CUBLAS_OP_T;
-        if (*lda != *k) {
-            ckout << "SHIT!!!!!\n";
-        }
-        //ckout << "SHIT!!!!!\n";
     }
     cublasOperation_t d_opB;
     if (*opB == 'N' || *opB == 'n') {
         d_opB = CUBLAS_OP_N;
-        if (*ldb != *k) {
-            ckout << "SHIT!!!!!\n";
-        }
     } else {
         d_opB = CUBLAS_OP_T;
-        if (*ldb != *n) {
-            ckout << "SHIT!!!!!\n";
-        }
     }
 
     status = cublasCreate(&handle);
@@ -155,7 +141,7 @@ void testDGEMM() {
 
     status = cublasDgemm(handle, d_opA, d_opB, *m, *n, *k, alpha, d_A, *lda, d_B, *ldb, beta, d_C, *ldc);
     if (status != CUBLAS_STATUS_SUCCESS) {
-        //ckout << "Failed to do DGEMM\n";
+        ckout << "Failed to do DGEMM\n";
         return;
     }
 
@@ -183,4 +169,4 @@ void testDGEMM() {
         //ckout << "Failed to destroy handle\n";
         return;
     }
-}*/
+}
