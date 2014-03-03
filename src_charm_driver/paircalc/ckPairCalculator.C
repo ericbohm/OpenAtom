@@ -7,6 +7,8 @@ ComlibInstanceHandle mcastInstanceACP;
 
 CkReduction::reducerType sumMatrixDoubleType;
 
+// TODO: This is just for temporary testing
+#include "cudaDGEMM.h"
 
 void registersumMatrixDouble(void)
 {
@@ -66,6 +68,8 @@ void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex
 void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double *A, int *lda, double *B, int *ldb, double *beta, double *C, int *ldc)
 {
     DGEMM(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+	testDGEMM();
+    //cudaDGEMM(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 }
 
 
