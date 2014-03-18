@@ -27,6 +27,10 @@ extern int sizeX;
 CmiNodeLock FFTcache::fftw_plan_lock;
 //==============================================================================
 
+void initFFTLock(void) {
+    FFTcache::fftw_plan_lock = CmiCreateLock();
+}
+
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
@@ -50,7 +54,7 @@ FFTcache::FFTcache(
 //==============================================================================
 // Local Variables
   if ( CmiMyRank() == 0 ) {
-    fftw_plan_lock = CmiCreateLock();
+    //fftw_plan_lock = CmiCreateLock();
   }
 
     int size[3];

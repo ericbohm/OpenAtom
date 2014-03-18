@@ -2,7 +2,7 @@
 CHARMBASE     = $(HOME)/charm/pamilrts-bluegeneq-async-smp-xlc-prodz
 #CHARMBASE     = $(HOME)/charm/mpi-bluegeneq-prod
 # Location of the FFTW library installation
-FFT_HOME      = $(HOME)/fftw2
+FFT_HOME      = /soft/libraries/alcf/current/xl/FFTW2/
 
 
 #---------------------------------------------------------------
@@ -40,11 +40,10 @@ FFT_HOME      = $(HOME)/fftw2
 
 #---------------------------------------------------------------
 #--------- Flags for linking ---------#
-              LDFLAGS  += -L$(FFT_HOME)/lib -L/soft/libraries/zlib-1.2.6/lib \
-                        -L/soft/compilers/ibmcmp-nov2012/xlf/bg/14.1/bglib64 \
+              LDFLAGS  += -L$(FFT_HOME)/lib -L/soft/libraries/alcf/current/xl/ZLIB/lib \
+                        -L/soft/compilers/ibmcmp-feb2013/xlf/bg/14.1/bglib64 \
                          -L/bgsys/drivers/ppcfloor/gnu-linux/powerpc64-bgq-linux/lib \
-                         -L/soft/libraries/essl/5.1.1-0.beta/essl/5.1/lib64 \
-			 -L/soft/libraries/3rdparty/zlib-1.2.6/lib
+                         -L/soft/libraries/essl/5.1.1-0.beta/essl/5.1/lib64
               LDLIBS   += -module CkMulticast -module comlib -lconv-util -lz -lesslbg -lesslsmpbg -lm -lxlfmath -lxlf90_r -lxl -lpthread -lrt -ldl
 
 # @note: Empty target specific appends (+=) hide previous global values for

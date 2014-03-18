@@ -168,6 +168,8 @@ UberCollection thisInstance;
 /**@{*/
 int numPes;
 bool fakeTorus;
+extern void initFFTLock(void);
+
 /**@}*/
 
 /**@defgroup piny_vars piny_vars  
