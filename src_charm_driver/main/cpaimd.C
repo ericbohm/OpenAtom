@@ -1692,20 +1692,20 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 			     sim->nplane_rho_x,sim->sizeY,ngridbEext,
 			     numRXRho,numRYRho,numRXEext,numRYEext,numSubGx);
       UfftCacheProxy.push_back(CProxy_FFTcache::ckNew(
-					     sim->sizeX,sim->sizeY,sim->sizeZ,
-					     ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
-					     ngridaNl,  ngridbNl,  ngridcNl,  ees_nonlocal_on, 
-					     sim->nlines_max, sim->nlines_max_rho,
-					     config.nchareG,nchareR,
-					     config.nchareG,nchareRPP, 
-					     nchareRhoG,    nchareR,    nchareRRhoTot,
-					     nchareGHart,   nchareRHart,nchareRHartTot,
-					     numGState,     numRXState, numRYState,numRYStateLower,
-					     numGNL,        numRXNL,    numRYNL, numRYNLLower,
-					     numGRho,       numRXRho,   numRYRho,
-					     numGEext,      numRXEext,  numRYEext,
-					     config.fftopt,config.fftprogresssplitReal,config.fftprogresssplit,
-					     config.rhoRsubplanes, thisInstance));
+						      sim->sizeX,sim->sizeY,sim->sizeZ,
+						      ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
+						      ngridaNl,  ngridbNl,  ngridcNl,  ees_nonlocal_on, 
+						      sim->nlines_max, sim->nlines_max_rho,
+						      config.nchareG,nchareR,
+						      config.nchareG,nchareRPP, 
+						      nchareRhoG,    nchareR,    nchareRRhoTot,
+						      nchareGHart,   nchareRHart,nchareRHartTot,
+						      numGState,     numRXState, numRYState,numRYStateLower,
+						      numGNL,        numRXNL,    numRYNL, numRYNLLower,
+						      numGRho,       numRXRho,   numRYRho,
+						      numGEext,      numRXEext,  numRYEext,
+						      config.fftopt,config.fftprogresssplitReal,config.fftprogresssplit,
+						      config.rhoRsubplanes, thisInstance));
       CkPrintf("created fftcache proxy\n");
       delete [] numRXState;
       delete [] numRYState;
@@ -1787,16 +1787,21 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   bwdstrm << backwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
   int gbackward=keeperRegister(bwdstrm.str());
   gSpaceOpts.setMap(gsMap);
+  gSpaceOpts.setAnytimeMigration(false);
+  gSpaceOpts.setStaticInsertion(true);
   UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(sizeX, 1, 1, sGrainSize, gforward, gbackward, thisInstance, gSpaceOpts));
   UgSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
   // CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
   /**@}*/
  //--------------------------------------------------------------------------------
  // Bind the GSpaceDriver array to the GSpacePlane array so that they migrate together
- CkArrayOptions gspDriverOpts(nstates,nchareG);
- gspDriverOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
- UgSpaceDriverProxy.push_back( CProxy_GSpaceDriver::ckNew(thisInstance,gspDriverOpts) );
- UgSpaceDriverProxy[thisInstance.proxyOffset].doneInserting();
+  CkArrayOptions gspDriverOpts(nstates,nchareG);
+  gspDriverOpts.setAnytimeMigration(false);
+  gspDriverOpts.setStaticInsertion(true);
+
+  gspDriverOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
+  UgSpaceDriverProxy.push_back( CProxy_GSpaceDriver::ckNew(thisInstance,gspDriverOpts) );
+  UgSpaceDriverProxy[thisInstance.proxyOffset].doneInserting();
   /**@}*/
  //--------------------------------------------------------------------------------
  // We bind the particlePlane array to the gSpacePlane array migrate together
@@ -1804,6 +1809,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   /**@{*/
   //  CkArrayOptions particleOpts(nstates,nchareG);
   CkArrayOptions particleOpts(nstates,nchareG);
+  particleOpts.setAnytimeMigration(false);
+  particleOpts.setStaticInsertion(true);
   particleOpts.setMap(gsMap); // the maps for both the arrays are the same
   particleOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
   UparticlePlaneProxy.push_back(CProxy_CP_State_ParticlePlane::ckNew(
@@ -1890,6 +1897,9 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts(nstates,nchareR);
   realSpaceOpts.setMap(rsMap);
+  realSpaceOpts.setAnytimeMigration(false);
+  realSpaceOpts.setStaticInsertion(true);
+
   /**@}*/
   int rforward=keeperRegister(std::string("RealSpaceForward"));
   int rbackward=keeperRegister(std::string("RealSpaceBackward"));
@@ -2205,6 +2215,8 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
   Timer=newtime;
   CkArrayOptions pRealSpaceOpts(nstates,ngridcNl);
   pRealSpaceOpts.setMap(rspMap);
+  pRealSpaceOpts.setAnytimeMigration(false);
+  pRealSpaceOpts.setStaticInsertion(true);
   UrealParticlePlaneProxy.push_back(CProxy_CP_State_RealParticlePlane::ckNew(
                                 ngridaNl,ngridbNl,ngridcNl,
                                 numIterNL,zmatSizeMax,Rstates_per_pe,
@@ -2364,8 +2376,8 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
   //CkArrayOptions rhorsOpts;
   rhorsOpts.setMap(rhorsMap);
-
-
+  rhorsOpts.setAnytimeMigration(false);
+  rhorsOpts.setStaticInsertion(true);
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
@@ -2429,7 +2441,8 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   CkArrayOptions rhogsOpts(nchareRhoG,1);
   //CkArrayOptions rhogsOpts;
   rhogsOpts.setMap(rhogsMap);
-
+  rhogsOpts.setAnytimeMigration(false);
+  rhogsOpts.setStaticInsertion(true);
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nchareRhoG; size[1] = 1;
@@ -2461,7 +2474,8 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     RhoAvail->reset();
   CkArrayOptions rhorhartOpts(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
   //CkArrayOptions rhorhartOpts;
-    
+  rhorhartOpts.setAnytimeMigration(false);
+  rhorhartOpts.setStaticInsertion(true);    
   if(ees_eext_on) {
     if(firstInstance)
       {
@@ -2566,7 +2580,8 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   CkArrayOptions rhoghartOpts(nchareRhoGHart, nchareHartAtmT);
   //  CkArrayOptions rhoghartOpts;
   rhoghartOpts.setMap(rhogHartMap);
-  CmiNetworkProgressAfter(0);
+  rhoghartOpts.setAnytimeMigration(false);
+  rhoghartOpts.setStaticInsertion(true);
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nchareRhoGHart; size[1] =  nchareHartAtmT;
@@ -2755,6 +2770,8 @@ void control_physics_to_driver(UberCollection thisInstance){
 	CProxy_AtomComputeMap aMap = CProxy_AtomComputeMap::ckNew(thisInstance);
 	CkArrayOptions atomOpts(nChareAtoms);
 	atomOpts.setMap(aMap);
+	atomOpts.setAnytimeMigration(false);
+	atomOpts.setStaticInsertion(true);
 	UatomsCacheProxy.push_back( CProxy_AtomsCache::ckNew(natm,natm_nl,
 							     atoms,thisInstance));
 	UatomsComputeProxy.push_back( CProxy_AtomsCompute::ckNew(natm,natm_nl,

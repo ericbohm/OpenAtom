@@ -115,6 +115,8 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, const startup::
     CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(orthoMapTable);
     CkArrayOptions orthoOpts;
     orthoOpts.setMap(orthoMap);
+    orthoOpts.setStaticInsertion(true);
+    orthoOpts.setAnytimeMigration(false);
     CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
 
 

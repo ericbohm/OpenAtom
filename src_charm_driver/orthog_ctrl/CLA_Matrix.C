@@ -60,7 +60,9 @@ int make_multiplier(
     optsA.bindTo(bindA);
     optsB.bindTo(bindB);
     optsC.bindTo(bindC);
-
+    optsA.setAnytimeMigration(false);
+    optsB.setAnytimeMigration(false);
+    optsC.setAnytimeMigration(false);
     CProxy_CLA_Matrix pa = CProxy_CLA_Matrix::ckNew(optsA);
     CProxy_CLA_Matrix pb = CProxy_CLA_Matrix::ckNew(optsB);
     CProxy_CLA_Matrix pc = CProxy_CLA_Matrix::ckNew(optsC);
