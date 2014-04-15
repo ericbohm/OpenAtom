@@ -23,11 +23,11 @@ class Builder
         /// Always charge a builder with creating one paircalc array
         Builder(const pcConfig &_cfg): cfg(_cfg) {}
         /// Trigger the creation of a pc array with the given configs, within the given pes/boxes etc
-        InstanceIDs build(const startup::PCMapConfig mapCfg);
+        InstanceIDs build(const startup::PCMapConfig &mapCfg);
 
     private:
         /// Create the mapping required to instantiate a PC array
-        void createMap(const startup::PCMapConfig mapCfg);
+        void createMap(const startup::PCMapConfig &mapCfg);
         /// Create a paircalc array using info in the supplied pcConfig object
         void createPairCalcs();
 

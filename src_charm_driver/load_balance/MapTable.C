@@ -681,6 +681,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 
 			  }
 			//			CkPrintf("%d %d %d %d mapped to %d\n",plane,xchunk,ychunk,newdim, destpe);
+			CkAssert(destpe<config.numPes);
 #ifdef USE_INT_MAP
 			maptable->set(plane, xchunk, ychunk, newdim,destpe);
 #else
@@ -712,6 +713,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		      if(count<scobjs_per_pe)
 			{
 			  //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+			  CkAssert(destpe<config.numPes);
 #ifdef USE_INT_MAP 
 			  maptable->set(plane, xchunk, ychunk, newdim,destpe);
 #else
@@ -735,6 +737,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			  if(rem!=0 &&scobjs_per_pe>1)
 			    if(procno==rem)
 			      scobjs_per_pe-=1;
+			  CkAssert(destpe<config.numPes);
 #ifdef USE_INT_MAP
 			  maptable->set(plane, xchunk, ychunk, newdim,destpe);
 #else

@@ -424,10 +424,16 @@ class PeListFactory
 {
     public:
         /// Default constructor
-        PeListFactory(): 
+  PeListFactory()
+    {
+      CkAbort("I hate that we end up in this function");
+    }
+
+
+       PeListFactory(int _size): 
             useDefault(true),
             boxX(0), boxY(0), boxZ(0), order(0),
-            maxX(0), maxY(0), maxZ(0), maxT(0)
+	      maxX(0), maxY(0), maxZ(0), maxT(0), size(_size)
         {}
 
         /// Use this constructor when you want a PeList created using its boxy constructor
@@ -435,14 +441,14 @@ class PeListFactory
             useDefault(false),
             boxX(bxX), boxY(bxY), boxZ(bxZ), order(ordr),
             maxX(mxX), maxY(mxY), maxZ(mxZ), maxT(mxT)
-        {}
+	    { CkAbort("how the fuck did we get here?");}
 
 
         /// Return an appropriately constructed PeList
-        PeList* operator() () const
+	    PeList* operator() () const
         {
             if (useDefault)
-                return new PeList;
+	      return new PeList(size);
             else
                 return new PeList(boxX, boxY, boxZ, order, maxX, maxY, maxZ, maxT);
         }
@@ -451,7 +457,7 @@ class PeListFactory
         // Should I return a default PeList or a boxy PeList
         bool useDefault;
         // Parameters used to create a boxy PeList. Refer PeList code for more details
-        int boxX, boxY, boxZ, order, maxX, maxY, maxZ, maxT;
+        int boxX, boxY, boxZ, order, maxX, maxY, maxZ, maxT, size;
 };
 PUPbytes(PeListFactory)
 

@@ -21,7 +21,7 @@ class PCCreationManager
 {
     public:
         PCCreationManager(const paircalc::pcConfig &_symmCfg, const paircalc::pcConfig &_asymmCfg, const ortho::orthoConfig &_orthoCfg);
-        void build(CkCallback cb, const PCMapConfig mapCfg);
+        void build(CkCallback cb, const PCMapConfig &mapCfg);
 
     private:
         /// The configs for the symmetric and asymmetric paircalc instances

@@ -319,7 +319,6 @@ CkVec < CkVec <int> > UplaneUsedByNLZ;
 PeList *availGlobG=NULL;
 PeList *availGlobR=NULL;
 PeList *excludePes=NULL;
-PeListFactory peList4PCmapping;
 int boxSize;
 TopoManager *topoMgr=NULL;
 inttriple *mapOffsets=NULL;
@@ -562,11 +561,16 @@ main::main(CkArgMsg *msg) {
                       sim->doublepack,sim->pi_beads,sim->nkpoint,sim->ntemper,sim->nspin);
 
     fakeTorus        = config.fakeTorus>0;
-
+    
     if(fakeTorus)
       {
 	numPes=config.torusDimNX * config.torusDimNY * config.torusDimNZ * config.torusDimNT;
 	CkPrintf("numpes set to %d by faketorus\n",numPes);
+      }
+    else if (CkNumPes() != config.numPes)
+      {
+	numPes=config.numPes;
+	CkPrintf("numpes set to %d by config file\n",numPes);
       }
     CkPrintf("for numInstances %d numPes %d numPesPerInstance is %d \n",config.numInstances, config.numPes, config.numPesPerInstance);
     mapOffsets=new inttriple[config.numInstances];
@@ -804,6 +808,7 @@ main::main(CkArgMsg *msg) {
     PeList *gfoo=NULL;
     PeList *rfoo=NULL;
     int x, y, z;
+    PeListFactory *peList4PCmapping;
     if(!config.loadMapFiles && config.useCuboidMap)
       {
 	if( config.numPesPerInstance % config.nchareG != 0)
@@ -856,30 +861,35 @@ main::main(CkArgMsg *msg) {
 	  {
 	    CkPrintf("Using %d, %d, %d dimensions for box %d mapping order %d\n", bx, by, bz, boxSize, order);
 	    gfoo = new PeList(bx, by, bz, order, x1, y1, z1, dimNT);	// heap it
-	    peList4PCmapping = PeListFactory(bx,by,bz,order,x1,y1,z1,dimNT);
+	    peList4PCmapping = new PeListFactory(bx,by,bz,order,x1,y1,z1,dimNT);
 	  }
 	  else
 	  {
+	    peList4PCmapping = new PeListFactory(config.numPes);
 	    CkPrintf("no box for %d\n", boxSize);
 	    config.useCuboidMap = 0;
-	    gfoo = new PeList;				// heap it
+	    gfoo = new PeList(config.numPes);				// heap it
 	  }
 	}
 	else
 	  {
+	    peList4PCmapping = new PeListFactory(config.numPes);
 	    // just split by numInstances
 	    x=numInst*config.numPesPerInstance;
 	    y=0;
 	    z=0;
-	    gfoo = new PeList;				// heap it
+	    gfoo = new PeList(config.numPes);				// heap it
 	  }
       }
     else
-      gfoo = new PeList;				// heap it
+      {
+	gfoo = new PeList(config.numPes);				// heap it
+	peList4PCmapping = new PeListFactory(config.numPes);
+      }
     if(!config.loadMapFiles && config.useCuboidMapRS)
       rfoo = new PeList(*gfoo);
     else
-      rfoo = new PeList;				// heap it
+      rfoo = new PeList(config.numPes);				// heap it
 
     computeMapOffsets();
     /* these really don't need to be different */
@@ -956,9 +966,9 @@ Per Instance startup BEGIN
 	      //============================================================================
 	      // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
 
-	      // To Ram: please sweep this ortho/PC setup stuff up
-	      // under the rug of a helper method. This is unnecessary
-	      // ugliness.  
+	      // Blame Ram for ugly crime against readability.  More
+	      // redundant config objects and builders doesn't help
+	      // global clarity at all.
 
 	      // Create an ortho config object from available info
 	      cp::ortho::orthoConfig orthoCfg;
@@ -983,13 +993,12 @@ Per Instance startup BEGIN
 	      CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
 
           // Fill out a structure with all configs needed for PC mapping
-          cp::startup::PCMapConfig pcMapCfg;
-          pcMapCfg.boxSize     = boxSize;
-          pcMapCfg.getPeList   = peList4PCmapping;
-          pcMapCfg.gSpaceMap   = &GSImaptable[thisInstance.getPO()];
-          pcMapCfg.isTorusMap  = (config.torusMap == 1);
-          pcMapCfg.isTorusFake = (config.fakeTorus == 1);
-          pcMapCfg.mapOffset   = mapOffsets[numInst];
+	      cp::startup::PCMapConfig pcMapCfg(boxSize, 
+						*peList4PCmapping, 
+						&GSImaptable[thisInstance.getPO()],
+						(config.torusMap == 1),
+						(config.fakeTorus == 1),
+						mapOffsets[numInst]);
 
 	      // Delegate the actual construction/initialization to a creation manager
 	      cp::startup::PCCreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);

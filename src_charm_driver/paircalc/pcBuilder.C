@@ -15,7 +15,7 @@ extern Config config;
 namespace cp {
     namespace paircalc {
 
-InstanceIDs Builder::build(const startup::PCMapConfig mapCfg)
+InstanceIDs Builder::build(const startup::PCMapConfig &mapCfg)
 {
     traceRegisterUserEvent("calcpairDGEMM", 210);
     traceRegisterUserEvent("calcpairContrib", 220);
@@ -47,7 +47,7 @@ namespace impl { MapType4 *dirtyGlobalMapTable4PCsym, *dirtyGlobalMapTable4PCasy
 /**
  * Create the map for placing the paircalculator chare array elements. Also perform other housekeeping chores like dumping the maps to files etc.
  */
-void Builder::createMap(const startup::PCMapConfig mapCfg)
+void Builder::createMap(const startup::PCMapConfig &mapCfg)
 {
     bool maptype = cfg.isSymmetric;
     int achunks = config.numChunksAsym;

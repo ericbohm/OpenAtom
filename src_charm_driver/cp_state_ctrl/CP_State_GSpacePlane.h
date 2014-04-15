@@ -163,8 +163,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         /// Gets called from the PairCalc data receivers to confirm the setup of an RDMA link
         void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
         void pup(PUP::er &);
-        void createSymPCmap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance);
-        void createAsymPCmap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance);
+
         void acceptPairCalcAIDs(pcSetupMsg *msg);
         void initGSpace(int, complex *,int ,complex *,int,int,int,int,int,int,int);
         void launchAtoms();

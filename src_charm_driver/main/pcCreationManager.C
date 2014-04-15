@@ -19,7 +19,7 @@ PCCreationManager::PCCreationManager(const paircalc::pcConfig &_symmCfg, const p
 
 
 
-void PCCreationManager::build(CkCallback cb, const PCMapConfig mapCfg)
+void PCCreationManager::build(CkCallback cb, const PCMapConfig &mapCfg)
 {
     /// Create the message that will hold the handles to created chares
     pcSetupMsg *msg = new pcSetupMsg();

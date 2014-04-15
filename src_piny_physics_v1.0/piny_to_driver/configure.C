@@ -1788,7 +1788,7 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 20;
+  num_dict[0] = 21;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_atm")-1;
 
 //=================================================================================
@@ -1922,6 +1922,12 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
     sprintf((*dict)[ind].keyarg,"%d",-1);  
     strcpy((*dict)[ind].error_mes,"-1  for no force, 0=X 1=Y 2=Z");
   //-----------------------------------------------------------------------------
+  // 21)\numPes{}
+    ind = 21;
+    strcpy((*dict)[ind].keyword,"numPes");
+    sprintf((*dict)[ind].keyarg,"%d",CkNumPes());  
+    strcpy((*dict)[ind].error_mes,"a number > 0");
+  //----------------------------------------------------------------------------
 
   }//end routine
 //===================================================================================
@@ -2043,6 +2049,13 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
     ind = 20;
     sscanf(dict[ind].keyarg,"%d",&forceMappingAxis);
     if(forceMappingAxis>2){keyarg_barf(dict,input_name,fun_key,ind);}
+
+  //  21)\numPes{}
+    ind = 21;
+    sscanf(dict[ind].keyarg,"%d",&numPes);
+    if(numPes<1){keyarg_barf(dict,input_name,fun_key,ind);}
+
+
 
   }//end routine
 //===================================================================================
@@ -2244,6 +2257,11 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
                             DICT_WORD *dict_nl,DICT_WORD *dict_map, 
 			    int nchareRhoRHart, int nplane_x_rho, int natm_typ){
 //=============================================================================
+  numInstances = UberImax * UberJmax * UberKmax * UberMmax; // numIntegrals * numKpoints * numTempers * numSpin;
+  numPesPerInstance = numPes / numInstances;
+  // in default case we have only 1 instance, so we just use the 0,0,0th
+  // because it is simple.
+  numPesPerInstance = (numPesPerInstance>0) ? numPesPerInstance : 1;
   if(fakeTorus)
     { //
       numPes=torusDimNX * torusDimNY * torusDimNZ * torusDimNT;
@@ -2255,12 +2273,6 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     // how many instances there are of each type, and then the total
     // sum, will presumably come directly from CPcharmParaInfoGrp.
 
-    // in default case we have only 1 instance, so we just use the 0,0,0th
-    // because it is simple.
-
-    numInstances = UberImax * UberJmax * UberKmax * UberMmax; // numIntegrals * numKpoints * numTempers * numSpin;
-    numPesPerInstance = numPes / numInstances;
-    numPesPerInstance = (numPesPerInstance>0) ? numPesPerInstance : 1;
 
     int sqrtpes    = (int) sqrt((double)numPes);
     int sqrtstates = (int) sqrt((double)nstates);
@@ -2272,12 +2284,12 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     igo = dict_state[6].iuset;
 
     if(igo==0){ 
-      if(numPes>nGplane_x){
+      if(numPesPerInstance>nGplane_x){
          int i=1;
          double mypow=1;
 	 int targetNchare=nGplane_x;
 	 // need a way to increase the targetNchare so that
-	 // nChareG * (nstates/sGrainSize)^2 * numChunks = numPes
+	 // nChareG * (nstates/sGrainSize)^2 * numChunks = numPesPerInstance
 	 // without going overboard on the planes, grains, or chunks.
 	 // in the general case we haven't determined any of these
 	 // variables yet.  
@@ -2302,7 +2314,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     if(igo==0){
        int numGrains = nstates/sGrainSize;
        numGrains    *=numGrains;
-       numChunks     = numPes/(nchareG*numGrains);
+       numChunks     = numPesPerInstance/(nchareG*numGrains);
        if(numChunks<1){numChunks=1;}
        int remainder;
        while(numChunks>8){
@@ -2310,16 +2322,16 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	   // allowing for remainder
 	   {
 	     sGrainSize = sGrainSize/2;
-	     remainder=approxFactor(nstates,sGrainSize, orthoGrainSize,numPes);
+	     remainder=approxFactor(nstates,sGrainSize, orthoGrainSize,numPesPerInstance);
 	   }
 	 else
 	   {  //
 	     sGrainSize = sGrainSize/2;
-	     remainder=approxFactor(nstates,sGrainSize, orthoGrainSize,numPes);
+	     remainder=approxFactor(nstates,sGrainSize, orthoGrainSize,numPesPerInstance);
 	   }
           numGrains  = nstates/sGrainSize;
           numGrains *= numGrains;
-          numChunks  = numPes/(nchareG*numGrains);
+          numChunks  = numPesPerInstance/(nchareG*numGrains);
        }//end while
        numChunksSym  = numChunks;
        numChunksAsym = numChunks;
@@ -2549,8 +2561,8 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 
     if(igo==0){
        int atmstates=natm_nl*nstates;
-       if(numPes<atmstates){
-           double ratio=(double)numPes/(double)atmstates;
+       if(numPesPerInstance<atmstates){
+           double ratio=(double)numPesPerInstance/(double)atmstates;
            numSfGrps=(int) (ratio*(double)natm_nl);
        }else{ 
            numSfGrps=natm_nl-1;
@@ -2572,8 +2584,8 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 
     if(numSfDups==1){
        int atmstates=natm_nl*nstates;
-       if(numPes<atmstates){
-           double ratio=(double)numPes/(double)atmstates;
+       if(numPesPerInstance<atmstates){
+           double ratio=(double)numPesPerInstance/(double)atmstates;
            numSfDups=(int) (ratio*(double)nstates);
        }else{ 
            numSfDups=nstates-1;
@@ -2583,7 +2595,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     }//endif
 
 //=============================================================================
-// Fix rhoGHelpers : ranges from 1 to numPes/numChareRhoG
+// Fix rhoGHelpers : ranges from 1 to numPesPerInstance/numChareRhoG
 
     igo = dict_rho[10].iuset;
 
@@ -2596,7 +2608,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       else
 	{
 	  int temp_rho  = (int) (gExpandFactRho*2.0*((double) nGplane_x + 1.0));
-	  if(numPes>temp_rho){rhoGHelpers=numPes/temp_rho;}
+	  if(numPesPerInstance>temp_rho){rhoGHelpers=numPesPerInstance/temp_rho;}
 	}
       sprintf(dict_rho[10].keyarg,"%d",rhoGHelpers);
 	  
@@ -3175,9 +3187,9 @@ void Config::rangeExit(int param, const char *name, int iopt){
     int size2 = (nstates/sGrainSize)*(nstates/sGrainSize)*numChunksAsym*nchareG;
     int size3 = (nstates/orthoGrainSize)*(nstates/orthoGrainSize);
    
-    if(size1>numPes || size2 > numPes || size3 > numPes){
+    if(size1>numPesPerInstance || size2 > numPesPerInstance || size3 > numPesPerInstance){
       PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
-      PRINTF("    You only have %d processors\n",numPes);
+      PRINTF("    You only have %d processors\n",numPesPerInstance);
       PRINTF("    You have asked for %d Symm  PC\n",size1);
       PRINTF("    You have asked for %d Asymm PC\n",size2);
       PRINTF("    You have asked for %d orthos  \n",size3);
@@ -3282,7 +3294,7 @@ void Config::write_cpaimd_config(FILE *fp,DICT_WORD *dict, int num_dict, char *f
 // PRE: input sGrainSize is upper bound, nstates & numpes >0
 // POST: 
 //     oGrainSize is a factor of sGrainSize
-//     (nstates/ograinsize)^<=numPes
+//     (nstates/ograinsize)^<=numPesPerInstance
 //     remainder= nstates%sGrainSize
 //     remainder < sGrainSize/2
 //     remainder < orthoGrainSize
