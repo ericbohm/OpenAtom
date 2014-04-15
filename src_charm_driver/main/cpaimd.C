@@ -1081,7 +1081,6 @@ Per Instance startup BEGIN
     PRINT_LINE_DASH;CkPrintf("\n");
     CkPrintf("user mem %d\n",CmiMemoryUsage());
     Timer=newtime;
-    CkAbort("testing maps");
     /**@}*/
 //============================================================================
    }// end Main
