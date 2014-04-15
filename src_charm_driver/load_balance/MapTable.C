@@ -1263,7 +1263,8 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
   //	else
   bool useExclusion=true;
   PeList *RPPlist=availprocs;
-  states_per_pe=Rstates_per_pe;		// no of states in one chunk
+  states_per_pe=Rstates_per_pe;
+  // no of states in one chunk
   pl = nstates / states_per_pe;
   if(exclusion==NULL || exclusion->count()==0 || config.numPesPerInstance <=exclusion->count() )
     useExclusion=false;

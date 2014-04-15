@@ -1081,6 +1081,7 @@ Per Instance startup BEGIN
     PRINT_LINE_DASH;CkPrintf("\n");
     CkPrintf("user mem %d\n",CmiMemoryUsage());
     Timer=newtime;
+    CkAbort("testing maps");
     /**@}*/
 //============================================================================
    }// end Main
@@ -2158,7 +2159,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
 #ifdef USE_INT_MAP
 	RPPMapTable RPPtable= RPPMapTable(&RPPImaptable[thisInstance.getPO()], availGlobG, nlexcludePes, 
 					  nstates,  nchareRPP, Rstates_per_pe,
-					  boxSize, config.useCuboidMap, 
+					  boxSize, true, 
 					  config.nchareG, &GSImaptable[thisInstance.getPO()]);
 #else
 	RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, nlexcludePes, 
