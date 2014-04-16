@@ -235,7 +235,7 @@ void CP_State_ParticlePlane::initKVectors()
       {
 	bool used=false;
 	int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%numProcs;
-	if(usedProc[thisstateplaneproc]>charperpe);
+	if(usedProc[thisstateplaneproc]>=charperpe);
 	{
 	  used=true;
 	}
@@ -254,7 +254,7 @@ void CP_State_ParticlePlane::initKVectors()
       {
         bool used=false;
         int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%CkNumPes();
-	if(usedProc[thisstateplaneproc]>charperpe);
+	if(usedProc[thisstateplaneproc]>=charperpe);
 	{
 	  used=true;
 	}

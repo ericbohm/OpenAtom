@@ -232,7 +232,7 @@ void CP_State_RealParticlePlane::init(){
     while(plane<nChareR){
         bool used=false;
         int thisstateplaneproc=RPPImaptable[thisInstance.proxyOffset].get(state,plane)%CkNumPes();
-	if(usedProc[thisstateplaneproc]>charperpe);
+	if(usedProc[thisstateplaneproc]>=charperpe);
 	{
 	  used=true;
 	}
@@ -246,22 +246,6 @@ void CP_State_RealParticlePlane::init(){
   }//end for : i
   reductionPlaneNum = red_pl[thisIndex.x];
   delete [] usedProc;
-	    /* old less reliable method
-  int l             = Rstates_per_pe;
-  int pl            = (nstates / l);
-  int pm            = (CkNumPes() / pl);
-  if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
-  int planes_per_pe = (nChareR / pm);
-  for(int i=0; i<nstates;i++){
-    red_pl[i]= (  ((i % Rstates_per_pe)*planes_per_pe)% nChareR);
-  }//endif
-  reductionPlaneNum = red_pl[thisIndex.x];
-	    */
-  
-  /*for(int i=0; i<nstates;i++){ ifndef USE_TOPOMAP
-    red_pl[i] = calcReductionPlaneNum(thisIndex.x);
-  }//endif
-  reductionPlaneNum = calcReductionPlaneNum(thisIndex.x); */
 
 
 //============================================================================
