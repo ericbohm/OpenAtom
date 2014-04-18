@@ -2158,7 +2158,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
 #ifdef USE_INT_MAP
 	RPPMapTable RPPtable= RPPMapTable(&RPPImaptable[thisInstance.getPO()], availGlobG, nlexcludePes, 
 					  nstates,  nchareRPP, Rstates_per_pe,
-					  boxSize, true, 
+					  boxSize, config.useCuboidMap, 
 					  config.nchareG, &GSImaptable[thisInstance.getPO()]);
 #else
 	RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, nlexcludePes, 

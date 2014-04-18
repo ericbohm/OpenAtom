@@ -1250,9 +1250,8 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
   nstates(_nstates), sizeZNL(_sizeZNL),
   Rstates_per_pe(_Rstates_per_pe)
 {
-  int states_per_pe;
+  int states_per_pe=Rstates_per_pe;
   int totalChares=nstates*sizeZNL;
-  int m, pl, pm, srem, rem, i=0;
   reverseMap=NULL;
   maptable=_map;
   availprocs=_availprocs;
@@ -1263,9 +1262,9 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
   //	else
   bool useExclusion=true;
   PeList *RPPlist=availprocs;
-  states_per_pe=Rstates_per_pe;
-  // no of states in one chunk
-  pl = nstates / states_per_pe;
+  int chares_per_pe=totalChares/config.numPesPerInstance;
+  //  pl = nstates / states_per_pe;
+  CkPrintf("CharesPerPe %d states_per_pe %d\n",chares_per_pe, states_per_pe);
   if(exclusion==NULL || exclusion->count()==0 || config.numPesPerInstance <=exclusion->count() )
     useExclusion=false;
   int afterExclusion=availprocs->count();
@@ -1273,7 +1272,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
     afterExclusion=availprocs->count() - exclusion->count();
   //  CkPrintf("RPP excluded list\n");
   //  exclusion->dump();
-  if(useExclusion && afterExclusion > pl*sizeZNL)
+  if(useExclusion && afterExclusion > chares_per_pe*sizeZNL)
     { // we can fit the exclusion without blinking
       CkPrintf("RPP using density exclusion to avoid %d processors\n",exclusion->count());
       *RPPlist-*exclusion;
@@ -1295,29 +1294,9 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 	  CkPrintf("RPP with %d chares ignoring density exclusion which left %d out of %d processors\n",totalChares, exclusion->count(), availprocs->count());
 	}
     }
-  if(nstates % states_per_pe == 0)
-    srem = 0;
-  else
-    {
-      while(pow(2.0, (double)i) < pl)
-	i++;
-      pl = (int) pow(2.0, (double)(i-1));		// make it same as the nearest smaller power of 2
-      srem = nstates % pl;
-    }
-  pm = RPPlist->count() / pl;
-        
-  if(pm == 0) {
-    CkPrintf("Choose a larger Rstates_per_pe than %d such that { [%d] / (no. of states [%d] / Rstates_per_pe [%d]) } is > 0 \n", Rstates_per_pe,
-    RPPlist->count(), nstates, Rstates_per_pe);
-    CkAssert(RPPlist->count() / (nstates/Rstates_per_pe) > 0);
-  }
 
-  m = sizeZNL / pm;
-  rem = sizeZNL % pm;
-
+  chares_per_pe=totalChares/RPPlist->count();
   // CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
-  // CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
-  // pl, pm, srem, rem);
   int srcpe=0;
   // CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
   // RPPlist->dump();
@@ -1594,31 +1573,36 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
   else
     {
       int destpe=RPPlist->findNext();
-      for(int ychunk=0; ychunk<sizeZNL; ychunk=ychunk+m)
+      // place by planes up to chares_per_pe to give us a balanced layout
+      int charesOnThisPe=0;
+      int rem = totalChares % chares_per_pe;
+      int starting_cpp=chares_per_pe;
+      //      if(rem) --chares_per_pe;
+      CkPrintf("chares_per_pe %d rem %d\n",chares_per_pe, rem);
+      for(int state=0;  state < nstates; state++)
 	{
-	  if(ychunk==(pm-rem)*m)
-	    m=m+1;
-	  for(int xchunk=0; xchunk<nstates; xchunk=xchunk+states_per_pe)
+	  for(int plane=0; plane < sizeZNL; plane++)
 	    {
-	      if(xchunk==(pl-srem)*states_per_pe)
-		states_per_pe=states_per_pe+1;
-	      for(int state=xchunk; state<xchunk+states_per_pe && state<nstates; state++)
-		{
-		  for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
-		    {
-		      //		  CkPrintf("RPP setting %d %d to pe %d\n",state,plane,destpe);		    
+	      //	      CkPrintf("RPP states_per_pe %d setting %d %d to pe %d\n", states_per_pe, state,plane,destpe);		    
 #ifdef USE_INT_MAP
-		      maptable->set(state, plane, destpe);
+	      maptable->set(state, plane, destpe);
 #else
-		      maptable->put(intdual(state, plane))=destpe;
+	      maptable->put(intdual(state, plane))=destpe;
 #endif
-
-		    }
+	      if(++charesOnThisPe==chares_per_pe)
+		{
+		  destpe=RPPlist->findNext();
+		  charesOnThisPe=0;
+		  if(RPPlist->count()==0)
+		    RPPlist->reset();
 		}
-	      if(RPPlist->count()==0)
-		RPPlist->reset();
-	      destpe=RPPlist->findNext();
 	    }
+	  if(rem && RPPlist->count()<2*nstates)
+	    {
+	      chares_per_pe=starting_cpp+1;
+	      //	      CkPrintf("At state %d count %d bumping chares_per_pe to %d\n",state, RPPlist->count(),chares_per_pe);
+	    }
+
 	}
     }
 #ifdef _MAP_DEBUG_

@@ -238,6 +238,8 @@ void CP_State_RealParticlePlane::init(){
 	}
         if(!used || (plane+1==nChareR)){
 	    usedProc[thisstateplaneproc]++;
+	    if(thisIndex.x==0 && thisIndex.y==0)
+	      CkPrintf("[%d][%d] redplane is on proc %d\n",state,plane,thisstateplaneproc);
             red_pl[state]=plane;
             plane=nChareR;
         }//endif
@@ -245,6 +247,7 @@ void CP_State_RealParticlePlane::init(){
     }//end while : plane < nchareR
   }//end for : i
   reductionPlaneNum = red_pl[thisIndex.x];
+
   delete [] usedProc;
 
 
