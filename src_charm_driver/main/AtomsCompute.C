@@ -335,7 +335,8 @@ void AtomsCompute::handleForces()  {
   double *ftot1    = (double *) contribMsg[1]->getData();
   // no loop carried dependencies here, so a compiler worth its salt
   // should easily vectorize these ops.
-  for(int i=0,j=0;i<natm;i++,j+=3){  
+  int i, j;
+  for(i=0,j=0;i<natm;i++,j+=3){
     atoms[i].fx = ftot0[j] + ftot1[j]; 
     atoms[i].fy = ftot0[j+1] + ftot1[j+1];
     atoms[i].fz = ftot0[j+2] + ftot1[j+2];
@@ -358,7 +359,7 @@ void AtomsCompute::handleForces()  {
   double omega    = (0.0241888/15.0); // 15 fs^{-1}
   double omega2   = omega*omega;
   int npts        = 200;
-  if(*iteration==0){
+  if(iteration==0){
     px = new double *[natm];
     for(i =0;i<natm;i++){
       px[i] = new double[npts];
@@ -466,10 +467,11 @@ void AtomsCompute::integrateAtoms(){
    double omega    = (0.0241888/15.0); // 15 fs^{-1} Ok for PIMD
    double omega2   = omega*omega;
    int npts        = 200;
+   double sigma;
    if(numPIMDBeads==1){
-     double sigma    = 1.0/sqrt(kT*atoms[0].m*omega2);
+     sigma    = 1.0/sqrt(kT*atoms[0].m*omega2);
    }else{
-     double sigma    = 1.0/sqrt(2.0*atoms[0].m*omega); // Assuming lots of beads
+     sigma    = 1.0/sqrt(2.0*atoms[0].m*omega); // Assuming lots of beads
    }//endif
 
    double dx       = 6.0*sigma/(double)npts;
