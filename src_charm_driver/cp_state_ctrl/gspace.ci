@@ -1,3 +1,27 @@
+#ifdef _CP_DEBUG_PSI_OFF_
+#define _SDAG_DEBUG_PSI_OFF_ true
+#else
+#define _SDAG_DEBUG_PSI_OFF_ false
+#endif
+
+#ifdef _CP_DEBUG_SFNL_OFF_
+#define _SDAG_DEBUG_SFNL_OFF_ true
+#else
+#define _SDAG_DEBUG_SFNL_OFF_ false
+#endif
+
+#ifdef _CP_DEBUG_VKS_OFF_
+#define _SDAG_DEBUG_VKS_OFF_ true
+#else
+#define _SDAG_DEBUG_VKS_OFF_ false
+#endif
+
+#ifdef _CP_DEBUG_ORTHO_OFF_
+#define _SDAG_DEBUG_ORTHO_OFF_ true
+#else
+#define _SDAG_DEBUG_ORTHO_OFF_ false
+#endif
+
 module gSpaceDriver
 {
     include "uber/Uber.h";
@@ -29,64 +53,77 @@ module gSpaceDriver
 		entry void driveGSpace() {
 			while(myGSpaceObj->cleanExitCalled!=1) {
 				if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
-#ifndef _CP_DEBUG_PSI_OFF_
 					serial {
 						myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
 					}
+					if (!_SDAG_DEBUG_PSI_OFF_) {
 
-#ifndef _CP_DEBUG_SFNL_OFF_
-					if (ees_nonlocal==0 && natm_nl!=0) {
-						serial {
+						// If called, releaseSFComputeZ() triggers an NL force computation.
+						if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==0 && natm_nl!=0) serial {
 							releaseSFComputeZ();
 						}
-					}
-#endif
 
-#ifndef _CP_DEBUG_VKS_OFF_
-					serial {
-						myGSpaceObj->doPsiFandVKS();
-					} when donePsiFandVKS() {}
-#else
-#ifndef _CP_DEBUG_SFNL_OFF_
-					if (ees_nonlocal==1 && natm_nl!=0) serial {
-						startNonLocalEes(myGSpaceObj->iteration);
-					}
-#endif
-#endif
+						// Both branches of this if will trigger an NL force computation if
+						// releaseSFComputeZ() was not called above.
+						if (!_SDAG_DEBUG_VKS_OFF_) {
+							serial { myGSpaceObj->doPsiFandVKS(); }
+						} else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==1 && natm_nl!=0) {
+							serial { startNonLocalEes(myGSpaceObj->iteration); }
+						}
 
-#ifndef _CP_DEBUG_SFNL_OFF_
-					when doneNLForces() serial {}
-#endif
+						// Wait for both the VKS and the NL force computations to complete.
+						overlap {
+							if (!_SDAG_DEBUG_SFNL_OFF_) {
+								when doneNLForces() {}
+							}
+							if (!_SDAG_DEBUG_VKS_OFF_) {
+								when donePsiFandVKS() {}
+							}
+						}
 
-					serial {
-						myGSpaceObj->combineForcesGetEke();
+						serial {
+							myGSpaceObj->combineForcesGetEke();
+						}
 					}
-#endif	// _CP_DEBUG_PSI_OFF_
 
 					serial {
 						myGSpaceObj->launchAtoms();
 					}				
 
-#ifndef _CP_DEBUG_PSI_OFF_
-					serial {
-						bool doOutput = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt!=0 && myGSpaceObj->iteration > 1;
-						doOutput = doOutput && ((myGSpaceObj->iteration-1)%CPcharmParaInfo::get()->ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->outputFlag==1);
-						myGSpaceObj->doLambdaAndCgAndRedPsi(doOutput);
-					} when doneLambdaAndCgAndRedPsi() {}
-#endif	//_CP_DEBUG_PSI_OFF_
+					if (!_SDAG_DEBUG_PSI_OFF_) {
+						serial {
+							bool doOutput = config.stateOutput==1 &&
+												CPcharmParaInfo::get()->cp_min_opt!=0 &&
+												myGSpaceObj->iteration > 1 &&
+												((myGSpaceObj->iteration-1)%CPcharmParaInfo::get()->ndump_frq==0 ||
+													myGSpaceObj->iteration==config.maxIter ||
+													myGSpaceObj->outputFlag==1);
+
+							myGSpaceObj->doLambdaAndCgAndRedPsi(doOutput);
+						} when doneLambdaAndCgAndRedPsi() {}
+					}
 				}
-#ifndef _CP_DEBUG_PSI_OFF_
-				serial {
-					bool doOutput = config.stateOutput==1 && CPcharmParaInfo::get()->cp_min_opt==1 && myGSpaceObj->iteration > 0;
-					doOutput = doOutput && ((myGSpaceObj->iteration)%CPcharmParaInfo::get()->ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1);
-					bool updateNeeded = CPcharmParaInfo::get()->cp_min_opt && myGSpaceObj->iteration > 1 && myGSpaceObj->iteration <= config.maxIter && isPsiVupdateNeeded;
-					myGSpaceObj->doNewPsiAndPsiV(doOutput, updateNeeded);
-				} when doneNewPsiAndPsiV() serial { isPsiVupdateNeeded = false; }
-#endif
+				if (!_SDAG_DEBUG_PSI_OFF_) {
+					serial {
+						bool doOutput = config.stateOutput==1 &&
+											CPcharmParaInfo::get()->cp_min_opt==1 &&
+											myGSpaceObj->iteration > 0 &&
+											((myGSpaceObj->iteration)%CPcharmParaInfo::get()->ndump_frq==0 ||
+												myGSpaceObj->iteration==config.maxIter ||
+												myGSpaceObj->exitFlag==1);
+
+						bool updateNeeded = CPcharmParaInfo::get()->cp_min_opt &&
+												myGSpaceObj->iteration > 1 &&
+												myGSpaceObj->iteration <= config.maxIter &&
+												isPsiVupdateNeeded;
+
+						myGSpaceObj->doNewPsiAndPsiV(doOutput, updateNeeded);
+					} when doneNewPsiAndPsiV() serial { isPsiVupdateNeeded = false; }
+				}
 				overlap {
-#ifndef _CP_DEBUG_PSI_OFF
-					when doneComputingEnergy(const int AtomGrpIter) {}
-#endif
+					if (!_SDAG_DEBUG_PSI_OFF_) {
+						when doneComputingEnergy(const int AtomGrpIter) {}
+					}
 					when doneMovingAtoms(const int AtomsGrpIter) serial { myGSpaceObj->screenPrintWallTimes(); }
 				}
 
@@ -102,7 +139,10 @@ module gSpaceDriver
 					#endif
 				#endif
 				int i=0;
-				contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+				CkCallback cb(CkIndex_InstanceController::cleanExit(NULL),
+								CkArrayIndex1D(thisInstance.proxyOffset),
+								instControllerProxy);
+				contribute(sizeof(int), &i, CkReduction::sum_int, cb);
 			}
 		};
 	};
@@ -173,12 +213,10 @@ module gStatePlane
 		entry void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
 		entry void collectFileOutput(GStateOutMsg *msg);
 
-#ifndef CP_DEBUG_ORTHO_OFF_
 		entry void acceptLambda(CkReductionMsg *msg);
 		entry void acceptLambda(partialResultMsg *msg);
 		entry void acceptNewPsi(CkReductionMsg *msg);	
 		entry void acceptNewPsi(partialResultMsg *msg);	
-#endif
 		entry void acceptRedPsi(GSRedPsiMsg *msg);	
 		entry void acceptNewPsiV(CkReductionMsg *msg);
 		entry void acceptNewPsiV(partialResultMsg *msg);
@@ -229,16 +267,17 @@ module gStatePlane
 		};
 
 		entry void doLambdaAndCgAndRedPsi(bool doOutput) {
+			// Lambda sending is needed for CgOverlap even if ortho is turned off
 			serial { sendLambda(); }
-#ifndef CP_DEBUG_ORTHO_OFF_
-			while (countLambda != AllLambdaExpected) {
-				case {
-					when acceptLambda(CkReductionMsg *msg) serial { unpackLambda(msg); }
-					when acceptLambda(partialResultMsg *msg) serial { unpackLambda(msg); }
+			if (!_SDAG_DEBUG_ORTHO_OFF_) {
+				while (countLambda != AllLambdaExpected) {
+					case {
+						when acceptLambda(CkReductionMsg *msg) serial { unpackLambda(msg); }
+						when acceptLambda(partialResultMsg *msg) serial { unpackLambda(msg); }
+					}
 				}
+				serial { doLambda(); }
 			}
-			serial { doLambda(); }
-#endif
 			serial { computeCgOverlap(); }
 			when acceptCgOverlap(CkReductionMsg *msg) serial {
 				psiCgOvlap(msg);
@@ -263,18 +302,18 @@ module gStatePlane
 
 		entry void doNewPsiAndPsiV(bool doOutput, bool isPsiVupdateNeeded) {
 			serial { sendPsi(); }
-#ifndef CP_DEBUG_ORTHO_OFF_
-			while (countPsi != AllPsiExpected) {
-				case {
-					when acceptNewPsi(CkReductionMsg *msg) serial { unpackNewPsi(msg); }
-					when acceptNewPsi(partialResultMsg *msg) serial { unpackNewPsi(msg); }
+			if (!_SDAG_DEBUG_ORTHO_OFF_) {
+				while (countPsi != AllPsiExpected) {
+					case {
+						when acceptNewPsi(CkReductionMsg *msg) serial { unpackNewPsi(msg); }
+						when acceptNewPsi(partialResultMsg *msg) serial { unpackNewPsi(msg); }
+					}
 				}
-			}
-			serial { doNewPsi(); }
+				serial { doNewPsi(); }
 #ifdef BARRIER_CP_GSPACE_PSI
-			when allDonePsi(CkReductionMsg *msg) {}
+				when allDonePsi(CkReductionMsg *msg) {}
 #endif
-#endif
+			}
 			if (doOutput) {
 				serial {
 					writeStateDumpFile();

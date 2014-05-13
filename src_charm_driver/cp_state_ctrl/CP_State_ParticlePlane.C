@@ -761,6 +761,7 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
         CkCallback(CkIndex_GSpaceDriver::allDoneNLForces(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
     /// else, directly notify your driver
     #else
+		CkPrintf("Done with NL forces SENTINELWORD2\n");
         UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneNLForces(); 
     #endif
   }//endif : doneforces
