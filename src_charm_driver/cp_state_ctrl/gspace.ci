@@ -217,7 +217,6 @@ module gStatePlane
 		entry void acceptLambda(partialResultMsg *msg);
 		entry void acceptNewPsi(CkReductionMsg *msg);	
 		entry void acceptNewPsi(partialResultMsg *msg);	
-#endif
 		entry void acceptRedPsi(GSRedPsiMsg *msg);	
 		entry void acceptNewPsiV(CkReductionMsg *msg);
 		entry void acceptNewPsiV(partialResultMsg *msg);

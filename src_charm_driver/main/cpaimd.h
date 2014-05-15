@@ -51,7 +51,7 @@ typedef IntMap2 IntMap4;
 
 #if CMK_TRACE_ENABLED
 #define TRACE_ON_STEP 4
-#define TRACE_OFF_STEP 7
+#define TRACE_OFF_STEP 5
 #endif
 #ifdef CMK_BLUEGENEP
 #define HPM_ON_STEP 4
