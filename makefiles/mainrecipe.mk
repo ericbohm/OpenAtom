@@ -34,7 +34,7 @@ CPPFLAGS += -DOPENATOM_REVISION=$(REVNUM)
 
 compile: $(TARGET)
 
-$(TARGET): $(LIBS:%=lib%.a) $(OBJ)
+$(TARGET): $(LIBS:%=lib%.a) $(OBJ) dgemm_cuda.o
 	$(info-ld)
 	$q$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 	@echo "=========== Target produced from commit hash: $(REVNUM)"
