@@ -248,11 +248,14 @@ module gStatePlane
 // SDAG ////////
 		entry void doPsiFandVKS() {
 			serial {
+				CkPrintf("Start PSI\n");
 				doFFT();
 				sendFFTData();	
+				CkPrintf("Data sent\n");
 			}
 			while (countIFFT != gs.planeSize[1]) {
-				when acceptIFFT(GSIFFTMsg *msg) serial { unpackIFFT(msg); }
+				serial { CkPrintf("Waiting for IFFT\n"); }
+				when acceptIFFT(GSIFFTMsg *msg) serial { CkPrintf("PrepackIFFT\n"); unpackIFFT(msg); CkPrintf("PostpackIFFT\n"); }
 			}
 			serial { 
 				countIFFT = 0;

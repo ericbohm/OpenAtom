@@ -370,11 +370,14 @@ mainmodule cpaimd {
 		entry void run() {
 		  while (true) {
 		    for (count = 0; count < nchareG; count++) {
-		      when acceptFFT(RSFFTMsg *m) serial { unpackFFT(m); }
+		      serial { CkPrintf("Waiting for FFT\n"); }
+		      when acceptFFT(RSFFTMsg *m) serial { CkPrintf("Prepack %i/%i\n", count, nchareG); unpackFFT(m); CkPrintf("Postpack\n"); }
 		    }
 		    serial {
 		      iteration++;
+		      CkPrintf("Prefft\n");
 		      doFFT();
+		      CkPrintf("Postfft\n");
 		    }
 
 		    for (countProduct = 0; countProduct < rhoRsubplanes; ++countProduct) {
@@ -396,7 +399,7 @@ mainmodule cpaimd {
 		  }
 		};
 
-		entry void acceptFFT(RSFFTMsg *m);
+		entry [nokeep] void acceptFFT(RSFFTMsg *m);
 		entry [nokeep] void acceptProduct(ProductMsg *m);
 		//entry void rdoneVks(CkReductionMsg *m);
 		entry [local] void doFFT();
