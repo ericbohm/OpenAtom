@@ -538,7 +538,7 @@ void CLA_Matrix::multiply()
 
     #define BUNDLE_USER_EVENTS
 
-        #ifndef CMK_TRACE_ENABLED
+        #ifdef CMK_TRACE_ENABLED
             double StartTime=CmiWallTimer();
         #endif
         #ifdef PRINT_DGEMM_PARAMS
@@ -558,7 +558,7 @@ void CLA_Matrix::multiply()
                 for(int jn=0; jn<n; jn++)
                     CkAssert(isfinite(dest[in*n+jn]));
         #endif
-        #ifndef CMK_TRACE_ENABLED
+        #ifdef CMK_TRACE_ENABLED
             traceUserBracketEvent(401, StartTime, CmiWallTimer());
         #endif
     // Transpose the result
@@ -652,7 +652,7 @@ void CLA_MM3D_multiplier::multiply(internalType *A, internalType *B){
   gotA = gotB = false;
   char trans = 'T';
   internalType *C = new internalType[m * n];
-#ifndef CMK_TRACE_ENABLED
+#ifdef CMK_TRACE_ENABLED
   double  StartTime=CmiWallTimer();
 #endif
 #ifdef TEST_ALIGN
@@ -665,7 +665,7 @@ void CLA_MM3D_multiplier::multiply(internalType *A, internalType *B){
   CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, k, alpha, beta, k, n, m);
 #endif
   myGEMM(&trans, &trans, &m, &n, &k, &alpha, A, &k, B, &n, &beta, C, &m);
-#ifndef CMK_TRACE_ENABLED
+#ifdef CMK_TRACE_ENABLED
     traceUserBracketEvent(402, StartTime, CmiWallTimer());
 #endif
   CmiNetworkProgress();
