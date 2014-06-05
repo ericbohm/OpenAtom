@@ -290,8 +290,6 @@ void CP_State_RealSpacePlane::unpackFFT(RSFFTMsg *msg) {
       planeArr[tranUnpack[Index][i]] = partiallyFFTd[i];
     }//endif
 
-    delete msg;
-
 //============================================================================
    }//end routine
 //============================================================================

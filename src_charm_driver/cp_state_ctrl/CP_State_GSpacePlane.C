@@ -1416,7 +1416,6 @@ void CP_State_GSpacePlane::sendFFTData () {
 #endif
    // progress engine baby
     CmiNetworkProgress();
-
   }//endfor
   //fclose(fp);
 

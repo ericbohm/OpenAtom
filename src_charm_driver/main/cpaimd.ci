@@ -396,14 +396,17 @@ mainmodule cpaimd {
 		  }
 		};
 
-		entry void acceptFFT(RSFFTMsg *m);
+		entry [nokeep] void acceptFFT(RSFFTMsg *m);
 		entry [nokeep] void acceptProduct(ProductMsg *m);
-		//entry void rdoneVks(CkReductionMsg *m);
 		entry [local] void doFFT();
 		entry [local] void doVksFFT();
 		entry void setNumPlanesToExpect(int num);
 		entry void printData();
 		entry [nokeep] void init(ProductMsg *m);
+
+#ifdef RSVKS_BARRIER
+		entry void rdoneVks(CkReductionMsg *m);
+#endif
 	};
 
 	array [2D] CP_Rho_RealSpacePlane {	
