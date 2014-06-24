@@ -42,7 +42,7 @@
  * ###Downloading OpenAtom
  * OpenAtom is hosted using git and can be downloaded using the following command:
  *
- *        git clone git://Charm.cs.uiuc.edu/openatom.git
+ *        git clone http://Charm.cs.uiuc.edu/gerrit/openatom.git
  *
  * Recent commit history can be view 
  * [here](http://\charm.cs.illinois.edu/cgi-bin/gitweb.cgi?p=openatom.git;a=summary).
@@ -51,14 +51,14 @@
  * [weblink](http://\charm.cs.uiuc.edu/software) or the nightly version using the
  * following command:
  * 
- *        git clone git://Charm.cs.uiuc.edu/charm.git
+ *        git clone http://Charm.cs.uiuc.edu/gerrit/charm.git
  * 
  * Sample data sets can be obtained using one of the following commands:
  * 
- *        git clone git://Charm.cs.uiuc.edu/datasets/openatom/water_32M_10Ry.git
- *        git clone git://Charm.cs.uiuc.edu/datasets/openatom/water_32M_70Ry.git
- *        git clone git://Charm.cs.uiuc.edu/datasets/openatom/water_64M_70Ry.git
- *        git clone git://Charm.cs.uiuc.edu/datasets/openatom/water_128_70Ry.git
+ *        git clone http://Charm.cs.uiuc.edu/gerrit/datasets/openatom/water_32M_10Ry.git
+ *        git clone http://Charm.cs.uiuc.edu/gerrit/datasets/openatom/water_32M_70Ry.git
+ *        git clone http://Charm.cs.uiuc.edu/gerrit/datasets/openatom/water_64M_70Ry.git
+ *        git clone http://Charm.cs.uiuc.edu/gerrit/datasets/openatom/water_128_70Ry.git
  *
  * ###Compilation###
  * Before OpenAtom is compiled, one needs to get access to a compiled version of 
