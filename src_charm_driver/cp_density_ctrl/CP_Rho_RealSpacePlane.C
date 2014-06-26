@@ -2109,7 +2109,7 @@ void CP_Rho_RealSpacePlane::addWhiteByrdVks(){
 // Add the whitebyrd contrib to vks
 
     int nptsExpnd  = nptsExpndB;
-    double *dataR  = rho_rs.density;  \\ whitebyrd correction stored in density
+    double *dataR  = rho_rs.density;  // whitebyrd correction stored in density
     double *Vks    = rho_rs.Vks;
     for(int i=0;i<nptsExpnd;i++){Vks[i] -= dataR[i];}
 
