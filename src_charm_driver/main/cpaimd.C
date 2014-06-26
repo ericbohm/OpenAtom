@@ -938,9 +938,9 @@ Per Instance startup BEGIN
 	      CkVec  <int>  peUsedByNLZ;
 	      CkVec  <int>  planeUsedByNLZ;
 
-	      UberIndex thisInstanceIndex(integral, kpoint, temper, spin);
+	      UberIndex thisInstanceIndex(integral, kpoint, temper, spin); // Internal labels{x,y,z,s}
 	      thisInstance=UberCollection(thisInstanceIndex);
-	      UberAlles.push_back(thisInstance);
+	      UberAlles.push_back(thisInstance);// collection of proxies for all instances
 
 	      //============================================================================    
 	      // We will need a different one of these per instance
@@ -949,19 +949,13 @@ Per Instance startup BEGIN
 	      control_physics_to_driver(thisInstance);
 
 	      //============================================================================ 
-	      // handle Path Integrals
-	      if(config.UberImax>1)
+
+	      if(config.UberImax>1)	      // handle Path Integrals
 		init_PIBeads(sim, thisInstance);
 
 	      // and then we make the usual set of chares to which we pass
 	      // the Uber Index.
 	      init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
-
-	      // Remove this when someone puts an axe through the last
-	      // BG/L. Until then look upon this as your introduction
-	      // to why communication offload and DMA engines
-	      // shouldn't be considered optional.
-	      CmiNetworkProgressAfter(1);
 
 	      //============================================================================
 	      // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
@@ -1005,6 +999,8 @@ Per Instance startup BEGIN
 	      pcCreator.build(pcHandleCB, pcMapCfg);
 
 	      //============================================================================
+	      // compute the location for the non-local Z reduction roots for each plane
+	      // this can then be used in exclusion mapping to avoid overloading them
 	      int *usedProc= new int[config.numPesPerInstance];
 	      memset(usedProc, 0, sizeof(int)*config.numPesPerInstance);
 	      int charperpe = nstates/(config.numPesPerInstance);
@@ -1037,6 +1033,7 @@ Per Instance startup BEGIN
 	      //============================================================================ 
 	      // Initialize the density chare arrays
 	      init_rho_chares(sim, thisInstance);
+
 	      CmiNetworkProgressAfter(1);
 	      //============================================================================ 
 	      // Initialize commlib strategies for later association and delegation
@@ -2316,11 +2313,12 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
       RhoAvail=new PeList(*availGlobR);
   }
   //------------------------------------------------------------------------
-  // subtract processors used by other nonscaling chares (non local reduceZ)
+  // subtract processors used by other nonscaling chares (i.e., non local reduceZ)
   excludePes= new PeList(0);   
   if(config.excludePE0 && !config.loadMapFiles)
       excludePes->appendOne(0);
 
+  // avoid co-mapping with the particle plane non-local reduction roots
   if(config.useReductionExclusionMap && !config.loadMapFiles)
     {
       if( nchareRhoR*config.rhoRsubplanes+UpeUsedByNLZ[thisInstance.proxyOffset].size() <
@@ -2329,7 +2327,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 	CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
 		 UpeUsedByNLZ[thisInstance.proxyOffset].size(),RhoAvail->count());
 	//       nlz.dump();
-	*RhoAvail-*excludePes; //unary minus
+	*RhoAvail-*excludePes; //unary minus operator defined in PeList.h
 	RhoAvail->reindex();
 	CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
       }//endif
@@ -2623,6 +2621,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     
   // insert rhoreal
   int rhokeeper= keeperRegister(std::string("Density"));
+  // rhorsopts contains the nchareRhoR, rhoRSubplanes, the maps, and will make all at once
   UrhoRealProxy.push_back(CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,dummy, 
 						     ees_eext_on, ngrid_eext_c,
 						     rhokeeper,
