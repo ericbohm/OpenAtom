@@ -1378,7 +1378,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
  *
  * Accept transpose data from RhoG : receive grad_rho(gy,gx,z)
  *
- * Invoked 3 times per algorithm step : once for each grad_rho
+ * Invoked 1 time per algorithm step : all grad_rho packed up
  * 
  * Memory required is : rho_igx,rho_igy,rho_igz so stuff can come in any order
  *                    : density and vks are needed later so no reusing for you.
@@ -2109,7 +2109,7 @@ void CP_Rho_RealSpacePlane::addWhiteByrdVks(){
 // Add the whitebyrd contrib to vks
 
     int nptsExpnd  = nptsExpndB;
-    double *dataR  = rho_rs.density; 
+    double *dataR  = rho_rs.density;  \\ whitebyrd correction stored in density
     double *Vks    = rho_rs.Vks;
     for(int i=0;i<nptsExpnd;i++){Vks[i] -= dataR[i];}
 

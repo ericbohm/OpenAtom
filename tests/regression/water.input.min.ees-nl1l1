@@ -1,6 +1,6 @@
 ==============================================================================
 ~sim_gen_def[
-       \simulation_typ{cp_wave_min}cp_wave_min  debug_cp
+       \simulation_typ{cp_wave_min} cp_wave_min  debug_cp
        \ensemble_typ{nvt}
        \num_time_step{3}
        \restart_type{initial}
