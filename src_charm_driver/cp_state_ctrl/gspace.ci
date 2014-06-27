@@ -143,11 +143,10 @@ module gSpaceDriver
             (TimeKeeperProxy.ckLocalBranch())->printHPM();
           #endif
         #endif
-        int i=0;
         CkCallback cb(CkIndex_InstanceController::cleanExit(NULL),
                 CkArrayIndex1D(thisInstance.proxyOffset),
                 instControllerProxy);
-        contribute(sizeof(int), &i, CkReduction::sum_int, cb);
+        contribute(cb);
       }
     };
   };
