@@ -93,9 +93,10 @@ module gSpaceDriver
             serial { myGSpaceObj->computeLambdaAndCg(); }
             when doneLambdaAndCg() {}
 
-            // If output is on and we are doing minimization then dump to file
-            // every ndump_frq iteration as well as the final iteration
-            if (config.stateOutput==1 && cp_min_opt==1 && myGSpaceObj->iteration > 1 &&
+            // If output is on and we are doing dynamics then dump to file
+            // every ndump_frq iteration as well as the final iteration. We
+            // skip the first iterations because nothing moves before iter 2.
+            if (config.stateOutput==1 && cp_min_opt==0 && myGSpaceObj->iteration > 1 &&
                 (myGSpaceObj->iteration % ndump_frq==1 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1)) {
               serial { myGSpaceObj->doOutput(); }
               when doneOutput() {}
