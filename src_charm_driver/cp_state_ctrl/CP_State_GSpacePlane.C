@@ -2338,13 +2338,8 @@ void CP_State_GSpacePlane::writeStateDumpFile()
   //------------------------------------------------------------------
   // If you are not plane redPlane, you are done. Invoke the correct reduction.
   if(thisIndex.y!=redPlane){
-    if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1)
-      UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
-    else
-      {
-	int i = 0;
-	contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_CP_State_GSpacePlane::allDoneWritingPsi(NULL),thisProxy));
-      }
+    int i = 0;
+	  contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_CP_State_GSpacePlane::allDoneWritingPsi(NULL),thisProxy));
   }//endif
 }//write the file
 //============================================================================
@@ -2424,13 +2419,10 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
      fftw_free(tk_x); tk_x  = NULL;
      fftw_free(tk_y); tk_y  = NULL;
      fftw_free(tk_z); tk_z  = NULL;
-	if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1)
-	  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
-	else{
-   	  int i=0;
-	contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_CP_State_GSpacePlane::allDoneWritingPsi(NULL),thisProxy));
-	}//endif
-    }//endif
+
+   	int i=0;
+	  contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_CP_State_GSpacePlane::allDoneWritingPsi(NULL),thisProxy));
+  }//endif
 
 //============================================================================
   }//end routine
@@ -2923,8 +2915,8 @@ void CP_State_GSpacePlane::sendPsi() {
       symmPCmgr.sendRightData(numPoints, psi, false);
 #else
   acceptedPsi=true;
-  if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
-  	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
+  //if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
+  //	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
 #endif
 
 //----------------------------------------------------------------------------
@@ -3154,11 +3146,11 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (D) Go back to the top or exit
 
-  if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==0)
-	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
+  //if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==0)
+	//UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
 
-  if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
-	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
+  //if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
+	//UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
 
 //=============================================================================
 // (E) Debug psi

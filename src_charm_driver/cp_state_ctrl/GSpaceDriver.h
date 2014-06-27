@@ -51,10 +51,10 @@ class GSpaceDriver: public CBase_GSpaceDriver
  		void startControl();
 		/// @entry local. GSpace notifies me that its ready to exit by calling this method
 		void readyToExit();
-        /// @entry Ortho notifies us that GSpace needs a tolerance update (velocity rotation)
-        void needUpdatedPsiV();
+    /// @entry Ortho notifies us that GSpace needs a tolerance update (velocity rotation)
+    void needUpdatedPsiV();
 		/// @entry Triggers nonlocal energy computations
-        void startNonLocalEes(int iteration_loc);
+    void startNonLocalEes(int iteration_loc);
 		/// Triggers nonlocal energy computations
 		void releaseSFComputeZ(); 					
 		
@@ -68,8 +68,12 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		int cp_min_opt;
 		///
 		int gen_wave;
-        /// 
-        bool isPsiVupdateNeeded;
+    ///
+    int ndump_frq;
+    /// 
+    bool isPsiVupdateNeeded;
+    ///
+    bool isOutputNeeded;
 
 		/// Pointer to the GSpacePlane object that I am driving (controlling) 
 		CP_State_GSpacePlane *myGSpaceObj;

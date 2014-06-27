@@ -27,11 +27,12 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 	#endif
 	/// Initialize flags and counters that record the control
 	/// state
-        CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
 		ees_nonlocal = sim->ees_nloc_on;
 		natm_nl = sim->natm_nl;
 		cp_min_opt = sim->cp_min_opt;
 		gen_wave = sim->gen_wave;
+    ndump_frq = sim->ndump_frq;
 }//end routine
 
 
@@ -111,11 +112,11 @@ void GSpaceDriver::startControl()
 /// GSpace notifies me that its ready to exit by calling this method
 // TODO: This might not be needed anymore...GSpace can just set the flag.
 // TODO: What if this msg isn't seen until the next iteration? Setting the flag in GSpace might be better?
-void GSpaceDriver::readyToExit()
-{
-	/// Set a flag that indicates this chare is ready to exit
-	myGSpaceObj->cleanExitCalled = 1;
-}
+//void GSpaceDriver::readyToExit()
+//{
+//	/// Set a flag that indicates this chare is ready to exit
+//	myGSpaceObj->cleanExitCalled = 1;
+//}
 
 /// Ortho notifies us that GSpace needs a tolerance update (velocity rotation)
 void GSpaceDriver::needUpdatedPsiV()
