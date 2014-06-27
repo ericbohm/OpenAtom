@@ -1,0 +1,103 @@
+GW Implementation
+(send intro PP book chapters for new post-docs)
+
+1. Would be built to be independent build, share same repository and reuse code infrastructure
+
+2. Load all the states
+
+2a. into distinct arrays for unoccupied vs occupied to handle replication considerations for the latter
+ -- these are all readonly quantities in GW
+2b. implement a 2nd index for blocking of r
+ -- probably more efficient at large scales
+
+3. FFT transform all and keep them in realspace.
+3a. Each would be parallelized within the node
+3b. use node local memory representation
+3c. cache replication scheme from ChaNGa probably overkill as their data updates each iteration, ours is computed once
+
+For each Q {
+For each K {
+4. Loop over the band pairs producing the product
+4a. results go into the P_calculator which is blocked across chunks of r
+- consider interleaving across X k-points at a time, so that communication can overlap computation
+4b. result is the (enormous) P_q matrix, which is indexed by r and r'
+
+
+}
+5. FFT transform
+5a. across columns
+5b. across rows
+5c. result in \pi matrix
+
+6.
+6a. scaling operation on \pi [point by point multiply, of hermitian]
+6b. results in \delta 
+6c. add one to diagonal elements to get \epsilon, (analogous to \ortho)
+
+7. iterative matrix inversion
+8. new operations will be introduced to use epsilon
+8a. for now we output epsilon
+}
+       
+9. exit
+
+
+----
+
+Glenn and Sohrab will:
+
+1. Create sample bands
+2. Create converter to load into GW mini-app
+3. Assign post-docs to implement GW mini-app
+4. Note: mini-app also has design goal of being test bed for published algorithm comparison and improvement.
+
+----
+
+Mini-app for transpose studies
+1. fft and transpose across rows
+2. fft and transpose across columns
+3. Eric will implement spread sheet model comparison of different approaches for computation and communication based on replication of occupied states in concert with different blocking schemes for slices of realspace.  r and the band can be blocked and combined in various ways to favor locality vs exposed parallelism
+
+That approach can be considered in comparison to the gspace approach which, would require an additional number of fft operations, one for each occupied state.  Which is a greater larger amount of computation, though of lower communication intensity.
+
+Note: implementing this is a candidate activity for this visit
+
+Homework for Sohrab: update the GW notes with finalized NFFT values/choice
+
+--- Phase 2 ---
+
+
+given \epsilon^-1 ...
+
+Sohrab: Work out the matrix math version for the phase 2 of GW.
+As base document for refinement of discussion
+Begin considering what the target physical systems would be like for an INCITE grant for SUs to use code resulting from 
+intermediate implementation.  
+
+
+Glenn: discuss ground state work with Nick to prioritize the work.
+1. band generation
+2. hybrids
+3. super soft pseudo potentials -- PAWS 
+4. Van der Waals ala Scheffler
+5. compute stress/pressure tensor 
+
+Also consider applications of k-points and path integrals in INCITE proposal. 
+
+----
+
+Glenn and Eric
+
+- fix dynamics for the orthograinsize issue
+- rediscover status of k-point dynamics
+- compilation choice for k-points to get support for gamma vs k-points
+-- would prefer a universal executable that handles either
+- huge mess at the start of cpaimd.C
+-- break up into function calls and possibly multiple files
+-- remove the CmiProgress nonsense  BG/L is dead, long live BG/Q
+- remove commlib cruft, as it is no longer generally applicable
+- shift mapping from init rho to an init rho mapping func
+-- split into one set of functions for mapping and another for instantiation
+- update HowStartupWorks for Ubers
+- create doc explaining how to add a new chare array
+- merge SDAG to main when output works

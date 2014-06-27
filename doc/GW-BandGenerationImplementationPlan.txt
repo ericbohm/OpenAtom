@@ -1,0 +1,71 @@
+Todo list to modify OpenAtom for band generation:
+
+0. Add option to output VKS to files (1 per plane) from OpenAtom.  After minimization of valence band completes.
+- Glenn to implement.
+
+1. Add option for band generation as a minimization type, this loads VKS and disables all electron density phases, all other phases continue as normal, unless specifically revised below.
+- To be done in the SDAG branch
+- variant flow control path for band generation
+
+2. Add parameter for beginning of unoccupied states so that they can be initialized, or read in explicitely like the occupied states.
+  InitializeUnoccupiedStates (new function)
+  - slight variation of the existing wavegen scheme for occupied states.
+  - Glenn to implement new wavegen
+
+3. Psi computation (PC_Symm fwd and back to generate S-(1/2) and orthonormalize) (no change)
+
+4. Force * Psi {PC_Asymm_Fwd} computation to produce Lambda (no change)
+
+Smart way (handles systems without a gap)
+5. Lambda diagonalized to produce E_vec (eigenvectors) and E_s (eigenvalues) (new diagonalizer module)
+- Eric B. to add new instance of PC to handle the E_vec operations
+
+5a. E_vec * Force {PC_Asymm_bwd} (new functionality)
+
+5b. E_vec * Psi {PC_Asymm_bwd} (new functionality)
+
+5c. Add machinery to keep states in the KS gauge, if necessary. (Glenn hopes it is not necessary for minimization)
+
+6. Lambda corrected Force, Psi, E_s sent to GSpace in new entry method CP_State_GSpacePlane::GSAcceptDiagLambda
+- Eric B. to add new entry point
+
+6a. option to output the eigenvalues to file for other analytical purposes (new functionality)
+- an array of doubles for each k-point and spin
+
+6b. GSAcceptDiagLambda usual subtraction as AcceptLambda did before
+
+7. GSDoDiagLambda continues usual minimization paths
+
+8. when minimized, output electron states (as normal) and eigenvalues (new output)
+
+9. add option for normal minimization to diagonalize lambda and output eigenvalues when the states have been minimized (dumb way).
+
+
+----
+We construct a node level cache for VKS, such that only the pieces necessary on each node are loaded there.  
+Note: current implementation would be planewise pieces, future would be pencils.
+
+VKSCache::load()
+{
+for(i=0; i<NumRegisteredPieces; i++)
+    load(vks[RegisteredPiece[i]);
+contribute(GlobalReductionDoneVKSLoad);
+}
+
+
+Note, we could leverage VKSCache in normal OpenAtom to reduce memory footprint and lower the memory bandwidth cost of the multicast from RhoReal to CP_StateRealSpacePlane.
+
+DoneVKS must be added to startup phases when this minimization scheme is chosen.
+
+
+-----
+Need to schedule a week of intensive development on this:
+
+0. Decide on diagonalizer, test integration with mini-app to verify interoperability
+1. Generate intermediate results to verify that the steps work correctly
+2. Implement when Glenn visits
+
+
+
+
+       
