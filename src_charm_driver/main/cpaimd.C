@@ -10,7 +10,7 @@
  * OpenAtom is a **Car-Parrinello Ab-Initio Molecular Dynamics**
  * software developed by the **Parallel Programing Laboratory, UIUC**
  * in collaboration with **IBM, NYU, and Yale**. See also the 
- * [OpenAtom webpage](http://\charm.cs.illinois.edu/OpenAtom).
+ * [OpenAtom webpage](http://Charm.cs.illinois.edu/OpenAtom).
  *
  * ###Introduction###
  * OpenAtom is parallel simulation software for studying atomic and molecular 
@@ -23,7 +23,7 @@
  * OpenAtom to study complex atomic and electronic physics in semiconductor, 
  * metallic, biological and other molecular systems.
  * 
- * OpenAtom is implemented on top of [Charm++](http://\charm.cs.illinois.edu),
+ * OpenAtom is implemented on top of [Charm++](http://Charm.cs.illinois.edu),
  * which is an over-decomposition based parallel programming framework that provides
  * 
  * support for message-driven execution of migratable entities empowered by an
@@ -98,7 +98,7 @@
  *
  * OpenAtom is to be executed as a Charm++ application, which is
  * explained in detail at 
- * [this link](http://\charm.cs.illinois.edu/manuals/html/\charm++/C.html). The
+ * [this link](http://Charm.cs.illinois.edu/manuals/html/charm++/C.html). The
  * general syntax is as follows:
  *
  *       ./charmrun +p<N> ./OpenAtom <path to cpaimd config> <path to water input> (N 
