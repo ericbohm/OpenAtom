@@ -176,7 +176,8 @@ void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter)
 
 
 
-/** Probe for atom completion : Could have atom group invoke this function directly on all chares for which 
+/** \brief Probe for atom completion  */
+/* Could have atom group invoke this function directly on all chares for which 
  * it is responsible. There is an atom group on each proc. Some number of driver chares reside on each proc. 
  * This information is known by main and could be put into atom constructor. The atom group
  * would then know which chares upon which to invoke this method. Careful, careful with migration with this 
@@ -184,11 +185,10 @@ void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter)
  */
 void GSpaceDriver::doneMovingAtoms(const int AtomsGrpIter)
 {
-  //  CkPrintf("{%d}[%d] GSpaceDriver::doneMovingAtoms()\n ", thisInstance.proxyOffset, CkMyPe());     
-  /// Ensure the iterations are synced @todo: Should this be an if condition? It was when it lived in GSpace
+
+  /// Ensure the iterations are synced 
   CkAssert(myGSpaceObj->iteration == AtomsGrpIter);
 
-  ///
   isAtomIntegrationDone = true;
   myGSpaceObj->screenPrintWallTimes();
   /// If GSpace has already called for an exit, check if we can exit again
