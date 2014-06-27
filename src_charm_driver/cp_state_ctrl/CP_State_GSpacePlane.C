@@ -223,8 +223,6 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
        }//endif
      }//endif
   }//endif
-
-	//doneCgOverlap();
 //============================================================================
   }// end routine
 //============================================================================
@@ -1535,10 +1533,10 @@ void CP_State_GSpacePlane::doIFFT()
 
     /// If there is a barrier after the IFFTs, contribute to the reduction barrier that will sync all GSpace chares
     #ifdef BARRIER_CP_GSPACE_IFFT
-        //put contribute here to reduction with a broadcast client
-        int wehaveours=1;
-        contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-        	CkCallback(CkIndex_CP_State_GSpacePlane::allDoneIFFT(NULL),thisProxy));
+    //put contribute here to reduction with a broadcast client
+    int wehaveours=1;
+    contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+        CkCallback(CkIndex_CP_State_GSpacePlane::allDoneIFFT(NULL),thisProxy));
     #endif
 }//end routine
 //=============================================================================================================
@@ -2253,7 +2251,7 @@ void CP_State_GSpacePlane::computeCgOverlap() {
 //============================================================================
 // In this function data is written to files the simpliest way possible
 //============================================================================
-void CP_State_GSpacePlane::writeStateDumpFile()
+void CP_State_GSpacePlane::contributeFileOutput()
 {
   // Local pointers, variables and error checking
   if(!acceptedPsi || !acceptedLambda || !acceptedVPsi)
@@ -2334,13 +2332,7 @@ void CP_State_GSpacePlane::writeStateDumpFile()
     data[i]  = psi[i];  
     mk_x[i]  = k_x[i];  mk_y[i]  = k_y[i];  mk_z[i]  = k_z[i];
   }//endfor
-  UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,redPlane).collectFileOutput(msg);
-  //------------------------------------------------------------------
-  // If you are not plane redPlane, you are done. Invoke the correct reduction.
-  if(thisIndex.y!=redPlane){
-    int i = 0;
-	  contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_CP_State_GSpacePlane::allDoneWritingPsi(NULL),thisProxy));
-  }//endif
+  UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,redPlane).acceptFileOutput(msg);
 }//write the file
 //============================================================================
 
@@ -2349,20 +2341,12 @@ void CP_State_GSpacePlane::writeStateDumpFile()
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
+void CP_State_GSpacePlane::unpackFileOutput(GStateOutMsg *msg) {
 //============================================================================
 
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
-  int sizeX        = (sim->sizeX);
-  int sizeY        = (sim->sizeY);
-  int sizeZ        = (sim->sizeZ);
   int npts_tot     = (sim->npts_tot);
   int *ipacked_off = (sim->index_output_off);
-  int cp_min_opt   = (sim->cp_min_opt);
-  int ibinary_write_opt = sim->ibinary_write_opt;
-
-  int myiteration = iteration;
-  if(cp_min_opt==0){myiteration=iteration-1;}
 
 //============================================================================
 // Receive the message
@@ -2393,37 +2377,47 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
   }//endfor
 
   delete msg;
+//============================================================================
+  }//end routine
+//============================================================================
 
 //============================================================================
-// If you've got the whole state, write it out and then invoke the reduction.
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_GSpacePlane::writeOutputFile() {
+//============================================================================
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int sizeX        = (sim->sizeX);
+  int sizeY        = (sim->sizeY);
+  int sizeZ        = (sim->sizeZ);
+  int npts_tot     = (sim->npts_tot);
+  int cp_min_opt   = (sim->cp_min_opt);
+  int ibinary_write_opt = sim->ibinary_write_opt;
 
-  if(countFileOut==nchareG){
-     countFileOut = 0;
-     int ind_state = thisIndex.x+1;
-     int ibead     = myBeadIndex;
-     int ikpt      = myKptIndex;
-     int itemper   = myTemperIndex;
-     int ispin     = mySpinIndex;
+  int myiteration = iteration;
+  if(cp_min_opt==0){myiteration=iteration-1;}
 
-     char psiName[400]; char vpsiName[400];
+   countFileOut = 0;
+   int ind_state = thisIndex.x+1;
+   int ibead     = myBeadIndex;
+   int ikpt      = myKptIndex;
+   int itemper   = myTemperIndex;
+   int ispin     = mySpinIndex;
 
-     sprintf(psiName,  "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/state%d.out",
-                       config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
-     sprintf(vpsiName, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/vState%d.out",
-                       config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
-     writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
-                    sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
-                    myiteration,ind_state,ispin,ikpt,ibead,itemper);
-     fftw_free(tpsi); tpsi  = NULL;
-     fftw_free(tvpsi);tvpsi = NULL;
-     fftw_free(tk_x); tk_x  = NULL;
-     fftw_free(tk_y); tk_y  = NULL;
-     fftw_free(tk_z); tk_z  = NULL;
+   char psiName[400]; char vpsiName[400];
 
-   	int i=0;
-	  contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_CP_State_GSpacePlane::allDoneWritingPsi(NULL),thisProxy));
-  }//endif
-
+   sprintf(psiName,  "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/state%d.out",
+                     config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
+   sprintf(vpsiName, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/vState%d.out",
+                     config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
+   writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
+                  sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
+                  myiteration,ind_state,ispin,ikpt,ibead,itemper);
+   fftw_free(tpsi); tpsi  = NULL;
+   fftw_free(tvpsi);tvpsi = NULL;
+   fftw_free(tk_x); tk_x  = NULL;
+   fftw_free(tk_y); tk_y  = NULL;
+   fftw_free(tk_z); tk_z  = NULL;
 //============================================================================
   }//end routine
 //============================================================================
@@ -2915,8 +2909,6 @@ void CP_State_GSpacePlane::sendPsi() {
       symmPCmgr.sendRightData(numPoints, psi, false);
 #else
   acceptedPsi=true;
-  //if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
-  //	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
 #endif
 
 //----------------------------------------------------------------------------
@@ -3142,15 +3134,6 @@ void CP_State_GSpacePlane::doNewPsi(){
 // (B) Generate some screen output of orthogonal psi
 
   if(iteration>0){screenOutputPsi(iteration);}
-
-//=============================================================================
-// (D) Go back to the top or exit
-
-  //if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==0)
-	//UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
-
-  //if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
-	//UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
 
 //=============================================================================
 // (E) Debug psi

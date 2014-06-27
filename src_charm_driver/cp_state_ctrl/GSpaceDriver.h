@@ -70,7 +70,7 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		int gen_wave;
     ///
     int ndump_frq;
-    /// 
+    ///
     bool isPsiVupdateNeeded;
     ///
     bool isOutputNeeded;

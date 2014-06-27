@@ -180,7 +180,9 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void sendRedPsi();
         void combineForcesGetEke();
         void integrateModForce();
-        void writeStateDumpFile();
+        void contributeFileOutput();
+        void unpackFileOutput(GStateOutMsg* msg);
+        void writeOutputFile();
         /// @entry This is used to receive data from all the corresponding RealSpacePlanes, upon which the inverse FFTs are triggered
         void unpackIFFT(GSIFFTMsg *);
         void doIFFT();

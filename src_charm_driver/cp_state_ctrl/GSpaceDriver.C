@@ -55,6 +55,7 @@ void GSpaceDriver::pup(PUP::er &p)
 	p|natm_nl;
 	p|cp_min_opt;
 	p|gen_wave;
+  p|ndump_frq;
 	p|isPsiVupdateNeeded;
 	p|sfCompSectionProxy;
 }
@@ -106,18 +107,6 @@ void GSpaceDriver::startControl()
 	driveGSpace();
 }
 
-
-
-
-/// GSpace notifies me that its ready to exit by calling this method
-// TODO: This might not be needed anymore...GSpace can just set the flag.
-// TODO: What if this msg isn't seen until the next iteration? Setting the flag in GSpace might be better?
-//void GSpaceDriver::readyToExit()
-//{
-//	/// Set a flag that indicates this chare is ready to exit
-//	myGSpaceObj->cleanExitCalled = 1;
-//}
-
 /// Ortho notifies us that GSpace needs a tolerance update (velocity rotation)
 void GSpaceDriver::needUpdatedPsiV()
 {
@@ -127,16 +116,9 @@ void GSpaceDriver::needUpdatedPsiV()
     contribute( sizeof(int), &foo, CkReduction::min_int, CkCallback(CkIndex_Ortho::resumeV(NULL), myGSpaceObj->myOrtho) );
 }
 
-
-
-
 /// Trigger the nonlocal computations
 void GSpaceDriver::startNonLocalEes(int iteration_loc)
 {
-
-    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
-    //int natm_nl  = sim->natm_nl;
-
     if(iteration_loc!=myGSpaceObj->iteration)
         CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
 

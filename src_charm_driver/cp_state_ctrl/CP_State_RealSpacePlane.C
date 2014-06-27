@@ -82,45 +82,6 @@ extern CkReduction::reducerType sumFastDoubleType;
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-RTH_Routine_locals(CP_State_RealSpacePlane,run)
-RTH_Routine_code(CP_State_RealSpacePlane,run) {
-//============================================================================
-
-  while(1) { 
-    // constructor invokes run and then you suspend (no work yet)
-    RTH_Suspend(); 
-    c->doFFT();    // state(g,z) from gstate arrives in dofft(msg) which resumes
-#ifndef _CP_DEBUG_RHO_OFF_
-    RTH_Suspend(); // after doreduction sends data to rhoreal, suspend
-#endif
-
-#ifdef RSVKS_BARRIER  // pause for every single chare to finish
-    if(!(c->allVksDone())){
-      RTH_Suspend(); // wait for broadcast that all vks is done  
-    }//endif
-#endif               //end pause
-    c->thisProxy(c->thisIndex.x,c->thisIndex.y).doVksFFT(); // vks(r) arrives in doproduct(msg) which resumes
-    c->sendFPsiToGSP();
-  } //end while not done
-
-//--------------------------------------------------------------------------
-   } RTH_Routine_end(CP_State_RealSpacePlane,run)
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-//void CP_State_RealSpacePlane::run () {
-//  run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_State_RealSpacePlane,run),this);
-//  RTH_Runtime_resume(run_thread);
-//}
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits, 
                   int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc,
 		  int _rfortime, int _rbacktime, UberCollection _instance)
