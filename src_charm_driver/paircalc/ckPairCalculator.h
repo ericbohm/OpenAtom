@@ -108,21 +108,22 @@ void ZGEMM (char *, char *, int *, int *, int *,complex *,complex *, int *, comp
  *            y: coordinate offset within plane (a factor of grainsize)
  *            z: chunk offset within array of nonzero points
  *       So, for an example grainsize of 64 for a 128x128 problem:
+\verbatim
  *        numStates/grainsize gives us a 2x2 decomposition.
  *        1st quadrant ranges from [0,0]   to [63,63]    index [w,0,0,0]
  *        2nd quadrant ranges from [0,64]  to [63,127]   index [w,0,64,0]
  *        3rd quadrant ranges from [64,0]  to [127,63]   index [w,64,0,0]
  *        4th quadrant ranges from [64,64] to [127,127]  index [w,64,64,0]
- *
- *       0   64   127
- *     0 _________
- *       |   |   |
- *       | 1 | 2 |
- *    64 ---------
- *       |   |   |
- *       | 3 | 4 |
- *   127 ---------
- *
+
+      0   64   127
+     0 _________
+       |   |   |
+       | 1 | 2 |
+    64 ---------
+       |   |   |
+       | 3 | 4 |
+   127 ---------
+\endverbatim
  *
  *
  * Further complication arises from the fact that each plane is a

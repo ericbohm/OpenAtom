@@ -17,7 +17,7 @@ CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs);*/
 void fastAdd (double *a, double *b, int nelem);
 
 
-// sum together matrices of doubles
+/** \brief sum together matrices of doubles */
 // possibly faster than CkReduction::sum_double due to minimizing copies
 // and calling CmiNetworkProgress
 inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
@@ -56,7 +56,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
   return CkReductionMsg::buildNew(size*sizeof(double),ret);
 }
 
-// A functor to simply delegate a gemm to either zgemm or dgemm based on how its instantiated
+/** \brief A functor to simply delegate a gemm to either zgemm or dgemm based on how its instantiated */
 void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex *A, int *lda, complex *B, int *ldb, double *beta, complex *C, int *ldc)
 {
     complex cAlpha(*alpha,0.), cBeta(*beta,0.);
@@ -76,6 +76,7 @@ void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double 
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
+/** \brief constructor */
 PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig _cfg): cfg(_cfg)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
@@ -222,7 +223,7 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
 }
 
 
-
+/** \brief pack and unpack */
 void
 PairCalculator::pup(PUP::er &p)
 {
@@ -327,6 +328,7 @@ PairCalculator::pup(PUP::er &p)
 
 }
 
+/** \brief destructor */
 PairCalculator::~PairCalculator()
 {
 
@@ -364,6 +366,7 @@ PairCalculator::~PairCalculator()
 
 
 
+/** \brief initialize the ortho reduction trees and cookies */
 void PairCalculator::initGRed(initGRedMsg *msg)
 {
 //============================================================================
@@ -417,13 +420,14 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   //  do not delete nokeep msg
 }
 
+/** \brief setup of phantom is done */
 void PairCalculator::phantomDone()
 {
   //  CkPrintf("[%d,%d,%d,%d,%d] phantom contrib\n");
   contribute(sizeof(int), &numOrtho , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
 }
 
-
+/** \brief initialize the multicast tree and cookies for backward path */
 void PairCalculator::initResultSection(initResultMsg *msg)
 {
 //============================================================================
@@ -470,7 +474,7 @@ void PairCalculator::ResumeFromSync() {
 }
 
 
-
+/** \brief accept data for left side of pair */
 void PairCalculator::acceptLeftData(paircalcInputMsg *msg) 
 {
     inputType *data = msg->data();
@@ -530,7 +534,7 @@ void PairCalculator::acceptLeftData(paircalcInputMsg *msg)
 }
 
 
-
+/** \brief accept data for right side of pair */
 void PairCalculator::acceptRightData(paircalcInputMsg *msg) 
 {
     inputType *data = msg->data();
@@ -594,7 +598,7 @@ void PairCalculator::acceptRightData(paircalcInputMsg *msg)
 }
 
 
-
+/** once the data has arrived, launch the forward path */
 void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
 {
     #ifdef _PAIRCALC_DEBUG_
