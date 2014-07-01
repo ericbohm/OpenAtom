@@ -1248,33 +1248,29 @@ void CP_State_GSpacePlane::screenPrintWallTimes()
 {
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   // do new iteration output once globally from the 0th instance
-  if(thisIndex.x==0 && thisIndex.y==0 
-     && thisInstance.idxU.x==0 && thisInstance.idxU.y==0 
-     && thisInstance.idxU.z==0 && thisInstance.idxU.s==0 )
-    {
-      int iprintout   = config.maxIter;
-      if(!(sim->cp_min_opt==1) && !sim->gen_wave){iprintout-=1;}
-      int itime       = iteration;
-      if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
-      wallTimeArr[itime] = CkWallTimer();
-      if (iteration == iprintout && config.maxIter<30) {
-	CkPrintf("-------------------------------------------------------------------------------\n");
-	CkPrintf("Wall Times from within GSP\n\n");
-	for (int t = 1; t < iprintout; t++){
-	  CkPrintf("%g\n",wallTimeArr[t] - wallTimeArr[t-1]);
-	}//endfor
-	if(itime>0)
-	  {
-	    CkPrintf("%g\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
-	    CkPrintf("-------------------------------------------------------------------------------\n");
-	  }
-      }else{
-	if(iteration>0){
-	  CkPrintf("Iteration time (GSP) : %g\n", 
-		   wallTimeArr[itime] - wallTimeArr[itime-1]);
-	}//endif
-      }//endif
+  if (thisIndex.x==0 && thisIndex.y==0 &&
+      thisInstance.idxU.x==0 && thisInstance.idxU.y==0 &&
+      thisInstance.idxU.z==0 && thisInstance.idxU.s==0 ) {
+    int iprintout   = config.maxIter;
+    if(!(sim->cp_min_opt==1) && !sim->gen_wave){iprintout-=1;}
+    int itime       = iteration;
+    if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
+    wallTimeArr[itime] = CkWallTimer();
+    if (iteration == iprintout && config.maxIter<30) {
+      CkPrintf("-------------------------------------------------------------------------------\n");
+      CkPrintf("Wall Times from within GSP\n\n");
+      for (int t = 1; t < iprintout; t++) {
+        CkPrintf("%g\n",wallTimeArr[t] - wallTimeArr[t-1]);
+      }//endfor
+      if(itime>0) {
+        CkPrintf("%g\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
+        CkPrintf("-------------------------------------------------------------------------------\n");
+      }
+    } else if(iteration>0) {
+      CkPrintf("Iteration time (GSP) : %g\n", 
+      wallTimeArr[itime] - wallTimeArr[itime-1]);
     }//endif
+  }//endif
 }
 
 //============================================================================
