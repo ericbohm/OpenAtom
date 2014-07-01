@@ -112,7 +112,7 @@ module gSpaceDriver
           when doneNewPsi() {}
 
           // If output is on and we are doing minimization then dump to file
-          // every ndump_frq iteration as well as the final iteration
+          // every ndump_frq iteration as well as the final iteration.
           if (config.stateOutput==1 && cp_min_opt==1 && myGSpaceObj->iteration > 0 &&
               (myGSpaceObj->iteration % ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1)) {
             serial { myGSpaceObj->doOutput(); }
@@ -131,19 +131,25 @@ module gSpaceDriver
           if (!_SDAG_DEBUG_PSI_OFF_) {
             when doneComputingEnergy(const int AtomGrpIter) {}
           }
-          when doneMovingAtoms(const int AtomsGrpIter) serial { myGSpaceObj->screenPrintWallTimes(); }
+          when doneMovingAtoms(const int AtomsGrpIter) {}
         }
 
-        serial { isFirstStep = false; }
+        // Print out the iteration times and set isFirstStep to false.
+        serial {
+          myGSpaceObj->screenPrintWallTimes();
+          isFirstStep = false;
+        }
       }  // end while simulation is running
 
-      // Let the instance controller know we are finished
       serial {
-        #ifdef _CP_SUBSTEP_TIMING_
-          #if USE_HPM
-            (TimeKeeperProxy.ckLocalBranch())->printHPM();
-          #endif
-        #endif
+#ifdef _CP_SUBSTEP_TIMING_
+#if USE_HPM
+        // Print additional timing information
+        (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif
+#endif
+        // Contribute to a reduction to let the instance controller know
+        // that the computation is complete.
         CkCallback cb(CkIndex_InstanceController::cleanExit(NULL),
                 CkArrayIndex1D(thisInstance.proxyOffset),
                 instControllerProxy);
