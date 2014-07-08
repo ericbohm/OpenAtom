@@ -723,6 +723,8 @@ void computeMapOffsets();
 #include "energy.h"
 #include "paircalc/ckPairCalculator.h"
 #include "cpaimd.decl.h"
+void paircalcstartup(pc::pcConfig *cfgSymmPC, pc::pcConfig *cfgAsymmPC, CPcharmParaInfo *sim, int doublePack);
+void orthostartup( cp::ortho::orthoConfig *orthoCfg, pc::pcConfig *cfgSymmPC, pc::pcConfig *cfgAsymmPC, CPcharmParaInfo *sim, PeListFactory *peList4PCmapping);
 
 #endif
 

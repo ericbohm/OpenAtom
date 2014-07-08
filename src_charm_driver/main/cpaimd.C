@@ -189,111 +189,7 @@ extern CP           readonly_cp;
 //============================================================================
 
 
-//============================================================================
-/**
- * @defgroup proxy_vars proxy_vars
- * Defining all the Charm++ readonly variables, which include proxies
- * 
- * to access the arrays and groups and the Communication Library
- * handles.
- */
-//============================================================================
-/**@{*/
-bool firstInstance = true;  
-int numInst=0;
-// INT_MAPs are the ones actually used so
-// these are being changed to CkVec's for beads
-CkVec <int> PIBImaptable;
-CkVec <MapType1> AtomImaptable;
-CkVec <MapType2> GSImaptable;
-CkVec <MapType2> RSImaptable;
-CkVec <MapType2> RPPImaptable;
-CkVec <MapType2> RhoGSImaptable;
-CkVec <MapType2> RhoRSImaptable;
-CkVec <MapType2> RhoGHartImaptable;
-CkVec <MapType3> RhoRHartImaptable;
-//CkVec <MapType1> LSPRhoGSImaptable;
-CkVec <MapType2> LSPRhoRSImaptable;
-
-#ifndef USE_INT_MAP
-CkHashtableT<intdual, int> GSmaptable(10000,0.25);
-CkHashtableT<intdual, int> RSmaptable(10000,0.25);
-CkHashtableT<intdual, int> RPPmaptable(10000,0.25);
-CkHashtableT<intdual, int> AsymScalcmaptable(10000,0.25);
-CkHashtableT<intdual, int> SymScalcmaptable(10000,0.25);
-#else
-CkHashtableT<intdual, int> GSmaptable;
-CkHashtableT<intdual, int> RSmaptable;
-CkHashtableT<intdual, int> RPPmaptable;
-CkHashtableT<intdual, int> AsymScalcmaptable;
-CkHashtableT<intdual, int> SymScalcmaptable;
-#endif
-CkHashtableT<intdual, int> RhoGSmaptable;
-CkHashtableT<intdual, int> RhoRSmaptable;
-CkHashtableT<intdual, int> RhoGHartmaptable;
-CkHashtableT<inttriple, int> RhoRHartmaptable;
-CkHashtableT<intdual, int> Orthomaptable;
-CkHashtableT<intdual, int> OrthoHelpermaptable;
-
-
-CProxy_main                       mainProxy;
-CProxy_PhysScratchCache           pScratchProxy;
-Config                            config;
-CProxy_TimeKeeper                 TimeKeeperProxy;
-CProxy_InstanceController         instControllerProxy;
-CProxy_TemperController         temperControllerProxy;
-CProxy_ENL_EKE_Collector          ENLEKECollectorProxy;
-CPcharmParaInfo simReadOnly;
-/**@}*/
-
-//============================================================================
-/** @defgroup Uber Uber
- * \brief Ubers provide a multidimensional collection of CkArray proxies such that a complete instance of all objects necessary for a simulation are accessible at each unique tuple of indices. 
- * 
- *  Uber proxies for all the things which change per step 
- *  
- *  Indexed by PathIntegral Bead.  Each Bead has its own set of
- *  proxies.  Charm driver startup will construct a different set of
- *  arrays for each bead.  
- *
- *  There is a small flexibility vs performance tradeoff.  If we
- *  assume beads are never co-mapped, then the old readonly can be
- *  overwritten locally on each processor
- *  (e.g. gSpacePlaneProxy=UgSpacePlaneProxy[mybead];)
- *  Otherwise we force a slight indirection penalty to lookup 
- *  U*Proxy[mybead] for every send.  In practice this is probably
- *  noise compared to the real expense of sending a message, but it
- *  does seem a little silly for the default case where there is only
- *  one bead.
- */
-
-
-/** \addtogroup Uber */
-/**@{*/
-CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
-CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
-CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
-CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
-CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
-CkVec <CProxy_CP_State_RealSpacePlane>    UrealSpacePlaneProxy;
-CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
-CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
-CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
-CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-CkVec <CProxy_AtomsCompute>               UatomsComputeProxy;
-CkVec <CProxy_AtomsCache>                 UatomsCacheProxy;
-CkVec <CProxy_EnergyGroup>                UegroupProxy;
-CkVec <CProxy_FFTcache>                   UfftCacheProxy;
-CkVec <CProxy_StructFactCache>            UsfCacheProxy;
-CkVec <CProxy_StructureFactor>            UsfCompProxy;
-CkVec <CProxy_eesCache>                   UeesCacheProxy;
-CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
-CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
-
-CkVec <UberCollection>			  UberAlles;
-CkVec < PeList * >                        UavailProcs;
-
-/**@}*/
+#include "mapvariables.h"
 
 
 //============================================================================
@@ -310,54 +206,9 @@ bool Ortho_use_local_cb;
 int done_init=0;
 int planes_per_pe;
 
-
-
-CkVec < CkVec <int> > UpeUsedBySF;
-CkVec < CkVec <int> > UpeUsedByNLZ;
-CkVec < CkVec <int> > UplaneUsedByNLZ;
-
-PeList *availGlobG=NULL;
-PeList *availGlobR=NULL;
-PeList *excludePes=NULL;
-int boxSize;
-TopoManager *topoMgr=NULL;
-inttriple *mapOffsets=NULL;
 //============================================================================
 
-
-//============================================================================
-//#ifdef USE_COMLIB
-ComlibInstanceHandle orthoInstance;
-ComlibInstanceHandle commGHartInstance;
-ComlibInstanceHandle commGInstance0;
-ComlibInstanceHandle commGInstance1;
-ComlibInstanceHandle commGInstance2;
-ComlibInstanceHandle commGInstance3;
-ComlibInstanceHandle commGByrdInstance;
-ComlibInstanceHandle commRealInstance;
-ComlibInstanceHandle commRealIGXInstance;
-ComlibInstanceHandle commRealIGYInstance;
-ComlibInstanceHandle commRealIGZInstance;
-
-ComlibInstanceHandle gAsymInstance;
-ComlibInstanceHandle gSymInstance;
-
-CkVec <ComlibInstanceHandle> mcastInstance;
-ComlibInstanceHandle mcastInstancePP;
-ComlibInstanceHandle mcastInstanceRPP;
-ComlibInstanceHandle mcastInstancemRPP;
-
-ComlibInstanceHandle mssInstance;
-ComlibInstanceHandle gssInstance;
-
-ComlibInstanceHandle gssPInstance;
-ComlibInstanceHandle mssPInstance;
-
-ComlibInstanceHandle commRHartGHartIns;
-ComlibInstanceHandle commGHartRHartIns0;
-ComlibInstanceHandle commGHartRHartIns1;
-//#endif
-
+#include "commlibhandles.h"
 
 /// Multicast manager group that handles many mcast/redns in the code. Grep for info
 CkGroupID            mCastGrpId;
@@ -396,56 +247,6 @@ main::main(CkArgMsg *msg) {
     }//endif
     CkPrintf("Executing OpenAtom: BINARY - %s\n", msg->argv[0]);
     CkPrintf("Binary produced from source-tree at commit: %s\n",OpenAtomRevision);
-
-    if(msg->argc >3 && msg->argv[3][0] == 't')
-      {
-
-	//get system name
-	char tidyphysfname[1024];
-	bzero(tidyphysfname,1024);
-	char simfname[1024];
-	bzero(simfname,1024);
-	char *lastslash=strrchr(msg->argv[1],'/');
-	if(lastslash==NULL)
-	  {
-	    lastslash=msg->argv[2];
-	    strncat(tidyphysfname,"./tidy ",8);
-	  }
-	else
-	  {
-	    strncat(tidyphysfname,msg->argv[2],lastslash-msg->argv[2]);
-	    strncpy(simfname,tidyphysfname,1024);
-	    strncat(tidyphysfname,"/tidy ",8);
-	    strncat(simfname,"/",2);
-	    lastslash++;
-	  }
-	strncat(tidyphysfname,lastslash,strchr(msg->argv[2],'.') - lastslash);
-	strncat(simfname,lastslash,strchr(msg->argv[2],'.') - lastslash);
-	CkPrintf("  Tidy mode, running %s\n",tidyphysfname);
-	unlink(simfname);
-	assert(system(tidyphysfname)>=0);
-	strncpy(tidyphysfname,simfname,1024);
-	strncat(tidyphysfname,".coords_out",20);
-	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
-	unlink(tidyphysfname);
-	strncpy(tidyphysfname,simfname,1024);
-	strncat(tidyphysfname,".coords.out",20);
-	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
-	unlink(tidyphysfname);
-	strncpy(tidyphysfname,msg->argv[2],1024);
-	strncat(tidyphysfname,".out",20);
-	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
-	unlink(tidyphysfname);
-	strncpy(tidyphysfname,simfname,1024);
-	strncat(tidyphysfname,".confp",20);
-	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
-	unlink(tidyphysfname);
-	strncpy(simfname,msg->argv[1],1024);
-	strncat(simfname,".out",4);
-	CkPrintf("  Tidy mode, unlinking %s\n",simfname);
-	unlink(simfname);
-	sleep(1);
-      }
     CkPrintf("\n");
     PRINT_LINE_STAR;
     CkPrintf("Starting Cpaimd-Charm-Driver Setup Phase\n");
@@ -595,93 +396,17 @@ main::main(CkArgMsg *msg) {
     // timekeeper itself doesn't care.
     TimeKeeperProxy = CProxy_TimeKeeper::ckNew();
     // Create a multicast manager group that will handle many mcast/redns
+
     mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
-
-
-     /* choose whether ortho should use local callback */
-     Ortho_use_local_cb = true;
 
     // Create a paircalc config object for the symmetric PC instance
     pc::pcConfig cfgSymmPC;
-
-    // Stuff it with the actual configurations
-    cfgSymmPC.isDynamics         = (sim->cp_min_opt==1)? false: true;
-    cfgSymmPC.useComplexMath     = false;
-
-    cfgSymmPC.numPlanes          = config.nchareG;
-    cfgSymmPC.numStates          = nstates;
-    cfgSymmPC.grainSize          = config.sGrainSize;
-    cfgSymmPC.orthoGrainSize     = config.orthoGrainSize;
-
-    cfgSymmPC.conserveMemory     = config.conserveMemory;
-    cfgSymmPC.isLBon             = config.lbpaircalc;
-
-    cfgSymmPC.areBWTilesCollected= config.PCCollectTiles;
-    cfgSymmPC.isBWstreaming      = config.PCstreamBWout;
-    cfgSymmPC.isBWbarriered      = config.useBWBarrier;
-    cfgSymmPC.shouldDelayBWsend  = config.PCdelayBWSend;
-    cfgSymmPC.isInputMulticast   = !config.usePairDirectSend;
-    cfgSymmPC.isOutputReduced    = !config.gSpaceSum;
-    cfgSymmPC.inputSpanningTreeFactor = config.PCSpanFactor;
-
-    cfgSymmPC.gemmSplitFWk       = config.gemmSplitFWk;
-    cfgSymmPC.gemmSplitFWm       = config.gemmSplitFWm;
-    cfgSymmPC.gemmSplitBW        = config.gemmSplitBW;
-
     // Create a paircalc config object for the asymmetric PC instance
-    pc::pcConfig cfgAsymmPC = cfgSymmPC;
+    pc::pcConfig cfgAsymmPC;
 
-    // Configurations specific to the symmetric PC instance
-    cfgSymmPC.isSymmetric        = true;
-    cfgSymmPC.arePhantomsOn      = config.phantomSym;
-    cfgSymmPC.numChunks          = config.numChunksSym;
-    cfgSymmPC.isDoublePackOn     = doublePack;
-    cfgSymmPC.inputMsgPriority   = config.psipriority;
-    cfgSymmPC.resultMsgPriority  = config.gsfftpriority;
-
-    // Configurations specific to the asymmetric PC instance
-    cfgAsymmPC.isSymmetric        = false;
-    cfgAsymmPC.arePhantomsOn      = false;
-    cfgAsymmPC.numChunks          = config.numChunksAsym;
-    cfgAsymmPC.isDoublePackOn     = 0;
-    cfgAsymmPC.inputMsgPriority   = config.lambdapriority;
-    cfgAsymmPC.resultMsgPriority  = config.lambdapriority+2;
-
-    // Configure the GSpace entry methods that the PCs will callback
-    if(cfgSymmPC.isOutputReduced)
-    {
-        cfgSymmPC.gSpaceEP        = CkIndex_CP_State_GSpacePlane::acceptNewPsi ((CkReductionMsg*)NULL);
-        cfgSymmPC.PsiVEP          = CkIndex_CP_State_GSpacePlane::acceptNewPsiV((CkReductionMsg*)NULL);
-    }
-    else
-    {
-        cfgSymmPC.gSpaceEP        = CkIndex_CP_State_GSpacePlane::acceptNewPsi ((partialResultMsg*)NULL);
-        cfgSymmPC.PsiVEP          = CkIndex_CP_State_GSpacePlane::acceptNewPsiV((partialResultMsg*)NULL);
-    }
-
-    if(cfgAsymmPC.isOutputReduced)
-    {
-        cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::acceptLambda ((CkReductionMsg*)NULL);
-        cfgAsymmPC.PsiVEP         = 0;
-    }
-    else
-    {
-        cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::acceptLambda ((partialResultMsg*)NULL);
-        cfgAsymmPC.PsiVEP         = 0;
-    }
-
-#ifdef _CP_SUBSTEP_TIMING_
-    //symmetric AKA Psi
-    cfgSymmPC.forwardTimerID      = keeperRegister("Sym Forward");
-    cfgSymmPC.backwardTimerID     = keeperRegister("Sym Backward");
-    cfgSymmPC.beginTimerCB        = CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
-    cfgSymmPC.endTimerCB          = CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
-    //asymmetric AKA Lambda AKA Gamma
-    cfgAsymmPC.forwardTimerID     = keeperRegister("Asym Forward");
-    cfgAsymmPC.backwardTimerID    = keeperRegister("Asym Backward");
-    cfgAsymmPC.beginTimerCB       = CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
-    cfgAsymmPC.endTimerCB         = CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
-#endif
+    /* choose whether ortho should use local callback */
+    Ortho_use_local_cb = true;
+    paircalcstartup(&cfgSymmPC, &cfgAsymmPC, sim, doublePack);
 
 //============================================================================    
 // Compute structure factor grp parameters and static map for chare arrays
@@ -698,43 +423,11 @@ main::main(CkArgMsg *msg) {
 
     make_rho_runs(sim);
 
+    #include "initializeUber.C"
+
     pScratchProxy = CProxy_PhysScratchCache::ckNew();
-    /** \addtogroup Uber */
-    /**@{*/
-    // bump all the INT_MAPs to the right size
-    AtomImaptable.resize(config.numInstances);
-    PIBImaptable.resize(config.numInstances);
-    GSImaptable.resize(config.numInstances);
-    RSImaptable.resize(config.numInstances);
-    RPPImaptable.resize(config.numInstances);
-    RhoGSImaptable.resize(config.numInstances);
-    RhoRSImaptable.resize(config.numInstances);
-
-    RhoGHartImaptable.resize(config.numInstances);
-    RhoRHartImaptable.resize(config.numInstances);
-
-    // bump all our proxy vecs to the right size
-    UgSpacePlaneProxy.reserve(config.numInstances);
-    UgSpaceDriverProxy.reserve(config.numInstances);
-    UparticlePlaneProxy.reserve(config.numInstances);
-    UrealParticlePlaneProxy.reserve(config.numInstances);
-    UrealSpacePlaneProxy.reserve(config.numInstances);
-    UrhoRealProxy.reserve(config.numInstances);
-    UrhoGProxy.reserve(config.numInstances);
-    UrhoRHartExtProxy.reserve(config.numInstances);
-    UrhoGHartExtProxy.reserve(config.numInstances);
-    UatomsComputeProxy.reserve(config.numInstances);
-    UatomsCacheProxy.reserve(config.numInstances);
-    UegroupProxy.reserve(config.numInstances);
-    UfftCacheProxy.reserve(config.numInstances);
-    UsfCacheProxy.reserve(config.numInstances);
-    UsfCompProxy.reserve(config.numInstances);
-    UeesCacheProxy.reserve(config.numInstances);
-    UplaneUsedByNLZ.reserve(config.numInstances);
-    UlsRhoRealProxy.reserve(config.numInstances);
-    UlsRhoGProxy.reserve(config.numInstances);
-    UavailProcs.reserve(config.numInstances);
-    excludePes=NULL;
+  
+   
     mainProxy=thishandle;
     // make one controller chare per instance
     instControllerProxy= CProxy_InstanceController::ckNew(config.numInstances);
@@ -796,11 +489,6 @@ main::main(CkArgMsg *msg) {
 	l, config.numPes, config.numInstances, nstates, l, config.nchareG, pm, config.numPesPerInstance, pl);
       CkAssert( m > 0);
     }
-
-    //    if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
-    //    for(int i=0; i<nstates;i++){
-    //      peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
-    //    }//endfor
 
     // multiple instance mapping breaks if there isn't a topomanager
     CkPrintf("Initializing PeList\n");
@@ -959,44 +647,8 @@ Per Instance startup BEGIN
 
 	      //============================================================================
 	      // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
-
-	      // Blame Ram for ugly crime against readability.  More
-	      // redundant config objects and builders doesn't help
-	      // global clarity at all.
-
-	      // Create an ortho config object from available info
 	      cp::ortho::orthoConfig orthoCfg;
-	      orthoCfg.isDynamics    = (sim->cp_min_opt==1)? false: true;
-	      orthoCfg.isGenWave     = (sim->gen_wave==1)? true: false;
-	      orthoCfg.numStates     = config.nstates;
-	      orthoCfg.grainSize     = config.orthoGrainSize;
-	      orthoCfg.instanceIndex = thisInstance.getPO();
-	      orthoCfg.maxTolerance  = sim->tol_norb;
-	      orthoCfg.uponToleranceFailure = CkCallback(CkIndex_GSpaceDriver::needUpdatedPsiV(), UgSpaceDriverProxy[thisInstance.getPO()]);
-
-	      // Fill in the paircalc configs that are instance dependent
-	      cfgSymmPC.gSpaceAID            = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
-	      cfgAsymmPC.gSpaceAID           = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
-	      cfgSymmPC.instanceIndex        = thisInstance.getPO();
-	      cfgAsymmPC.instanceIndex       = thisInstance.getPO();
-	      // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
-	      cfgSymmPC.uponSetupCompletion  = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
-	      cfgAsymmPC.uponSetupCompletion = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
-
-	      // Identify who is the owner for this bubble
-	      CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
-
-          // Fill out a structure with all configs needed for PC mapping
-	      cp::startup::PCMapConfig pcMapCfg(boxSize, 
-						*peList4PCmapping, 
-						&GSImaptable[thisInstance.getPO()],
-						(config.torusMap == 1),
-						(config.fakeTorus == 1),
-						mapOffsets[numInst]);
-
-	      // Delegate the actual construction/initialization to a creation manager
-	      cp::startup::PCCreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);
-	      pcCreator.build(pcHandleCB, pcMapCfg);
+	      orthostartup(&orthoCfg, &cfgSymmPC, &cfgAsymmPC, sim, peList4PCmapping);
 
 	      //============================================================================
 	      // compute the location for the non-local Z reduction roots for each plane
@@ -3478,6 +3130,135 @@ void computeMapOffsets()
       mapOffsets[thisInst]=inttriple(x,y,z);
     }
 }
+
+
+void paircalcstartup(pc::pcConfig *cfgSymmPC, pc::pcConfig *cfgAsymmPC, CPcharmParaInfo *sim, int doublePack)
+{
+
+ 
+
+    // Stuff it with the actual configurations
+    cfgSymmPC->isDynamics         = (sim->cp_min_opt==1)? false: true;
+    cfgSymmPC->useComplexMath     = false;
+
+    cfgSymmPC->numPlanes          = config.nchareG;
+    cfgSymmPC->numStates          = nstates;
+    cfgSymmPC->grainSize          = config.sGrainSize;
+    cfgSymmPC->orthoGrainSize     = config.orthoGrainSize;
+
+    cfgSymmPC->conserveMemory     = config.conserveMemory;
+    cfgSymmPC->isLBon             = config.lbpaircalc;
+
+    cfgSymmPC->areBWTilesCollected= config.PCCollectTiles;
+    cfgSymmPC->isBWstreaming      = config.PCstreamBWout;
+    cfgSymmPC->isBWbarriered      = config.useBWBarrier;
+    cfgSymmPC->shouldDelayBWsend  = config.PCdelayBWSend;
+    cfgSymmPC->isInputMulticast   = !config.usePairDirectSend;
+    cfgSymmPC->isOutputReduced    = !config.gSpaceSum;
+    cfgSymmPC->inputSpanningTreeFactor = config.PCSpanFactor;
+
+    cfgSymmPC->gemmSplitFWk       = config.gemmSplitFWk;
+    cfgSymmPC->gemmSplitFWm       = config.gemmSplitFWm;
+    cfgSymmPC->gemmSplitBW        = config.gemmSplitBW;
+
+
+
+    // Configurations specific to the symmetric PC instance
+    cfgSymmPC->isSymmetric        = true;
+    cfgSymmPC->arePhantomsOn      = config.phantomSym;
+    cfgSymmPC->numChunks          = config.numChunksSym;
+    cfgSymmPC->isDoublePackOn     = doublePack;
+    cfgSymmPC->inputMsgPriority   = config.psipriority;
+    cfgSymmPC->resultMsgPriority  = config.gsfftpriority;
+
+    // Copy baseline parameters from symm, then override for asymm case
+    *cfgAsymmPC=*cfgSymmPC;
+
+    // Configurations specific to the asymmetric PC instance
+    cfgAsymmPC->isSymmetric        = false;
+    cfgAsymmPC->arePhantomsOn      = false;
+    cfgAsymmPC->numChunks          = config.numChunksAsym;
+    cfgAsymmPC->isDoublePackOn     = 0;
+    cfgAsymmPC->inputMsgPriority   = config.lambdapriority;
+    cfgAsymmPC->resultMsgPriority  = config.lambdapriority+2;
+
+    // Configure the GSpace entry methods that the PCs will callback
+    if(cfgSymmPC->isOutputReduced)
+    {
+        cfgSymmPC->gSpaceEP        = CkIndex_CP_State_GSpacePlane::acceptNewPsi ((CkReductionMsg*)NULL);
+        cfgSymmPC->PsiVEP          = CkIndex_CP_State_GSpacePlane::acceptNewPsiV((CkReductionMsg*)NULL);
+    }
+    else
+    {
+        cfgSymmPC->gSpaceEP        = CkIndex_CP_State_GSpacePlane::acceptNewPsi ((partialResultMsg*)NULL);
+        cfgSymmPC->PsiVEP          = CkIndex_CP_State_GSpacePlane::acceptNewPsiV((partialResultMsg*)NULL);
+    }
+
+    if(cfgAsymmPC->isOutputReduced)
+    {
+        cfgAsymmPC->gSpaceEP       = CkIndex_CP_State_GSpacePlane::acceptLambda ((CkReductionMsg*)NULL);
+        cfgAsymmPC->PsiVEP         = 0;
+    }
+    else
+    {
+        cfgAsymmPC->gSpaceEP       = CkIndex_CP_State_GSpacePlane::acceptLambda ((partialResultMsg*)NULL);
+        cfgAsymmPC->PsiVEP         = 0;
+    }
+
+#ifdef _CP_SUBSTEP_TIMING_
+    //symmetric AKA Psi
+    cfgSymmPC->forwardTimerID      = keeperRegister("Sym Forward");
+    cfgSymmPC->backwardTimerID     = keeperRegister("Sym Backward");
+    cfgSymmPC->beginTimerCB        = CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+    cfgSymmPC->endTimerCB          = CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
+    //asymmetric AKA Lambda AKA Gamma
+    cfgAsymmPC->forwardTimerID     = keeperRegister("Asym Forward");
+    cfgAsymmPC->backwardTimerID    = keeperRegister("Asym Backward");
+    cfgAsymmPC->beginTimerCB       = CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+    cfgAsymmPC->endTimerCB         = CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
+#endif
+}
+
+void orthostartup( cp::ortho::orthoConfig *orthoCfg,  pc::pcConfig *cfgSymmPC, pc::pcConfig *cfgAsymmPC, CPcharmParaInfo *sim, PeListFactory *peList4PCmapping)
+{
+  // Blame Ram for ugly crime against readability.  More
+  // redundant config objects and builders doesn't help
+  // global clarity at all.
+  // EJB: Sequestered in this function call to sweep it under the rug
+
+  orthoCfg->isDynamics    = (sim->cp_min_opt==1)? false: true;
+  orthoCfg->isGenWave     = (sim->gen_wave==1)? true: false;
+  orthoCfg->numStates     = config.nstates;
+  orthoCfg->grainSize     = config.orthoGrainSize;
+  orthoCfg->instanceIndex = thisInstance.getPO();
+  orthoCfg->maxTolerance  = sim->tol_norb;
+  orthoCfg->uponToleranceFailure = CkCallback(CkIndex_GSpaceDriver::needUpdatedPsiV(), UgSpaceDriverProxy[thisInstance.getPO()]);
+
+  // Fill in the paircalc configs that are instance dependent
+  cfgSymmPC->gSpaceAID            = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+  cfgAsymmPC->gSpaceAID           = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+  cfgSymmPC->instanceIndex        = thisInstance.getPO();
+  cfgAsymmPC->instanceIndex       = thisInstance.getPO();
+  // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
+  cfgSymmPC->uponSetupCompletion  = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
+  cfgAsymmPC->uponSetupCompletion = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
+
+  // Identify who is the owner for this bubble
+  CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
+
+  // Fill out a structure with all configs needed for PC mapping
+  cp::startup::PCMapConfig pcMapCfg(boxSize, 
+				    *peList4PCmapping, 
+				    &GSImaptable[thisInstance.getPO()],
+				    (config.torusMap == 1),
+				    (config.fakeTorus == 1),
+				    mapOffsets[numInst]);
+
+  // Delegate the actual construction/initialization to a creation manager
+  cp::startup::PCCreationManager pcCreator(*cfgSymmPC, *cfgAsymmPC, *orthoCfg);
+  pcCreator.build(pcHandleCB, pcMapCfg);
+}
+
 //============================================================================
 #include "CPcharmParaInfo.def.h"
 #include "timeKeeper.def.h"
