@@ -55,7 +55,7 @@ module gSpaceDriver
     entry void driveGSpace() {
       // Loop until we hit the last iteration, or the GSpacePlane has signaled
       // that we have met the desired tolerance by setting exitFlag to 1.
-      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag) {
+      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag && !myGSpaceObj->exitFlagMin) {
         if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
           // Resets flags and increases the iteration counter
           serial { myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter(); }
@@ -219,7 +219,7 @@ module gStatePlane
     entry void initGSpace(int m, complex pts[m], int mv, complex vpts[mv], int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL, int istart_cp);
     entry void acceptIFFT(GSIFFTMsg *msg);
     entry void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
-    entry void acceptFileOutput(GStateOutMsg *msg);
+    entry [nokeep] void acceptFileOutput(GStateOutMsg *msg);
 
     entry void acceptLambda(CkReductionMsg *msg);
     entry void acceptLambda(partialResultMsg *msg);

@@ -2304,7 +2304,7 @@ void CP_State_GSpacePlane::contributeFileOutput()
 			       gs.istrNHC,gs.iendNHC,1);
   }//endif
   //------------------------------------------------------------------
-  // Pack the message and send it to your plane 0
+  // Pack the message and send it to your reduction plane
   GStateOutMsg *msg  = new (ncoef,ncoef,ncoef,ncoef,ncoef,
 			    8*sizeof(int)) GStateOutMsg;
   if(config.prioFFTMsg){
@@ -2329,10 +2329,7 @@ void CP_State_GSpacePlane::contributeFileOutput()
     mk_x[i]  = k_x[i];  mk_y[i]  = k_y[i];  mk_z[i]  = k_z[i];
   }//endfor
   UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,redPlane).acceptFileOutput(msg);
-}//write the file
-//============================================================================
-
-
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -2371,8 +2368,6 @@ void CP_State_GSpacePlane::unpackFileOutput(GStateOutMsg *msg) {
     tk_y[j]  = mk_y[i];
     tk_z[j]  = mk_z[i];
   }//endfor
-
-  delete msg;
 //============================================================================
   }//end routine
 //============================================================================
