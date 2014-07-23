@@ -8,7 +8,11 @@ ComlibInstanceHandle mcastInstanceACP;
 CkReduction::reducerType sumMatrixDoubleType;
 
 // TODO: This is just for temporary testing
-#include "cudaDGEMM.h"
+#include "dgemm_cuda.h"
+#ifdef USE_CUBLAS
+#undef DGEMM
+#define DGEMM dgemm_cuda
+#endif
 
 void registersumMatrixDouble(void)
 {
@@ -67,9 +71,7 @@ void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex
 
 void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double *A, int *lda, double *B, int *ldb, double *beta, double *C, int *ldc)
 {
-    //DGEMM(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
-	//testDGEMM();
-    cudaDGEMM(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+    DGEMM(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 }
 
 
@@ -896,7 +898,9 @@ void PairCalculator::multiplyForward(bool flag_dp)
 #ifndef CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
+  double StartTime=CmiWallTimer();
   myGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &k_in, matrixB, &k_in, &beta, matrixC, &m_in);
+  CkPrintf("DGEMM time %d\n", CmiWallTimer() - StartTime);
 #ifndef CMK_TRACE_ENABLED
   traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
@@ -2659,7 +2663,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
 #ifdef PRINT_DGEMM_PARAMS
   CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", *transT, *trans, MsplitU, n, KsplitU, *alpha, betap, *lda, *ldb, *ldc);
 #endif
-            DGEMM(transT, trans, &MsplitU, &n, &KsplitU, alpha, &A[koff+moff], lda, &B[koff], ldb, &betap, &C[moffc], ldc);
+          DGEMM(transT, trans, &MsplitU, &n, &KsplitU, alpha, &A[koff+moff], lda, &B[koff], ldb, &betap, &C[moffc], ldc);
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_TRACE_ENABLED
 
