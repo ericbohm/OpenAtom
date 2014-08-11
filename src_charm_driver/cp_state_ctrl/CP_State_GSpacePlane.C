@@ -223,8 +223,6 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
        }//endif
      }//endif
   }//endif
-
-  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
 //============================================================================
   }// end routine
 //============================================================================
@@ -1254,33 +1252,29 @@ void CP_State_GSpacePlane::screenPrintWallTimes()
 {
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   // do new iteration output once globally from the 0th instance
-  if(thisIndex.x==0 && thisIndex.y==0 
-     && thisInstance.idxU.x==0 && thisInstance.idxU.y==0 
-     && thisInstance.idxU.z==0 && thisInstance.idxU.s==0 )
-    {
-      int iprintout   = config.maxIter;
-      if(!(sim->cp_min_opt==1) && !sim->gen_wave){iprintout-=1;}
-      int itime       = iteration;
-      if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
-      wallTimeArr[itime] = CkWallTimer();
-      if (iteration == iprintout && config.maxIter<30) {
-	CkPrintf("-------------------------------------------------------------------------------\n");
-	CkPrintf("Wall Times from within GSP\n\n");
-	for (int t = 1; t < iprintout; t++){
-	  CkPrintf("%g\n",wallTimeArr[t] - wallTimeArr[t-1]);
-	}//endfor
-	if(itime>0)
-	  {
-	    CkPrintf("%g\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
-	    CkPrintf("-------------------------------------------------------------------------------\n");
-	  }
-      }else{
-	if(iteration>0){
-	  CkPrintf("Iteration time (GSP) : %g\n", 
-		   wallTimeArr[itime] - wallTimeArr[itime-1]);
-	}//endif
-      }//endif
+  if (thisIndex.x==0 && thisIndex.y==0 &&
+      thisInstance.idxU.x==0 && thisInstance.idxU.y==0 &&
+      thisInstance.idxU.z==0 && thisInstance.idxU.s==0 ) {
+    int iprintout   = config.maxIter;
+    if(!(sim->cp_min_opt==1) && !sim->gen_wave){iprintout-=1;}
+    int itime       = iteration;
+    if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
+    wallTimeArr[itime] = CkWallTimer();
+    if (iteration == iprintout && config.maxIter<30) {
+      CkPrintf("-------------------------------------------------------------------------------\n");
+      CkPrintf("Wall Times from within GSP\n\n");
+      for (int t = 1; t < iprintout; t++) {
+        CkPrintf("%g\n",wallTimeArr[t] - wallTimeArr[t-1]);
+      }//endfor
+      if(itime>0) {
+        CkPrintf("%g\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
+        CkPrintf("-------------------------------------------------------------------------------\n");
+      }
+    } else if(iteration>0) {
+      CkPrintf("Iteration time (GSP) : %g\n", 
+      wallTimeArr[itime] - wallTimeArr[itime-1]);
     }//endif
+  }//endif
 }
 
 //============================================================================
@@ -1420,7 +1414,6 @@ void CP_State_GSpacePlane::sendFFTData () {
 #endif
    // progress engine baby
     CmiNetworkProgress();
-
   }//endfor
   //fclose(fp);
 
@@ -1452,7 +1445,7 @@ void CP_State_GSpacePlane::sendFFTData () {
  * Force cannot be overwitten because we can't receive until all chares send. The beauty of all to all comm
  * Forces are initialized HERE. No need to zero them etc. elsewhere.
  */
-void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg) 
+void CP_State_GSpacePlane::unpackIFFT(GSIFFTMsg *msg) 
 {
 #ifdef _CP_SUBSTEP_TIMING_
   if(backwardTimeKeep>0)
@@ -1495,16 +1488,6 @@ void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg)
   for(int i=0,j=offset; i< numLines; i++,j+=sizeZ){data_in[j] = partlyIFFTd[i];}
 
   delete msg;
-
-//============================================================================
-// If you have recved from every z plane, go on
-
-  if (countIFFT == gs.planeSize[1]) {
-    countIFFT = 0;
-        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
-  }//endif : has everyone arrived?
-
-//----------------------------------------------------------------------------
   }//end routine
 //============================================================================
 
@@ -1550,12 +1533,10 @@ void CP_State_GSpacePlane::doIFFT()
 
     /// If there is a barrier after the IFFTs, contribute to the reduction barrier that will sync all GSpace chares
     #ifdef BARRIER_CP_GSPACE_IFFT
-        //put contribute here to reduction with a broadcast client
-        int wehaveours=1;
-        contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-        CkCallback(CkIndex_GSpaceDriver::allDoneIFFT(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-    #else
-        doneDoingIFFT = true;
+    //put contribute here to reduction with a broadcast client
+    int wehaveours=1;
+    contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+        CkCallback(CkIndex_CP_State_GSpacePlane::allDoneIFFT(NULL),thisProxy));
     #endif
 }//end routine
 //=============================================================================================================
@@ -1936,9 +1917,7 @@ void  CP_State_GSpacePlane::sendLambda() {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** \brief Accept an already reduction combined part of Lambda 
- */
-void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
+void CP_State_GSpacePlane::unpackLambda(CkReductionMsg *msg) {
 //==============================================================================
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt    = sim->cp_min_opt;
@@ -2022,7 +2001,6 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 
   countLambdaO[offset]++;
   if(countLambda==AllLambdaExpected){ 
-    thisProxy(thisIndex.x,thisIndex.y).doLambda();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
@@ -2036,9 +2014,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** \brief handle a partial input from the asymm PC
- */
-void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
+void CP_State_GSpacePlane::unpackLambda(partialResultMsg *msg) {
 //==============================================================================
 /// 0) unpack the message : pop out variables from groups
 
@@ -2116,7 +2092,6 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 
   countLambdaO[offset]++;
   if(countLambda==AllLambdaExpected){ 
-    thisProxy(thisIndex.x,thisIndex.y).doLambda();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
@@ -2275,7 +2250,7 @@ void CP_State_GSpacePlane::computeCgOverlap() {
    redforc[0] = fovlap_loc;
    redforc[1] = force_sq_sum_loc;
    contribute(2*sizeof(double),redforc,CkReduction::sum_double,
-	     CkCallback(CkIndex_CP_State_GSpacePlane::psiCgOvlap(NULL),thisProxy));
+	     CkCallback(CkIndex_CP_State_GSpacePlane::acceptCgOverlap(NULL),thisProxy));
 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
@@ -2292,7 +2267,7 @@ void CP_State_GSpacePlane::computeCgOverlap() {
 //============================================================================
 // In this function data is written to files the simpliest way possible
 //============================================================================
-void CP_State_GSpacePlane::writeStateDumpFile()
+void CP_State_GSpacePlane::contributeFileOutput()
 {
   // Local pointers, variables and error checking
   if(!acceptedPsi || !acceptedLambda || !acceptedVPsi)
@@ -2349,7 +2324,7 @@ void CP_State_GSpacePlane::writeStateDumpFile()
 			       gs.istrNHC,gs.iendNHC,1);
   }//endif
   //------------------------------------------------------------------
-  // Pack the message and send it to your plane 0
+  // Pack the message and send it to your reduction plane
   GStateOutMsg *msg  = new (ncoef,ncoef,ncoef,ncoef,ncoef,
 			    8*sizeof(int)) GStateOutMsg;
   if(config.prioFFTMsg){
@@ -2373,40 +2348,18 @@ void CP_State_GSpacePlane::writeStateDumpFile()
     data[i]  = psi[i];  
     mk_x[i]  = k_x[i];  mk_y[i]  = k_y[i];  mk_z[i]  = k_z[i];
   }//endfor
-  UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,redPlane).collectFileOutput(msg);
-  //------------------------------------------------------------------
-  // If you are not plane redPlane, you are done. Invoke the correct reduction.
-  if(thisIndex.y!=redPlane){
-    if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1)
-      UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
-    else
-      {
-	int i = 0;
-	contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDoneWritingPsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-      }
-  }//endif
-}//write the file
-//============================================================================
-
-
+  UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,redPlane).acceptFileOutput(msg);
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
+void CP_State_GSpacePlane::unpackFileOutput(GStateOutMsg *msg) {
 //============================================================================
 
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
-  int sizeX        = (sim->sizeX);
-  int sizeY        = (sim->sizeY);
-  int sizeZ        = (sim->sizeZ);
   int npts_tot     = (sim->npts_tot);
   int *ipacked_off = (sim->index_output_off);
-  int cp_min_opt   = (sim->cp_min_opt);
-  int ibinary_write_opt = sim->ibinary_write_opt;
-
-  int myiteration = iteration;
-  if(cp_min_opt==0){myiteration=iteration-1;}
 
 //============================================================================
 // Receive the message
@@ -2435,43 +2388,47 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
     tk_y[j]  = mk_y[i];
     tk_z[j]  = mk_z[i];
   }//endfor
-
-  delete msg;
+//============================================================================
+  }//end routine
+//============================================================================
 
 //============================================================================
-// If you've got the whole state, write it out and then invoke the reduction.
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_GSpacePlane::writeOutputFile() {
+//============================================================================
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int sizeX        = (sim->sizeX);
+  int sizeY        = (sim->sizeY);
+  int sizeZ        = (sim->sizeZ);
+  int npts_tot     = (sim->npts_tot);
+  int cp_min_opt   = (sim->cp_min_opt);
+  int ibinary_write_opt = sim->ibinary_write_opt;
 
-  if(countFileOut==nchareG){
-     countFileOut = 0;
-     int ind_state = thisIndex.x+1;
-     int ibead     = myBeadIndex;
-     int ikpt      = myKptIndex;
-     int itemper   = myTemperIndex;
-     int ispin     = mySpinIndex;
+  int myiteration = iteration;
+  if(cp_min_opt==0){myiteration=iteration-1;}
 
-     char psiName[400]; char vpsiName[400];
+   countFileOut = 0;
+   int ind_state = thisIndex.x+1;
+   int ibead     = myBeadIndex;
+   int ikpt      = myKptIndex;
+   int itemper   = myTemperIndex;
+   int ispin     = mySpinIndex;
 
-     sprintf(psiName,  "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/state%d.out",
-                       config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
-     sprintf(vpsiName, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/vState%d.out",
-                       config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
-     writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
-                    sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
-                    myiteration,ind_state,ispin,ikpt,ibead,itemper);
-     fftw_free(tpsi); tpsi  = NULL;
-     fftw_free(tvpsi);tvpsi = NULL;
-     fftw_free(tk_x); tk_x  = NULL;
-     fftw_free(tk_y); tk_y  = NULL;
-     fftw_free(tk_z); tk_z  = NULL;
-	if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1)
-	  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
-	else{
-   	  int i=0;
-	  contribute(sizeof(int),&i,CkReduction::sum_int,
-          CkCallback(CkIndex_GSpaceDriver::allDoneWritingPsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-	}//endif
-    }//endif
+   char psiName[400]; char vpsiName[400];
 
+   sprintf(psiName,  "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/state%d.out",
+                     config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
+   sprintf(vpsiName, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/vState%d.out",
+                     config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
+   writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
+                  sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
+                  myiteration,ind_state,ispin,ikpt,ibead,itemper);
+   fftw_free(tpsi); tpsi  = NULL;
+   fftw_free(tvpsi);tvpsi = NULL;
+   fftw_free(tk_x); tk_x  = NULL;
+   fftw_free(tk_y); tk_y  = NULL;
+   fftw_free(tk_z); tk_z  = NULL;
 //============================================================================
   }//end routine
 //============================================================================
@@ -2805,13 +2762,12 @@ void CP_State_GSpacePlane::sendRedPsi() {
 //-----------------------------------------------------------------------------
    }//end routine
 //==============================================================================
-
+//
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** \brief Accept red Psi */
-void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
+void CP_State_GSpacePlane::unpackRedPsi(GSRedPsiMsg *msg) {
 //==============================================================================
 
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
@@ -2858,10 +2814,6 @@ void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
       CkPrintf("Error in GSchare recv cnt %d %d : %d %d\n",thisIndex.x,thisIndex.y,
  	                                                   gs.nkx0_red,jtemp);
       CkExit();
-    }//endif
-    // If sent before I received then I resume
-    if(iSentRedPsi==1){ 
-      UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl(); 
     }//endif
   }//endif
 
@@ -2982,8 +2934,6 @@ void CP_State_GSpacePlane::sendPsi() {
       symmPCmgr.sendRightData(numPoints, psi, false);
 #else
   acceptedPsi=true;
-  if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
-  	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
 #endif
 
 //----------------------------------------------------------------------------
@@ -2995,8 +2945,7 @@ void CP_State_GSpacePlane::sendPsi() {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** \brief Accept reduction summed results from symm PC of new Psi */
-void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
+void CP_State_GSpacePlane::unpackNewPsi(CkReductionMsg *msg){
 //=============================================================================
 /// (0) Fuss with the redundant psis
 
@@ -3052,7 +3001,6 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   countPsi++;//psi arrives in as many as 2 *numblock reductions
   countPsiO[offset]++;//psi arrives in as many as 2 
   if(countPsi==AllPsiExpected){ 
-    thisProxy(thisIndex.x,thisIndex.y).doNewPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("acceptpsi %d %d\n",thisIndex.y,cleanExitCalled);
@@ -3070,7 +3018,8 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 /**
  * \brief Accept partial results when symm PC s sending to us directly
  */
-void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
+//==============================================================================
+void CP_State_GSpacePlane::unpackNewPsi(partialResultMsg *msg){
 //=============================================================================
 
 /// (0) Fuss with the redundant psis
@@ -3132,7 +3081,6 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
   countPsiO[offset]++;//psi arrives in as many as 2 * numgrain
   //
   if(countPsi==AllPsiExpected){ 
-    thisProxy(thisIndex.x,thisIndex.y).doNewPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
     if(thisIndex.x==0){CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);}
 #endif
@@ -3205,15 +3153,6 @@ void CP_State_GSpacePlane::doNewPsi(){
   if(iteration>0){screenOutputPsi(iteration);}
 
 //=============================================================================
-// (D) Go back to the top or exit
-
-  if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==0)
-	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
-
-  if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
-	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
-
-//=============================================================================
 // (E) Debug psi
 
 #ifdef _CP_GS_DUMP_PSI_
@@ -3255,11 +3194,12 @@ void CP_State_GSpacePlane::doNewPsi(){
 
 //==============================================================================
 // Back to the threaded loop.
+#ifndef _CP_DEBUG_ORTHO_OFF_
 #ifdef BARRIER_CP_GSPACE_PSI
-  int wehaveours=1;
-  contribute(sizeof(int),&wehaveours,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDonePsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-#else
-  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
+	int wehaveours=1;
+	contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+		CkCallback(CkIndex_CP_State_GSpacePlane::allDonePsi(NULL),thisProxy));
+#endif
 #endif
 
 //----------------------------------------------------------------------------
@@ -3403,8 +3343,7 @@ void CP_State_GSpacePlane::sendRedPsiV(){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** Accept red psi velocities */
-void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
+void CP_State_GSpacePlane::unpackRedPsiV(GSRedPsiMsg *msg) {
 //==============================================================================
 
   CPcharmParaInfo *sim       = CPcharmParaInfo::get();
@@ -3459,10 +3398,6 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
       CkPrintf("Error in GSchare recv cnt %d %d : %d %d\n",thisIndex.x,thisIndex.y,
  	                                                   gs.nkx0_red,jtemp);
       CkExit();
-    }//endif
-    // If sent before I received then I resume
-    if(iSentRedPsiV == 1){
-        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
     }//endif
   }//endif
 
@@ -3554,7 +3489,7 @@ void  CP_State_GSpacePlane::sendPsiV() {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
+void CP_State_GSpacePlane::unpackNewPsiV(CkReductionMsg *msg){
 //=============================================================================
 
 /// (I) Local pointer setup
@@ -3601,7 +3536,6 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
 #ifdef DEBUG_CP_GSPACE_PSIV
 	CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d reductions).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
 #endif
-    thisProxy(thisIndex.x,thisIndex.y).doNewPsiV();
   }//endif
 
 //----------------------------------------------------------------------------
@@ -3611,7 +3545,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
+void CP_State_GSpacePlane::unpackNewPsiV(partialResultMsg *msg){
 //=============================================================================
 
 /// (I) Local pointer setup
@@ -3667,7 +3601,6 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
 #ifdef DEBUG_CP_GSPACE_PSIV
 		CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d messages).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
 #endif
-    thisProxy(thisIndex.x,thisIndex.y).doNewPsiV();
   }//endif
 
 //----------------------------------------------------------------------------
@@ -3755,9 +3688,7 @@ void CP_State_GSpacePlane::doNewPsiV(){
 #ifdef BARRIER_CP_GSPACE_PSIV
 	int wehaveours=1;
 	contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-	CkCallback(CkIndex_GSpaceDriver::allDonePsiV(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-#else
-	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
+		CkCallback(CkIndex_CP_State_GSpacePlane::allDonePsiV(NULL),thisProxy));
 #endif
 
 //------------------------------------------------------------------------------

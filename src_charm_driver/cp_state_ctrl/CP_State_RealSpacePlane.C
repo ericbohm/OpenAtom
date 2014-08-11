@@ -82,45 +82,6 @@ extern CkReduction::reducerType sumFastDoubleType;
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-RTH_Routine_locals(CP_State_RealSpacePlane,run)
-RTH_Routine_code(CP_State_RealSpacePlane,run) {
-//============================================================================
-
-  while(1) { 
-    // constructor invokes run and then you suspend (no work yet)
-    RTH_Suspend(); 
-    c->doFFT();    // state(g,z) from gstate arrives in dofft(msg) which resumes
-#ifndef _CP_DEBUG_RHO_OFF_
-    RTH_Suspend(); // after doreduction sends data to rhoreal, suspend
-#endif
-
-#ifdef RSVKS_BARRIER  // pause for every single chare to finish
-    if(!(c->allVksDone())){
-      RTH_Suspend(); // wait for broadcast that all vks is done  
-    }//endif
-#endif               //end pause
-    c->thisProxy(c->thisIndex.x,c->thisIndex.y).doVksFFT(); // vks(r) arrives in doproduct(msg) which resumes
-    c->sendFPsiToGSP();
-  } //end while not done
-
-//--------------------------------------------------------------------------
-   } RTH_Routine_end(CP_State_RealSpacePlane,run)
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_State_RealSpacePlane::run () {
-  run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_State_RealSpacePlane,run),this);
-  RTH_Runtime_resume(run_thread);
-}
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits, 
                   int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc,
 		  int _rfortime, int _rbacktime, UberCollection _instance)
@@ -133,7 +94,6 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
 
     countProduct=0;
     count = 0;
-    vksDone=false;
     rhoRsubplanes = config.rhoRsubplanes;
     numCookies=0;
     ngrida = _ngrida;
@@ -163,7 +123,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
     setMigratable(false);
     cookie= new CkSectionInfo[rhoRsubplanes];
     iteration = 0;
-    run();
+    thisProxy[thisIndex].run();
 
 }
 //============================================================================
@@ -173,6 +133,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
 //============================================================================
 void CP_State_RealSpacePlane::pup(PUP::er &p){
   CBase_CP_State_RealSpacePlane::pup(p);
+  __sdag_pup(p);
 
   p|iplane_ind;
   p|istate;
@@ -206,7 +167,7 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
+void CP_State_RealSpacePlane::unpackFFT(RSFFTMsg *msg) {
 //============================================================================
 
   if(thisIndex.x >= config.nstates || thisIndex.x < 0 || 
@@ -235,11 +196,6 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
     }
 #endif
 
-#ifdef RSVKS_BARRIER
-  //reset each iteration
-  vksDone=false;
-#endif
-
     CPcharmParaInfo *sim  = CPcharmParaInfo::get();
     int size               = msg->size; 
     int Index              = msg->senderIndex;
@@ -252,8 +208,6 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
 
     int planeSize          = rs.size;
 
-    count++;
-
     /****************************************
     char junk[1000];
     sprintf(junk,"rstate%d.%d.out",thisIndex.x,thisIndex.y);
@@ -262,14 +216,6 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
 	    Jndex,Index,Jndex,Kndex,count,nchareG);
     fclose(fp);
     *****************************************/
-
-    if (count > nchareG) {
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Mismatch in allowed gspace chare arrays : %d %d %d %d\n",
-                count,nchareG,thisIndex.x,thisIndex.y);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
 
 //============================================================================
 // Unpack the message
@@ -283,12 +229,11 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
 // Pictorially a half cylinder is sent which is unpacked into
 // a half cube for easy FFTing. Y is the inner index.
 
-
     // non-zero elements are set. Zero elements are zeroed here
     // planeSize also contains extra elements on the boundary for fftw
-    if(config.conserveMemory && count==1){rs.allocate();}
+    if(config.conserveMemory && count==0){rs.allocate();}
     complex *planeArr = rs.planeArr;
-    if(count==1){bzero(planeArr,planeSize*sizeof(complex));} 
+    if(count==0){bzero(planeArr,planeSize*sizeof(complex));} 
 
     if(size!=nline_per_chareG[Index]){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -304,17 +249,6 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
         CkExit();
       }//endif
       planeArr[tranUnpack[Index][i]] = partiallyFFTd[i];
-    }//endif
-
-    delete msg;
-
-//============================================================================
-// If every chareG has reported then you can resume/go on and do the FFT
-    
-    if (count == nchareG) {
-      count=0;
-      iteration++;
-      RTH_Runtime_resume(run_thread);
     }//endif
 
 //============================================================================
@@ -559,7 +493,7 @@ void CP_State_RealSpacePlane::doReduction(){
  *   FFTing.  This is a stream processing scheme.
  */
 //============================================================================
-void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
+void CP_State_RealSpacePlane::unpackProduct(ProductMsg *msg) {
 //============================================================================
 
   CP           *cp           = CP::get();
@@ -635,22 +569,6 @@ void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
     }//endfor
   }//endif
   CmiNetworkProgress();
-
-//============================================================================	
-
-  countProduct++;
-  if(countProduct==rhoRsubplanes){
-    countProduct=0;
-#ifdef RSVKS_BARRIER
-    int wehaveours=1;
-    contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-	       CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),UrealSpacePlaneProxy[thisInstance.proxyOffset]));
-#endif
-    RTH_Runtime_resume(run_thread); // this is scalar, we continue right on
-                                    // as threaded loops calls do vksfft
-  }//endif
-
-//---------------------------------------------------------------------------
   }//endroutine
 //============================================================================
 
@@ -864,18 +782,4 @@ void CP_State_RealSpacePlane::printData() {
 }
 //============================================================================
 
-
-
-//============================================================================
-//     All Rho RS objects have finished vks : Debugging only
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_State_RealSpacePlane::rdoneVks(CkReductionMsg *msg){
-      delete msg;
-      //let my ffts go!
-      vksDone=true;
-      RTH_Runtime_resume(run_thread);
-  }
-//============================================================================
 /*@}*/

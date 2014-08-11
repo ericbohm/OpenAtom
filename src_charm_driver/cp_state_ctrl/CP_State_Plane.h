@@ -175,50 +175,43 @@ public:
 */
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  public:
+	CP_State_RealSpacePlane_SDAG_CODE
 	CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
 	~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
-	void acceptFFT(RSFFTMsg *);
+	void unpackFFT(RSFFTMsg *);
 	void doFFT();
-        void doVksFFT();
-	void acceptProduct(ProductMsg *);
+  void doVksFFT();
+	void unpackProduct(ProductMsg *);
 	void doProductThenFFT();
-        void sendFPsiToGSP();
-	void run();
+  void sendFPsiToGSP();
 	void setNumPlanesToExpect(int num);
 	void printData();
 	void init(ProductMsg *);
 	void doReduction();
 	void ResumeFromSync();	
 	void pup(PUP::er &);
-	void rdoneVks(CkReductionMsg *msg);
-	bool allVksDone()
-	  {
-	    return vksDone;
-	  }
  private:
 	const UberCollection thisInstance;
 	int forwardTimeKeep;
 	int backwardTimeKeep;
-        int iplane_ind;
-        int ibead_ind,kpoint_ind, itemper_ind;
-        int iteration;
-        int rhoRsubplanes;
-        int ngrida;
-        int ngridb;
-        int ngridc;
+  int iplane_ind;
+  int ibead_ind,kpoint_ind, itemper_ind;
+  int iteration;
+  int rhoRsubplanes;
+  int ngrida;
+  int ngridb;
+  int ngridc;
 	int count;
 	int rsize;
 	int csize;
-        int countProduct;
+  int countProduct;
 	int numCookies;
-        int istate;
+  int istate;
 	UberCollection RhoReductionDest;
-	bool vksDone;
 	RealStateSlab rs;
 	CkSectionInfo *cookie;
 	CProxy_CP_State_GSpacePlane gproxy;
-	RTH_Runtime* run_thread;
 };
 //============================================================================
 /*@}*/

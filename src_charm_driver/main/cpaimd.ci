@@ -366,14 +366,54 @@ mainmodule cpaimd {
 	
 	array [2D] CP_State_RealSpacePlane {
 		entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int, UberCollection);
-		entry void acceptFFT(RSFFTMsg *);
-		entry [local] void doFFT();
+
+		entry void run() {
+		  while (true) {
+		    for (count = 0; count < nchareG; count++) {
+          // Partially FFTd data comes from CP_State_GSpacePlane
+		      when acceptFFT(RSFFTMsg *m) serial { unpackFFT(m); }
+		    }
+		    serial {
+		      iteration++;
+          // Finish the FFT to create Psi[S,R]
+		      doFFT();
+          // Reduction of Psi[S,R] to Rho[R] is invoked; Go to sleep
+		    }
+
+		    for (countProduct = 0; countProduct < rhoRsubplanes; ++countProduct) {
+          // Rho chares multicast back VKS[R]
+		      when acceptProduct(ProductMsg *m) serial { unpackProduct(m); }
+		    }
+
+#ifdef RSVKS_BARRIER
+        // Performance diagnostic barrier
+		    serial {
+				contribute(CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),
+					    UrealSpacePlaneProxy[thisInstance.proxyOffset]));
+		    }
+		    when rdoneVks(CkReductionMsg *m) serial { delete m; }
+#endif
+
+		    serial {
+          // Partially FFT VKS*Psi=Force
+		      thisProxy[thisIndex].doVksFFT();
+          // Send the partially FFTd force to GSpacePlane
+		      sendFPsiToGSP();
+		    }
+		  }
+		};
+
+		entry [nokeep] void acceptFFT(RSFFTMsg *m);
 		entry [nokeep] void acceptProduct(ProductMsg *m);
+		entry [local] void doFFT();
 		entry [local] void doVksFFT();
 		entry void setNumPlanesToExpect(int num);
 		entry void printData();
-		entry void rdoneVks(CkReductionMsg *m);
 		entry [nokeep] void init(ProductMsg *m);
+
+#ifdef RSVKS_BARRIER
+		entry void rdoneVks(CkReductionMsg *m);
+#endif
 	};
 
 	array [2D] CP_Rho_RealSpacePlane {	

@@ -1,123 +1,378 @@
+#ifdef _CP_DEBUG_PSI_OFF_
+#define _SDAG_DEBUG_PSI_OFF_ true
+#else
+#define _SDAG_DEBUG_PSI_OFF_ false
+#endif
+
+#ifdef _CP_DEBUG_SFNL_OFF_
+#define _SDAG_DEBUG_SFNL_OFF_ true
+#else
+#define _SDAG_DEBUG_SFNL_OFF_ false
+#endif
+
+#ifdef _CP_DEBUG_VKS_OFF_
+#define _SDAG_DEBUG_VKS_OFF_ true
+#else
+#define _SDAG_DEBUG_VKS_OFF_ false
+#endif
+
+#ifdef _CP_DEBUG_ORTHO_OFF_
+#define _SDAG_DEBUG_ORTHO_OFF_ true
+#else
+#define _SDAG_DEBUG_ORTHO_OFF_ false
+#endif
+
 module gSpaceDriver
 {
-    include "uber/Uber.h";
-	array [2D] GSpaceDriver
-	{
-		// Constructor(s)
-		entry GSpaceDriver(const UberCollection _thisInstance);
-		
-		// Create, invoke, resume, and kill RTH threads
-		entry void startControl();
-		entry [local] void resumeControl();
-		entry [local] void readyToExit();
-		
-		// Requests to trigger things
-		entry void needUpdatedPsiV();
-		entry void startNonLocalEes(int iteration_loc);
-		
-		// Incoming notifications of task completion
-		entry [local] void doneComputingEnergy(const int AtomsGrpIter);
-		entry [local] void doneMovingAtoms(const int AtomsGrpIter);
-		entry [local] void doneNLForces();
-		
-		// Incoming reduction barrier notifications
-		entry void allDonePsi(CkReductionMsg *msg);
-		entry void allDoneWritingPsi(CkReductionMsg *msg);
-		entry void allDonePsiV(CkReductionMsg *msg);
-		entry void allDoneIFFT(CkReductionMsg *msg);
-		entry void allDoneNLForces(CkReductionMsg *msg);
-	};
+  include "uber/Uber.h";
+  array [2D] GSpaceDriver
+  {
+    // Constructor(s)
+    entry GSpaceDriver(const UberCollection _thisInstance);
+
+    // Start and stop the flow control using SDAG
+    entry void startControl();
+
+    // Requests to trigger things
+    entry void needUpdatedPsiV();
+    entry void startNonLocalEes(int iteration_loc);
+
+    // Incoming notifications of task completion
+    entry void doneComputingEnergy(const int AtomGrpIter);
+    entry void doneMovingAtoms(const int AtomGrpIter);
+    entry void donePsiFandVKS();
+    entry void doneLambdaAndCg();
+    entry void doneRedPsi();
+    entry void doneNewPsi();
+    entry void donePsiV();
+    entry void doneOutput();
+    entry void doneNLForces();
+
+    // Incoming reduction barrier notifications
+    entry [nokeep] void allDoneNLForces(CkReductionMsg *msg) { serial { doneNLForces(); } };
+
+    // SDAG method for flow control of the Driver and its associated GSpace object
+    entry void driveGSpace() {
+      // Loop until we hit the last iteration, or the GSpacePlane has signaled
+      // that we have met the desired tolerance by setting exitFlag to 1.
+      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag && !myGSpaceObj->exitFlagMin) {
+        if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
+          // Resets flags and increases the iteration counter
+          serial { myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter(); }
+
+          if (!_SDAG_DEBUG_PSI_OFF_) {
+            // If called, releaseSFComputeZ() triggers an NL force computation.
+            if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==0 && natm_nl!=0) serial {
+              releaseSFComputeZ();
+            }
+
+            // Both branches of this if will trigger an NL force computation if
+            // releaseSFComputeZ() was not called above.
+            if (!_SDAG_DEBUG_VKS_OFF_) serial {
+              myGSpaceObj->computePsiFandVKS();
+            } else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==1 && natm_nl!=0) serial {
+              startNonLocalEes(myGSpaceObj->iteration);
+            }
+
+            // Wait for both the VKS and the NL force computations to complete.
+            overlap {
+              if (!_SDAG_DEBUG_SFNL_OFF_) {
+                when doneNLForces() {}
+              }
+              if (!_SDAG_DEBUG_VKS_OFF_) {
+                when donePsiFandVKS() {}
+              }
+            }
+
+            serial { myGSpaceObj->combineForcesGetEke(); }
+          }  // end if !_SDAG_DEBUG_PSI_OFF_
+
+          serial { myGSpaceObj->launchAtoms(); }
+
+          if (!_SDAG_DEBUG_PSI_OFF_) {
+            serial { myGSpaceObj->computeLambdaAndCg(); }
+            when doneLambdaAndCg() {}
+
+            // If output is on and we are doing dynamics then dump to file
+            // every ndump_frq iteration as well as the final iteration. We
+            // skip the first iterations because nothing moves before iter 2.
+            if (config.stateOutput==1 && cp_min_opt==0 && myGSpaceObj->iteration > 1 &&
+                (myGSpaceObj->iteration % ndump_frq==1 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1)) {
+              serial { myGSpaceObj->doOutput(); }
+              when doneOutput() {}
+            }
+
+            serial { myGSpaceObj->computeRedPsi(); }
+            when doneRedPsi() {}
+          }  // end if !_SDAG_DEBUG_PSI_OFF_
+        }  // end if (cp_min_opt==1 && gen_wave==0) || firstStep==false
+
+        if (!_SDAG_DEBUG_PSI_OFF_) {
+          serial { myGSpaceObj->computeNewPsi(); }
+          when doneNewPsi() {}
+
+          // If output is on and we are doing minimization then dump to file
+          // every ndump_frq iteration as well as the final iteration.
+          if (config.stateOutput==1 && cp_min_opt==1 && myGSpaceObj->iteration > 0 &&
+              (myGSpaceObj->iteration % ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1)) {
+            serial { myGSpaceObj->doOutput(); }
+            when doneOutput() {}
+          }
+
+          if (isPsiVupdateNeeded && cp_min_opt==1 && myGSpaceObj->iteration > 1) {
+            serial { myGSpaceObj->computeNewPsiV(); }
+            when donePsiV() serial { isPsiVupdateNeeded = false; }
+          }
+        }  // end if !_SDAG_DEBUG_PSI_OFF_
+
+        // Wait for both the energy computation, and the atoms to be moved
+        // before going to the next iteration.
+        overlap {
+          if (!_SDAG_DEBUG_PSI_OFF_) {
+            when doneComputingEnergy(const int AtomGrpIter) {}
+          }
+          when doneMovingAtoms(const int AtomsGrpIter) {}
+        }
+
+        // Print out the iteration times and set isFirstStep to false.
+        serial {
+          myGSpaceObj->screenPrintWallTimes();
+          isFirstStep = false;
+        }
+      }  // end while simulation is running
+
+      serial {
+#ifdef _CP_SUBSTEP_TIMING_
+#if USE_HPM
+        // Print additional timing information
+        (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif
+#endif
+        // Contribute to a reduction to let the instance controller know
+        // that the computation is complete.
+        CkCallback cb(CkIndex_InstanceController::cleanExit(NULL),
+                CkArrayIndex1D(thisInstance.proxyOffset),
+                instControllerProxy);
+        contribute(cb);
+      }
+    };
+  };
 };
 
 
 
-	
 module gParticlePlane
 {
-	class UberCollection;
-	class PPDummyMsg;
-	
-	message NLDummyMsg;
-	message EnlCookieMsg;
-	message GSPPIFFTMsg {complex data[];};
-	
-	array [2D] CP_State_ParticlePlane 
-	{
-		entry CP_State_ParticlePlane(int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int, UberCollection);
-		entry void launchComputeZs();
-		entry void computeZ(PPDummyMsg *dmsg);
-		entry void reduceZ(int size, int atmIndex, complex zmatrix[size],complex zmatrix_fx[size], complex zmatrix_fy[size],complex zmatrix_fz[size]);
-		entry void getForces(int zsize, int atmIndex, complex zmat[zsize]);
-		entry void lPrioStartNLEes(NLDummyMsg *m);
-		entry [nokeep] void setEnlCookie(EnlCookieMsg *m);	
-		entry void recvFromEesRPP(GSPPIFFTMsg  *m);
-		entry void registrationDone(CkReductionMsg *msg);
-		entry void printEnl(CkReductionMsg *msg);
-	};
+  class UberCollection;
+  class PPDummyMsg;
+
+  message NLDummyMsg;
+  message EnlCookieMsg;
+  message GSPPIFFTMsg {complex data[];};
+
+  array [2D] CP_State_ParticlePlane
+  {
+    entry CP_State_ParticlePlane(int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int, UberCollection);
+    entry void launchComputeZs();
+    entry void computeZ(PPDummyMsg *dmsg);
+    entry void reduceZ(int size, int atmIndex, complex zmatrix[size],complex zmatrix_fx[size], complex zmatrix_fy[size],complex zmatrix_fz[size]);
+    entry void getForces(int zsize, int atmIndex, complex zmat[zsize]);
+    entry void lPrioStartNLEes(NLDummyMsg *m);
+    entry [nokeep] void setEnlCookie(EnlCookieMsg *m);
+    entry void recvFromEesRPP(GSPPIFFTMsg  *m);
+    entry void registrationDone(CkReductionMsg *msg);
+    entry void printEnl(CkReductionMsg *msg);
+  };
 };
-
-
 
 
 module gStatePlane
 {
-    extern module pcMessages;
-    extern module instanceController;
+  extern module pcMessages;
+  extern module instanceController;
+  extern module RDMAMessages;
 
-	extern module RDMAMessages;
-	class RDMApair_GSP_PC;
-    class pcSetupMsg;
-	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
-	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
-	message RSFFTMsg     { complex data[]; };
-	message GSIFFTMsg    { complex data[]; };
-	message GSRedPsiMsg  { complex data[]; };
-	message GStateOutMsg 
-	{
-		complex data[];
-		complex vdata[];
-		int k_x[];
-		int k_y[];
-		int k_z[];
-	};
+  class RDMApair_GSP_PC;
+  class pcSetupMsg;
+  message RDMASetupRequestMsg<RDMApair_GSP_PC>;
+  message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
+  message RSFFTMsg     { complex data[]; };
+  message GSIFFTMsg    { complex data[]; };
+  message GSRedPsiMsg  { complex data[]; };
+  message GStateOutMsg
+  {
+    complex data[];
+    complex vdata[];
+    int k_x[];
+    int k_y[];
+    int k_z[];
+  };
 
-	class UberCollection;
-    include "paircalc/pcFwdDeclarations.h";
-    include "load_balance/PeList.h";
+  class UberCollection;
+  include "paircalc/pcFwdDeclarations.h";
+  include "load_balance/PeList.h";
 
-	array [2D]  CP_State_GSpacePlane 
-	{
-		entry CP_State_GSpacePlane(int sizeX, int numG, int numR, int s_grain, int timekeepf, int timekeepb, UberCollection);
-        entry void acceptPairCalcAIDs(pcSetupMsg *msg);
-		entry void initGSpace(int m, complex pts[m], int mv, complex vpts[mv], int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL, int istart_cp);
-		entry void acceptIFFT(GSIFFTMsg *);
-		entry [local] void doIFFT();
-		entry [local] void doFFT();
-		entry void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
-		entry void collectFileOutput(GStateOutMsg *msg);
-		entry void acceptNewPsi(CkReductionMsg *msg);	
-		entry void acceptNewPsi(partialResultMsg *msg);	
-		entry void acceptRedPsi(GSRedPsiMsg *msg);	
-		entry [local] void doNewPsi();
-		entry [local] void doNewPsiV();
-		entry [local] void doLambda();
-		entry void acceptLambda(CkReductionMsg *msg);
-		entry void acceptLambda(partialResultMsg *msg);
+  array [2D]  CP_State_GSpacePlane
+  {
+    entry CP_State_GSpacePlane(int sizeX, int numG, int numR, int s_grain, int timekeepf, int timekeepb, UberCollection);
+    entry void acceptPairCalcAIDs(pcSetupMsg *msg);
+    entry void initGSpace(int m, complex pts[m], int mv, complex vpts[mv], int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL, int istart_cp);
+    entry void acceptIFFT(GSIFFTMsg *msg);
+    entry void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
+    entry [nokeep] void acceptFileOutput(GStateOutMsg *msg);
 
-		entry void acceptNewPsiV(CkReductionMsg *msg);
-		entry void acceptNewPsiV(partialResultMsg *msg);
-		entry void acceptRedPsiV(GSRedPsiMsg *msg);
+    entry void acceptLambda(CkReductionMsg *msg);
+    entry void acceptLambda(partialResultMsg *msg);
+    entry void acceptNewPsi(CkReductionMsg *msg);
+    entry void acceptNewPsi(partialResultMsg *msg);
+    entry void acceptRedPsi(GSRedPsiMsg *msg);
+    entry void acceptNewPsiV(CkReductionMsg *msg);
+    entry void acceptNewPsiV(partialResultMsg *msg);
+    entry void acceptRedPsiV(GSRedPsiMsg *msg);
 
-		entry void makePCproxies();
-		entry [local] void startNewIter ();
+    entry void makePCproxies();
+    entry [local] void startNewIter();
 
-		entry void computeEnergies(int p, double d);
-		entry void psiCgOvlap(CkReductionMsg *);
-		entry void acceptNewTemperature(double temp);
-		entry void readFile();
-		entry [nokeep] void initBeadCookie(ICCookieMsg *msg);
-		entry [nokeep] void minimizeSync(ICCookieMsg *msg);
-		entry void setExitFlag();
+    entry void computeEnergies(int p, double d);
+    entry void acceptCgOverlap(CkReductionMsg *msg);
+    entry void acceptNewTemperature(double temp);
+    entry void readFile();
+    entry [nokeep] void initBeadCookie(ICCookieMsg *msg);
+    entry [nokeep] void minimizeSync(ICCookieMsg *msg);
+    entry void setExitFlag();
 
-	};
+    // Barriers can be turned on for performance diagnostics
+#ifdef BARRIER_CP_GSPACE_IFFT
+    entry [nokeep] void allDoneIFFT(CkReductionMsg *msg);
+#endif
+#ifdef BARRIER_CP_GSPACE_PSI
+    entry [nokeep] void allDonePsi(CkReductionMsg *msg);
+#endif
+#ifdef BARRIER_CP_GSPACE_PSIV
+    entry [nokeep] void allDonePsiV(CkReductionMsg *msg);
+#endif
+
+    // SDAG ////////
+    entry void computePsiFandVKS() {
+      serial {
+        // Do the z-FFT
+        doFFT();
+        // Transpose by sending to RealSpaceStatePlane
+        sendFFTData();
+      }
+      // Wait for RealSpaceStatePlane to send back partially FFTd forces
+      while (countIFFT != gs.planeSize[1]) {
+        when acceptIFFT(GSIFFTMsg *msg) serial { unpackIFFT(msg); }
+      }
+      serial {
+        countIFFT = 0;
+        // Complete forces from VKS
+        doIFFT();
+      }
+#ifdef BARRIER_CP_GSPACE_IFFT
+      when allDoneIFFT(CkReductionMsg* msg) {}
+#endif
+      serial {
+        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsiFandVKS();
+      }
+    };
+
+    entry void computeLambdaAndCg() {
+      // Lambda sending is needed for CgOverlap even if ortho is turned off
+      serial {
+        // We launch the computation of the constraint force
+        sendLambda();
+      }
+      if (!_SDAG_DEBUG_ORTHO_OFF_) {
+        while (countLambda != AllLambdaExpected) {
+          case {
+            when acceptLambda(CkReductionMsg *msg) serial { unpackLambda(msg); }
+            when acceptLambda(partialResultMsg *msg) serial { unpackLambda(msg); }
+          }
+        }
+        serial { doLambda(); }
+      }
+      serial { computeCgOverlap(); }
+      when acceptCgOverlap(CkReductionMsg *msg) serial {
+        psiCgOvlap(msg);
+        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneLambdaAndCg();
+      }
+    };
+
+    entry void computeRedPsi() {
+      serial {
+        // Update the Psis using the forces modified by lambda
+        integrateModForce();
+        // At the gamma point synchronize redundant points on Gx = 0
+        sendRedPsi();
+      }
+      while (iRecvRedPsi == 0) {
+        when acceptRedPsi(GSRedPsiMsg *msg) serial { unpackRedPsi(msg); }
+      }
+      serial {
+        doneRedPsiIntegrate();
+        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneRedPsi();
+      }
+    };
+
+    entry void computeNewPsi() {
+      serial { sendPsi(); }
+      if (!_SDAG_DEBUG_ORTHO_OFF_) {
+        while (countPsi != AllPsiExpected) {
+          case {
+            when acceptNewPsi(CkReductionMsg *msg) serial { unpackNewPsi(msg); }
+            when acceptNewPsi(partialResultMsg *msg) serial { unpackNewPsi(msg); }
+          }
+        }
+        serial { doNewPsi(); }
+#ifdef BARRIER_CP_GSPACE_PSI
+        when allDonePsi(CkReductionMsg *msg) {}
+#endif
+        serial { UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).doneNewPsi(); }
+      }
+    };
+
+    entry void computeNewPsiV() {
+      serial {
+        acceptedVPsi = false;
+        sendRedPsiV();
+      }
+      while (iRecvRedPsiV == 0) {
+        when acceptRedPsiV(GSRedPsiMsg *msg) serial { unpackRedPsiV(msg); }
+      }
+      serial {
+        doneRedPsiIntegrate();
+        sendPsiV();
+      }
+      while (countVPsi != AllPsiExpected) {
+        case {
+          when acceptNewPsiV(CkReductionMsg *msg) serial { unpackNewPsiV(msg); }
+          when acceptNewPsiV(partialResultMsg *msg) serial { unpackNewPsiV(msg); }
+        }
+      }
+      serial { doNewPsiV(); }
+#ifdef BARRIER_CP_GSPACE_PSIV
+      when allDonePsiV(CkReductionMsg *msg) {}
+#endif
+      serial { UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).donePsiV(); }
+    };
+
+    entry void doOutput() {
+      // Everyone sends their portion of the output to the reduction plane
+      serial { contributeFileOutput(); }
+
+      // The reduction plane collects all of the output, and writes the file
+      if (thisIndex.y == redPlane) {
+        while (countFileOut < nchareG) {
+          when acceptFileOutput(GStateOutMsg* msg) serial { unpackFileOutput(msg); }
+        }
+        serial { writeOutputFile(); }
+      }
+
+      // Everyone contributes to the reduction saying that output has completed
+      serial {
+        contribute(CkCallback(CkIndex_GSpaceDriver::doneOutput(), UgSpaceDriverProxy[thisInstance.proxyOffset]));
+      }
+    };
+  };
 };
