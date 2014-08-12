@@ -2204,12 +2204,6 @@ void CP_State_GSpacePlane::doLambda() {
 #endif
 
 //==============================================================================
-
-// Back to the threaded loop
-
-  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
-
-//==============================================================================
   }//end routine
 //==============================================================================
 
