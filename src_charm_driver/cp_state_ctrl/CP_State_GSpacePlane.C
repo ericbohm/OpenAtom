@@ -30,6 +30,7 @@
 //============================================================================
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_ParticlePlane.h"
+#include "CP_State_Plane.h"
 
 #include "main/startupMessages.h"
 #include "utility/util.h"

@@ -47,6 +47,7 @@
 
 #include "CP_State_ParticlePlane.h"
 #include "CP_State_GSpacePlane.h"
+#include "CP_State_Plane.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "structure_factor/StructFactorCache.h"
 #include "main/cpaimd.h"

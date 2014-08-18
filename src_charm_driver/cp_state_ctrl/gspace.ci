@@ -170,6 +170,9 @@ module gParticlePlane
   message EnlCookieMsg;
   message GSPPIFFTMsg {complex data[];};
 
+	message NLFFTMsg {complex data[];};
+	message CompAtmForcMsg {double zmat[];};
+
   array [2D] CP_State_ParticlePlane
   {
     entry CP_State_ParticlePlane(int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int, UberCollection);
@@ -182,6 +185,27 @@ module gParticlePlane
     entry void recvFromEesRPP(GSPPIFFTMsg  *m);
     entry void registrationDone(CkReductionMsg *msg);
     entry void printEnl(CkReductionMsg *msg);
+  };
+
+  // This is where the real component lives when using ees for nonlocal
+  array [2D] CP_State_RealParticlePlane {
+    entry CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int, UberCollection);
+    entry void init();
+    entry void recvFromEesGPP(NLFFTMsg *);
+    entry void recvZMatEes(CkReductionMsg *);
+    entry [nokeep] void computeAtmForcEes(CompAtmForcMsg *msg);
+
+    entry [nokeep] void setPlaneRedCookie(EnlCookieMsg *);
+    entry [nokeep] void setEnlCookie(EnlCookieMsg *);
+    entry void registrationDone();
+    entry void printEnlR(CkReductionMsg *);
+    entry void printEnlRSimp(double ,int,int);
+    entry void recvZMatEesSimp(int size, double _zmat[size],int state, 
+                               int index, int iterNL_in);
+    entry [local] void FFTNLEesFwdR();
+    entry void launchFFTControl(int );
+    entry void enlSectDone(CkReductionMsg *m);
+    entry void planeRedSectDone(CkReductionMsg *m);
   };
 };
 
@@ -199,6 +223,7 @@ module gStatePlane
   message RSFFTMsg     { complex data[]; };
   message GSIFFTMsg    { complex data[]; };
   message GSRedPsiMsg  { complex data[]; };
+	message ProductMsg {double data[];};	
   message GStateOutMsg
   {
     complex data[];
@@ -211,6 +236,58 @@ module gStatePlane
   class UberCollection;
   include "paircalc/pcFwdDeclarations.h";
   include "load_balance/PeList.h";
+
+  array [2D] CP_State_RealSpacePlane {
+    entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int, UberCollection);
+
+    entry void run() {
+      while (true) {
+        for (count = 0; count < nchareG; count++) {
+          // Partially FFTd data comes from CP_State_GSpacePlane
+          when acceptFFT(RSFFTMsg *m) serial { unpackFFT(m); }
+        }
+        serial {
+          iteration++;
+          // Finish the FFT to create Psi[S,R]
+          doFFT();
+          // Reduction of Psi[S,R] to Rho[R] is invoked; Go to sleep
+        }
+
+        for (countProduct = 0; countProduct < rhoRsubplanes; ++countProduct) {
+          // Rho chares multicast back VKS[R]
+          when acceptProduct(ProductMsg *m) serial { unpackProduct(m); }
+        }
+
+#ifdef RSVKS_BARRIER
+        // Performance diagnostic barrier
+        serial {
+        contribute(CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),
+              UrealSpacePlaneProxy[thisInstance.proxyOffset]));
+        }
+		    when rdoneVks(CkReductionMsg *m) serial { delete m; }
+#endif
+
+		    serial {
+          // Partially FFT VKS*Psi=Force
+		      thisProxy[thisIndex].doVksFFT();
+          // Send the partially FFTd force to GSpacePlane
+		      sendFPsiToGSP();
+		    }
+		  }
+		};
+
+		entry [nokeep] void acceptFFT(RSFFTMsg *m);
+		entry [nokeep] void acceptProduct(ProductMsg *m);
+		entry [local] void doFFT();
+		entry [local] void doVksFFT();
+		entry void setNumPlanesToExpect(int num);
+		entry void printData();
+		entry [nokeep] void init(ProductMsg *m);
+
+#ifdef RSVKS_BARRIER
+		entry void rdoneVks(CkReductionMsg *m);
+#endif
+	};
 
   array [2D]  CP_State_GSpacePlane
   {
