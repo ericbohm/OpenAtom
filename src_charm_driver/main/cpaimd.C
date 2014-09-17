@@ -115,6 +115,8 @@
  * *tidy* located in the *util* directory to clean up the dataset
  * directory before performing a new run.
  * 
+ * See \ref GSpaceDriver::driveGSpace for SDAG flow of control.
+ *
  * ![Overview Of OpenAtom Control Flow](controlFlowAmongstChareArrays_small.gif)
  */
 

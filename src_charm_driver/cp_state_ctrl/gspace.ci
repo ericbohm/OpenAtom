@@ -1,3 +1,8 @@
+/** \file CP_State_GSpacePlane.C
+    @addtogroup GSpaceState
+    @{
+*/
+
 #ifdef _CP_DEBUG_PSI_OFF_
 #define _SDAG_DEBUG_PSI_OFF_ true
 #else
@@ -51,30 +56,30 @@ module gSpaceDriver
     // Incoming reduction barrier notifications
     entry [nokeep] void allDoneNLForces(CkReductionMsg *msg) { serial { doneNLForces(); } };
 
-    // SDAG method for flow control of the Driver and its associated GSpace object
+    //! \brief SDAG method for flow control of the Driver and its associated GSpace object
     entry void driveGSpace() {
-      // Loop until we hit the last iteration, or the GSpacePlane has signaled
-      // that we have met the desired tolerance by setting exitFlag to 1.
+      //! Loop until we hit the last iteration, or the GSpacePlane has signaled
+      //! that we have met the desired tolerance by setting exitFlag to 1.
       while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag && !myGSpaceObj->exitFlagMin) {
         if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
-          // Resets flags and increases the iteration counter
+          //! Resets flags and increases the iteration counter
           serial { myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter(); }
 
           if (!_SDAG_DEBUG_PSI_OFF_) {
-            // If called, releaseSFComputeZ() triggers an NL force computation.
+            //! If called, releaseSFComputeZ() triggers an NL force computation.
             if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==0 && natm_nl!=0) serial {
               releaseSFComputeZ();
             }
 
-            // Both branches of this if will trigger an NL force computation if
-            // releaseSFComputeZ() was not called above.
+            //! Both branches of this if will trigger an NL force computation if
+            //! releaseSFComputeZ() was not called above.
             if (!_SDAG_DEBUG_VKS_OFF_) serial {
               myGSpaceObj->computePsiFandVKS();
             } else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==1 && natm_nl!=0) serial {
               startNonLocalEes(myGSpaceObj->iteration);
             }
 
-            // Wait for both the VKS and the NL force computations to complete.
+            //! Wait for both the VKS and the NL force computations to complete.
             overlap {
               if (!_SDAG_DEBUG_SFNL_OFF_) {
                 when doneNLForces() {}
@@ -93,9 +98,9 @@ module gSpaceDriver
             serial { myGSpaceObj->computeLambdaAndCg(); }
             when doneLambdaAndCg() {}
 
-            // If output is on and we are doing dynamics then dump to file
-            // every ndump_frq iteration as well as the final iteration. We
-            // skip the first iterations because nothing moves before iter 2.
+            //! If output is on and we are doing dynamics then dump to file
+            //! every ndump_frq iteration as well as the final iteration. We
+            //! skip the first iterations because nothing moves before iter 2.
             if (config.stateOutput==1 && cp_min_opt==0 && myGSpaceObj->iteration > 1 &&
                 (myGSpaceObj->iteration % ndump_frq==1 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1)) {
               serial { myGSpaceObj->doOutput(); }
@@ -111,8 +116,8 @@ module gSpaceDriver
           serial { myGSpaceObj->computeNewPsi(); }
           when doneNewPsi() {}
 
-          // If output is on and we are doing minimization then dump to file
-          // every ndump_frq iteration as well as the final iteration.
+          //! If output is on and we are doing minimization then dump to file
+          //! every ndump_frq iteration as well as the final iteration.
           if (config.stateOutput==1 && cp_min_opt==1 && myGSpaceObj->iteration > 0 &&
               (myGSpaceObj->iteration % ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1)) {
             serial { myGSpaceObj->doOutput(); }
@@ -125,8 +130,8 @@ module gSpaceDriver
           }
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
-        // Wait for both the energy computation, and the atoms to be moved
-        // before going to the next iteration.
+        //! Wait for both the energy computation, and the atoms to be moved
+        //! before going to the next iteration.
         overlap {
           if (!_SDAG_DEBUG_PSI_OFF_) {
             when doneComputingEnergy(const int AtomGrpIter) {}
@@ -134,7 +139,7 @@ module gSpaceDriver
           when doneMovingAtoms(const int AtomsGrpIter) {}
         }
 
-        // Print out the iteration times and set isFirstStep to false.
+        //! Print out the iteration times and set isFirstStep to false.
         serial {
           myGSpaceObj->screenPrintWallTimes();
           isFirstStep = false;
@@ -453,3 +458,4 @@ module gStatePlane
     };
   };
 };
+/*@}*/

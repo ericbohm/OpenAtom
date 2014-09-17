@@ -1,7 +1,6 @@
 #include "debug_flags.h"
 #include "gSpaceDriver.decl.h"
 #include "structureFactor.decl.h"
-//#include "RTH.h"
 #include "main/CPcharmParaInfoGrp.h"
 #include "charm++.h"
 #include "uber/Uber.h"
@@ -25,14 +24,12 @@ class CP_State_ParticlePlane;
  * 
  * Implements entry methods that are primarily used by other chares for notifying progress on different portions 
  * of the computation. This information is used to orchestrate the work. Holds counters and flags used in the GSpace 
- * driver logic that is currently implemented as RTH code. 
+ * driver logic that is currently implemented as SDAG code. 
  * 
  * Use starts with the creation of the numInstances bound arrays in init_state_chares(). InstanceController::doneInit() 
- * then invokes startControl() which creates an RTH 'thread' and lets it fall through its logic. The intricacies of the workflow
- * should be evident in GSpacePlane's documentation and in the RTH code comments. RTH invokes different functions and entry 
- * methods and suspends when needed. The RTH 'thread' resumes when someone calls resumeControl().
+ * then invokes startControl() which calls init and then driveGSpace.  The latter uses Structured DAGger to manage the control flow. The intricacies of the workflow
+ * should be evident in gspace.ci's documentation and in the SDAG code comments. SDAG defined the chain of dependencies between entry methods and invokes different local object functions when their input dependencies have been met. Flow returns naturally to the driveGSpace as those functions return.
  * 
- * Moving to other solutions like sdag should mostly result in very localized modifications.  
  */  
 class GSpaceDriver: public CBase_GSpaceDriver
 {
@@ -47,7 +44,7 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		/// PUP method
 		void pup(PUP::er &p);
 		
-		/// @entry Creates and invokes the RTH thread that controls GSpace execution. 
+		/// @entry Creates and invokes the SDAG that controls GSpace execution. 
  		void startControl();
 		/// @entry local. GSpace notifies me that its ready to exit by calling this method
 		void readyToExit();
@@ -84,8 +81,6 @@ class GSpaceDriver: public CBase_GSpaceDriver
 	private:
 		/// A marker tying this class to a particular instance of interacting chares
 		const UberCollection thisInstance;
-		/// An RTH runtime thread that executes all the control logic
-//		RTH_Runtime* controlThread;
 		/// Array section of the structure factor chares that I will be triggering
 		CProxySection_StructureFactor sfCompSectionProxy;
 };

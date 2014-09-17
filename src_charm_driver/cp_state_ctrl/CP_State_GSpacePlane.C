@@ -22,7 +22,7 @@
  * to as GSpace), tranformed to \ref RealSpaceState and updated each step.
  * Data is arranged into approximately equal size chunks \re nchareg. The
  * number of chunks is a free parameter selected at runtime.
- * 
+ * See \ref GSpaceDriver::driveGSpace for flow of control.
  */
 //============================================================================
 
