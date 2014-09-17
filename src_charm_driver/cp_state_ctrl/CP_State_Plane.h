@@ -16,7 +16,6 @@
 #include "ckmulticast.h"
 #include "structure_factor/StructFactorCache.h"
 #include "structure_factor/StructureFactor.h"
-#include "RTH.h"
 //#include "ckPairCalculator.h"
 void getSplitDecomp(int *,int *,int *,int , int ,int );
 
@@ -308,7 +307,6 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	CProxy_CP_Rho_GSpacePlane rhoGProxyIGZ_com;
 	int redCount;
 	CkReductionMsg *RedMsg;
-	RTH_Runtime* run_thread;
 };
 //============================================================================
 /*@}*/

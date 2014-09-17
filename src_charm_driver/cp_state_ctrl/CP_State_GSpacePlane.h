@@ -188,20 +188,15 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void doIFFT();
         void unpackNewPsi(CkReductionMsg *msg);
         void unpackNewPsi(partialResultMsg  *msg);
-        /// @RTH resume
         void doNewPsi();
         void collectFileOutput(GStateOutMsg *msg);
         void unpackNewPsiV(CkReductionMsg *msg);
         void unpackNewPsiV(partialResultMsg *msg);
-        /// @RTH resume
         void doNewPsiV();
-        /// @entry @RTH resume
         void psiCgOvlap(CkReductionMsg *msg);
         void unpackLambda(CkReductionMsg *msg);
         void unpackLambda(partialResultMsg *msg);
-        /// @RTH resume
         void doLambda();
-        /// @RTH resume
         void unpackRedPsi(GSRedPsiMsg *msg);
         
 	void initBeadCookie(ICCookieMsg *m);
