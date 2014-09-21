@@ -441,7 +441,7 @@ class PeListFactory
             useDefault(false),
             boxX(bxX), boxY(bxY), boxZ(bxZ), order(ordr),
             maxX(mxX), maxY(mxY), maxZ(mxZ), maxT(mxT)
-	    { CkAbort("how the fuck did we get here?");}
+	    { }
 
 
         /// Return an appropriately constructed PeList
