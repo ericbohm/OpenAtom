@@ -104,7 +104,11 @@ void GSpaceDriver::startControl()
   /// Do other initialization chores
   init();
   /// Call the SDAG method in charge of control flow
-  driveGSpace();
+  if (cp_min_opt==1) {
+	  driveMinimization();
+  } else {
+    driveDynamics();
+  }
 }
 
 
