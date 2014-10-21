@@ -56,12 +56,111 @@ module gSpaceDriver
     // Incoming reduction barrier notifications
     entry [nokeep] void allDoneNLForces(CkReductionMsg *msg) { serial { doneNLForces(); } };
 
-    //! \brief SDAG method for flow control of the Driver and its associated GSpace object
-    entry void driveGSpace() {
+    //! \brief SDAG method for flow control while doing minimization
+    entry void driveMinimization() {
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! that we have met the desired tolerance by setting exitFlag to 1.
-      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag) {
+      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag && !myGSpaceObj->exitFlagMin) {
+        if (gen_wave==0 || isFirstStep==false) {
+          //! Resets flags and increases the iteration counter
+          serial { myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter(); }
+
+          if (!_SDAG_DEBUG_PSI_OFF_) {
+            //! If called, releaseSFComputeZ() triggers an NL force computation.
+            if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==0 && natm_nl!=0) serial {
+              releaseSFComputeZ();
+            }
+
+            //! Both branches of this if will trigger an NL force computation if
+            //! releaseSFComputeZ() was not called above.
+            if (!_SDAG_DEBUG_VKS_OFF_) serial {
+              myGSpaceObj->computePsiFandVKS();
+            } else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==1 && natm_nl!=0) serial {
+              startNonLocalEes(myGSpaceObj->iteration);
+            }
+
+            //! Wait for both the VKS and the NL force computations to complete.
+            overlap {
+              if (!_SDAG_DEBUG_SFNL_OFF_) {
+                when doneNLForces() {}
+              }
+              if (!_SDAG_DEBUG_VKS_OFF_) {
+                when donePsiFandVKS() {}
+              }
+            }
+
+            serial { myGSpaceObj->combineForcesGetEke(); }
+          }  // end if !_SDAG_DEBUG_PSI_OFF_
+
+          serial { myGSpaceObj->launchAtoms(); }
+
+          if (!_SDAG_DEBUG_PSI_OFF_) {
+            serial { myGSpaceObj->computeLambdaAndCg(); }
+            when doneLambdaAndCg() {}
+
+            serial { myGSpaceObj->computeRedPsi(); }
+            when doneRedPsi() {}
+          }  // end if !_SDAG_DEBUG_PSI_OFF_
+        }  // end if (cp_min_opt==1 && gen_wave==0) || firstStep==false
+
+        if (!_SDAG_DEBUG_PSI_OFF_) {
+          serial { myGSpaceObj->computeNewPsi(); }
+          when doneNewPsi() {}
+
+          //! If output is on then dump to file every ndump_frq iteration as
+          //! well as the final iteration.
+          if (config.stateOutput==1 && myGSpaceObj->iteration > 0 &&
+              (myGSpaceObj->iteration % ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1)) {
+            serial { myGSpaceObj->doOutput(); }
+            when doneOutput() {}
+          }
+
+          if (isPsiVupdateNeeded && myGSpaceObj->iteration > 1) {
+            serial { myGSpaceObj->computeNewPsiV(); }
+            when donePsiV() serial { isPsiVupdateNeeded = false; }
+          }
+        }  // end if !_SDAG_DEBUG_PSI_OFF_
+
+        //! Wait for both the energy computation, and the atoms to be moved
+        //! before going to the next iteration.
         if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
+          overlap {
+            if (!_SDAG_DEBUG_PSI_OFF_) {
+              when doneComputingEnergy(const int AtomGrpIter) {}
+            }
+            when doneMovingAtoms(const int AtomsGrpIter) {}
+          }
+        }
+
+        //! Print out the iteration times and set isFirstStep to false.
+        serial {
+          myGSpaceObj->screenPrintWallTimes();
+          isFirstStep = false;
+        }
+      }  // end while simulation is running
+
+      serial {
+#ifdef _CP_SUBSTEP_TIMING_
+#if USE_HPM
+        // Print additional timing information
+        (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif
+#endif
+        // Contribute to a reduction to let the instance controller know
+        // that the computation is complete.
+        CkCallback cb(CkIndex_InstanceController::cleanExit(NULL),
+            CkArrayIndex1D(thisInstance.proxyOffset),
+            instControllerProxy);
+        contribute(cb);
+      }
+    };
+
+    //! \brief SDAG method for flow control while doing dynamics
+    entry void driveDynamics() {
+      //! Loop until we hit the last iteration, or the GSpacePlane has signaled
+      //! that we have met the desired tolerance by setting exitFlag to 1.
+      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag && !myGSpaceObj->exitFlagMin) {
+        if (isFirstStep==false) {
           //! Resets flags and increases the iteration counter
           serial { myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter(); }
 
@@ -115,30 +214,15 @@ module gSpaceDriver
         if (!_SDAG_DEBUG_PSI_OFF_) {
           serial { myGSpaceObj->computeNewPsi(); }
           when doneNewPsi() {}
-
-          //! If output is on and we are doing minimization then dump to file
-          //! every ndump_frq iteration as well as the final iteration.
-          if (config.stateOutput==1 && cp_min_opt==1 && myGSpaceObj->iteration > 0 &&
-              (myGSpaceObj->iteration % ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1)) {
-            serial { myGSpaceObj->doOutput(); }
-            when doneOutput() {}
-          }
-
-          if (isPsiVupdateNeeded && cp_min_opt==1 && myGSpaceObj->iteration > 1) {
-            serial { myGSpaceObj->computeNewPsiV(); }
-            when donePsiV() serial { isPsiVupdateNeeded = false; }
-          }
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
         //! Wait for both the energy computation, and the atoms to be moved
         //! before going to the next iteration.
-        if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
-          overlap {
-            if (!_SDAG_DEBUG_PSI_OFF_) {
-              when doneComputingEnergy(const int AtomGrpIter) {}
-            }
-            when doneMovingAtoms(const int AtomsGrpIter) {}
+        overlap {
+          if (!_SDAG_DEBUG_PSI_OFF_) {
+            when doneComputingEnergy(const int AtomGrpIter) {}
           }
+          when doneMovingAtoms(const int AtomsGrpIter) {}
         }
 
         //! Print out the iteration times and set isFirstStep to false.
@@ -158,8 +242,8 @@ module gSpaceDriver
         // Contribute to a reduction to let the instance controller know
         // that the computation is complete.
         CkCallback cb(CkIndex_InstanceController::cleanExit(NULL),
-            CkArrayIndex1D(thisInstance.proxyOffset),
-            instControllerProxy);
+                CkArrayIndex1D(thisInstance.proxyOffset),
+                instControllerProxy);
         contribute(cb);
       }
     };
