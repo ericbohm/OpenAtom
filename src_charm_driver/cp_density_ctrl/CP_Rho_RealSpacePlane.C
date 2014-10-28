@@ -293,7 +293,9 @@ CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//  Pup my variables for migration
+/**
+ *  Pup my variables for migration
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
@@ -411,8 +413,9 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 
 
 //============================================================================
-//  Handle the memory cleanup and setting of flags when density has
-//  all arrived
+/**  Handle the memory cleanup and setting of flags when density has
+     all arrived
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::handleDensityReduction() {
 //============================================================================
@@ -484,10 +487,10 @@ void CP_Rho_RealSpacePlane::handleDensityReduction() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 //
-// The density is here : Launch ees NL and ees Ext routines
-//
-// Do this once an algorithm step
-//
+/** The density is here : Launch ees NL and ees Ext routines
+
+    Do this once an algorithm step
+*/
 //============================================================================
 void CP_Rho_RealSpacePlane::launchEextRNlG() {
 //============================================================================
@@ -614,14 +617,14 @@ void CP_Rho_RealSpacePlane::energyComputation(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// 1) Perform FFT of density: Single Transpose method rho(x,y,z) ---> rho(gx,gy,z)
-//                            Double Transpose method rho(x,y,z) ---> rho(gx,y,z)
-//
-// 2) launch the real space part of the non-local 
-//
-//    Routine invoked once an algorithm step.
-//
+/** 
+ *   1) Perform FFT of density: Single Transpose method rho(x,y,z) ---> rho(gx,gy,z)
+ *                              Double Transpose method rho(x,y,z) ---> rho(gx,y,z)
+ *
+ *   2) launch the real space part of the non-local 
+ *
+ *      Routine invoked once an algorithm step.
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
 //============================================================================
@@ -740,14 +743,14 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// Double Transpose Fwd Send : A(gx,y,z) on the way to A(gx,gy,z)
-//                             Send so that (y,z) parallelism is 
-//                             switched to (gx,z)
-//
-//  Invoked 4 times per algorithm step : case 0   density(gx,y,z)
-//                                     : cast 1-3 gradients(gx,y,z)
-//
+/**
+ *  Double Transpose Fwd Send : A(gx,y,z) on the way to A(gx,gy,z)
+ *                              Send so that (y,z) parallelism is 
+ *                              switched to (gx,z)
+ * 
+ *  Invoked 4 times per algorithm step : case 0   density(gx,y,z)
+ *                                     : cast 1-3 gradients(gx,y,z)
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
 //============================================================================
@@ -861,13 +864,13 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// Double Transpose Fwd Recv : A(gx,y,z) on the way to A(gx,gy,z)
-//                             Recv so that (y,z) parallel switched to (gx,z)
-//
-// Invoked 4 times per algorithm step : case 0   rho(gx,y,z)
-//                                    : cast 1-3 gradRho(gx,y,z)
-//
+/**
+ *  Double Transpose Fwd Recv : A(gx,y,z) on the way to A(gx,gy,z)
+ *                              Recv so that (y,z) parallel switched to (gx,z)
+ * 
+ *  Invoked 4 times per algorithm step : case 0   rho(gx,y,z)
+ *                                     : cast 1-3 gradRho(gx,y,z)
+ **/
 //============================================================================
 void CP_Rho_RealSpacePlane::acceptRhoGradVksRyToGy(RhoGSFFTMsg *msg){
 //============================================================================
@@ -913,12 +916,13 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksRyToGy(RhoGSFFTMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// Double Transpose Fwd FFT : A(gx,y,z) -> A(gx,gy,z)
-//
-//  Invoked 4 times per algorithm step : 
-//               case 0   rho(gx,y,z)    -> rho(gx,gy,z)
-//               cast 1-3 gradRho(gx,y,z)-> gradRho(gx,gy,z)
-//
+/**
+ *  Double Transpose Fwd FFT : A(gx,y,z) -> A(gx,gy,z)
+ * 
+ *  Invoked 4 times per algorithm step : 
+ *               case 0   rho(gx,y,z)    -> rho(gx,gy,z)
+ *               cast 1-3 gradRho(gx,y,z)-> gradRho(gx,gy,z)
+ **/
 //============================================================================
 void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
 //============================================================================
@@ -983,22 +987,22 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// The Tranpose to G-space : A(gx,gy,z) on the way to A(gx,gy,gz)
-//                           Change parallel by gx,z to parallel by {gx,gy}
-//                           We switch chare arrays here from RhoR to RhoG
-//
-//  Invoked 4 times per algorithm step : 
-//               case 0   send rho(gx,gy,z)     -> rho(gx,gy,z) in Rhog
-//               cast 1-3 send gradRho(gx,gy,z) -> gradRho(gx,gy,z) in Rhog
-//
-// Send the partly FFTed array A(gx,gy,z), to rhoGSpacePlane :  
-// You then wait while RHOG works, sends back RhoIRalpha which you whitebyrdize
-// You send back the whitebyrdized RhoIRalpha puppies to RhoGspacePlane.
-// Whilst all this is going on, HartG is churning and will send you another
-// part of Vks.  All this requires keeping density, vks, div_rho_alpha and
-// vkshart memory available at all times to receive messages.
-//
+/*
+ * The Tranpose to G-space : A(gx,gy,z) on the way to A(gx,gy,gz)
+ *                           Change parallel by gx,z to parallel by {gx,gy}
+ *                           We switch chare arrays here from RhoR to RhoG
+ *
+ *  Invoked 4 times per algorithm step : 
+ *               case 0   send rho(gx,gy,z)     -> rho(gx,gy,z) in Rhog
+ *               cast 1-3 send gradRho(gx,gy,z) -> gradRho(gx,gy,z) in Rhog
+ *
+ * Send the partly FFTed array A(gx,gy,z), to rhoGSpacePlane :  
+ * You then wait while RHOG works, sends back RhoIRalpha which you whitebyrdize
+ * You send back the whitebyrdized RhoIRalpha puppies to RhoGspacePlane.
+ * Whilst all this is going on, HartG is churning and will send you another
+ * part of Vks.  All this requires keeping density, vks, div_rho_alpha and
+ * vkshart memory available at all times to receive messages.
+ **/
 //============================================================================
 void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 //============================================================================
@@ -1542,15 +1546,15 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// Double Transpose Bck Send :  A(gx,y,z) on the way to A(x,y,z)
-//                              Send so (gx,z) parallel -> (y,z) parallel 
-//
-// Invoked 5 times an algorithm step:
-//             case 1-3: Gradients
-//             case  0 : VksWhiteByrd
-//             case  4 : VksHarteext
-//
+/**
+ * Double Transpose Bck Send :  A(gx,y,z) on the way to A(x,y,z)
+ *                              Send so (gx,z) parallel -> (y,z) parallel 
+ *
+ * Invoked 5 times an algorithm step:
+ *             case 1-3: Gradients
+ *             case  0 : VksWhiteByrd
+ *             case  4 : VksHarteext
+ **/
 //============================================================================
 void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
 //============================================================================
@@ -1658,15 +1662,15 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// Double Transpose Bck Recv :  A(gx,y,z) on the way to A(x,y,z)
-//                              Recv (gx,z) parallel -> (y,z) parallel 
-//
-// Invoked 5 times an algorithm step:
-//             case 1-3: Gradients
-//             case  0 : VksWhiteByrd
-//             case  4 : VksHarteext
-//
+/**
+ * Double Transpose Bck Recv :  A(gx,y,z) on the way to A(x,y,z)
+ *                              Recv (gx,z) parallel -> (y,z) parallel 
+ *
+ * Invoked 5 times an algorithm step:
+ *             case 1-3: Gradients
+ *             case  0 : VksWhiteByrd
+ *             case  4 : VksHarteext
+ **/
 //============================================================================
 void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
 //============================================================================
@@ -1778,12 +1782,12 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// The gradient of the density is now completed. You can compute the 
-// GGA-DFT functional now. Density is now available to be used as scratch.
-//
-// Invoked once per algorithm step
-//
+/**
+ * The gradient of the density is now completed. You can compute the 
+ * GGA-DFT functional now. Density is now available to be used as scratch.
+ *
+ * Invoked once per algorithm step
+ **/
 //============================================================================
 void CP_Rho_RealSpacePlane::GradCorr(){
 //============================================================================
@@ -1872,16 +1876,16 @@ void CP_Rho_RealSpacePlane::GradCorr(){
 
 
 //============================================================================
-//
-// The white-bird term : First fwfft redefined delrho(r) to delrho(g)
-// then send to RhoGspacePlane. RhoGspacePlane sends you back back another term.
-// After this routine, rhoIRX, rhoIRY and rhoIRZ are `free'.
-//
-// Invoked once per algorithm step
-//
-//
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+   The white-bird term : First fwfft redefined delrho(r) to delrho(g)
+   then send to RhoGspacePlane. RhoGspacePlane sends you back back another term.
+   After this routine, rhoIRX, rhoIRY and rhoIRZ are `free'.
+  
+   Invoked once per algorithm step
+
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 //============================================================================
@@ -1977,14 +1981,14 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// The white bird vks correction is returned from RhoG : VksW(gx,gy,z)
-//                This routine recvs the transpose {gx,gy} to (gx,z)
-//
-// Invoked once per algorithm step
-//
-// After this routine, VksW(gx,gy,z) -> VksW(x,y,gz) and is added vksTot();
-//
+/**
+   The white bird vks correction is returned from RhoG : VksW(gx,gy,z)
+                  This routine recvs the transpose {gx,gy} to (gx,z)
+  
+   Invoked once per algorithm step
+
+   After this routine, VksW(gx,gy,z) -> VksW(x,y,gz) and is added vksTot();
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 //============================================================================
@@ -2100,9 +2104,9 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-//  Add the VksWhiteByrd to VksTot : Set the done flag.
-//
+/**
+     Add the VksWhiteByrd to VksTot : Set the done flag.
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::addWhiteByrdVks(){
 //============================================================================
@@ -2244,9 +2248,9 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-//  Add the VksHartEext to VksTot : Set the done flag.
-//
+/**
+    Add the VksHartEext to VksTot : Set the done flag.
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::addHartEextVks(){
 //============================================================================
@@ -2271,9 +2275,9 @@ void CP_Rho_RealSpacePlane::addHartEextVks(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-//  Under ees-eext Rhart chare reports its completion :  Set the done flag.
-//
+/**
+     Under ees-eext Rhart chare reports its completion :  Set the done flag.
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::RHartReport(){
   countRHart++;
@@ -2289,9 +2293,9 @@ void CP_Rho_RealSpacePlane::RHartReport(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// If all the parts of exc-eext-hart are done, invoke blast of vks to states
-//
+/**
+    If all the parts of exc-eext-hart are done, invoke blast of vks to states
+**/
 //============================================================================
   void CP_Rho_RealSpacePlane::doMulticastCheck(){
 //============================================================================
@@ -2305,9 +2309,11 @@ void CP_Rho_RealSpacePlane::RHartReport(){
 
 
 //============================================================================
-// Send vks back to the states
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**  
+    Send vks back to the states
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::doMulticast(){
 //============================================================================
@@ -2417,7 +2423,9 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// Glenn's RhoReal exit 
+/**  
+        Glenn's RhoReal exit for debugging
+**/
 //============================================================================
 void CP_Rho_RealSpacePlane::exitForDebugging(){
   countDebug++;  
