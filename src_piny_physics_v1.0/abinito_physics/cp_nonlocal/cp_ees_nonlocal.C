@@ -1,3 +1,12 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_ees_nonlocal.C
+ ** \brief The physics routines that compute the non-local
+ * pseudopotentail interaction by the EES method
+ */
+//==========================================================================
+
 #include "standard_include.h"
 #include "ckcomplex.h"
 
@@ -12,6 +21,11 @@
 
 //#define _CP_DEBUG_EES_NONLOCAL_
 
+//==========================================================================
+/** \brief Fetch the non-local EES grid size interpolation order and 
+     number of atoms with  non-local pseudos from the 
+     CP->cppseudo.nonlocal readonly class.
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -35,10 +49,11 @@ void CPNONLOCAL::getEesPrms(int *ngrid_a, int *ngrid_b, int *ngrid_c,
 
 
 //==========================================================================
-// Compute the g-space weight for the k-vectors given.
-//--------------------------------------------------------------------------
-// The weight only depends on k-vectors given.
-// The EESgroup should call the routine ONCE for each collection it is assigned.
+/** \brief  Compute the g-space weights for the set of g-vectors given.
+              The weight only depends on g-vectors given.
+              The EESgroup should call the routine ONCE for each collection 
+              it is assigned.
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -156,10 +171,11 @@ void CPNONLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in
 
 
 //==========================================================================
-// Compute the g-space spline coefs for the k-vectors given.
-//--------------------------------------------------------------------------
-// The spline coefs only depends on k-vectors given.
-// The EESgroup should call the routine ONCE for each collection it is assigned.
+/** \brief  Compute the g-space pseudopotential spline look up indices.
+               These only depend on k-vectors given.
+               The EESgroup should call the routine ONCE for each collection
+               it is assigned.
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -196,7 +212,6 @@ void CPNONLOCAL::eesSplProjectorGgrp(int ncoef, int *ka, int *kb, int *kc,
 //==========================================================================
 // Spline look up stuff : never changes. Done starting with 0 convention
 
-//FIXKhere: h_gspl ind_gspl need to be k'd up.
 
   for(int kp=0; kp<nkpoint; kp++){
   for(i=0;i<ncoef;i++){
@@ -227,19 +242,19 @@ void CPNONLOCAL::eesSplProjectorGgrp(int ncoef, int *ka, int *kb, int *kc,
 
 
 //==========================================================================
-// Compute in real space, the B-Spline coefficients of the atoms
-//--------------------------------------------------------------------------
-// Should be invoked by EESgroup members with real space planes at each time step:
-// EESGroup should provide a list of ALL allowed real space planes.
-//    allowed_planes[ip] = 1, if I want the Bspline coefs on plane ip
-//    allowed_planes[ip] = 0, if I DONT want the Bspline coefs on plane ip
-// where ip=0 ... nfftc or ngrid_c. Taking allowed_planes[ip]=1 for all ip
-// decreases efficiency a tiny bit. The atoms are a group, too, so this 
-// group based approach is totally cool.
+/** \brief  Compute in real space, the B-Spline coefficients of the atoms
+    for the non-local pseudo grid.
+    Should be invoked by EESgroup members with real space planes at each time step:
+     EESGroup should provide a list of ALL allowed real space planes.
+       allowed_planes[ip] = 1, if I want the Bspline coefs on plane ip
+       allowed_planes[ip] = 0, if I DONT want the Bspline coefs on plane ip
+    where ip=0 ... nfftc-1 or ngrid_c-1. 
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDATA **RPPData, PSSCRATCH *psscratch)
+void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDATA **RPPData, 
+                                   PSSCRATCH *psscratch)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -550,8 +565,11 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
 
 
 //==========================================================================
-// Every g-chare must invoke this puppy for at every time step for every
-// iteration of the non-local loop (iter_nl).
+/** \brief Compute the nl-projector in g-space - spherical harmonic times bessel
+           transformed radial pseudo in the channel times  psi(g).
+           Every GParticlePlane must invoke this puppy at every time step and for every
+           iteration of the non-local loop (iter_nl).
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -690,7 +708,9 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
 
 
 //==========================================================================
-// Only invoked by class function eesProjGchare
+/** \brief Compute the spherical harmonic in g-space at the specified
+           set of g-vecotrs. Only invoked by class function eesProjGchare
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -1188,9 +1208,12 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
 
 
 //==========================================================================
-// Invoked by all real space nl chares : Compute your part of the current zmat.
-//  zmat must be large enough so that all NL interations can be stored at the
-//  same time. Otherwise, we have to synchronize! zmat[natm_nl*nlcnt]
+/** \brief
+     Compute your part of the current zmat for computations at the Gamma point.
+     zmat must be large enough so that all NL interations can be stored at the
+     same time. Otherwise, we have to synchronize! zmat[natm_nl*nlcnt].
+     Invoked by all real space nl chares - RealParticlePlane : 
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -1254,7 +1277,7 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
 // The projPsiR should be FFT3D(projPsiG)
 // Mr. zmat should be passed in with the correct offset for interation counter.
 
-   int nroll = 5; // you can't check this without modifying the code below
+   int nroll = 5; // you can't change this without modifying the code below
    int nrem  = (n_interp2 % nroll);
    int jstrt = (n_interp2-nrem+1);
    int jend  = (n_interp2-nrem);
@@ -1306,10 +1329,12 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
 //==========================================================================
 
 //==========================================================================
-// COMPLEX version for k-points:
-// Invoked by all real space nl chares : Compute your part of the current zmat.
-//  zmat must be large enough so that all NL interations can be stored at the
-//  same time. Otherwise, we have to synchronize! zmat[natm_nl*nlcnt]
+/** \brief
+     Compute your part of the current zmat for case of kpt sampling.
+     zmat must be large enough so that all NL interations can be stored at the
+     same time. Otherwise, we have to synchronize! zmat[natm_nl*nlcnt].
+     Every RealParticlePlane array invokes this for each non-local loop iteration
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -1427,7 +1452,10 @@ void CPNONLOCAL::eesZmatRchareC(complex *projPsiR, int iter_nl, complex *zmat,
 
 
 //==========================================================================
-// Every Real Space Chare array invokes me for each non-local loop iteration
+/** \brief Compute the nonlocal energy and atom forces for the current state
+     and angular moment channel for the Gamma point case.
+     Every RealParticlePlane array invokes this for each non-local loop iteration
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -1684,8 +1712,10 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
 
 
 //==========================================================================
-// Complex version:
-// Every Real Space Chare array invokes me for each non-local loop iteration
+/** \brief Compute the nonlocal energy and atom forces for the current state
+     and angular moment channel for kpt point sampling.
+     Every RealParticlePlane array invokes this for each non-local loop iteration
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -1943,7 +1973,9 @@ void CPNONLOCAL::eesEnergyAtmForcRchareC(int iter_nl, double *cp_enl_tot, comple
 
 
 //==========================================================================
-// Every G-Space Chare array invokes me for each non-local loop iteration
+/** \brief Compute the force on each state due to the non-local potential.
+     Every GParticlePlane array invokes this for each non-local loop iteration
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -2019,8 +2051,9 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
 //==========================================================================
 
 
-//==============================================================================
-//  A generic routine to set kvectors and indices from runs
+//==========================================================================
+/** \brief Fetch the g-vectors for the non-local computations
+*/
 //==============================================================================
 void CPNONLOCAL::genericSetKvector(int numPoints, int *k_x, int *k_y, int *k_z,
                         int numRuns, RunDescriptor *runs, 

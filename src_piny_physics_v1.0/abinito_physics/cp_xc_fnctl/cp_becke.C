@@ -1,8 +1,19 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_becke.C
+ ** \brief Compute Becke exchange and LYP correlation
+ */
+//==========================================================================
 #include "standard_include.h"
 #include "ckcomplex.h"
 
 #include "../class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 
+//==========================================================================
+/*
+ ** \brief Compute Becke exchange
+ */
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
@@ -69,6 +80,10 @@ void CPXCFNCTS::becke_gcx_lda(double rho,double g_rho2,
 
 
 
+//==========================================================================
+/*
+ ** \brief Compute LYP exchange
+ */
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/

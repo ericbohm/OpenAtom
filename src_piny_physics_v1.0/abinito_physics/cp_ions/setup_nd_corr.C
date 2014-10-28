@@ -3,12 +3,19 @@
 //=============================================================================
 //                 Ewald correction sums
 //=============================================================================
+/** \file name cp_rspace_ion.C
+ ** \brief The physics routines that setup correction to 
+    the g-space atom ewald energy for wires, surfaces and clusters
+ */
+//==========================================================================
 
 
 
 //=============================================================================
-//    Add more kc for small ka and kb when periodicity = 2
-//    For surfaces,  `a' and 'b' periodic, 'c' open
+//=============================================================================
+/** \brief Setup correction to g-space part of atomic Ewald sum for surface:  
+      Add more gc for small ga and gb when periodicity = 1
+*/
 //=============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=============================================================================
@@ -162,8 +169,10 @@ void setup_2d_ewd_corner_corr(GENEWALD *genewald, GENCELL *gencell){
 
 
 //=============================================================================
-//    Add more kc for small ka and kb when periodicity = 1
-//    Add more kb for small ka and kc when periodicity = 1
+/** \brief Setup correction to the g-space part of the atomic Ewald for wires:  
+      Add more kc for small ka and kb 
+      Add more kb for small ka and kc 
+*/
 //=============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=============================================================================

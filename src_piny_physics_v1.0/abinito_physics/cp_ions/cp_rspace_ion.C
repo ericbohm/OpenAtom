@@ -1,3 +1,12 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_rspace_ion.C
+ ** \brief The physics routines that compute the real space part
+ * of the ionic ewald sum and a correction to the g-space part 
+ * for wires, surfaces and clusters
+ */
+//==========================================================================
 #include "standard_include.h"
 #include "../../../include/Atoms.h"
 #include "../../../include/debug_flags.h"
@@ -7,6 +16,11 @@
 #include "../proto_defs/proto_friend_lib_entry.h"
 #include "../class_defs/CP_OPERATIONS/class_cprspaceion.h"
 
+
+
+//==========================================================================
+/** \brief Compute the real space part of the ewald sum by an N^2 method.
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -226,6 +240,10 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
 //============================================================================
 
 
+//==========================================================================
+/** \brief Correction to the atomic portion of the Ewald sum for clusters,
+     wires and surface.
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

@@ -1,6 +1,11 @@
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_isokin.C
+ ** \brief The physics routines that do the isokin NHC integration
+    for CPAIMD
+ */
+//==========================================================================
 #include "standard_include.h"
 #include "ckcomplex.h"
 
@@ -14,7 +19,9 @@
 //============================================================================
 
 
-
+//============================================================================
+/** \brief Fetch the NHC sizes from the PINY physics readonly class
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -29,6 +36,9 @@ void CPINTEGRATE::fetchNHCsize(int *len_nhc,int *num_nhc, int *nck_nhc){
 }
 //============================================================================
 
+//============================================================================
+/** \brief Initialize all the CPNHC constants needed for CPAIMD
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -132,6 +142,9 @@ void CPINTEGRATE::initCPNHC(int ncoef_true,int ncoef_zero,
 //============================================================================
 
 
+//============================================================================
+/** \brief Evolve the CPNHC degrees of freedom and psi fict velocities
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -304,6 +317,9 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
   }//end routine
 //============================================================================
 
+//============================================================================
+/** \brief Setup of the yoshida-susuki weights for wavefunction evolution
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -371,8 +387,3 @@ void CPINTEGRATE::set_yosh(int nyosh,double dt,double *wdt,double *wdt2,
 //-------------------------------------------------------------------------
    }// end routine
 //==========================================================================
-
-
-
-
-

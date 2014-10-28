@@ -1,3 +1,10 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_pz_lda.C
+ ** \brief Compute Purdue Zunger exchange correlation
+ */
+//==========================================================================
 #include "standard_include.h"
 #include "ckcomplex.h"
 
@@ -5,7 +12,10 @@
 #include "../class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 #include "../class_defs/allclass_cp.h"
 
-
+//==========================================================================
+/* 
+ ** \brief compute Purdue Zunger exchange correlation
+ */
 //===========================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===========================================================================

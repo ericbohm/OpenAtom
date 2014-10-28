@@ -1,3 +1,10 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_pz_lda.C
+ ** \brief Compute BLYP exchange correlation
+ */
+//==========================================================================
 #include "standard_include.h"
 #include "ckcomplex.h"
 
@@ -6,7 +13,7 @@
 #include "../class_defs/allclass_cp.h"
 
 //============================================================================
-/* The following function takes the gradient of the density as well as the 
+/** \brief The following function takes the gradient of the density as well as the 
 *  density, itself, and evaluates the GGA functional (BLYP in this case).
 *  
 *     E_GGA = sum_r f(rho(r),|grad rho(r)|)

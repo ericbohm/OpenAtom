@@ -1,3 +1,11 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_hart_eest.C
+ ** \brief The physics routines that compute the hartree
+ * and local pseudopotential energy and forces (atm and vks).
+ */
+//==========================================================================
 #include "standard_include.h"
 #include "ckcomplex.h"
 
@@ -14,8 +22,10 @@
 
 //#define _CP_DEBUG_VKS_HART_EEXT_
 
-//============================================================================
-//  N^2 method  : Invoked from gchare
+//==========================================================================
+/** \brief Compute hartree and external (local pseudopotentail) energy via
+        N^2 method  : Invoked from RhoG
+*/
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -389,8 +399,10 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
 //============================================================================
 
 
-//============================================================================
-// Invoked local to class
+//==========================================================================
+/** \brief Spline look up the non-local pseudopotential for N^2 method -
+    only invoked by routines local to class. 
+*/
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
@@ -447,7 +459,10 @@ void CPLOCAL::CP_get_vpsnow(int *index_atm,int nsplin_g,
 
 
 //==========================================================================
-// Fetch local pseudo ees parameters
+/** \brief Fetch the local pseudo EES grid size interpolation order and 
+     number of atoms for use in the class from the
+     CP->cppseudo readonly class.
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -472,10 +487,11 @@ void CPLOCAL::getEesPrms(int *ngrid_a, int *ngrid_b, int *ngrid_c,
 
 
 //==========================================================================
-// Compute the g-space weight for the k-vectors given.
-//--------------------------------------------------------------------------
-// The weight only depends on k-vectors given.
-// The EESgroup should call the routine ONCE for each collection it is assigned.
+/** \brief  Compute the g-space weights for the set of g-vectors given.
+              The weight only depends on g-vectors given.
+              The EESgroup should call the routine ONCE for each collection 
+              it is assigned.
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -592,7 +608,14 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
 
 
 //==========================================================================
-// At every time step, EesGroup with allowed planes Eext planes calls this routine
+/** \brief  Compute in real space, the B-Spline coefficients of the atoms
+    for the local pseudo grid.
+    Should be invoked by EESgroup members with real space planes at each time step:
+     EESGroup should provide a list of ALL allowed real space planes.
+       allowed_planes[ip] = 1, if I want the Bspline coefs on plane ip
+       allowed_planes[ip] = 0, if I DONT want the Bspline coefs on plane ip
+    where ip=0 ... nfftc-1 or ngrid_c-1. 
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -884,8 +907,10 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
 
 
 //==========================================================================
-// Use the B-spline coefs to generate sfAtmTypR (real space SF for spec. type)
-//     Invoke by RchareEesSF which controls type loop
+/** \brief 
+     Use the B-spline coefs to generate sfAtmTypR (real space SF for spec. type)
+     Invoked by RhoRHart chare which controls type loop
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -954,10 +979,14 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
 
 
 //==========================================================================
-// Invoked from g-chare : SfatmTypG is result of fft of sfatmtypr
-//                        sfAtomTotG is charged weighted SF that is accumulated
-//                        during the `ityp' control loop along with vks.
-//                        Generate eext and hartree(ityp==1 only)
+//==========================================================================
+/** \brief 
+ Invoked from RhoGHart chare : SfatmTypG is result of fft of sfatmtypr
+                        sfAtomTotG is charged weighted SF that is accumulated
+                        during the `ityp' control loop along with vks.
+                        Generate eext and hartree(ityp==1 only) energies and
+                        vks(G).
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -1175,8 +1204,10 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 
 
 //==========================================================================
-// Invoked from g-chare : sfAtomTotG is charged weighted SF e.g. summed over 
-//                        all atm types. It is used to generate ewald energy.
+/** \brief 
+ Invoked from RhoGHart chare : sfAtomTotG is charged weighted SF e.g. summed over 
+                        all atm types. It is used to generate ewald energy.
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -1281,8 +1312,9 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
 
 
 //==========================================================================
-// Invoked from R-chare : SfatmtypR is back FFT of SFatmTypG (flag==0)
-//                        or SFatmTotG (flag==1)
+/** \brief Compute for atom forces for the local pseudo
+     RhoRHartExt invokes this for each non-local loop iteration
+*/
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================

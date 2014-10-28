@@ -1,3 +1,10 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_pz_lda.C
+ ** \brief Compute density gradients and white bird correction in g-space
+ */
+//==========================================================================
 #include "standard_include.h"
 #include "ckcomplex.h"
 

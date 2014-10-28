@@ -1,3 +1,11 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_integrate_dyn
+ ** \brief The physics routines that evolve the wavefunctions (psi)
+    for CPAIMD
+ */
+//==========================================================================
 #include "standard_include.h"
 #include "ckcomplex.h"
 
@@ -11,7 +19,10 @@
 #define ISOKIN_OPT 1
 
 //============================================================================
-// Dynamics controller
+/* 
+ ** \brief The physics routine that controls wavefunctions (psi)
+   evoluation under CPAIMD
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -76,7 +87,9 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
 
 
 //============================================================================
-// Fancy Dan velocity integration under CP
+/* 
+ ** \brief Evolve the CP faux velocities to dt/2
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -117,7 +130,7 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
 
 
 //============================================================================
-// Make life simple for gx=0 and g=0
+// Make life simple for gx=0 and g=0 at Gamma: This does nothing for kpoints
 
    for(int i=istrt0;i<istrt1;i++){forces[i].im=0.0;vpsi[i].im=0.0;}
    for(int i=istrt1;i<iend;i++){
@@ -154,7 +167,7 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
    }//endif
 
 //============================================================================
-// fix up gx=0 ; g=0
+// fix up gx=0 ; g=0 at gamma : This does nothing for k-point sampling
 
    for(int i=istrt0;i<istrt1;i++){forces[i].im=0.0;vpsi[i].im=0.0;}
    for(int i=istrt1;i<iend;i++){
@@ -168,6 +181,10 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
 //============================================================================
 
 
+//============================================================================
+/* 
+ ** \brief Compute the fictitious electronic kinetic energy
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

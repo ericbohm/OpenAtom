@@ -1,3 +1,12 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_control_integrate
+ ** \brief The physics routines that evolve the wavefunctions (psi)
+    for both minimization and CPAIMD
+ */
+//==========================================================================
+
 #include "standard_include.h"
 #include "ckcomplex.h"
 
@@ -7,7 +16,8 @@
 #include "../class_defs/CP_OPERATIONS/class_cpintegrate.h"
 
 //============================================================================
-// Generic call for the charm_driver to invoke
+/** \brief Generic call for the charm_driver to invoke psi integration/evolution
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -110,7 +120,8 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
 
 
 //============================================================================
-// Create the masses
+/** \brief Create fictitious psi masses for CPAIMD and minimization
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -189,7 +200,9 @@ void CPINTEGRATE::CP_create_mass(int nktot,int *k_x,int *k_y,int *k_z,
 
 
 //============================================================================
-// Check the coef magnitude
+/** \brief Print a warning if the sum of squares of the F=H\psi is too large.
+    under CPAIMD
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -216,12 +229,6 @@ void CPINTEGRATE::CheckCoefGradMag(double fovlap)
                 + gensimopts->cp_wave
                 + gensimopts->cp_wave_pimd;
 
-
-  if(cp_min_on==1){
-    if(sqrt(fovlap) > genminopts->tol_coef){
-//      Send an exit flag that tells output to write out the WF and exit
-    }// endif
-  } // endif
 
   if(cp_on == 1){
     if(sqrt(fovlap) > cpopts->tol_coef){

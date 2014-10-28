@@ -1,3 +1,11 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_min_CG.C
+ ** \brief The physics routines that perform CG minimization of the psi with 
+    kinetic energy preconditioning 
+ */
+//==========================================================================
 #include "standard_include.h"
 #include "ckcomplex.h"
 
@@ -9,6 +17,9 @@
 
 #define _CP_DEBUG_NEWFORCE_OFF_
 
+//============================================================================
+/** \brief Evolve the psi using CG method - kinetic preconditioning
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -105,6 +116,9 @@ void CPINTEGRATE::CP_integrate_min_CG
 //============================================================================
 
 
+//============================================================================
+/** \brief Compute the dot-product of the forces on the psi
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

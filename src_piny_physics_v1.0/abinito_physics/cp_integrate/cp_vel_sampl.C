@@ -1,3 +1,11 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_integrate_dyn
+ ** \brief The physics routines sample fictitious wavefunctions (psi)
+    velocities and CPNHC velocities for CPAIMD evolution
+ */
+//==========================================================================
 #include "standard_include.h"
 #include "ckcomplex.h"
 
@@ -10,6 +18,11 @@
 
 
 
+//============================================================================
+/* 
+ ** \brief Sample fictictious velocities for the psi and CPNHC variables for
+   evoluation under CPAIMD
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -57,8 +70,10 @@ void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,i
 //============================================================================
 
 
-//==================================================================== 
-// Velocities  
+//============================================================================
+/* 
+ ** \brief Use gaussian random numbers to sample velocities from Maxwell Boltz
+ */
 //==================================================================== 
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==================================================================== 
@@ -97,6 +112,11 @@ void CPINTEGRATE::sampl1DVelOneT(int n, double* v,double* mass,
  } //end routine 
 //=================================================================== 
 
+//============================================================================
+/* 
+ ** \brief Use gaussian random numbers to sample CPNHC velocities 
+           and initial positions from Maxwell Boltz
+ */
 //==================================================================== 
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==================================================================== 
@@ -179,7 +199,9 @@ void CPINTEGRATE::cpSamplNHC(int len,int num,int nck,
 //=================================================================== 
 
 //============================================================================
-// Avoid linear dependencies : add a little random noise
+/* 
+ ** \brief Avoid linear dependencies : add a little random noise to psi
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

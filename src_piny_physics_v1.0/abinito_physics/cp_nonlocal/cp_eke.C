@@ -1,3 +1,12 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** \file name cp_eke.C
+ ** \brief The physics routine that computes the kinetic
+ *         energy of non-interacting electrons.
+ */
+//==========================================================================
+
 #include "standard_include.h"
 #include "ckcomplex.h"
 
@@ -11,6 +20,9 @@
 #include "../class_defs/allclass_gen.h"
 #include "../class_defs/allclass_cp.h"
 
+//==========================================================================
+/** \brief Compute the electronic kinetic energy
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
