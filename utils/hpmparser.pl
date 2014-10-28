@@ -23,109 +23,109 @@ my %countpernode;  # for avg
 # UPC authors state FMA_2 is 2 flops
 # UPC authors state FMA_4 is 4 flops
 my %FP_KEYS=(
-	     'BGP_PU0_FPU_ADD_SUB_1' => 1,
-		'BGP_PU0_FPU_MULT_1' => 1,
-		'BGP_PU0_FPU_FMA_2' => 2,
-		'BGP_PU0_FPU_DIV_1' => 1,
-		'BGP_PU0_FPU_OTHER_NON_STORAGE_OPS' => 1,
-		'BGP_PU0_FPU_ADD_SUB_2' => 1,
-		'BGP_PU0_FPU_MULT_2' => 1,
-		'BGP_PU0_FPU_FMA_4' => 4,
-		'BGP_PU0_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1,
-		'BGP_PU1_FPU_ADD_SUB_1' => 1,
-		'BGP_PU1_FPU_MULT_1' => 1, 
-		'BGP_PU1_FPU_FMA_2' => 2,
-		'BGP_PU1_FPU_DIV_1' => 1,
-		'BGP_PU1_FPU_OTHER_NON_STORAGE_OPS' => 1,
-		'BGP_PU1_FPU_ADD_SUB_2' => 1,
-		'BGP_PU1_FPU_MULT_2' => 1,
-		'BGP_PU1_FPU_FMA_4' => 4,
-		'BGP_PU1_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1,
-	     'BGP_PU2_FPU_ADD_SUB_1' => 1,
-		'BGP_PU2_FPU_MULT_1' => 1,
-		'BGP_PU2_FPU_FMA_2' => 2,
-		'BGP_PU2_FPU_DIV_1' => 1,
-		'BGP_PU2_FPU_OTHER_NON_STORAGE_OPS' => 1,
-		'BGP_PU2_FPU_ADD_SUB_2' => 1,
-		'BGP_PU2_FPU_MULT_2' => 1,
-		'BGP_PU2_FPU_FMA_4' => 4,
-		'BGP_PU2_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1,
-		'BGP_PU3_FPU_ADD_SUB_1' => 1,
-		'BGP_PU3_FPU_MULT_1' => 1, 
-		'BGP_PU3_FPU_FMA_2' => 2,
-		'BGP_PU3_FPU_DIV_1' => 1,
-		'BGP_PU3_FPU_OTHER_NON_STORAGE_OPS' => 1,
-		'BGP_PU3_FPU_ADD_SUB_2' => 1,
-		'BGP_PU3_FPU_MULT_2' => 1,
-		'BGP_PU3_FPU_FMA_4' => 4,
-		'BGP_PU3_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1
+    'BGP_PU0_FPU_ADD_SUB_1' => 1,
+    'BGP_PU0_FPU_MULT_1' => 1,
+    'BGP_PU0_FPU_FMA_2' => 2,
+    'BGP_PU0_FPU_DIV_1' => 1,
+    'BGP_PU0_FPU_OTHER_NON_STORAGE_OPS' => 1,
+    'BGP_PU0_FPU_ADD_SUB_2' => 1,
+    'BGP_PU0_FPU_MULT_2' => 1,
+    'BGP_PU0_FPU_FMA_4' => 4,
+    'BGP_PU0_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1,
+    'BGP_PU1_FPU_ADD_SUB_1' => 1,
+    'BGP_PU1_FPU_MULT_1' => 1, 
+    'BGP_PU1_FPU_FMA_2' => 2,
+    'BGP_PU1_FPU_DIV_1' => 1,
+    'BGP_PU1_FPU_OTHER_NON_STORAGE_OPS' => 1,
+    'BGP_PU1_FPU_ADD_SUB_2' => 1,
+    'BGP_PU1_FPU_MULT_2' => 1,
+    'BGP_PU1_FPU_FMA_4' => 4,
+    'BGP_PU1_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1,
+    'BGP_PU2_FPU_ADD_SUB_1' => 1,
+    'BGP_PU2_FPU_MULT_1' => 1,
+    'BGP_PU2_FPU_FMA_2' => 2,
+    'BGP_PU2_FPU_DIV_1' => 1,
+    'BGP_PU2_FPU_OTHER_NON_STORAGE_OPS' => 1,
+    'BGP_PU2_FPU_ADD_SUB_2' => 1,
+    'BGP_PU2_FPU_MULT_2' => 1,
+    'BGP_PU2_FPU_FMA_4' => 4,
+    'BGP_PU2_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1,
+    'BGP_PU3_FPU_ADD_SUB_1' => 1,
+    'BGP_PU3_FPU_MULT_1' => 1, 
+    'BGP_PU3_FPU_FMA_2' => 2,
+    'BGP_PU3_FPU_DIV_1' => 1,
+    'BGP_PU3_FPU_OTHER_NON_STORAGE_OPS' => 1,
+    'BGP_PU3_FPU_ADD_SUB_2' => 1,
+    'BGP_PU3_FPU_MULT_2' => 1,
+    'BGP_PU3_FPU_FMA_4' => 4,
+    'BGP_PU3_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1
 
-		);
+    );
 
-my @TORUS_KEYS=qw(
-  BGP_TORUS_XP_PACKETS
-  BGP_TORUS_XP_32BCHUNKS
-  BGP_TORUS_XM_PACKETS
-  BGP_TORUS_XM_32BCHUNKS
-  BGP_TORUS_YP_PACKETS
-  BGP_TORUS_YP_32BCHUNKS
-  BGP_TORUS_YM_PACKETS
-  BGP_TORUS_YM_32BCHUNKS
-  BGP_TORUS_ZP_PACKETS
-  BGP_TORUS_ZP_32BCHUNKS
-  BGP_TORUS_ZM_PACKETS
-  BGP_TORUS_ZM_32BCHUNKS
-		);
+    my @TORUS_KEYS=qw(
+        BGP_TORUS_XP_PACKETS
+        BGP_TORUS_XP_32BCHUNKS
+        BGP_TORUS_XM_PACKETS
+        BGP_TORUS_XM_32BCHUNKS
+        BGP_TORUS_YP_PACKETS
+        BGP_TORUS_YP_32BCHUNKS
+        BGP_TORUS_YM_PACKETS
+        BGP_TORUS_YM_32BCHUNKS
+        BGP_TORUS_ZP_PACKETS
+        BGP_TORUS_ZP_32BCHUNKS
+        BGP_TORUS_ZM_PACKETS
+        BGP_TORUS_ZM_32BCHUNKS
+        );
 
-my @TORUSBW_KEYS=qw(
-  BGP_TORUS_XP_32BCHUNKS
-  BGP_TORUS_XM_32BCHUNKS
-  BGP_TORUS_YP_32BCHUNKS
-  BGP_TORUS_YM_32BCHUNKS
-  BGP_TORUS_ZP_32BCHUNKS
-  BGP_TORUS_ZM_32BCHUNKS
-		);
-my $nodecount=0;
+    my @TORUSBW_KEYS=qw(
+        BGP_TORUS_XP_32BCHUNKS
+        BGP_TORUS_XM_32BCHUNKS
+        BGP_TORUS_YP_32BCHUNKS
+        BGP_TORUS_YM_32BCHUNKS
+        BGP_TORUS_ZP_32BCHUNKS
+        BGP_TORUS_ZM_32BCHUNKS
+        );
+    my $nodecount=0;
 foreach my $infile (@ARGV)
 {
-    $nodecount++;
-    my $file= open(FILE,"<$infile") || die "cannot open $infile";
-    my $node=0;
-    if($infile =~ /.*\.(\d+)/)
-    {
-	$node= $1 ;
-    }
-    my %thisnode;
-    while(<FILE>)
-    {
-	# extract per node data
-	chomp;
-	my @column=split;
+  $nodecount++;
+  my $file= open(FILE,"<$infile") || die "cannot open $infile";
+  my $node=0;
+  if($infile =~ /.*\.(\d+)/)
+  {
+    $node= $1 ;
+  }
+  my %thisnode;
+  while(<FILE>)
+  {
+# extract per node data
+    chomp;
+    my @column=split;
 #	print "columns:$column[0] $column[1] $column[2] \n";
-	next if $column[0] !~ /\d+/;
-	$thisnode{$column[2]}=$column[1];
-	$sumpernode{$column[2]}+=$column[1];
-	$countpernode{$column[2]}++;
-    }
-    $pernode[$node]=\%thisnode;
-    # keep running totals
+    next if $column[0] !~ /\d+/;
+    $thisnode{$column[2]}=$column[1];
+    $sumpernode{$column[2]}+=$column[1];
+    $countpernode{$column[2]}++;
+  }
+  $pernode[$node]=\%thisnode;
+# keep running totals
 
 }
 my $rawflops=0;
 my $scaledflops=0;
 foreach my $fpreg (keys %FP_KEYS)
 {
-    my $scaled = $sumpernode{$fpreg}*$FP_KEYS{$fpreg};
-    print "$fpreg total $sumpernode{$fpreg} scaled $scaled by $FP_KEYS{$fpreg}\n";
-    $rawflops+= $sumpernode{$fpreg};
-    $scaledflops+= $scaled;
+  my $scaled = $sumpernode{$fpreg}*$FP_KEYS{$fpreg};
+  print "$fpreg total $sumpernode{$fpreg} scaled $scaled by $FP_KEYS{$fpreg}\n";
+  $rawflops+= $sumpernode{$fpreg};
+  $scaledflops+= $scaled;
 }
 my $bw=0;
 my $count=0;
 foreach my $bwreg (@TORUSBW_KEYS)
 {
-    print "$bwreg\n";
-    $bw+= $sumpernode{$bwreg};
+  print "$bwreg\n";
+  $bw+= $sumpernode{$bwreg};
 }
 my $bw = $bw *32;
 my $allchipsrflops=$rawflops*2;

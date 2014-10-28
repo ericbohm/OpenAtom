@@ -28,8 +28,8 @@
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=========================================================================================
 void setput_nd_eext_corrs(int nktot, int *ka, int *kb, int *kc, double *perdCorr){
-//=========================================================================================
-// Strip out data and then check to see if you belong here
+  //=========================================================================================
+  // Strip out data and then check to see if you belong here
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
 #include "../class_defs/allclass_strip_gen.h"
@@ -60,14 +60,14 @@ void setput_nd_eext_corrs(int nktot, int *ka, int *kb, int *kc, double *perdCorr
   if(kamax>ngaMax || kbmax>ngbMax || kcmax>ngcMax){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("Incorrect kspace in setup_nd_eext_corrs %d:%d %d:%d %d:%d \n",
-            kamax,ngaMax,kbmax,ngbMax,kcmax,ngcMax);
+        kamax,ngaMax,kbmax,ngbMax,kcmax,ngcMax);
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     FFLUSH(stdout);
     EXIT(1);
   }//endkif
 
-//=========================================================================================
-// Create the periodicity correction to the kernel at specfied k-vectors
+  //=========================================================================================
+  // Create the periodicity correction to the kernel at specfied k-vectors
 
   //-----------------------------------------------------------------------------------------
   // Cluster and Wire corrections computed via Gaussian quadrature numerical integration
@@ -94,8 +94,8 @@ void setput_nd_eext_corrs(int nktot, int *ka, int *kb, int *kc, double *perdCorr
   // Surface correction has a simple analytical form
   if(iperd==2){create_surf_corr(nktot,ka,kb,kc,hmat,hmati,perdCorr);}
 
-//=========================================================================================
-  }//end routine
+  //=========================================================================================
+}//end routine
 //=========================================================================================
 
 
@@ -103,8 +103,8 @@ void setput_nd_eext_corrs(int nktot, int *ka, int *kb, int *kc, double *perdCorr
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=========================================================================================
 void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
-//=========================================================================================
-// Get the parameters
+  //=========================================================================================
+  // Get the parameters
 
   double ecut4 = 2.0*genewald->ecut; // convert to Ryd explains the 2.0
   int kamax    = genewald->nka_max;
@@ -125,8 +125,8 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
   int nktot;
   int *kastr,*kbstr,*kcstr;
 
-//=========================================================================================
-// Checks
+  //=========================================================================================
+  // Checks
 
   if(iperd<1 || iperd>2){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -137,11 +137,11 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
   }//endif
 
   if(nka_fix>kamax || nkb_fix >kbmax){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("nka_fix %d nkb_fix %d greater than %d %d %d\n",nka_fix,nkb_fix,kamax,kbmax);
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     FFLUSH(stdout);
-     EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("nka_fix %d nkb_fix %d greater than %d %d %d\n",nka_fix,nkb_fix,kamax,kbmax);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }//endif
 
   if(iperd==1){
@@ -154,97 +154,97 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
     }//endif
   }//endif
 
-//=========================================================================================
-// Set up k-space
+  //=========================================================================================
+  // Set up k-space
 
   set_large_kvectors(ecut4,hmati,&kastr,&kbstr,&kcstr,&nktot,kamax,kbmax,kcmax);
 
-//=========================================================================================
-// Find k-space regions where you need to add a little more juice
+  //=========================================================================================
+  // Find k-space regions where you need to add a little more juice
 
-//--------------------------------------------------------
-// When ka<= nka_max and |kb|<=nkb_max find kcmax and kcmin
-// so more kc can be added
+  //--------------------------------------------------------
+  // When ka<= nka_max and |kb|<=nkb_max find kcmax and kcmin
+  // so more kc can be added
 
-   int **kcmax_str = cmall_int_mat(0,nka_fix,0,2*nkb_fix,"set_perd_corrs.C");
-   int **kcmin_str = cmall_int_mat(0,nka_fix,0,2*nkb_fix,"set_perd_corrs.C");
-   for(int i=0;i<nktot;i++){
-     int ka    = kastr[i];
-     int kb    = abs(kbstr[i]);
-     if(ka<=nka_fix && kb<=nkb_fix){
-       int kboff = kbstr[i]+nkb_fix;
-       kcmax_str[ka][kboff] = MAX(kcmax_str[ka][kboff],kcstr[i]);
-       kcmin_str[ka][kboff] = MIN(kcmin_str[ka][kboff],kcstr[i]);
-     }//endif
-   }//endfor
+  int **kcmax_str = cmall_int_mat(0,nka_fix,0,2*nkb_fix,"set_perd_corrs.C");
+  int **kcmin_str = cmall_int_mat(0,nka_fix,0,2*nkb_fix,"set_perd_corrs.C");
+  for(int i=0;i<nktot;i++){
+    int ka    = kastr[i];
+    int kb    = abs(kbstr[i]);
+    if(ka<=nka_fix && kb<=nkb_fix){
+      int kboff = kbstr[i]+nkb_fix;
+      kcmax_str[ka][kboff] = MAX(kcmax_str[ka][kboff],kcstr[i]);
+      kcmin_str[ka][kboff] = MIN(kcmin_str[ka][kboff],kcstr[i]);
+    }//endif
+  }//endfor
 
-//--------------------------------------------------------
-// When ka<= nka_max and |kc|<=nkc_max find kbmax and kbmin
-// so more kb can be added
+  //--------------------------------------------------------
+  // When ka<= nka_max and |kc|<=nkc_max find kbmax and kbmin
+  // so more kb can be added
 
-   int **kbmax_str = NULL;
-   int **kbmin_str = NULL;
-   if(iperd==1){
-     kbmax_str = cmall_int_mat(0,nka_fix,0,2*nkc_fix,"set_perd_corrs.C");
-     kbmin_str = cmall_int_mat(0,nka_fix,0,2*nkc_fix,"set_perd_corrs.C");
-     for(int i=0;i<nktot;i++){
-       int ka    = kastr[i];
-       int kc    = abs(kcstr[i]);
-       if(ka<=nka_fix && kc<=nkc_fix){
-          int kcoff = kcstr[i]+nkc_fix;
-          kbmax_str[ka][kcoff] = MAX(kbmax_str[ka][kcoff],kbstr[i]);
-          kbmin_str[ka][kcoff] = MIN(kbmin_str[ka][kcoff],kbstr[i]);
-       }//endif
-     }//endfor
-   }//endif
-
-//=======================================================================
-// Add kc when ka and kb are small
-
-   // Count the corrections along c
-   int ic=0;
-   for(int ka=0;ka<=nka_fix;ka++){
-     int kbmin = (ka==0 ? 0 : -nkb_fix);
-     for(int kb=kbmin;kb<=nkb_fix;kb++){
-       int kboff = kb+nkb_fix;
-       int jj  = (ka==0 && kb==0 ? 1 : 2);
-       for(int ii=1;ii<=jj;ii++){
-         int kcmin,kcmax;
-         if(ii==1){kcmin=kcmax_str[ka][kboff];kcmax=kcmin+kcadd;}
-         if(ii==2){kcmax=kcmin_str[ka][kboff];kcmin=kcmax-kcadd;}
-         for(int kc=kcmin;kc<=kcmax;kc++){ic++;}
-       }//endfor
-     }//endfor
-   }//endfor
-   int ncorr_c = ic;
-
-   // Store the corrections along c
-   int *ka_corr_c = (int *)cmalloc(ncorr_c*sizeof(int),"set_perd_corrs.C");
-   int *kb_corr_c = (int *)cmalloc(ncorr_c*sizeof(int),"set_perd_corrs.C");
-   int *kc_corr_c = (int *)cmalloc(ncorr_c*sizeof(int),"set_perd_corrs.C");
-   double *kernel_corr_c = (double *)cmalloc(ncorr_c*sizeof(double),"set_perd_corrs.C");
-   ic = 0;
-   for(int ka=0;ka<=nka_fix;ka++){
-     int kbmin    = (ka==0 ? 0 : -nkb_fix);
-     for(int kb=kbmin;kb<=nkb_fix;kb++){
-       int kboff = kb+nkb_fix;
-       int jj  = (ka==0 && kb==0 ? 1 : 2);
-       for(int ii=1;ii<=jj;ii++){
-         int kcmin,kcmax;
-         if(ii==1){kcmin=kcmax_str[ka][kboff];kcmax=kcmin+kcadd;}
-         if(ii==2){kcmax=kcmin_str[ka][kboff];kcmin=kcmax-kcadd;}
-         for(int kc=kcmin;kc<=kcmax;kc++){
-         ka_corr_c[ic] = ka;
-         kb_corr_c[ic] = kb;
-         kc_corr_c[ic] = kc;
-         ic++;
-       }//endfor
-     }//endfor
+  int **kbmax_str = NULL;
+  int **kbmin_str = NULL;
+  if(iperd==1){
+    kbmax_str = cmall_int_mat(0,nka_fix,0,2*nkc_fix,"set_perd_corrs.C");
+    kbmin_str = cmall_int_mat(0,nka_fix,0,2*nkc_fix,"set_perd_corrs.C");
+    for(int i=0;i<nktot;i++){
+      int ka    = kastr[i];
+      int kc    = abs(kcstr[i]);
+      if(ka<=nka_fix && kc<=nkc_fix){
+        int kcoff = kcstr[i]+nkc_fix;
+        kbmax_str[ka][kcoff] = MAX(kbmax_str[ka][kcoff],kbstr[i]);
+        kbmin_str[ka][kcoff] = MIN(kbmin_str[ka][kcoff],kbstr[i]);
+      }//endif
     }//endfor
-   }//endfor
+  }//endif
 
-//============================================================================
-// kb corrections : note kb is never 0, so kc range is unrestricted
+  //=======================================================================
+  // Add kc when ka and kb are small
+
+  // Count the corrections along c
+  int ic=0;
+  for(int ka=0;ka<=nka_fix;ka++){
+    int kbmin = (ka==0 ? 0 : -nkb_fix);
+    for(int kb=kbmin;kb<=nkb_fix;kb++){
+      int kboff = kb+nkb_fix;
+      int jj  = (ka==0 && kb==0 ? 1 : 2);
+      for(int ii=1;ii<=jj;ii++){
+        int kcmin,kcmax;
+        if(ii==1){kcmin=kcmax_str[ka][kboff];kcmax=kcmin+kcadd;}
+        if(ii==2){kcmax=kcmin_str[ka][kboff];kcmin=kcmax-kcadd;}
+        for(int kc=kcmin;kc<=kcmax;kc++){ic++;}
+      }//endfor
+    }//endfor
+  }//endfor
+  int ncorr_c = ic;
+
+  // Store the corrections along c
+  int *ka_corr_c = (int *)cmalloc(ncorr_c*sizeof(int),"set_perd_corrs.C");
+  int *kb_corr_c = (int *)cmalloc(ncorr_c*sizeof(int),"set_perd_corrs.C");
+  int *kc_corr_c = (int *)cmalloc(ncorr_c*sizeof(int),"set_perd_corrs.C");
+  double *kernel_corr_c = (double *)cmalloc(ncorr_c*sizeof(double),"set_perd_corrs.C");
+  ic = 0;
+  for(int ka=0;ka<=nka_fix;ka++){
+    int kbmin    = (ka==0 ? 0 : -nkb_fix);
+    for(int kb=kbmin;kb<=nkb_fix;kb++){
+      int kboff = kb+nkb_fix;
+      int jj  = (ka==0 && kb==0 ? 1 : 2);
+      for(int ii=1;ii<=jj;ii++){
+        int kcmin,kcmax;
+        if(ii==1){kcmin=kcmax_str[ka][kboff];kcmax=kcmin+kcadd;}
+        if(ii==2){kcmax=kcmin_str[ka][kboff];kcmin=kcmax-kcadd;}
+        for(int kc=kcmin;kc<=kcmax;kc++){
+          ka_corr_c[ic] = ka;
+          kb_corr_c[ic] = kb;
+          kc_corr_c[ic] = kc;
+          ic++;
+        }//endfor
+      }//endfor
+    }//endfor
+  }//endfor
+
+  //============================================================================
+  // kb corrections : note kb is never 0, so kc range is unrestricted
 
   int ncorr_b           = 0;
   int *ka_corr_b        = NULL;
@@ -253,7 +253,7 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
   double *kernel_corr_b = NULL;
 
   if(iperd==1){
-   // Count the corrections along b
+    // Count the corrections along b
     int ic=0;
     for(int ka=0;ka<=nka_fix;ka++){
       int jj  = (ka==0 ? 1 : 2);
@@ -269,7 +269,7 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
     }//endfor
     ncorr_b = ic;
 
-   // Store the corrections along b
+    // Store the corrections along b
     ka_corr_b = (int *)cmalloc(ncorr_b*sizeof(int),"set_perd_corrs.C");
     kb_corr_b = (int *)cmalloc(ncorr_b*sizeof(int),"set_perd_corrs.C");
     kc_corr_b = (int *)cmalloc(ncorr_b*sizeof(int),"set_perd_corrs.C");
@@ -289,14 +289,14 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
             kc_corr_b[ic] = kc;
             ic++;
           }//endfor :kb
-       }//endfor : plus/minus
-     }//endfor : kc
+        }//endfor : plus/minus
+      }//endfor : kc
     }//endfor : ka
 
   }//endif
 
-//============================================================================
-// Compute kernel fixes
+  //============================================================================
+  // Compute kernel fixes
 
   // In 1D 
   if(iperd==1){
@@ -307,11 +307,11 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
     double wmax, wmin;
     double *anode,*weight,**data;
     create_perd_corr_data(ngaMax,ngbMax,ngcMax,&M,&nquad,&anode,&weight,&data,
-                          &wmax,&wmin);
+        &wmax,&wmin);
     create_wire_corr(ncorr_c,ka_corr_c,kb_corr_c,kc_corr_c,hmat,hmati,nquad,anode,weight,data,
-                     wmax,wmin,kernel_corr_c);
+        wmax,wmin,kernel_corr_c);
     create_wire_corr(ncorr_b,ka_corr_b,kb_corr_b,kc_corr_b,hmat,hmati,nquad,anode,weight,data,
-                     wmax,wmin,kernel_corr_b);
+        wmax,wmin,kernel_corr_b);
     free(&anode[1]);
     free(&weight[1]);
     cfree_mat(data,1,nquad,0,M+1);    
@@ -319,36 +319,36 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
 
   // In 2D 
   if(iperd==2){
-     create_surf_corr(ncorr_c,ka_corr_c,kb_corr_c,kc_corr_c,hmat,hmati,kernel_corr_c);
+    create_surf_corr(ncorr_c,ka_corr_c,kb_corr_c,kc_corr_c,hmat,hmati,kernel_corr_c);
   }//endif
 
-//============================================================================
-// Clean the memory; Store the goodies
+  //============================================================================
+  // Clean the memory; Store the goodies
 
-   free(kastr);
-   free(kbstr);
-   free(kcstr);
+  free(kastr);
+  free(kbstr);
+  free(kcstr);
 
-   cfree_int_mat(kcmax_str,0,nka_fix,0,2*nkb_fix);
-   cfree_int_mat(kcmin_str,0,nka_fix,0,2*nkb_fix);
-   if(iperd==1){
-     cfree_int_mat(kbmax_str,0,nka_fix,0,2*nkc_fix);
-     cfree_int_mat(kbmin_str,0,nka_fix,0,2*nkc_fix);
-   }//endif
+  cfree_int_mat(kcmax_str,0,nka_fix,0,2*nkb_fix);
+  cfree_int_mat(kcmin_str,0,nka_fix,0,2*nkb_fix);
+  if(iperd==1){
+    cfree_int_mat(kbmax_str,0,nka_fix,0,2*nkc_fix);
+    cfree_int_mat(kbmin_str,0,nka_fix,0,2*nkc_fix);
+  }//endif
 
-   genewald->ncorr_c       = ncorr_c;
-   genewald->ncorr_b       = ncorr_b;
-   genewald->ka_corr_c     = ka_corr_c;
-   genewald->kb_corr_c     = kb_corr_c;
-   genewald->kc_corr_c     = kc_corr_c;
-   genewald->ka_corr_b     = ka_corr_b;
-   genewald->kb_corr_b     = kb_corr_b;
-   genewald->kc_corr_b     = kc_corr_b;
-   genewald->kernel_corr_c = kernel_corr_c;
-   genewald->kernel_corr_b = kernel_corr_b;
+  genewald->ncorr_c       = ncorr_c;
+  genewald->ncorr_b       = ncorr_b;
+  genewald->ka_corr_c     = ka_corr_c;
+  genewald->kb_corr_c     = kb_corr_c;
+  genewald->kc_corr_c     = kc_corr_c;
+  genewald->ka_corr_b     = ka_corr_b;
+  genewald->kb_corr_b     = kb_corr_b;
+  genewald->kc_corr_b     = kc_corr_b;
+  genewald->kernel_corr_c = kernel_corr_c;
+  genewald->kernel_corr_b = kernel_corr_b;
 
-//============================================================================
-   }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 
@@ -358,91 +358,91 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void create_clus_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double *hmati, 
-                      int nquad, double *anode, double *weight, double **data,
-                      double wmax, double wmin,double *kernel_corr){
-//============================================================================
-// Check the box
+    int nquad, double *anode, double *weight, double **data,
+    double wmax, double wmin,double *kernel_corr){
+  //============================================================================
+  // Check the box
 
   if(hmat[5]!=hmat[9] || hmat[1]!=hmat[9] || hmat[2]!=0 || hmat[3]!=0 || 
-     hmat[4]!=0 || hmat[6]!=0 || hmat[7]!=0 || hmat[8]!=0){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The box for clusters must be cubic with Lx=Ly=Lz\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+      hmat[4]!=0 || hmat[6]!=0 || hmat[7]!=0 || hmat[8]!=0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The box for clusters must be cubic with Lx=Ly=Lz\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
   }//endif
 
-//============================================================================
-// Precomputed g=0 term
+  //============================================================================
+  // Precomputed g=0 term
 
-   double L  = hmat[1];
-   double L2 = L*L;
+  double L  = hmat[1];
+  double L2 = L*L;
 
-   double gzero = 0.7576021548; // well defined : computed off line numerically
-   gzero       *= (L2*M_PI);   // \int_0^infty [erf(0.5*t^{-1/2})]^3
+  double gzero = 0.7576021548; // well defined : computed off line numerically
+  gzero       *= (L2*M_PI);   // \int_0^infty [erf(0.5*t^{-1/2})]^3
 
-//============================================================================
-// Create the kernel
+  //============================================================================
+  // Create the kernel
 
-   double pre = L2/sqrt(M_PI);
-   for(int i=0;i<nktot;i++){
-     double gx = 2.0*M_PI*((double) kx[i]);
-     double gy = 2.0*M_PI*((double) ky[i]);
-     double gz = 2.0*M_PI*((double) kz[i]);
-     double g2 = gx*gx+gy*gy+gz*gz;
-     double g  = sqrt(g2);
-     int ind_x = abs(kx[i]);
-     int ind_y = abs(ky[i]);
-     int ind_z = abs(kz[i]);
-     if(g==0.0){kernel_corr[i]=gzero;}
-     if(g>0.0){
-        kernel_corr[i]=0.0;
-        for(int k=1;k<=nquad;k++){
-          double x   = anode[k]*sqrt(anode[k]); // missing L^3 factors out with data[]^3
-          kernel_corr[i] += ( (weight[k]/x)*data[k][ind_x]*data[k][ind_y]*data[k][ind_z] );
-        }//endfor
-        double gx2 = gx*gx; double gy2 = gy*gy; double gz2 = gz*gz;
-        double wmax32 = sqrt(wmax)*wmax;
-        double wmax52 = wmax32*wmax;
-        double wmax72 = wmax52*wmax;
-        //--------------------------------
-        // 1 guy is non-zero 
-         if(kx[i]!=0&&ky[i]==0&&kz[i]==0){
-           kernel_corr[i] -= (2.0*cos(gx*0.5)/(gx2*wmax32))
-                            *(2.0/3.0+(12.0/(5.0*gx2)-1.0/6.0)/wmax);
-	 }//endif
-         if(kx[i]==0&&ky[i]!=0&&kz[i]==0){
-           kernel_corr[i] -= (2.0*cos(gy*0.5)/(gy2*wmax32))
-                            *(2.0/3.0+(12.0/(5.0*gy2)-1.0/6.0)/wmax);
-	 }//endif
-         if(kx[i]==0&&ky[i]==0&&kz[i]!=0){
-           kernel_corr[i] -= (2.0*cos(gz*0.5)/(gz2*wmax32))
-                            *(2.0/3.0+(12.0/(5.0*gz2)-1.0/6.0)/wmax);
- 	 }//endif
-        //--------------------------------
-        // 1 guy is zero
-         if(kx[i]==0&&ky[i]!=0&&kz[i]!=0){
-           kernel_corr[i] += (8.0/5.0)*cos(gy*0.5)*cos(gz*0.5)/(gy2*gz2*wmax52);
- 	 }//endif
-         if(kx[i]!=0&&ky[i]==0&&kz[i]!=0){
-           kernel_corr[i] += (8.0/5.0)*cos(gx*0.5)*cos(gz*0.5)/(gx2*gz2*wmax52);
-	 }//endif
-         if(kx[i]!=0&&ky[i]!=0&&kz[i]==0){
-           kernel_corr[i] += (8.0/5.0)*cos(gx*0.5)*cos(gy*0.5)/(gx2*gy2*wmax52);
- 	 }//endif
-        //--------------------------------
-        // No one is zero
-         if(kx[i]!=0&&ky[i]!=0&&kz[i]!=0){
-           kernel_corr[i] -= (16.0/7.0)*cos(gx*0.5)*cos(gy*0.5)*cos(gz*0.5)/(gx2*gy2*gz2*wmax72);
-   	 }//endif
-        //--------------------------------
-        // Complete kernel
-        kernel_corr[i] *=pre;
-        kernel_corr[i] -= (4.0*M_PI*L2/g2)*exp(-g2*0.25*wmin);
-     }//endif
-   }//endfor
+  double pre = L2/sqrt(M_PI);
+  for(int i=0;i<nktot;i++){
+    double gx = 2.0*M_PI*((double) kx[i]);
+    double gy = 2.0*M_PI*((double) ky[i]);
+    double gz = 2.0*M_PI*((double) kz[i]);
+    double g2 = gx*gx+gy*gy+gz*gz;
+    double g  = sqrt(g2);
+    int ind_x = abs(kx[i]);
+    int ind_y = abs(ky[i]);
+    int ind_z = abs(kz[i]);
+    if(g==0.0){kernel_corr[i]=gzero;}
+    if(g>0.0){
+      kernel_corr[i]=0.0;
+      for(int k=1;k<=nquad;k++){
+        double x   = anode[k]*sqrt(anode[k]); // missing L^3 factors out with data[]^3
+        kernel_corr[i] += ( (weight[k]/x)*data[k][ind_x]*data[k][ind_y]*data[k][ind_z] );
+      }//endfor
+      double gx2 = gx*gx; double gy2 = gy*gy; double gz2 = gz*gz;
+      double wmax32 = sqrt(wmax)*wmax;
+      double wmax52 = wmax32*wmax;
+      double wmax72 = wmax52*wmax;
+      //--------------------------------
+      // 1 guy is non-zero 
+      if(kx[i]!=0&&ky[i]==0&&kz[i]==0){
+        kernel_corr[i] -= (2.0*cos(gx*0.5)/(gx2*wmax32))
+          *(2.0/3.0+(12.0/(5.0*gx2)-1.0/6.0)/wmax);
+      }//endif
+      if(kx[i]==0&&ky[i]!=0&&kz[i]==0){
+        kernel_corr[i] -= (2.0*cos(gy*0.5)/(gy2*wmax32))
+          *(2.0/3.0+(12.0/(5.0*gy2)-1.0/6.0)/wmax);
+      }//endif
+      if(kx[i]==0&&ky[i]==0&&kz[i]!=0){
+        kernel_corr[i] -= (2.0*cos(gz*0.5)/(gz2*wmax32))
+          *(2.0/3.0+(12.0/(5.0*gz2)-1.0/6.0)/wmax);
+      }//endif
+      //--------------------------------
+      // 1 guy is zero
+      if(kx[i]==0&&ky[i]!=0&&kz[i]!=0){
+        kernel_corr[i] += (8.0/5.0)*cos(gy*0.5)*cos(gz*0.5)/(gy2*gz2*wmax52);
+      }//endif
+      if(kx[i]!=0&&ky[i]==0&&kz[i]!=0){
+        kernel_corr[i] += (8.0/5.0)*cos(gx*0.5)*cos(gz*0.5)/(gx2*gz2*wmax52);
+      }//endif
+      if(kx[i]!=0&&ky[i]!=0&&kz[i]==0){
+        kernel_corr[i] += (8.0/5.0)*cos(gx*0.5)*cos(gy*0.5)/(gx2*gy2*wmax52);
+      }//endif
+      //--------------------------------
+      // No one is zero
+      if(kx[i]!=0&&ky[i]!=0&&kz[i]!=0){
+        kernel_corr[i] -= (16.0/7.0)*cos(gx*0.5)*cos(gy*0.5)*cos(gz*0.5)/(gx2*gy2*gz2*wmax72);
+      }//endif
+      //--------------------------------
+      // Complete kernel
+      kernel_corr[i] *=pre;
+      kernel_corr[i] -= (4.0*M_PI*L2/g2)*exp(-g2*0.25*wmin);
+    }//endif
+  }//endfor
 
-//----------------------------------------------------------------------------
-  }//end routine
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 
@@ -452,86 +452,86 @@ void create_clus_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void create_wire_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double *hmati, 
-                      int nquad, double *anode, double *weight,double **data,
-                      double wmax, double wmin,double *kernel_corr){
-//============================================================================
-// Check the box
+    int nquad, double *anode, double *weight,double **data,
+    double wmax, double wmin,double *kernel_corr){
+  //============================================================================
+  // Check the box
 
-   if(hmat[5]!=hmat[9] || hmat[2]!=0 || hmat[3]!=0 || 
+  if(hmat[5]!=hmat[9] || hmat[2]!=0 || hmat[3]!=0 || 
       hmat[4]!=0 || hmat[6]!=0 || hmat[7]!=0 || hmat[8]!=0){
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("The box for wires must be orthorhombic with Ly=Lz\n");
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      EXIT(1);
-   }//endif
-
-   if(2.0*M_PI*hmat[5]/hmat[1]<1 || 2.0*M_PI*hmat[9]/hmat[1]<1){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The box for wires has too small an aspect ratio.\n");
-     PRINTF("Please make the faux b/c-axises longer\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The box for wires must be orthorhombic with Ly=Lz\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
   }//endif
 
-//============================================================================
-// Precomputed g=0 term
+  if(2.0*M_PI*hmat[5]/hmat[1]<1 || 2.0*M_PI*hmat[9]/hmat[1]<1){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The box for wires has too small an aspect ratio.\n");
+    PRINTF("Please make the faux b/c-axises longer\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
 
-   double L  = hmat[5];
-   double L2 = L*L;
+  //============================================================================
+  // Precomputed g=0 term
 
-   double gzero = 0.491831811; // has a logarithmic sigularity subtracted out
-   gzero       *= (L2*M_PI);   //  \int_0^B dt [erf(0.5/sqrt(t))]^2 - log(B)/pi lim B->infty
-                               // computed off-line numerically
+  double L  = hmat[5];
+  double L2 = L*L;
 
-//============================================================================
-// Create the kernel
+  double gzero = 0.491831811; // has a logarithmic sigularity subtracted out
+  gzero       *= (L2*M_PI);   //  \int_0^B dt [erf(0.5/sqrt(t))]^2 - log(B)/pi lim B->infty
+  // computed off-line numerically
 
-   double rat = L/hmat[1];
-   double pre = L2;
-   for(int i=0;i<nktot;i++){
-     double gx = 2.0*M_PI*rat*((double) kx[i]);
-     double gy = 2.0*M_PI*((double) ky[i]);
-     double gz = 2.0*M_PI*((double) kz[i]);
-     double g2 = gx*gx+gy*gy+gz*gz;
-     double g  = sqrt(g2);
-     int ind_y = abs(ky[i]);
-     int ind_z = abs(kz[i]);
-     if(g==0.0){kernel_corr[i]=gzero;}
-     if(fabs(gx)<200.0 && g>0.0){
-        kernel_corr[i]=0.0;
-        for(int k=1;k<=nquad;k++){
-          double x = anode[k]; // missing L^2 factors out with data[]^2
-          kernel_corr[i] += ((weight[k]/x)*exp(-gx*gx*anode[k]*0.25)*
-                              data[k][ind_y]*data[k][ind_z]);
-        }//endfor
-        //---------------------------------------------------
-        // long range correction in the absense of gx damping (gx==0).
-        if(kx[i]==0){
-          double gz2 = gz*gz; double gy2 = gy*gy;
-          //----------------------------------------
-          // 1 guy = 0 1 guy !=0
- 	   if(ky[i]==0 && kz[i]!=0){
-             kernel_corr[i] += cos(0.5*gz)/(gz2*wmax)*( (1.0/3.0-6.0/gz2)/wmax-2.0 );
-	   }//endif
-	   if(ky[i]!=0 && kz[i]==0){
-             kernel_corr[i] += cos(0.5*gy)/(gy2*wmax)*( (1.0/3.0-6.0/gy2)/wmax-2.0 );
-	   }//endif
-          //----------------------------------------
-          // both non-zero
- 	   if(ky[i]!=0 && kz[i]!=0){
-             kernel_corr[i] += 2.0*cos(0.5*gy)*cos(0.5*gz)/(gy2*gz2*wmax*wmax);
-	   }//endif
-	}//endif
-        //--------------------------------
-        // Complete kernel
-        kernel_corr[i] *=pre;
-        kernel_corr[i] -= (4.0*M_PI*L2/g2)*exp(-g2*0.25*wmin);
-     }//endif
-     if(fabs(gx)>=200){kernel_corr[i]=0.0;}
-   }//endfor
+  //============================================================================
+  // Create the kernel
 
-//----------------------------------------------------------------------------
-  }//end routine
+  double rat = L/hmat[1];
+  double pre = L2;
+  for(int i=0;i<nktot;i++){
+    double gx = 2.0*M_PI*rat*((double) kx[i]);
+    double gy = 2.0*M_PI*((double) ky[i]);
+    double gz = 2.0*M_PI*((double) kz[i]);
+    double g2 = gx*gx+gy*gy+gz*gz;
+    double g  = sqrt(g2);
+    int ind_y = abs(ky[i]);
+    int ind_z = abs(kz[i]);
+    if(g==0.0){kernel_corr[i]=gzero;}
+    if(fabs(gx)<200.0 && g>0.0){
+      kernel_corr[i]=0.0;
+      for(int k=1;k<=nquad;k++){
+        double x = anode[k]; // missing L^2 factors out with data[]^2
+        kernel_corr[i] += ((weight[k]/x)*exp(-gx*gx*anode[k]*0.25)*
+            data[k][ind_y]*data[k][ind_z]);
+      }//endfor
+      //---------------------------------------------------
+      // long range correction in the absense of gx damping (gx==0).
+      if(kx[i]==0){
+        double gz2 = gz*gz; double gy2 = gy*gy;
+        //----------------------------------------
+        // 1 guy = 0 1 guy !=0
+        if(ky[i]==0 && kz[i]!=0){
+          kernel_corr[i] += cos(0.5*gz)/(gz2*wmax)*( (1.0/3.0-6.0/gz2)/wmax-2.0 );
+        }//endif
+        if(ky[i]!=0 && kz[i]==0){
+          kernel_corr[i] += cos(0.5*gy)/(gy2*wmax)*( (1.0/3.0-6.0/gy2)/wmax-2.0 );
+        }//endif
+        //----------------------------------------
+        // both non-zero
+        if(ky[i]!=0 && kz[i]!=0){
+          kernel_corr[i] += 2.0*cos(0.5*gy)*cos(0.5*gz)/(gy2*gz2*wmax*wmax);
+        }//endif
+      }//endif
+      //--------------------------------
+      // Complete kernel
+      kernel_corr[i] *=pre;
+      kernel_corr[i] -= (4.0*M_PI*L2/g2)*exp(-g2*0.25*wmin);
+    }//endif
+    if(fabs(gx)>=200){kernel_corr[i]=0.0;}
+  }//endfor
+
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 
@@ -541,22 +541,22 @@ void create_wire_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void create_surf_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double *hmati, 
-                      double *kernel_corr){
-//============================================================================
-// Check the box
+    double *kernel_corr){
+  //============================================================================
+  // Check the box
 
   if(hmat[3]!=0.0 || hmat[6]!=0 || hmat[7]!=0.0 || hmat[8]!=0.0){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The box for surfaces must have the c-axis perp to the surface\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The box for surfaces must have the c-axis perp to the surface\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
   }//endif
 
-//============================================================================
-// Compute the kernel correction analytically
+  //============================================================================
+  // Compute the kernel correction analytically
 
   double gzero = -0.5*M_PI*hmat[9]*hmat[9];  // analytically with 
-                                             // singularity taken out
+  // singularity taken out
   for(int i=0;i<nktot;i++){
     double aka = 2.0*M_PI*( (double) kx[i] );
     double akb = 2.0*M_PI*( (double) ky[i] );
@@ -573,8 +573,8 @@ void create_surf_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
     }//endif
   }//endfor
 
-//----------------------------------------------------------------------------
-  }//end routine
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 
@@ -584,70 +584,70 @@ void create_surf_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void create_surf_corr_dummy(int nktot, int *kx, int *ky, int *kz, double *hmat, double *hmati, 
-                            int nquad, double *anode, double *weight,double **data,
-                            double wmax, double wmin,double *kernel_corr){
-//============================================================================
-// Check the box
+    int nquad, double *anode, double *weight,double **data,
+    double wmax, double wmin,double *kernel_corr){
+  //============================================================================
+  // Check the box
 
   if(hmat[3]!=0.0 || hmat[6]!=0 || hmat[7]!=0.0 || hmat[8]!=0.0){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The box for surfaces must have the c-axis perp to the surface\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The box for surfaces must have the c-axis perp to the surface\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
   }//endif
 
   if(2.0*M_PI*hmati[1]*hmat[9]< 1 || 2.0*M_PI*hmati[1]*hmat[9]< 1){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The box for surfaces has too small an aspect ratio.\n");
-     PRINTF("Please make the faux c-axis longer\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The box for surfaces has too small an aspect ratio.\n");
+    PRINTF("Please make the faux c-axis longer\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
   }//endif
 
-//============================================================================
-// Precomputed g=0 term
+  //============================================================================
+  // Precomputed g=0 term
 
   double L  = hmat[9];
   double L2 = L*L;
 
   double gzero = -0.5*M_PI*L2;  // analytically with singularity taken out
-   
-//============================================================================
-// Create the kernel
 
-   double pre = L2*sqrt(M_PI);
-   for(int i=0;i<nktot;i++){
-     double aka = 2.0*M_PI*( (double) kx[i] );
-     double akb = 2.0*M_PI*( (double) ky[i] );
-     double akc = 2.0*M_PI*( (double) kz[i] );
-     double xk  = (aka*hmati[1] + akb*hmati[2])*hmat[9];
-     double yk  = (aka*hmati[4] + akb*hmati[5])*hmat[9];
-     double zk  = akc;
-     double g2  = (xk*xk + yk*yk + zk*zk);
-     double gs  = sqrt(xk*xk+yk*yk);
-     double g   = sqrt(g2);
-     int ind_z  = abs(kz[i]);
-     if(g==0.0){kernel_corr[i]=gzero;}
-     if(gs<200.0 && g>0.0){
-        kernel_corr[i]=0.0;
-        for(int k=1;k<=nquad;k++){
-          double x = sqrt(anode[k]); // missing L factors out with data[]
-          kernel_corr[i] += ((weight[k]/x)*exp(-gs*gs*anode[k]*0.25)*
-                             data[k][ind_z]);
-        }//endfor
-        if(kx[i]==0 && ky[i]==0){
-          kernel_corr[i] -= 4.0*cos(zk*0.5)/(zk*zk*sqrt(wmax));
-          kernel_corr[i] += (1.0/3.0)*cos(zk*0.5)*(1.0/(zk*zk)-24.0/(zk*zk*zk*zk))
-                            /(sqrt(wmax)*wmax);
-	}//endif
-        kernel_corr[i] *=pre;
-        kernel_corr[i] -= (4.0*M_PI*L2/g2)*exp(-g2*0.25*wmin);
-     }//endif
-     if(gs>=200.0){kernel_corr[i]=0.0;}
-   }//endfor
+  //============================================================================
+  // Create the kernel
 
-//----------------------------------------------------------------------------
- }//end routine
+  double pre = L2*sqrt(M_PI);
+  for(int i=0;i<nktot;i++){
+    double aka = 2.0*M_PI*( (double) kx[i] );
+    double akb = 2.0*M_PI*( (double) ky[i] );
+    double akc = 2.0*M_PI*( (double) kz[i] );
+    double xk  = (aka*hmati[1] + akb*hmati[2])*hmat[9];
+    double yk  = (aka*hmati[4] + akb*hmati[5])*hmat[9];
+    double zk  = akc;
+    double g2  = (xk*xk + yk*yk + zk*zk);
+    double gs  = sqrt(xk*xk+yk*yk);
+    double g   = sqrt(g2);
+    int ind_z  = abs(kz[i]);
+    if(g==0.0){kernel_corr[i]=gzero;}
+    if(gs<200.0 && g>0.0){
+      kernel_corr[i]=0.0;
+      for(int k=1;k<=nquad;k++){
+        double x = sqrt(anode[k]); // missing L factors out with data[]
+        kernel_corr[i] += ((weight[k]/x)*exp(-gs*gs*anode[k]*0.25)*
+            data[k][ind_z]);
+      }//endfor
+      if(kx[i]==0 && ky[i]==0){
+        kernel_corr[i] -= 4.0*cos(zk*0.5)/(zk*zk*sqrt(wmax));
+        kernel_corr[i] += (1.0/3.0)*cos(zk*0.5)*(1.0/(zk*zk)-24.0/(zk*zk*zk*zk))
+          /(sqrt(wmax)*wmax);
+      }//endif
+      kernel_corr[i] *=pre;
+      kernel_corr[i] -= (4.0*M_PI*L2/g2)*exp(-g2*0.25*wmin);
+    }//endif
+    if(gs>=200.0){kernel_corr[i]=0.0;}
+  }//endfor
+
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 
@@ -656,75 +656,75 @@ void create_surf_corr_dummy(int nktot, int *kx, int *ky, int *kz, double *hmat, 
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void create_perd_corr_data(int ngxMax,int ngyMax, int ngzMax,int *M_ret,
-                           int *nquad_ret, double **anode_ret, double **weight_ret,
-                           double ***data_ret, double *wmax_ret, double *wmin_ret){
-//============================================================================
-// Collect the weights and nodes
+    int *nquad_ret, double **anode_ret, double **weight_ret,
+    double ***data_ret, double *wmax_ret, double *wmin_ret){
+  //============================================================================
+  // Collect the weights and nodes
 
-   int nquad       =  2048;
-   double *anode   = (double *)cmalloc(nquad*sizeof(double),"set_perd_corrs.C")-1;
-   double *weight  = (double *)cmalloc(nquad*sizeof(double),"set_perd_corrs.C")-1;
+  int nquad       =  2048;
+  double *anode   = (double *)cmalloc(nquad*sizeof(double),"set_perd_corrs.C")-1;
+  double *weight  = (double *)cmalloc(nquad*sizeof(double),"set_perd_corrs.C")-1;
 
 #include "../proto_defs/gauss_2048.h"
 
-   // 0 < |gs| < 200
-   double wmax  = 80;
-   double wmin  = 0.01;
-   double scale = (wmax-wmin)/2.0;
-   double shift = (wmax+wmin)/2.0;
+  // 0 < |gs| < 200
+  double wmax  = 80;
+  double wmin  = 0.01;
+  double scale = (wmax-wmin)/2.0;
+  double shift = (wmax+wmin)/2.0;
 
-   for(int k=1;k<=nquad;k++){
-     anode[k]   = scale*anode[k]+shift;
-     weight[k]  = scale*weight[k];
-   }//endfor
+  for(int k=1;k<=nquad;k++){
+    anode[k]   = scale*anode[k]+shift;
+    weight[k]  = scale*weight[k];
+  }//endfor
 
-//============================================================================
-// Compute nquad ffts for low g and high g stuff
+  //============================================================================
+  // Compute nquad ffts for low g and high g stuff
 
-   int M = MAX(ngxMax,ngyMax);
-       M = MAX(M,ngzMax);
+  int M = MAX(ngxMax,ngyMax);
+  M = MAX(M,ngzMax);
 
-   int N = 8192;               //Make a nice quadrature
-   N     = MAX(N,8*ngxMax);
-   N     = MAX(N,8*ngyMax);
-   N     = MAX(N,8*ngzMax);
+  int N = 8192;               //Make a nice quadrature
+  N     = MAX(N,8*ngxMax);
+  N     = MAX(N,8*ngyMax);
+  N     = MAX(N,8*ngzMax);
 
-   double *workfft  = (double *)cmalloc(8*N*sizeof(double),"set_perd_corrs.C")-1;
-   double *datafft  = (double *)cmalloc(2*N*sizeof(double),"set_perd_corrs.C")-1;
-   double **data    = cmall_mat(1,nquad,0,M+1,"set_perd_corrs.C");
-   DCFFTI_GENERIC(&N,&workfft[1]);
+  double *workfft  = (double *)cmalloc(8*N*sizeof(double),"set_perd_corrs.C")-1;
+  double *datafft  = (double *)cmalloc(2*N*sizeof(double),"set_perd_corrs.C")-1;
+  double **data    = cmall_mat(1,nquad,0,M+1,"set_perd_corrs.C");
+  DCFFTI_GENERIC(&N,&workfft[1]);
 
-   double dl = 1.0/(double) N;
-   double dN = 1.0/((double)N);  // L factors out (see below)
-   for(int k=1;k<=nquad;k++){
-     for(int i=0,j=1;i<N;i++,j+=2){
-       double x       = dN*((double)i)-0.5;
-       datafft[j]     = exp(-x*x/anode[k]);
-       datafft[(j+1)] = 0.0;
-     }//endfor
-     DCFFTF_GENERIC(&N,&datafft[1],&workfft[1]);
-     for(int i=0,j=1;i<=M;i++,j+=2){
-       double g   = 2.0*M_PI*((double) i);
-       double ss  = dl*cos(0.5*g); //missing L in dl factors out in computation
-       data[k][i] = datafft[j]*ss;
-     }//endfor
-   }//endfor
+  double dl = 1.0/(double) N;
+  double dN = 1.0/((double)N);  // L factors out (see below)
+  for(int k=1;k<=nquad;k++){
+    for(int i=0,j=1;i<N;i++,j+=2){
+      double x       = dN*((double)i)-0.5;
+      datafft[j]     = exp(-x*x/anode[k]);
+      datafft[(j+1)] = 0.0;
+    }//endfor
+    DCFFTF_GENERIC(&N,&datafft[1],&workfft[1]);
+    for(int i=0,j=1;i<=M;i++,j+=2){
+      double g   = 2.0*M_PI*((double) i);
+      double ss  = dl*cos(0.5*g); //missing L in dl factors out in computation
+      data[k][i] = datafft[j]*ss;
+    }//endfor
+  }//endfor
 
-//============================================================================
-// Clean up and return 
+  //============================================================================
+  // Clean up and return 
 
-   free(&datafft[1]);
-   free(&workfft[1]);
+  free(&datafft[1]);
+  free(&workfft[1]);
 
-   *M_ret      = M;
-   *nquad_ret  = nquad;
-   *anode_ret  = anode;
-   *weight_ret = weight;
-   *data_ret   = data;
-   *wmax_ret   = wmax;
-   *wmin_ret   = wmin;
+  *M_ret      = M;
+  *nquad_ret  = nquad;
+  *anode_ret  = anode;
+  *weight_ret = weight;
+  *data_ret   = data;
+  *wmax_ret   = wmax;
+  *wmin_ret   = wmin;
 
-//============================================================================
+  //============================================================================
 }//end routine
 //============================================================================
 
@@ -734,15 +734,15 @@ void create_perd_corr_data(int ngxMax,int ngyMax, int ngzMax,int *M_ret,
 //============================================================================
 
 void set_large_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret, 
-                        int **kz_ret, int *nPacked_ret,
-                        int ka_max, int kb_max, int kc_max)
+    int **kz_ret, int *nPacked_ret,
+    int ka_max, int kb_max, int kc_max)
 
-//============================================================================
-  {//begin routine
-//============================================================================
-// count the k-vectors : preserve nice symmetry for non-cubic boxes even
-//                       though you need more kvectors   
- 
+  //============================================================================
+{//begin routine
+  //============================================================================
+  // count the k-vectors : preserve nice symmetry for non-cubic boxes even
+  //                       though you need more kvectors   
+
   int iii;
   double tpi  = 2.0*M_PI;
 
@@ -763,8 +763,8 @@ void set_large_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret,
     }//endfor:kb
   }//endfor:ka
 
-//============================================================================
-// fill the k-vectors
+  //============================================================================
+  // fill the k-vectors
 
   int *kx = (int *)cmalloc(nPacked*sizeof(int),"set_perd_corrs.C");
   int *ky = (int *)cmalloc(nPacked*sizeof(int),"set_perd_corrs.C");
@@ -787,19 +787,19 @@ void set_large_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret,
           ky[ic]=kb;
           kz[ic]=kc;
           ic++;
-	}/*endif*/
+        }/*endif*/
       }//endfor:kc
     }//endfor:kb
   }//endfor:ka
 
-//============================================================================
-// Set return values
+  //============================================================================
+  // Set return values
 
-   *kx_ret        = kx;
-   *ky_ret        = ky;
-   *kz_ret        = kz;
-   *nPacked_ret   = nPacked;
+  *kx_ret        = kx;
+  *ky_ret        = ky;
+  *kz_ret        = kz;
+  *nPacked_ret   = nPacked;
 
-//============================================================================
-  }//end routine
+  //============================================================================
+}//end routine
 //============================================================================

@@ -20,30 +20,30 @@
 class vx_smpl{
   public: 
 
-     vx_smpl() {printf("constructor no arg \n");}
+    vx_smpl() {printf("constructor no arg \n");}
 
-     vx_smpl(double*        velx,       // x-comp of atom velocities
-             double*        vely,       // y-comp of atom velocities
-             double*        velz,       // z-comp of atom velocities
-             double*        mass,       // Array containting atom masses
-             double*        text_atm,   // Temperature of each atom 
-             int            natm,       // Number of atoms in system
-             GENENSOPTS*    genensopts, // Ensemble options
-             MDVEL_SAMP*    vel_samp,   // contains variables for vel sampling
-             MDGHOST_ATOMS* ghost_atoms,// contains ghost atom info
-             MDCONSTRNT*    mdconstrnt);// contains info about constraints
+    vx_smpl(double*        velx,       // x-comp of atom velocities
+        double*        vely,       // y-comp of atom velocities
+        double*        velz,       // z-comp of atom velocities
+        double*        mass,       // Array containting atom masses
+        double*        text_atm,   // Temperature of each atom 
+        int            natm,       // Number of atoms in system
+        GENENSOPTS*    genensopts, // Ensemble options
+        MDVEL_SAMP*    vel_samp,   // contains variables for vel sampling
+        MDGHOST_ATOMS* ghost_atoms,// contains ghost atom info
+        MDCONSTRNT*    mdconstrnt);// contains info about constraints
 
-   void sampl_vx(double* velx,              // x-comp of atom velocities
-                 double* vely,              // y-comp of atom velocities
-                 double* velz,              // z-comp of atom velocities
-                 double* mass,
-                 double* text_atm,
-                 int     natm_tot,
-                 long*    iseed,
-                 long*    iseed2,
-                 double* qseed);
+    void sampl_vx(double* velx,              // x-comp of atom velocities
+        double* vely,              // y-comp of atom velocities
+        double* velz,              // z-comp of atom velocities
+        double* mass,
+        double* text_atm,
+        int     natm_tot,
+        long*    iseed,
+        long*    iseed2,
+        double* qseed);
   private:
-  
+
 };
 
 #endif  

@@ -6,28 +6,28 @@
 
 
 class SFDummyMsg: public CMessage_SFDummyMsg {
- public:
-  int iteration_src;
+  public:
+    int iteration_src;
 };
 
 
 
 class PPDummyMsg: public CMessage_PPDummyMsg {
- public:
-  int atmGrp;
-  int sfindex;
+  public:
+    int atmGrp;
+    int sfindex;
 };
 
 
 
 class StructFactorMsg: public CkMcastBaseMsg, public CMessage_StructFactorMsg {
- public:
-	int datalen;
-	int atmGrpIndex;
-	int gsSize;
-	int planeIndex; 
-	complex *structFactor; 
-	complex *structFactor_fx, *structFactor_fy, *structFactor_fz;
+  public:
+    int datalen;
+    int atmGrpIndex;
+    int gsSize;
+    int planeIndex; 
+    complex *structFactor; 
+    complex *structFactor_fx, *structFactor_fy, *structFactor_fz;
 };
 
 #endif // STRUCTURE_FACTOR_MESSAGES_H

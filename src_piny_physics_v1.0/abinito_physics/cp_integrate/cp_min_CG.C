@@ -3,7 +3,7 @@
 //==========================================================================
 /** \file name cp_min_CG.C
  ** \brief The physics routines that perform CG minimization of the psi with 
-    kinetic energy preconditioning 
+ kinetic energy preconditioning 
  */
 //==========================================================================
 #include "standard_include.h"
@@ -26,31 +26,31 @@
 // CG minimization
 //============================================================================
 
-void CPINTEGRATE::CP_integrate_min_CG
-             (int ncoef, int istate,complex *forces,complex *conj_grad,
-              complex *psi_g,
-              int *k_x, int *k_y, int *k_z,
-              double *cmass, double gamma, int nfreq_cmi_update)
+  void CPINTEGRATE::CP_integrate_min_CG
+(int ncoef, int istate,complex *forces,complex *conj_grad,
+ complex *psi_g,
+ int *k_x, int *k_y, int *k_z,
+ double *cmass, double gamma, int nfreq_cmi_update)
 
-//============================================================================
-   { /* Begin Function */
-//----------------------------------------------------------------------------
-// Local Variables
+  //============================================================================
+{ /* Begin Function */
+  //----------------------------------------------------------------------------
+  // Local Variables
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP *cp = CP::get();
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 
-   double gx, gy, gz, g2;
+  double gx, gy, gz, g2;
 
-   double *hmati    = gencell->hmati;
-   double ecut      = cpcoeffs_info->ecut_psi;
-   double tpi       = 2.0*M_PI; 
-   double dt        = gentimeinfo->dt;
+  double *hmati    = gencell->hmati;
+  double ecut      = cpcoeffs_info->ecut_psi;
+  double tpi       = 2.0*M_PI; 
+  double dt        = gentimeinfo->dt;
 
-//----------------------------------------------------------------------------
-// 0. Create the new conjugate gradient
+  //----------------------------------------------------------------------------
+  // 0. Create the new conjugate gradient
 
   for(int i = 0; i < ncoef; i++){
     gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
@@ -60,8 +60,8 @@ void CPINTEGRATE::CP_integrate_min_CG
     if(g2<=ecut){conj_grad[i] = conj_grad[i]*gamma + forces[i];}
   }//endfor
 
-//----------------------------------------------------------------------------
-// I. Perform a step of steepest descent minimization
+  //----------------------------------------------------------------------------
+  // I. Perform a step of steepest descent minimization
 
 #ifdef _CP_DEBUG_NEWFORCE_
   FILE *fp  = fopen("force_new.out","a+");
@@ -73,46 +73,46 @@ void CPINTEGRATE::CP_integrate_min_CG
   }
 #endif
 
-   for(int i = 0; i < ncoef; i++){
+  for(int i = 0; i < ncoef; i++){
 
-     gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
-     gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
-     gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
-     g2 = gx*gx + gy*gy + gz*gz;
-
-#ifdef _CP_DEBUG_NEWFORCE_
-     if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4){
-        fprintf(fp,"new force H+Ext+Exc+Eke+Enl : is=%d %d %d %d : %g %g\n",
-               istate,k_x[i],k_y[i],k_z[i],forces[i].re,forces[i].im);
-        fprintf(fp2,"is=%d : %d %d %d : coef_before_cg %.10g %.10g\n",
-               istate,k_x[i],k_y[i],k_z[i],psi_g[i].re,psi_g[i].im);
-     }//endif
-#endif
-
-     //       psi_g[i] += (forces[i]*(dt/cmass[i]));
-       psi_g[i] += (conj_grad[i]*(dt/cmass[i]));
+    gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
+    gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
+    gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
+    g2 = gx*gx + gy*gy + gz*gz;
 
 #ifdef _CP_DEBUG_NEWFORCE_
-     if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4){
-        fprintf(fp3,"is=%d : %d %d %d : coef_after_cg %.10g %.10g\n",
- 		istate,k_x[i],k_y[i],k_z[i],psi_g[i].re,psi_g[i].im);
-     }//endif
-     if(istate==0 && g2<=ecut){
-        fprintf(fp4,"is=%d : %d %d %d : coef_after_cg %.10g %.10g %.10g\n",
- 		istate,k_x[i],k_y[i],k_z[i],psi_g[i].re,psi_g[i].im,cmass[i]);
-     }
+    if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4){
+      fprintf(fp,"new force H+Ext+Exc+Eke+Enl : is=%d %d %d %d : %g %g\n",
+          istate,k_x[i],k_y[i],k_z[i],forces[i].re,forces[i].im);
+      fprintf(fp2,"is=%d : %d %d %d : coef_before_cg %.10g %.10g\n",
+          istate,k_x[i],k_y[i],k_z[i],psi_g[i].re,psi_g[i].im);
+    }//endif
 #endif
-   } /* endfor */
+
+    //       psi_g[i] += (forces[i]*(dt/cmass[i]));
+    psi_g[i] += (conj_grad[i]*(dt/cmass[i]));
 
 #ifdef _CP_DEBUG_NEWFORCE_
-    fclose(fp);
-    fclose(fp2);
-    fclose(fp3);
-    if(istate==0 && ncoef > 0){fclose(fp4);}
+    if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4){
+      fprintf(fp3,"is=%d : %d %d %d : coef_after_cg %.10g %.10g\n",
+          istate,k_x[i],k_y[i],k_z[i],psi_g[i].re,psi_g[i].im);
+    }//endif
+    if(istate==0 && g2<=ecut){
+      fprintf(fp4,"is=%d : %d %d %d : coef_after_cg %.10g %.10g %.10g\n",
+          istate,k_x[i],k_y[i],k_z[i],psi_g[i].re,psi_g[i].im,cmass[i]);
+    }
+#endif
+  } /* endfor */
+
+#ifdef _CP_DEBUG_NEWFORCE_
+  fclose(fp);
+  fclose(fp2);
+  fclose(fp3);
+  if(istate==0 && ncoef > 0){fclose(fp4);}
 #endif
 
-//============================================================================
-  } /* End function */
+  //============================================================================
+} /* End function */
 //============================================================================
 
 
@@ -126,22 +126,22 @@ void CPINTEGRATE::CP_integrate_min_CG
 //============================================================================
 
 void CPINTEGRATE::CP_fovlap_calc(int ncoef, int istate,complex *forces,
-                                 double *fovlap_ret)
+    double *fovlap_ret)
 
-//============================================================================
-   { /* Begin Function */
-//----------------------------------------------------------------------------
-// Local Variables
+  //============================================================================
+{ /* Begin Function */
+  //----------------------------------------------------------------------------
+  // Local Variables
 
 
-   double fovlap;
+  double fovlap;
 
-//============================================================================
+  //============================================================================
 
-   fovlap = 0.0; 
-   for(int i=0;i<ncoef;i++){fovlap += forces[i].getMagSqr();}
-   *fovlap_ret = fovlap;
+  fovlap = 0.0; 
+  for(int i=0;i<ncoef;i++){fovlap += forces[i].getMagSqr();}
+  *fovlap_ret = fovlap;
 
-//----------------------------------------------------------------------------
-   }// end routine
+  //----------------------------------------------------------------------------
+}// end routine
 //============================================================================

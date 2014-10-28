@@ -29,14 +29,14 @@
 /*==========================================================================*/
 
 void fetch_free_energy_index(BUILD_INTRA *build_intra,FREE_PARSE *free_parse,
-                       MDINTRA *mdintra,int jmol_typ,int iresidue,int natm_tot,
-                       int natm_mol)
+    MDINTRA *mdintra,int jmol_typ,int iresidue,int natm_tot,
+    int natm_mol)
 
-/*==========================================================================*/
-/*      Begin Routine */
+  /*==========================================================================*/
+  /*      Begin Routine */
 { /* begin routine */
-/*==========================================================================*/
-/*      Local Variable Declarations */
+  /*==========================================================================*/
+  /*      Local Variable Declarations */
 
 #include "../class_defs/allclass_strip_mdintra.h"   
 
@@ -85,8 +85,8 @@ void fetch_free_energy_index(BUILD_INTRA *build_intra,FREE_PARSE *free_parse,
   int *rbar_sig_free_j1   = mdrbar_sig_free->j1;
   int *rbar_sig_free_j2   = mdrbar_sig_free->j2;
 
-/*==========================================================================*/
-/* I) Fix bonds */
+  /*==========================================================================*/
+  /* I) Fix bonds */
 
   if(bond_free_num>0){
 
@@ -101,12 +101,12 @@ void fetch_free_energy_index(BUILD_INTRA *build_intra,FREE_PARSE *free_parse,
         free_chk_fix(&itemp,iatm_bond_free[2],build_intra,jmol_typ,iresidue);
         (*bond_free_j2) = (imol_bond_free[2]-1)*natm_mol + itemp + natm_tot;
       }/*endif*/
-   }/*endif*/
+    }/*endif*/
 
   }/*endif*/
 
-/*==========================================================================*/
-/* II) Fix bends */
+  /*==========================================================================*/
+  /* II) Fix bends */
 
   if(bend_free_num>0){
 
@@ -129,93 +129,93 @@ void fetch_free_energy_index(BUILD_INTRA *build_intra,FREE_PARSE *free_parse,
       }/*endif*/
     }/*endif*/
 
-   }/*endif*/
+  }/*endif*/
 
-/*==========================================================================*/
-/* III) Fix tors */
+  /*==========================================================================*/
+  /* III) Fix tors */
 
   if(tors_free_num>0){
 
     if(imoltyp_tors_free[1]==jmol_typ){
-       if(ires_tors_free[1]==iresidue){
-         free_chk_fix(&itemp,iatm_tors_free[1],build_intra,jmol_typ,iresidue);
-         tors_free_j1[1] = (imol_tors_free[1]-1)*natm_mol + itemp + natm_tot;
-       }/*endif*/
+      if(ires_tors_free[1]==iresidue){
+        free_chk_fix(&itemp,iatm_tors_free[1],build_intra,jmol_typ,iresidue);
+        tors_free_j1[1] = (imol_tors_free[1]-1)*natm_mol + itemp + natm_tot;
+      }/*endif*/
     }/*endif*/
     if(imoltyp_tors_free[2]==jmol_typ){
-       if(ires_tors_free[2]==iresidue){
-         free_chk_fix(&itemp,iatm_tors_free[2],build_intra,jmol_typ,iresidue);
-         tors_free_j2[1] = (imol_tors_free[2]-1)*natm_mol + itemp + natm_tot;
-       }/*endif*/
+      if(ires_tors_free[2]==iresidue){
+        free_chk_fix(&itemp,iatm_tors_free[2],build_intra,jmol_typ,iresidue);
+        tors_free_j2[1] = (imol_tors_free[2]-1)*natm_mol + itemp + natm_tot;
+      }/*endif*/
     }/*endif*/
     if(imoltyp_tors_free[3]==jmol_typ){
-       if(ires_tors_free[3]==iresidue){
-         free_chk_fix(&itemp,iatm_tors_free[3],build_intra,jmol_typ,iresidue);
-         tors_free_j3[1] = (imol_tors_free[3]-1)*natm_mol + itemp + natm_tot;
-       }/*endif*/
+      if(ires_tors_free[3]==iresidue){
+        free_chk_fix(&itemp,iatm_tors_free[3],build_intra,jmol_typ,iresidue);
+        tors_free_j3[1] = (imol_tors_free[3]-1)*natm_mol + itemp + natm_tot;
+      }/*endif*/
     }/*endif*/
     if(imoltyp_tors_free[4]==jmol_typ){
-       if(ires_tors_free[4]==iresidue){
-         free_chk_fix(&itemp,iatm_tors_free[4],build_intra,jmol_typ,iresidue);
-         tors_free_j4[1] = (imol_tors_free[4]-1)*natm_mol + itemp + natm_tot;
-       }/*endif*/
+      if(ires_tors_free[4]==iresidue){
+        free_chk_fix(&itemp,iatm_tors_free[4],build_intra,jmol_typ,iresidue);
+        tors_free_j4[1] = (imol_tors_free[4]-1)*natm_mol + itemp + natm_tot;
+      }/*endif*/
     }/*endif*/
 
     if(tors_free_num==2){
       if(imoltyp_tors_free[5]==jmol_typ){
-       if(ires_tors_free[5]==iresidue){
-         free_chk_fix(&itemp,iatm_tors_free[5],build_intra,jmol_typ,iresidue);
-         tors_free_j1[2] = (imol_tors_free[5]-1)*natm_mol + itemp + natm_tot;
-       }/*endif*/
+        if(ires_tors_free[5]==iresidue){
+          free_chk_fix(&itemp,iatm_tors_free[5],build_intra,jmol_typ,iresidue);
+          tors_free_j1[2] = (imol_tors_free[5]-1)*natm_mol + itemp + natm_tot;
+        }/*endif*/
       }/*endif*/
       if(imoltyp_tors_free[6]==jmol_typ){
-       if(ires_tors_free[6]==iresidue){
-         free_chk_fix(&itemp,iatm_tors_free[6],build_intra,jmol_typ,iresidue);
-         tors_free_j2[2] = (imol_tors_free[6]-1)*natm_mol + itemp + natm_tot;
-       }/*endif*/
+        if(ires_tors_free[6]==iresidue){
+          free_chk_fix(&itemp,iatm_tors_free[6],build_intra,jmol_typ,iresidue);
+          tors_free_j2[2] = (imol_tors_free[6]-1)*natm_mol + itemp + natm_tot;
+        }/*endif*/
       }/*endif*/
       if(imoltyp_tors_free[7]==jmol_typ){
-       if(ires_tors_free[7]==iresidue){
-         free_chk_fix(&itemp,iatm_tors_free[7],build_intra,jmol_typ,iresidue);
-         tors_free_j3[2] = (imol_tors_free[7]-1)*natm_mol + itemp + natm_tot;
-       }/*endif*/
+        if(ires_tors_free[7]==iresidue){
+          free_chk_fix(&itemp,iatm_tors_free[7],build_intra,jmol_typ,iresidue);
+          tors_free_j3[2] = (imol_tors_free[7]-1)*natm_mol + itemp + natm_tot;
+        }/*endif*/
       }/*endif*/
       if(imoltyp_tors_free[8]==jmol_typ){
-       if(ires_tors_free[8]==iresidue){
-         free_chk_fix(&itemp,iatm_tors_free[8],build_intra,jmol_typ,iresidue);
-         tors_free_j4[2] = (imol_tors_free[8]-1)*natm_mol + itemp + natm_tot;
-       }/*endif*/
+        if(ires_tors_free[8]==iresidue){
+          free_chk_fix(&itemp,iatm_tors_free[8],build_intra,jmol_typ,iresidue);
+          tors_free_j4[2] = (imol_tors_free[8]-1)*natm_mol + itemp + natm_tot;
+        }/*endif*/
       }/*endif*/
     }/*endif : 2d*/
 
   }/*endif: free energy torsions*/
 
-/*==========================================================================*/
-/* IV) Fix rbar_sigma */
+  /*==========================================================================*/
+  /* IV) Fix rbar_sigma */
 
   if(rbar_sig_free_iopt>0){
 
-   for(i=1;i<=nbar_bond;i++){
+    for(i=1;i<=nbar_bond;i++){
 
-     if(imoltyp_rbar1_free[i]==jmol_typ){
-       if(ires_rbar1_free[i]==iresidue){
-         free_chk_fix(&itemp,iatm_rbar1_free[i],build_intra,jmol_typ,iresidue);
-         rbar_sig_free_j1[i] = (imol_rbar1_free[i]-1)*natm_mol+itemp+natm_tot;
-       }/*endif*/
-     }/*endif*/
-     if(imoltyp_rbar2_free[i]==jmol_typ){
-       if(ires_rbar2_free[i]==iresidue){
-         free_chk_fix(&itemp,iatm_rbar2_free[i],build_intra,jmol_typ,iresidue);
-         rbar_sig_free_j2[i] = (imol_rbar2_free[i]-1)*natm_mol+itemp+natm_tot;
-       }/*endif*/
-     }/*endif*/
+      if(imoltyp_rbar1_free[i]==jmol_typ){
+        if(ires_rbar1_free[i]==iresidue){
+          free_chk_fix(&itemp,iatm_rbar1_free[i],build_intra,jmol_typ,iresidue);
+          rbar_sig_free_j1[i] = (imol_rbar1_free[i]-1)*natm_mol+itemp+natm_tot;
+        }/*endif*/
+      }/*endif*/
+      if(imoltyp_rbar2_free[i]==jmol_typ){
+        if(ires_rbar2_free[i]==iresidue){
+          free_chk_fix(&itemp,iatm_rbar2_free[i],build_intra,jmol_typ,iresidue);
+          rbar_sig_free_j2[i] = (imol_rbar2_free[i]-1)*natm_mol+itemp+natm_tot;
+        }/*endif*/
+      }/*endif*/
 
-   }/*endfor*/
+    }/*endfor*/
 
   }/*endif*/
 
-/*==========================================================================*/
-    }/*end routine */
+  /*==========================================================================*/
+}/*end routine */
 /*==========================================================================*/
 
 
@@ -224,13 +224,13 @@ void fetch_free_energy_index(BUILD_INTRA *build_intra,FREE_PARSE *free_parse,
 /*==========================================================================*/
 
 void free_chk_fix(int *itemp,int index,BUILD_INTRA *build_intra,
-                  int jmol_typ, int iresidue)
+    int jmol_typ, int iresidue)
 
-/*==========================================================================*/
-/*      Begin Routine */
+  /*==========================================================================*/
+  /*      Begin Routine */
 { /* begin routine */
-/*==========================================================================*/
-/*      Local Variable Declarations */
+  /*==========================================================================*/
+  /*      Local Variable Declarations */
 
   int mask; 
 
@@ -238,40 +238,40 @@ void free_chk_fix(int *itemp,int index,BUILD_INTRA *build_intra,
   int *mask_atm        = build_intra->mask_atm;
   int *index_atm       = build_intra->index_atm;
 
-/*==========================================================================*/
-/* I) Check range of index */
+  /*==========================================================================*/
+  /* I) Check range of index */
 
   if(index>natmind_1res_now){
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("Free energy atom index out of range  \n");
-      PRINTF("in the residue number %d of molecule number %d\n",
-              iresidue,jmol_typ);
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      FFLUSH(stdout);
-      EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Free energy atom index out of range  \n");
+    PRINTF("in the residue number %d of molecule number %d\n",
+        iresidue,jmol_typ);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
 
-/*==========================================================================*/
-/* II) Get and check mask of index */
+  /*==========================================================================*/
+  /* II) Get and check mask of index */
 
   mask = mask_atm[index];
   if(mask==0){
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("Free energy atom has been nuked \n");
-      PRINTF("in residue number %d of molecule number %d \n",
-              iresidue,jmol_typ);
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      FFLUSH(stdout);
-      EXIT(1);
-   }/*endif*/
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Free energy atom has been nuked \n");
+    PRINTF("in residue number %d of molecule number %d \n",
+        iresidue,jmol_typ);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
+  }/*endif*/
 
-/*==========================================================================*/
-/* III) Get rejiggered index       */
- 
+  /*==========================================================================*/
+  /* III) Get rejiggered index       */
+
   *itemp = index_atm[index];
 
-/*==========================================================================*/
-    }/*end routine */
+  /*==========================================================================*/
+}/*end routine */
 /*==========================================================================*/
 
 

@@ -2,9 +2,9 @@
 #define _MAPVARIABLES_H
 
 /** \file mapvariables.h 
-    \brief collection point for global scope map, proxy, and Uber read-only
-    variables
-*/
+  \brief collection point for global scope map, proxy, and Uber read-only
+  variables
+ */
 
 //============================================================================
 /**

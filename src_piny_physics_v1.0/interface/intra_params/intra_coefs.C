@@ -32,173 +32,173 @@
 /*==========================================================================*/
 
 void bond_coef(DICT_WORD *dict,char file_name[],char fun_key[],
-               DATA_BASE_ENTRIES *bond_base,CATM_LAB *cbond_base,int ibase)
+    DATA_BASE_ENTRIES *bond_base,CATM_LAB *cbond_base,int ibase)
 
-/*==========================================================================*/
-/*               Begin subprogram:                                          */
-      {/*begin routine*/
-/*==========================================================================*/
-/*               Local variable declarations:                               */
-       char *pot_typ;                             /* Intra potential type */
-       int index;                                 /* Dictionary index     */
-       double real_key_arg;                       /* Real key argument    */
-       double fk_bond,eq_bond,deq_bond;           /* Harmonic bond        */
-       double al_bond,d_bond;                     /* Morse bond           */
-       double c0,c1,c2,c3,c4,c5,c6;               /* Power series         */
-       int ifound=-1;                             /* Pot type match flag  */
-       double a2,a3,a4,a5,a6;                     /* Powers of alpha      */
+  /*==========================================================================*/
+  /*               Begin subprogram:                                          */
+{/*begin routine*/
+  /*==========================================================================*/
+  /*               Local variable declarations:                               */
+  char *pot_typ;                             /* Intra potential type */
+  int index;                                 /* Dictionary index     */
+  double real_key_arg;                       /* Real key argument    */
+  double fk_bond,eq_bond,deq_bond;           /* Harmonic bond        */
+  double al_bond,d_bond;                     /* Morse bond           */
+  double c0,c1,c2,c3,c4,c5,c6;               /* Power series         */
+  int ifound=-1;                             /* Pot type match flag  */
+  double a2,a3,a4,a5,a6;                     /* Powers of alpha      */
 
-/*==========================================================================*/
-/* 0) Fill atom types and label part of the data base     */
+  /*==========================================================================*/
+  /* 0) Fill atom types and label part of the data base     */
   strcpy(cbond_base[ibase].atm1,dict[1].keyarg);
   strcpy(cbond_base[ibase].atm2,dict[2].keyarg);
   strcpy(cbond_base[ibase].label,dict[15].keyarg);
 
-/*==========================================================================*/
-/* 0) Initial stuff                                                         */
-   pot_typ = (char *) cmalloc(MAXWORD*sizeof(char),"intra_coefs");
-   sscanf(dict[3].keyarg,"%s",pot_typ);
+  /*==========================================================================*/
+  /* 0) Initial stuff                                                         */
+  pot_typ = (char *) cmalloc(MAXWORD*sizeof(char),"intra_coefs");
+  sscanf(dict[3].keyarg,"%s",pot_typ);
 
-/*==========================================================================*/
-/* 0) Constrained Bond                                                      */
+  /*==========================================================================*/
+  /* 0) Constrained Bond                                                      */
 
-      if(strcasecmp(pot_typ,"con") == 0) {
-       sscanf(dict[5].keyarg,"%lg",&real_key_arg);
-       bond_base[ibase].eq = real_key_arg/BOHR;
-       ifound = 0;
-       cfree(pot_typ,"bond_coef");
-       return;
-      }
+  if(strcasecmp(pot_typ,"con") == 0) {
+    sscanf(dict[5].keyarg,"%lg",&real_key_arg);
+    bond_base[ibase].eq = real_key_arg/BOHR;
+    ifound = 0;
+    cfree(pot_typ,"bond_coef");
+    return;
+  }
 
-/*==========================================================================*/
-/* I) Harmonic Bond                                                         */
+  /*==========================================================================*/
+  /* I) Harmonic Bond                                                         */
 
-      if(strcasecmp(pot_typ,"harm") == 0) {
-       sscanf(dict[4].keyarg,"%lg",&real_key_arg);
-       fk_bond = real_key_arg;
-       fk_bond *= (BOHR*BOHR/BOLTZ);
-       sscanf(dict[5].keyarg,"%lg",&real_key_arg);
-       eq_bond = real_key_arg/BOHR;
-       sscanf(dict[16].keyarg,"%lg",&real_key_arg);
-       deq_bond = real_key_arg/BOHR;
-       ifound = 0;
-       bond_base[ibase].c_0 = 0.0;
-       bond_base[ibase].c_1 = 0.0;
-       bond_base[ibase].c_2 = 0.5*fk_bond;
-       bond_base[ibase].c_3 = 0.0;
-       bond_base[ibase].c_4 = 0.0;
-       bond_base[ibase].c_5 = 0.0;
-       bond_base[ibase].c_6 = 0.0;
-       bond_base[ibase].eq  = eq_bond;
-       bond_base[ibase].eq_res  = eq_bond + deq_bond;
-     } /* endif harmonic */
+  if(strcasecmp(pot_typ,"harm") == 0) {
+    sscanf(dict[4].keyarg,"%lg",&real_key_arg);
+    fk_bond = real_key_arg;
+    fk_bond *= (BOHR*BOHR/BOLTZ);
+    sscanf(dict[5].keyarg,"%lg",&real_key_arg);
+    eq_bond = real_key_arg/BOHR;
+    sscanf(dict[16].keyarg,"%lg",&real_key_arg);
+    deq_bond = real_key_arg/BOHR;
+    ifound = 0;
+    bond_base[ibase].c_0 = 0.0;
+    bond_base[ibase].c_1 = 0.0;
+    bond_base[ibase].c_2 = 0.5*fk_bond;
+    bond_base[ibase].c_3 = 0.0;
+    bond_base[ibase].c_4 = 0.0;
+    bond_base[ibase].c_5 = 0.0;
+    bond_base[ibase].c_6 = 0.0;
+    bond_base[ibase].eq  = eq_bond;
+    bond_base[ibase].eq_res  = eq_bond + deq_bond;
+  } /* endif harmonic */
 
-/*==========================================================================*/
-/* II) Morse                                                                */
+  /*==========================================================================*/
+  /* II) Morse                                                                */
 
-      if(strcasecmp(pot_typ,"morse") == 0) {
-       sscanf(dict[13].keyarg,"%lg",&real_key_arg);
-       al_bond = real_key_arg;
-       al_bond *= BOHR;
-       sscanf(dict[14].keyarg,"%lg",&real_key_arg);
-       d_bond = real_key_arg;
-       d_bond /= BOLTZ;
-       ifound = 0;
-       a2 = al_bond*al_bond;
-       a3 = al_bond*al_bond*al_bond;
-       a4 = al_bond*al_bond*al_bond*al_bond;
-       a5 = al_bond*al_bond*al_bond*al_bond*al_bond;
-       a6 = al_bond*al_bond*al_bond*al_bond*al_bond*al_bond;
-       bond_base[ibase].c_0 = 0.0;
-       bond_base[ibase].c_1 = 0.0;
-       bond_base[ibase].c_2 = a2*d_bond;
-       bond_base[ibase].c_3 = -a3*d_bond;
-       bond_base[ibase].c_4 = 7.0*a4*d_bond/12.0;
-       bond_base[ibase].c_5 = -a5*d_bond/4.0;
-       bond_base[ibase].c_6 = 62.0*a6*d_bond/720.0;
-       sscanf(dict[5].keyarg,"%lg",&real_key_arg);
-       eq_bond = real_key_arg;
-       eq_bond /= BOHR;
-       bond_base[ibase].eq      = eq_bond;
-       sscanf(dict[16].keyarg,"%lg",&real_key_arg);
-       deq_bond = real_key_arg/BOHR;
-       bond_base[ibase].eq_res  = eq_bond + deq_bond;
-     } /* endif morse */
+  if(strcasecmp(pot_typ,"morse") == 0) {
+    sscanf(dict[13].keyarg,"%lg",&real_key_arg);
+    al_bond = real_key_arg;
+    al_bond *= BOHR;
+    sscanf(dict[14].keyarg,"%lg",&real_key_arg);
+    d_bond = real_key_arg;
+    d_bond /= BOLTZ;
+    ifound = 0;
+    a2 = al_bond*al_bond;
+    a3 = al_bond*al_bond*al_bond;
+    a4 = al_bond*al_bond*al_bond*al_bond;
+    a5 = al_bond*al_bond*al_bond*al_bond*al_bond;
+    a6 = al_bond*al_bond*al_bond*al_bond*al_bond*al_bond;
+    bond_base[ibase].c_0 = 0.0;
+    bond_base[ibase].c_1 = 0.0;
+    bond_base[ibase].c_2 = a2*d_bond;
+    bond_base[ibase].c_3 = -a3*d_bond;
+    bond_base[ibase].c_4 = 7.0*a4*d_bond/12.0;
+    bond_base[ibase].c_5 = -a5*d_bond/4.0;
+    bond_base[ibase].c_6 = 62.0*a6*d_bond/720.0;
+    sscanf(dict[5].keyarg,"%lg",&real_key_arg);
+    eq_bond = real_key_arg;
+    eq_bond /= BOHR;
+    bond_base[ibase].eq      = eq_bond;
+    sscanf(dict[16].keyarg,"%lg",&real_key_arg);
+    deq_bond = real_key_arg/BOHR;
+    bond_base[ibase].eq_res  = eq_bond + deq_bond;
+  } /* endif morse */
 
-/*==========================================================================*/
-/* III) Power Series                                                        */
+  /*==========================================================================*/
+  /* III) Power Series                                                        */
 
-      if(strcasecmp(pot_typ,"power") == 0) {
-       sscanf(dict[6].keyarg,"%lg",&real_key_arg);
-       c0 = real_key_arg;
-       c0 /= BOLTZ;
-       sscanf(dict[7].keyarg,"%lg",&real_key_arg);
-       c1 = real_key_arg;
-       c1 *= BOHR/BOLTZ;
-       sscanf(dict[8].keyarg,"%lg",&real_key_arg);
-       c2 = real_key_arg;
-       c2 *= pow(BOHR,2.0)/BOLTZ;
-       sscanf(dict[9].keyarg,"%lg",&real_key_arg);
-       c3 = real_key_arg;
-       c3 *= pow(BOHR,3.0)/BOLTZ;
-       sscanf(dict[10].keyarg,"%lg",&real_key_arg);
-       c4 = real_key_arg;
-       c4 *= pow(BOHR,4.0)/BOLTZ;
-       sscanf(dict[11].keyarg,"%lg",&real_key_arg);
-       c5 = real_key_arg;
-       c5 *= pow(BOHR,5.0)/BOLTZ;
-       sscanf(dict[12].keyarg,"%lg",&real_key_arg);
-       c6 = real_key_arg;
-       c6 *= pow(BOHR,6.0)/BOLTZ;
-       ifound = 0;
-       bond_base[ibase].c_0 = c0;
-       bond_base[ibase].c_1 = c1;
-       bond_base[ibase].c_2 = c2;
-       bond_base[ibase].c_3 = c3;
-       bond_base[ibase].c_4 = c4;
-       bond_base[ibase].c_5 = c5;
-       bond_base[ibase].c_6 = c6;
-       sscanf(dict[5].keyarg,"%lg",&real_key_arg);
-       eq_bond = real_key_arg/BOHR;
-       bond_base[ibase].eq  = eq_bond;
-       sscanf(dict[16].keyarg,"%lg",&real_key_arg);
-       deq_bond = real_key_arg/BOHR;
-       bond_base[ibase].eq_res  = eq_bond + deq_bond;
-     } /* endif power */
+  if(strcasecmp(pot_typ,"power") == 0) {
+    sscanf(dict[6].keyarg,"%lg",&real_key_arg);
+    c0 = real_key_arg;
+    c0 /= BOLTZ;
+    sscanf(dict[7].keyarg,"%lg",&real_key_arg);
+    c1 = real_key_arg;
+    c1 *= BOHR/BOLTZ;
+    sscanf(dict[8].keyarg,"%lg",&real_key_arg);
+    c2 = real_key_arg;
+    c2 *= pow(BOHR,2.0)/BOLTZ;
+    sscanf(dict[9].keyarg,"%lg",&real_key_arg);
+    c3 = real_key_arg;
+    c3 *= pow(BOHR,3.0)/BOLTZ;
+    sscanf(dict[10].keyarg,"%lg",&real_key_arg);
+    c4 = real_key_arg;
+    c4 *= pow(BOHR,4.0)/BOLTZ;
+    sscanf(dict[11].keyarg,"%lg",&real_key_arg);
+    c5 = real_key_arg;
+    c5 *= pow(BOHR,5.0)/BOLTZ;
+    sscanf(dict[12].keyarg,"%lg",&real_key_arg);
+    c6 = real_key_arg;
+    c6 *= pow(BOHR,6.0)/BOLTZ;
+    ifound = 0;
+    bond_base[ibase].c_0 = c0;
+    bond_base[ibase].c_1 = c1;
+    bond_base[ibase].c_2 = c2;
+    bond_base[ibase].c_3 = c3;
+    bond_base[ibase].c_4 = c4;
+    bond_base[ibase].c_5 = c5;
+    bond_base[ibase].c_6 = c6;
+    sscanf(dict[5].keyarg,"%lg",&real_key_arg);
+    eq_bond = real_key_arg/BOHR;
+    bond_base[ibase].eq  = eq_bond;
+    sscanf(dict[16].keyarg,"%lg",&real_key_arg);
+    deq_bond = real_key_arg/BOHR;
+    bond_base[ibase].eq_res  = eq_bond + deq_bond;
+  } /* endif power */
 
-/*==========================================================================*/
-/* IV) Null                                                                 */
-      if(strcasecmp(pot_typ,"null") == 0) {
-       ifound = 0;
-       bond_base[ibase].c_0 = 0.0;
-       bond_base[ibase].c_1 = 0.0;
-       bond_base[ibase].c_2 = 0.0;
-       bond_base[ibase].c_3 = 0.0;
-       bond_base[ibase].c_4 = 0.0;
-       bond_base[ibase].c_5 = 0.0;
-       bond_base[ibase].c_6 = 0.0;
-     } /* endif null */
+  /*==========================================================================*/
+  /* IV) Null                                                                 */
+  if(strcasecmp(pot_typ,"null") == 0) {
+    ifound = 0;
+    bond_base[ibase].c_0 = 0.0;
+    bond_base[ibase].c_1 = 0.0;
+    bond_base[ibase].c_2 = 0.0;
+    bond_base[ibase].c_3 = 0.0;
+    bond_base[ibase].c_4 = 0.0;
+    bond_base[ibase].c_5 = 0.0;
+    bond_base[ibase].c_6 = 0.0;
+  } /* endif null */
 
-/*==========================================================================*/
-/* V) If pot type not found EXIT                                            */
+  /*==========================================================================*/
+  /* V) If pot type not found EXIT                                            */
 
-       index=3;
-       if(ifound < 0) keyarg_barf(dict,file_name,fun_key,index); 
+  index=3;
+  if(ifound < 0) keyarg_barf(dict,file_name,fun_key,index); 
 
-/*==========================================================================*/
-/* VI) Calculate derivative coefficients                                     */
+  /*==========================================================================*/
+  /* VI) Calculate derivative coefficients                                     */
 
-       bond_base[ibase].dc_0 = 0.0;
-       bond_base[ibase].dc_1 =     bond_base[ibase].c_1;
-       bond_base[ibase].dc_2 = 2.0*bond_base[ibase].c_2;
-       bond_base[ibase].dc_3 = 3.0*bond_base[ibase].c_3;
-       bond_base[ibase].dc_4 = 4.0*bond_base[ibase].c_4;
-       bond_base[ibase].dc_5 = 5.0*bond_base[ibase].c_5;
-       bond_base[ibase].dc_6 = 6.0*bond_base[ibase].c_6;
+  bond_base[ibase].dc_0 = 0.0;
+  bond_base[ibase].dc_1 =     bond_base[ibase].c_1;
+  bond_base[ibase].dc_2 = 2.0*bond_base[ibase].c_2;
+  bond_base[ibase].dc_3 = 3.0*bond_base[ibase].c_3;
+  bond_base[ibase].dc_4 = 4.0*bond_base[ibase].c_4;
+  bond_base[ibase].dc_5 = 5.0*bond_base[ibase].c_5;
+  bond_base[ibase].dc_6 = 6.0*bond_base[ibase].c_6;
 
-       cfree(pot_typ,"bond_coef");
+  cfree(pot_typ,"bond_coef");
 
-/*==========================================================================*/
+  /*==========================================================================*/
 } /* end routine */
 /*==========================================================================*/
 
@@ -207,13 +207,13 @@ void bond_coef(DICT_WORD *dict,char file_name[],char fun_key[],
 /*==========================================================================*/
 
 void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
-                  DATA_BASE_ENTRIES *bend_base,CATM_LAB *cbend_base,int ibase)
+    DATA_BASE_ENTRIES *bend_base,CATM_LAB *cbend_base,int ibase)
 
-/*=======================================================================*/
-/*            Begin subprogram:                                          */
+  /*=======================================================================*/
+  /*            Begin subprogram:                                          */
 {/*begin routine*/
-/*=======================================================================*/
-/*            Local variable declarations:                               */
+  /*=======================================================================*/
+  /*            Local variable declarations:                               */
 
   int ifound=-1;                            /* Pot type match flag     */
   int index;                                /* Dictionary index        */
@@ -226,24 +226,24 @@ void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
   static const double cn1=49.0/72.0,cn2=3.0/4.0,cn3=3.0/40.0,cn4=1.0/180.0;
   static const double cn5=3.0/2.0,cn6=3.0/5.0,cn7=1.0/10.0,cn8=4.0/15.0;
   static const double cn9=8.0/45.0,cn10=3.0/10.0,cn11=1.0/30.0;
-                                                 /* Useful constants        */
+  /* Useful constants        */
 
-/*==========================================================================*/
-/* 0) Fill atom types and label part of the data base     */
+  /*==========================================================================*/
+  /* 0) Fill atom types and label part of the data base     */
   strcpy(cbend_base[ibase].atm1,dict[1].keyarg);
   strcpy(cbend_base[ibase].atm2,dict[2].keyarg);
   strcpy(cbend_base[ibase].atm3,dict[3].keyarg);
   strcpy(cbend_base[ibase].label,dict[14].keyarg);
 
-/*========================================================================*/
-/* 0) Initial stuff                                                       */
+  /*========================================================================*/
+  /* 0) Initial stuff                                                       */
 
   pot_typ = (char *) cmalloc(MAXWORD*sizeof(char),"intra_coefs");
   sscanf(dict[4].keyarg,"%s",pot_typ);
 
-/*========================================================================*/
-/* I) Harmonic Bend                                                       */
-  
+  /*========================================================================*/
+  /* I) Harmonic Bend                                                       */
+
   if(strcasecmp(pot_typ,"harm") == 0) {
     sscanf(dict[5].keyarg,"%lg",&real_key_arg);
     fk_bend = real_key_arg;
@@ -252,13 +252,13 @@ void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     theta_0 = real_key_arg;
     theta_0 *= M_PI/180.0;
     ifound = 0;
-    
+
     c2th0 = cos(2.0*theta_0);
     c4th0 = cos(4.0*theta_0);
     c6th0 = cos(6.0*theta_0);
-    
+
     bend_base[ibase].c_0 =  0.5*fk_bend*(cn1 + cn2*c2th0 
-                                       + cn3*c4th0 + cn4*c6th0);
+        + cn3*c4th0 + cn4*c6th0);
     bend_base[ibase].c_1 = 0.0;
     bend_base[ibase].c_2 = 0.5*fk_bend*(-cn5*c2th0 - cn6*c4th0 - cn7*c6th0);
     bend_base[ibase].c_3 = 0.0;
@@ -266,11 +266,11 @@ void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     bend_base[ibase].c_5 = 0.0;
     bend_base[ibase].c_6 = 0.5*fk_bend*(-cn9*c6th0);
     bend_base[ibase].eq   = theta_0;
-    
+
     s2th0 = sin(2.0*theta_0);
     s4th0 = sin(4.0*theta_0);
     s6th0 = sin(6.0*theta_0);
-    
+
     bend_base[ibase].s_0 = 0.0;
     bend_base[ibase].s_1 = 0.0;
     bend_base[ibase].s_2 = 0.5*fk_bend*(-cn5*s2th0 + cn10*s4th0 - cn11*s6th0);
@@ -280,10 +280,10 @@ void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     bend_base[ibase].s_6 = 0.5*fk_bend*(-cn9*s6th0);
 
   }  /* endif */
-  
-/*========================================================================*/
-/* II) Power Series                                                      */
-  
+
+  /*========================================================================*/
+  /* II) Power Series                                                      */
+
   if(strcasecmp(pot_typ,"power") == 0) {
     sscanf(dict[7].keyarg,"%lg",&real_key_arg);
     c0 = real_key_arg;
@@ -323,11 +323,11 @@ void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     bend_base[ibase].s_4 = 0.0;
     bend_base[ibase].s_5 = 0.0;
     bend_base[ibase].s_6 = 0.0;
-    
+
   } /* endif power */
 
-/*========================================================================*/
-/* III) Null                                                             */
+  /*========================================================================*/
+  /* III) Null                                                             */
 
   if(strcasecmp(pot_typ,"null") == 0) {
     ifound = 0;
@@ -346,18 +346,18 @@ void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     bend_base[ibase].s_4 = 0.0;
     bend_base[ibase].s_5 = 0.0;
     bend_base[ibase].s_6 = 0.0;
-    
+
   } /* endif null */
 
-/*========================================================================*/
-/* IV) If pot type not found EXIT                                          */
-  
+  /*========================================================================*/
+  /* IV) If pot type not found EXIT                                          */
+
   index = 4;
   if(ifound < 0) keyarg_barf(dict,file_name,fun_key,index); 
 
-/*========================================================================*/
-/* V) Calculate derivative coefficients                                    */
-  
+  /*========================================================================*/
+  /* V) Calculate derivative coefficients                                    */
+
   bend_base[ibase].dc_0 = 0.0;
   bend_base[ibase].dc_1 =     bend_base[ibase].c_1;
   bend_base[ibase].dc_2 = 2.0*bend_base[ibase].c_2;
@@ -365,7 +365,7 @@ void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
   bend_base[ibase].dc_4 = 4.0*bend_base[ibase].c_4;
   bend_base[ibase].dc_5 = 5.0*bend_base[ibase].c_5;
   bend_base[ibase].dc_6 = 6.0*bend_base[ibase].c_6;
-  
+
   bend_base[ibase].ds_0 = 0.0;
   bend_base[ibase].ds_1 =     bend_base[ibase].s_1;
   bend_base[ibase].ds_2 =     bend_base[ibase].s_2;
@@ -376,7 +376,7 @@ void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
 
   cfree(pot_typ,"bend_coef");
 
-/*=======================================================================*/
+  /*=======================================================================*/
 } /* end routine */
 /*========================================================================*/
 
@@ -385,13 +385,13 @@ void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
 /*==========================================================================*/
 
 void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
-                  DATA_BASE_ENTRIES *tors_base,CATM_LAB *ctors_base,int ibase)
+    DATA_BASE_ENTRIES *tors_base,CATM_LAB *ctors_base,int ibase)
 
-/*=======================================================================*/
-/*            Begin subprogram:                                          */
+  /*=======================================================================*/
+  /*            Begin subprogram:                                          */
 {/*begin routine*/
-/*=======================================================================*/
-/*            Local variable declarations:                               */
+  /*=======================================================================*/
+  /*            Local variable declarations:                               */
 
   int ifound=-1;                            /* Pot type match flag     */
   int index;                                /* Dictionary index        */
@@ -413,23 +413,23 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
   static const double cn9=8.0/45.0,cn10=3.0/10.0,cn11=1.0/30.0;
   static const double small=1.0e-8;
 
-/*==========================================================================*/
-/* 0) Fill atom types and label part of the data base     */
+  /*==========================================================================*/
+  /* 0) Fill atom types and label part of the data base     */
   strcpy(ctors_base[ibase].atm1,dict[1].keyarg);
   strcpy(ctors_base[ibase].atm2,dict[2].keyarg);
   strcpy(ctors_base[ibase].atm3,dict[3].keyarg);
   strcpy(ctors_base[ibase].atm4,dict[4].keyarg);
   strcpy(ctors_base[ibase].label,dict[25].keyarg);
 
-/*=======================================================================*/
-/* 0) Initial stuff                                                      */
+  /*=======================================================================*/
+  /* 0) Initial stuff                                                      */
 
   pot_typ = (char *) cmalloc(MAXWORD*sizeof(char),"intra_coefs");
   sscanf(dict[5].keyarg,"%s",pot_typ);
 
-/*=======================================================================*/
-/* I) Harmonic tors                                                      */
-  
+  /*=======================================================================*/
+  /* I) Harmonic tors                                                      */
+
   if(strcasecmp(pot_typ,"harm") == 0) {
     sscanf(dict[6].keyarg,"%lg",&real_key_arg);
     fk_tors = real_key_arg;
@@ -444,7 +444,7 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     c6th0 = cos(6.0*theta_0);
 
     tors_base[ibase].c_0 = 0.5*fk_tors*(cn1 + cn2*c2th0 + cn3*c4th0 
-                                            + cn4*c6th0);
+        + cn4*c6th0);
     tors_base[ibase].c_1 = 0.0;
     tors_base[ibase].c_2 = 0.5*fk_tors*(-cn5*c2th0 - cn6*c4th0 - cn7*c6th0);
     tors_base[ibase].c_3 = 0.0;
@@ -452,11 +452,11 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     tors_base[ibase].c_5 = 0.0;
     tors_base[ibase].c_6 = 0.5*fk_tors*(-cn9*c6th0);
     tors_base[ibase].eq  = theta_0;
-    
+
     s2th0 = sin(2.0*theta_0);
     s4th0 = sin(4.0*theta_0);
     s6th0 = sin(6.0*theta_0);
-    
+
     tors_base[ibase].s_0 = 0.0;
     tors_base[ibase].s_1 = 0.0;
     tors_base[ibase].s_2 = 0.5*fk_tors*(-cn5*s2th0 + cn10*s4th0 - cn11*s6th0);
@@ -467,9 +467,9 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
 
   }  /* endif */
 
-/*========================================================================*/
-/* II) Power Series                                                     */
-  
+  /*========================================================================*/
+  /* II) Power Series                                                     */
+
   if(strcasecmp(pot_typ,"power") == 0) {
     sscanf(dict[8].keyarg,"%lg",&real_key_arg);
     c0 = real_key_arg;
@@ -500,7 +500,7 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     tors_base[ibase].c_4 = c4;
     tors_base[ibase].c_5 = c5;
     tors_base[ibase].c_6 = c6;
-    
+
     tors_base[ibase].s_0 = 0.0;
     tors_base[ibase].s_1 = 0.0;
     tors_base[ibase].s_2 = 0.0;
@@ -508,11 +508,11 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     tors_base[ibase].s_4 = 0.0;
     tors_base[ibase].s_5 = 0.0;
     tors_base[ibase].s_6 = 0.0;
-    
+
   } /* endif power */
-  
-/*========================================================================*/
-/* III) Frequency Series                                                */
+
+  /*========================================================================*/
+  /* III) Frequency Series                                                */
 
   if(strcasecmp(pot_typ,"freq-series") == 0) {
     sscanf(dict[15].keyarg,"%d",&nfreq);
@@ -520,7 +520,7 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     if((nfreq <= 0 || nfreq > 4) ){
       keyarg_barf(dict,file_name,fun_key,index);
     }
-/* 1) 1st component */
+    /* 1) 1st component */
     sscanf(dict[16].keyarg,"%lg",&real_key_arg);
     a1 = real_key_arg;
     index = 16;
@@ -536,7 +536,7 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     if(!(d1 == 0.0 || d1 == 180.0) ){
       keyarg_barf(dict,file_name,fun_key,index);
     }
-/* 2) 2nd component */
+    /* 2) 2nd component */
     sscanf(dict[19].keyarg,"%lg",&real_key_arg);
     a2 = real_key_arg;
     index = 19;
@@ -552,7 +552,7 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     if(!(d2 == 0.0 || d2 == 180.0) ){
       keyarg_barf(dict,file_name,fun_key,index);
     }
-/* 3) 3nd component */
+    /* 3) 3nd component */
     sscanf(dict[22].keyarg,"%lg",&real_key_arg);
     a3 = real_key_arg;
     index = 22;
@@ -568,7 +568,7 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     if(!(d3 == 0.0 || d3 == 180.0) ){
       keyarg_barf(dict,file_name,fun_key,index);
     }
-/* 4) 4th component */
+    /* 4) 4th component */
     sscanf(dict[26].keyarg,"%lg",&real_key_arg);
     a4 = real_key_arg;
     index = 26;
@@ -602,81 +602,81 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     ifound = 0;
     for(ifreq=1;ifreq<=nfreq;ifreq++){
       switch(n_tors[ifreq]) {
-      case 0:
-        cp0[ifreq] =  1.0;
-        cp1[ifreq] =  0.0;
-        cp2[ifreq] =  0.0;
-        cp3[ifreq] =  0.0;
-        cp4[ifreq] =  0.0;
-        cp5[ifreq] =  0.0;
-        cp6[ifreq] =  0.0;
-        break;
-      case 1:
-        cp0[ifreq] =  0.0;
-        cp1[ifreq] =  1.0;
-        cp2[ifreq] =  0.0;
-        cp3[ifreq] =  0.0;
-        cp4[ifreq] =  0.0;
-        cp5[ifreq] =  0.0;
-        cp6[ifreq] =  0.0;
-        break;
-      case 2:
-        cp0[ifreq] = -1.0;
-        cp1[ifreq] =  0.0;
-        cp2[ifreq] =  2.0;
-        cp3[ifreq] =  0.0;
-        cp4[ifreq] =  0.0;
-        cp5[ifreq] =  0.0;
-        cp6[ifreq] =  0.0;
-        break;
-      case 3:
-        cp0[ifreq] =  0.0;
-        cp1[ifreq] = -3.0;
-        cp2[ifreq] =  0.0;
-        cp3[ifreq] =  4.0;
-        cp4[ifreq] =  0.0;
-        cp5[ifreq] =  0.0;
-        cp6[ifreq] =  0.0;
-        break;
-      case 4:
-        cp0[ifreq] =  1.0;
-        cp1[ifreq] =  0.0;
-        cp2[ifreq] = -8.0;
-        cp3[ifreq] =  0.0;
-        cp4[ifreq] =  8.0;
-        cp5[ifreq] =  0.0;
-        cp6[ifreq] =  0.0;
-        break;
-      case 5:
-        cp0[ifreq] =  0.0;
-        cp1[ifreq] =  5.0;
-        cp2[ifreq] =  0.0;
-        cp3[ifreq] = -20.0;
-        cp4[ifreq] =  0.0;
-        cp5[ifreq] =  16.0;
-        cp6[ifreq] =  0.0;
-        break;
-      case 6:
-        cp0[ifreq] = -1.0;
-        cp1[ifreq] =  0.0;
-        cp2[ifreq] =  18.0;
-        cp3[ifreq] =  0.0;
-        cp4[ifreq] = -48.0;
-        cp5[ifreq] =  0.0;
-        cp6[ifreq] =  32.0;
-        break;
-      default:
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Frequency series with n > 6, n < 0\n");
-        PRINTF("or n not an integer\n");
-        PRINTF("not allowed\n");
-        PRINTF("n = %d\n",n_tors[ifreq]);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1); 
-        break;
+        case 0:
+          cp0[ifreq] =  1.0;
+          cp1[ifreq] =  0.0;
+          cp2[ifreq] =  0.0;
+          cp3[ifreq] =  0.0;
+          cp4[ifreq] =  0.0;
+          cp5[ifreq] =  0.0;
+          cp6[ifreq] =  0.0;
+          break;
+        case 1:
+          cp0[ifreq] =  0.0;
+          cp1[ifreq] =  1.0;
+          cp2[ifreq] =  0.0;
+          cp3[ifreq] =  0.0;
+          cp4[ifreq] =  0.0;
+          cp5[ifreq] =  0.0;
+          cp6[ifreq] =  0.0;
+          break;
+        case 2:
+          cp0[ifreq] = -1.0;
+          cp1[ifreq] =  0.0;
+          cp2[ifreq] =  2.0;
+          cp3[ifreq] =  0.0;
+          cp4[ifreq] =  0.0;
+          cp5[ifreq] =  0.0;
+          cp6[ifreq] =  0.0;
+          break;
+        case 3:
+          cp0[ifreq] =  0.0;
+          cp1[ifreq] = -3.0;
+          cp2[ifreq] =  0.0;
+          cp3[ifreq] =  4.0;
+          cp4[ifreq] =  0.0;
+          cp5[ifreq] =  0.0;
+          cp6[ifreq] =  0.0;
+          break;
+        case 4:
+          cp0[ifreq] =  1.0;
+          cp1[ifreq] =  0.0;
+          cp2[ifreq] = -8.0;
+          cp3[ifreq] =  0.0;
+          cp4[ifreq] =  8.0;
+          cp5[ifreq] =  0.0;
+          cp6[ifreq] =  0.0;
+          break;
+        case 5:
+          cp0[ifreq] =  0.0;
+          cp1[ifreq] =  5.0;
+          cp2[ifreq] =  0.0;
+          cp3[ifreq] = -20.0;
+          cp4[ifreq] =  0.0;
+          cp5[ifreq] =  16.0;
+          cp6[ifreq] =  0.0;
+          break;
+        case 6:
+          cp0[ifreq] = -1.0;
+          cp1[ifreq] =  0.0;
+          cp2[ifreq] =  18.0;
+          cp3[ifreq] =  0.0;
+          cp4[ifreq] = -48.0;
+          cp5[ifreq] =  0.0;
+          cp6[ifreq] =  32.0;
+          break;
+        default:
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          PRINTF("Frequency series with n > 6, n < 0\n");
+          PRINTF("or n not an integer\n");
+          PRINTF("not allowed\n");
+          PRINTF("n = %d\n",n_tors[ifreq]);
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          FFLUSH(stdout);
+          EXIT(1); 
+          break;
       } /* end switch(n_tors[ifreq]) */  
- 
+
       cp0[ifreq] *= cos_d[ifreq];
       cp1[ifreq] *= cos_d[ifreq];
       cp2[ifreq] *= cos_d[ifreq];
@@ -685,7 +685,7 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
       cp5[ifreq] *= cos_d[ifreq];
       cp6[ifreq] *= cos_d[ifreq];
     }/*endfor*/
-    
+
     tors_base[ibase].c_0=0.0;
     tors_base[ibase].c_1=0.0;
     tors_base[ibase].c_2=0.0;
@@ -707,7 +707,7 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     }
 
 
-    
+
     tors_base[ibase].s_0 = 0.0;
     tors_base[ibase].s_1 = 0.0;
     tors_base[ibase].s_2 = 0.0;
@@ -715,11 +715,11 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     tors_base[ibase].s_4 = 0.0;
     tors_base[ibase].s_5 = 0.0;
     tors_base[ibase].s_6 = 0.0;
-    
+
   }/* endif frequency series */
 
-/*========================================================================*/
-/* III) Null                                                             */
+  /*========================================================================*/
+  /* III) Null                                                             */
   if(strcasecmp(pot_typ,"null") == 0) {
     ifound = 0;
     tors_base[ibase].c_0 = 0.0;
@@ -737,18 +737,18 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     tors_base[ibase].s_4 = 0.0;
     tors_base[ibase].s_5 = 0.0;
     tors_base[ibase].s_6 = 0.0;
-    
+
   } /* endif null */
 
-/*========================================================================*/
-/* IV ) If pot type not found EXIT                                       */
-  
+  /*========================================================================*/
+  /* IV ) If pot type not found EXIT                                       */
+
   index = 5;
   if(ifound < 0) keyarg_barf(dict,file_name,fun_key,index); 
-  
-/*========================================================================*/
-/* V ) Calculate derivative coefficients                                 */
-  
+
+  /*========================================================================*/
+  /* V ) Calculate derivative coefficients                                 */
+
   tors_base[ibase].dc_0 = 0.0;
   tors_base[ibase].dc_1 =     tors_base[ibase].c_1;
   tors_base[ibase].dc_2 = 2.0*tors_base[ibase].c_2;
@@ -756,7 +756,7 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
   tors_base[ibase].dc_4 = 4.0*tors_base[ibase].c_4;
   tors_base[ibase].dc_5 = 5.0*tors_base[ibase].c_5;
   tors_base[ibase].dc_6 = 6.0*tors_base[ibase].c_6;
-  
+
   tors_base[ibase].ds_0 = 0.0;
   tors_base[ibase].ds_1 =     tors_base[ibase].s_1;
   tors_base[ibase].ds_2 =     tors_base[ibase].s_2;
@@ -764,10 +764,10 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
   tors_base[ibase].ds_4 = 3.0*tors_base[ibase].s_4;
   tors_base[ibase].ds_5 = 4.0*tors_base[ibase].s_5;
   tors_base[ibase].ds_6 = 5.0*tors_base[ibase].s_6;
-  
+
   cfree(pot_typ,"tors_coef");
 
-/*=======================================================================*/
+  /*=======================================================================*/
 } /* end routine */
 /*==========================================================================*/
 
@@ -776,13 +776,13 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
 /*==========================================================================*/
 
 void onfo_coef(DICT_WORD *dict,char file_name[],char fun_key[],
-                 DATA_BASE_ENTRIES *onfo_base,CATM_LAB *confo_base,int ibase)
+    DATA_BASE_ENTRIES *onfo_base,CATM_LAB *confo_base,int ibase)
 
-/*=======================================================================*/
-/*            Begin subprogram:                                          */
+  /*=======================================================================*/
+  /*            Begin subprogram:                                          */
 {/*begin routine*/
-/*=======================================================================*/
-/*            Local variable declarations:                               */
+  /*=======================================================================*/
+  /*            Local variable declarations:                               */
 
   char *pot_typ;                             /* Intra potential type */
   int index;                                 /* Dictionary index     */
@@ -791,21 +791,21 @@ void onfo_coef(DICT_WORD *dict,char file_name[],char fun_key[],
   double feps,s6;
   int ifound=-1;                             /* Pot type match flag  */
 
-/*==========================================================================*/
-/* 0) Fill atom types and label part of the data base     */
+  /*==========================================================================*/
+  /* 0) Fill atom types and label part of the data base     */
   strcpy(confo_base[ibase].atm1,dict[1].keyarg);
   strcpy(confo_base[ibase].atm2,dict[2].keyarg);
   strcpy(confo_base[ibase].label,dict[7].keyarg);
 
-/*=======================================================================*/
-/* 0) Initial stuff                                                      */
+  /*=======================================================================*/
+  /* 0) Initial stuff                                                      */
 
   pot_typ = (char *) cmalloc(MAXWORD*sizeof(char),"intra_coefs");
   sscanf(dict[3].keyarg,"%s",pot_typ);
 
-/*=======================================================================*/
-/* I) Lennard-Jones                                                      */
-  
+  /*=======================================================================*/
+  /* I) Lennard-Jones                                                      */
+
   if(strcasecmp(pot_typ,"lennard-jones") == 0) {
     sscanf(dict[4].keyarg,"%lg",&real_key_arg);
     sig = real_key_arg;
@@ -822,9 +822,9 @@ void onfo_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     onfo_base[ibase].s6   = s6;
     onfo_base[ibase].sc   = sc;
   } /* endif lennard-jones */
-  
-/*=======================================================================*/
-/* II) Null                                                             */
+
+  /*=======================================================================*/
+  /* II) Null                                                             */
 
   if(strcasecmp(pot_typ,"null") == 0) {
     ifound = 0;
@@ -833,15 +833,15 @@ void onfo_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     onfo_base[ibase].sc   = 0.0;
   } /* endif null */
 
-/*=======================================================================*/
-/* V) If pot type not found EXIT                                         */
-  
+  /*=======================================================================*/
+  /* V) If pot type not found EXIT                                         */
+
   index=3;
   if(ifound < 0) keyarg_barf(dict,file_name,fun_key,index); 
-  
+
   cfree(pot_typ,"onfo_coef");
 
-/*========================================================================*/
+  /*========================================================================*/
 } /* end routine */
 /*==========================================================================*/
 
@@ -850,178 +850,178 @@ void onfo_coef(DICT_WORD *dict,char file_name[],char fun_key[],
 /*==========================================================================*/
 
 void bend_bnd_coef(DICT_WORD *dict,char file_name[],char fun_key[],
-                    DATA_BASE_ENTRIES *bend_bnd_base,CATM_LAB *cbend_bnd_base,
-                    int ibase)
+    DATA_BASE_ENTRIES *bend_bnd_base,CATM_LAB *cbend_bnd_base,
+    int ibase)
 
-/*==========================================================================*/
-/*               Begin subprogram:                                          */
-      {/*begin routine*/
-/*==========================================================================*/
-/*               Local variable declarations:                               */
-       char *pot_typ;                             /* Intra potential type */
-       double real_key_arg;                       /* Real key argument    */
-       double fk_bond,eq_bond;                    /* Harmonic bond        */
-       double al_bond,d_bond;                     /* Morse bond           */
-       double c0,c1,c2,c3,c4,c5,c6;               /* Power series         */
-       int ifound=-1;                             /* Pot type match flag  */
-       double a2,a3,a4,a5,a6;                     /* Powers of alpha      */
-       double fk_bend,theta_0;
+  /*==========================================================================*/
+  /*               Begin subprogram:                                          */
+{/*begin routine*/
+  /*==========================================================================*/
+  /*               Local variable declarations:                               */
+  char *pot_typ;                             /* Intra potential type */
+  double real_key_arg;                       /* Real key argument    */
+  double fk_bond,eq_bond;                    /* Harmonic bond        */
+  double al_bond,d_bond;                     /* Morse bond           */
+  double c0,c1,c2,c3,c4,c5,c6;               /* Power series         */
+  int ifound=-1;                             /* Pot type match flag  */
+  double a2,a3,a4,a5,a6;                     /* Powers of alpha      */
+  double fk_bend,theta_0;
   double c2th0,c4th0,c6th0;                 /* Cos(n*theta_0)          */
   double s2th0,s4th0,s6th0;                 /* Sin(n*theta_0)          */
   static const double cn1=49.0/72.0,cn2=3.0/4.0,cn3=3.0/40.0,cn4=1.0/180.0;
   static const double cn5=3.0/2.0,cn6=3.0/5.0,cn7=1.0/10.0,cn8=4.0/15.0;
   static const double cn9=8.0/45.0,cn10=3.0/10.0,cn11=1.0/30.0;
-       int index;
-/*==========================================================================*/
-/*==========================================================================*/
-/*  GET THE BOND PORTION OF THE BEND-BOND                                   */ 
+  int index;
+  /*==========================================================================*/
+  /*==========================================================================*/
+  /*  GET THE BOND PORTION OF THE BEND-BOND                                   */ 
 
-/*==========================================================================*/
-/* 0) Fill atom types and label part of the data base     */
+  /*==========================================================================*/
+  /* 0) Fill atom types and label part of the data base     */
   strcpy(cbend_bnd_base[ibase].atm1,dict[1].keyarg);
   strcpy(cbend_bnd_base[ibase].atm2,dict[2].keyarg);
   strcpy(cbend_bnd_base[ibase].atm3,dict[3].keyarg);
   strcpy(cbend_bnd_base[ibase].label,dict[26].keyarg);
 
-/*==========================================================================*/
-/* 0) Fetch Bond type                                                       */
+  /*==========================================================================*/
+  /* 0) Fetch Bond type                                                       */
 
   bend_bnd_base[ibase].ipure = 0;
-   pot_typ = (char *) cmalloc(MAXWORD*sizeof(char),"intra_coefs");
-   sscanf(dict[14].keyarg,"%s",pot_typ);
+  pot_typ = (char *) cmalloc(MAXWORD*sizeof(char),"intra_coefs");
+  sscanf(dict[14].keyarg,"%s",pot_typ);
 
-/*==========================================================================*/
-/* 0) Eq Bond length                                                        */
+  /*==========================================================================*/
+  /* 0) Eq Bond length                                                        */
 
-   sscanf(dict[16].keyarg,"%lg",&real_key_arg);
-   eq_bond = real_key_arg;
-   eq_bond /= BOHR;
-   bend_bnd_base[ibase].eqb  = eq_bond;
-   index = 16;
-   if(eq_bond < 0) keyarg_barf(dict,file_name,fun_key,index); 
-      
-/*==========================================================================*/
-/* I) Harmonic Bond                                                         */
+  sscanf(dict[16].keyarg,"%lg",&real_key_arg);
+  eq_bond = real_key_arg;
+  eq_bond /= BOHR;
+  bend_bnd_base[ibase].eqb  = eq_bond;
+  index = 16;
+  if(eq_bond < 0) keyarg_barf(dict,file_name,fun_key,index); 
 
-      if(strcasecmp(pot_typ,"harm") == 0) {
-       sscanf(dict[15].keyarg,"%lg",&real_key_arg);
-       fk_bond = real_key_arg;
-       fk_bond *= (BOHR*BOHR/BOLTZ);
-       ifound = 0;
-       bend_bnd_base[ibase].cb_0 = 0.0;
-       bend_bnd_base[ibase].cb_1 = 0.0;
-       bend_bnd_base[ibase].cb_2 = 0.5*fk_bond;
-       bend_bnd_base[ibase].cb_3 = 0.0;
-       bend_bnd_base[ibase].cb_4 = 0.0;
-       bend_bnd_base[ibase].cb_5 = 0.0;
-       bend_bnd_base[ibase].cb_6 = 0.0;
-     } /* endif harmonic */
+  /*==========================================================================*/
+  /* I) Harmonic Bond                                                         */
 
-/*==========================================================================*/
-/* II) Morse                                                                */
+  if(strcasecmp(pot_typ,"harm") == 0) {
+    sscanf(dict[15].keyarg,"%lg",&real_key_arg);
+    fk_bond = real_key_arg;
+    fk_bond *= (BOHR*BOHR/BOLTZ);
+    ifound = 0;
+    bend_bnd_base[ibase].cb_0 = 0.0;
+    bend_bnd_base[ibase].cb_1 = 0.0;
+    bend_bnd_base[ibase].cb_2 = 0.5*fk_bond;
+    bend_bnd_base[ibase].cb_3 = 0.0;
+    bend_bnd_base[ibase].cb_4 = 0.0;
+    bend_bnd_base[ibase].cb_5 = 0.0;
+    bend_bnd_base[ibase].cb_6 = 0.0;
+  } /* endif harmonic */
 
-      if(strcasecmp(pot_typ,"morse") == 0) {
-       sscanf(dict[24].keyarg,"%lg",&real_key_arg);
-       al_bond = real_key_arg;
-       al_bond *= BOHR;
-       sscanf(dict[25].keyarg,"%lg",&real_key_arg);
-       d_bond = real_key_arg;
-       d_bond /= BOLTZ;
-       ifound = 0;
-       a2 = al_bond*al_bond;
-       a3 = al_bond*al_bond*al_bond;
-       a4 = al_bond*al_bond*al_bond*al_bond;
-       a5 = al_bond*al_bond*al_bond*al_bond*al_bond;
-       a6 = al_bond*al_bond*al_bond*al_bond*al_bond*al_bond;
-       bend_bnd_base[ibase].cb_0 = 0.0;
-       bend_bnd_base[ibase].cb_1 = 0.0;
-       bend_bnd_base[ibase].cb_2 = a2*d_bond;
-       bend_bnd_base[ibase].cb_3 = -a3*d_bond;
-       bend_bnd_base[ibase].cb_4 = 7.0*a4*d_bond/12.0;
-       bend_bnd_base[ibase].cb_5 = -a5*d_bond/4.0;
-       bend_bnd_base[ibase].cb_6 = 62.0*a6*d_bond/720.0;
-     } /* endif morse */
+  /*==========================================================================*/
+  /* II) Morse                                                                */
 
-/*==========================================================================*/
-/* III) Power Series                                                        */
+  if(strcasecmp(pot_typ,"morse") == 0) {
+    sscanf(dict[24].keyarg,"%lg",&real_key_arg);
+    al_bond = real_key_arg;
+    al_bond *= BOHR;
+    sscanf(dict[25].keyarg,"%lg",&real_key_arg);
+    d_bond = real_key_arg;
+    d_bond /= BOLTZ;
+    ifound = 0;
+    a2 = al_bond*al_bond;
+    a3 = al_bond*al_bond*al_bond;
+    a4 = al_bond*al_bond*al_bond*al_bond;
+    a5 = al_bond*al_bond*al_bond*al_bond*al_bond;
+    a6 = al_bond*al_bond*al_bond*al_bond*al_bond*al_bond;
+    bend_bnd_base[ibase].cb_0 = 0.0;
+    bend_bnd_base[ibase].cb_1 = 0.0;
+    bend_bnd_base[ibase].cb_2 = a2*d_bond;
+    bend_bnd_base[ibase].cb_3 = -a3*d_bond;
+    bend_bnd_base[ibase].cb_4 = 7.0*a4*d_bond/12.0;
+    bend_bnd_base[ibase].cb_5 = -a5*d_bond/4.0;
+    bend_bnd_base[ibase].cb_6 = 62.0*a6*d_bond/720.0;
+  } /* endif morse */
 
-      if(strcasecmp(pot_typ,"power") == 0) {
-       sscanf(dict[17].keyarg,"%lg",&real_key_arg);
-       c0 = real_key_arg;
-       c0 /= BOLTZ;
-       sscanf(dict[18].keyarg,"%lg",&real_key_arg);
-       c1 = real_key_arg;
-       c1 *= BOHR/BOLTZ;
-       sscanf(dict[19].keyarg,"%lg",&real_key_arg);
-       c2 = real_key_arg;
-       c2 *= pow(BOHR,2.0)/BOLTZ;
-       sscanf(dict[20].keyarg,"%lg",&real_key_arg);
-       c3 = real_key_arg;
-       c3 *= pow(BOHR,3.0)/BOLTZ;
-       sscanf(dict[21].keyarg,"%lg",&real_key_arg);
-       c4 = real_key_arg;
-       c4 *= pow(BOHR,4.0)/BOLTZ;
-       sscanf(dict[22].keyarg,"%lg",&real_key_arg);
-       c5 = real_key_arg;
-       c5 *= pow(BOHR,5.0)/BOLTZ;
-       sscanf(dict[23].keyarg,"%lg",&real_key_arg);
-       c6 = real_key_arg;
-       c6 *= pow(BOHR,6.0)/BOLTZ;
-       ifound = 0;
-       bend_bnd_base[ibase].cb_0 = c0;
-       bend_bnd_base[ibase].cb_1 = c1;
-       bend_bnd_base[ibase].cb_2 = c2;
-       bend_bnd_base[ibase].cb_3 = c3;
-       bend_bnd_base[ibase].cb_4 = c4;
-       bend_bnd_base[ibase].cb_5 = c5;
-       bend_bnd_base[ibase].cb_6 = c6;
-     } /* endif power */
+  /*==========================================================================*/
+  /* III) Power Series                                                        */
 
-/*==========================================================================*/
-/* IV) Null                                                                 */
-      if(strcasecmp(pot_typ,"null") == 0) {
-       ifound = 0;
-       bend_bnd_base[ibase].cb_0 = 0.0;
-       bend_bnd_base[ibase].cb_1 = 0.0;
-       bend_bnd_base[ibase].cb_2 = 0.0;
-       bend_bnd_base[ibase].cb_3 = 0.0;
-       bend_bnd_base[ibase].cb_4 = 0.0;
-       bend_bnd_base[ibase].cb_5 = 0.0;
-       bend_bnd_base[ibase].cb_6 = 0.0;
-       bend_bnd_base[ibase].ipure = 1;
-     } /* endif null */
+  if(strcasecmp(pot_typ,"power") == 0) {
+    sscanf(dict[17].keyarg,"%lg",&real_key_arg);
+    c0 = real_key_arg;
+    c0 /= BOLTZ;
+    sscanf(dict[18].keyarg,"%lg",&real_key_arg);
+    c1 = real_key_arg;
+    c1 *= BOHR/BOLTZ;
+    sscanf(dict[19].keyarg,"%lg",&real_key_arg);
+    c2 = real_key_arg;
+    c2 *= pow(BOHR,2.0)/BOLTZ;
+    sscanf(dict[20].keyarg,"%lg",&real_key_arg);
+    c3 = real_key_arg;
+    c3 *= pow(BOHR,3.0)/BOLTZ;
+    sscanf(dict[21].keyarg,"%lg",&real_key_arg);
+    c4 = real_key_arg;
+    c4 *= pow(BOHR,4.0)/BOLTZ;
+    sscanf(dict[22].keyarg,"%lg",&real_key_arg);
+    c5 = real_key_arg;
+    c5 *= pow(BOHR,5.0)/BOLTZ;
+    sscanf(dict[23].keyarg,"%lg",&real_key_arg);
+    c6 = real_key_arg;
+    c6 *= pow(BOHR,6.0)/BOLTZ;
+    ifound = 0;
+    bend_bnd_base[ibase].cb_0 = c0;
+    bend_bnd_base[ibase].cb_1 = c1;
+    bend_bnd_base[ibase].cb_2 = c2;
+    bend_bnd_base[ibase].cb_3 = c3;
+    bend_bnd_base[ibase].cb_4 = c4;
+    bend_bnd_base[ibase].cb_5 = c5;
+    bend_bnd_base[ibase].cb_6 = c6;
+  } /* endif power */
 
-/*==========================================================================*/
-/* V) If bond pot type not found EXIT                                       */
+  /*==========================================================================*/
+  /* IV) Null                                                                 */
+  if(strcasecmp(pot_typ,"null") == 0) {
+    ifound = 0;
+    bend_bnd_base[ibase].cb_0 = 0.0;
+    bend_bnd_base[ibase].cb_1 = 0.0;
+    bend_bnd_base[ibase].cb_2 = 0.0;
+    bend_bnd_base[ibase].cb_3 = 0.0;
+    bend_bnd_base[ibase].cb_4 = 0.0;
+    bend_bnd_base[ibase].cb_5 = 0.0;
+    bend_bnd_base[ibase].cb_6 = 0.0;
+    bend_bnd_base[ibase].ipure = 1;
+  } /* endif null */
 
-       index = 14;
-       if(ifound < 0) keyarg_barf(dict,file_name,fun_key,index); 
+  /*==========================================================================*/
+  /* V) If bond pot type not found EXIT                                       */
 
-/*==========================================================================*/
-/* VI) Calculate bond derivative coefficients                               */
+  index = 14;
+  if(ifound < 0) keyarg_barf(dict,file_name,fun_key,index); 
 
-       bend_bnd_base[ibase].dcb_0 = 0.0;
-       bend_bnd_base[ibase].dcb_1 =     bend_bnd_base[ibase].cb_1;
-       bend_bnd_base[ibase].dcb_2 = 2.0*bend_bnd_base[ibase].cb_2;
-       bend_bnd_base[ibase].dcb_3 = 3.0*bend_bnd_base[ibase].cb_3;
-       bend_bnd_base[ibase].dcb_4 = 4.0*bend_bnd_base[ibase].cb_4;
-       bend_bnd_base[ibase].dcb_5 = 5.0*bend_bnd_base[ibase].cb_5;
-       bend_bnd_base[ibase].dcb_6 = 6.0*bend_bnd_base[ibase].cb_6;
+  /*==========================================================================*/
+  /* VI) Calculate bond derivative coefficients                               */
 
-/*==========================================================================*/
-/*==========================================================================*/
-/*  GET THE BEND PORTION OF THE BEND-BOND                                   */ 
+  bend_bnd_base[ibase].dcb_0 = 0.0;
+  bend_bnd_base[ibase].dcb_1 =     bend_bnd_base[ibase].cb_1;
+  bend_bnd_base[ibase].dcb_2 = 2.0*bend_bnd_base[ibase].cb_2;
+  bend_bnd_base[ibase].dcb_3 = 3.0*bend_bnd_base[ibase].cb_3;
+  bend_bnd_base[ibase].dcb_4 = 4.0*bend_bnd_base[ibase].cb_4;
+  bend_bnd_base[ibase].dcb_5 = 5.0*bend_bnd_base[ibase].cb_5;
+  bend_bnd_base[ibase].dcb_6 = 6.0*bend_bnd_base[ibase].cb_6;
+
+  /*==========================================================================*/
+  /*==========================================================================*/
+  /*  GET THE BEND PORTION OF THE BEND-BOND                                   */ 
 
 
-/*========================================================================*/
-/* 0) Get potential type                                                  */
+  /*========================================================================*/
+  /* 0) Get potential type                                                  */
 
   pot_typ = (char *) cmalloc(MAXWORD*sizeof(char),"intra_coefs");
   sscanf(dict[4].keyarg,"%s",pot_typ);
 
-/*========================================================================*/
-/* I) Harmonic Bend                                                       */
-  
+  /*========================================================================*/
+  /* I) Harmonic Bend                                                       */
+
   if(strcasecmp(pot_typ,"harm") == 0) {
     sscanf(dict[5].keyarg,"%lg",&real_key_arg);
     fk_bend = real_key_arg;
@@ -1030,40 +1030,40 @@ void bend_bnd_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     theta_0 = real_key_arg;
     theta_0 *= M_PI/180.0;
     ifound = 0;
-    
+
     c2th0 = cos(2.0*theta_0);
     c4th0 = cos(4.0*theta_0);
     c6th0 = cos(6.0*theta_0);
-    
+
     bend_bnd_base[ibase].c_0 =  0.5*fk_bend*(cn1 + cn2*c2th0 + cn3*c4th0 
-                                           + cn4*c6th0);
+        + cn4*c6th0);
     bend_bnd_base[ibase].c_1 = 0.0;
     bend_bnd_base[ibase].c_2 = 0.5*fk_bend*(-cn5*c2th0 - cn6*c4th0 
-                                           - cn7*c6th0);
+        - cn7*c6th0);
     bend_bnd_base[ibase].c_3 = 0.0;
     bend_bnd_base[ibase].c_4 = 0.5*fk_bend*(cn6*c4th0 + cn8*c6th0);
     bend_bnd_base[ibase].c_5 = 0.0;
     bend_bnd_base[ibase].c_6 = 0.5*fk_bend*(-cn9*c6th0);
     bend_bnd_base[ibase].eq  = theta_0;
-    
+
     s2th0 = sin(2.0*theta_0);
     s4th0 = sin(4.0*theta_0);
     s6th0 = sin(6.0*theta_0);
-    
+
     bend_bnd_base[ibase].s_0 = 0.0;
     bend_bnd_base[ibase].s_1 = 0.0;
     bend_bnd_base[ibase].s_2 = 0.5*fk_bend*(-cn5*s2th0 + cn10*s4th0 
-                                           - cn11*s6th0);
+        - cn11*s6th0);
     bend_bnd_base[ibase].s_3 = 0.0;
     bend_bnd_base[ibase].s_4 = 0.5*fk_bend*(-cn6*s4th0 + cn9*s6th0);
     bend_bnd_base[ibase].s_5 = 0.0;
     bend_bnd_base[ibase].s_6 = 0.5*fk_bend*(-cn9*s6th0);
 
   }  /* endif */
-  
-/*========================================================================*/
-/* II) Power Series                                                      */
-  
+
+  /*========================================================================*/
+  /* II) Power Series                                                      */
+
   if(strcasecmp(pot_typ,"power") == 0) {
     sscanf(dict[7].keyarg,"%lg",&real_key_arg);
     c0 = real_key_arg;
@@ -1103,11 +1103,11 @@ void bend_bnd_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     bend_bnd_base[ibase].s_4 = 0.0;
     bend_bnd_base[ibase].s_5 = 0.0;
     bend_bnd_base[ibase].s_6 = 0.0;
-    
+
   } /* endif power */
 
-/*========================================================================*/
-/* III) Null                                                             */
+  /*========================================================================*/
+  /* III) Null                                                             */
 
   if(strcasecmp(pot_typ,"null") == 0) {
     ifound = 0;
@@ -1126,18 +1126,18 @@ void bend_bnd_coef(DICT_WORD *dict,char file_name[],char fun_key[],
     bend_bnd_base[ibase].s_4 = 0.0;
     bend_bnd_base[ibase].s_5 = 0.0;
     bend_bnd_base[ibase].s_6 = 0.0;
-    
+
   } /* endif null */
 
-/*========================================================================*/
-/* IV) If pot type not found EXIT                                          */
-  
+  /*========================================================================*/
+  /* IV) If pot type not found EXIT                                          */
+
   index = 4;
   if(ifound < 0) keyarg_barf(dict,file_name,fun_key,index); 
 
-/*========================================================================*/
-/* V) Calculate derivative coefficients                                    */
-  
+  /*========================================================================*/
+  /* V) Calculate derivative coefficients                                    */
+
   bend_bnd_base[ibase].dc_0 = 0.0;
   bend_bnd_base[ibase].dc_1 =     bend_bnd_base[ibase].c_1;
   bend_bnd_base[ibase].dc_2 = 2.0*bend_bnd_base[ibase].c_2;
@@ -1145,7 +1145,7 @@ void bend_bnd_coef(DICT_WORD *dict,char file_name[],char fun_key[],
   bend_bnd_base[ibase].dc_4 = 4.0*bend_bnd_base[ibase].c_4;
   bend_bnd_base[ibase].dc_5 = 5.0*bend_bnd_base[ibase].c_5;
   bend_bnd_base[ibase].dc_6 = 6.0*bend_bnd_base[ibase].c_6;
-  
+
   bend_bnd_base[ibase].ds_0 = 0.0;
   bend_bnd_base[ibase].ds_1 =     bend_bnd_base[ibase].s_1;
   bend_bnd_base[ibase].ds_2 =     bend_bnd_base[ibase].s_2;
@@ -1154,12 +1154,12 @@ void bend_bnd_coef(DICT_WORD *dict,char file_name[],char fun_key[],
   bend_bnd_base[ibase].ds_5 = 4.0*bend_bnd_base[ibase].s_5;
   bend_bnd_base[ibase].ds_6 = 5.0*bend_bnd_base[ibase].s_6;
 
-/*==========================================================================*/
-/* DONE */
+  /*==========================================================================*/
+  /* DONE */
 
-       cfree(pot_typ,"bend_bnd_coef");
+  cfree(pot_typ,"bend_bnd_coef");
 
-/*--------------------------------------------------------------------------*/
+  /*--------------------------------------------------------------------------*/
 } /* end routine */
 /*==========================================================================*/
 
@@ -1170,8 +1170,8 @@ void bend_bnd_coef(DICT_WORD *dict,char file_name[],char fun_key[],
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 void assign_base_bond(DATA_BASE_ENTRIES *bond_base,int num_base,int *ifound,
-                      MDBOND *bond,int *isearch,int nsearch,int icon_flag)
-/*=======================================================================*/
+    MDBOND *bond,int *isearch,int nsearch,int icon_flag)
+  /*=======================================================================*/
 { /*begin routine */
   /*=======================================================================*/
   /*           Local Variables                                             */
@@ -1208,7 +1208,7 @@ void assign_base_bond(DATA_BASE_ENTRIES *bond_base,int num_base,int *ifound,
       }/*endif*/
     }/*endfor*/
   }/*endelse*/
-/*--------------------------------------------------------------------------*/
+  /*--------------------------------------------------------------------------*/
 } /* end routine */
 /*==========================================================================*/
 
@@ -1217,11 +1217,11 @@ void assign_base_bond(DATA_BASE_ENTRIES *bond_base,int num_base,int *ifound,
 /*==========================================================================*/
 
 void assign_base_bend(DATA_BASE_ENTRIES *bend_base,int num_base,int *ifound,
-                      MDBEND *bend,int *isearch,int nsearch,int icon_flag)
+    MDBEND *bend,int *isearch,int nsearch,int icon_flag)
 
-/*=======================================================================*/
+  /*=======================================================================*/
 { /*begin routine */
-/*=======================================================================*/
+  /*=======================================================================*/
   /*           Local Variables                                             */
   int i,ibase,n;
 
@@ -1269,7 +1269,7 @@ void assign_base_bend(DATA_BASE_ENTRIES *bend_base,int num_base,int *ifound,
     EXIT(1);
   }/*endelse*/
 
-/*--------------------------------------------------------------------------*/
+  /*--------------------------------------------------------------------------*/
 } /* end routine */
 /*==========================================================================*/
 
@@ -1278,11 +1278,11 @@ void assign_base_bend(DATA_BASE_ENTRIES *bend_base,int num_base,int *ifound,
 /*==========================================================================*/
 
 void assign_base_tors(DATA_BASE_ENTRIES *tors_base,int num_base,int *ifound,
-                      MDTORS *tors,int *isearch,int nsearch,int icon_flag)
+    MDTORS *tors,int *isearch,int nsearch,int icon_flag)
 
-/*=======================================================================*/
+  /*=======================================================================*/
 { /*begin routine */
-/*=======================================================================*/
+  /*=======================================================================*/
   /*           Local Variables                                             */
   int i,ibase,n;
 
@@ -1329,7 +1329,7 @@ void assign_base_tors(DATA_BASE_ENTRIES *tors_base,int num_base,int *ifound,
     FFLUSH(stdout);
     EXIT(1);
   }/*endelse*/
-/*--------------------------------------------------------------------------*/
+  /*--------------------------------------------------------------------------*/
 } /* end routine */
 /*==========================================================================*/
 
@@ -1337,8 +1337,8 @@ void assign_base_tors(DATA_BASE_ENTRIES *tors_base,int num_base,int *ifound,
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 void assign_base_bend_bnd(DATA_BASE_ENTRIES *bend_bnd_base,int num_base,
-                      int *ifound,MDBEND_BND *bend_bnd,int *isearch,int nsearch,
-                      int icon_flag,BUILD_INTRA *build_intra)
+    int *ifound,MDBEND_BND *bend_bnd,int *isearch,int nsearch,
+    int icon_flag,BUILD_INTRA *build_intra)
 { /*begin routine */
   /*=======================================================================*/
   /*           Local Variables                                             */
@@ -1398,7 +1398,7 @@ void assign_base_bend_bnd(DATA_BASE_ENTRIES *bend_bnd_base,int num_base,
       }/*endif*/
     }/*endif*/
   }/*endfor*/
-/*--------------------------------------------------------------------------*/
+  /*--------------------------------------------------------------------------*/
 } /* end routine */
 /*==========================================================================*/
 
@@ -1406,7 +1406,7 @@ void assign_base_bend_bnd(DATA_BASE_ENTRIES *bend_bnd_base,int num_base,
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 void assign_base_onfo(DATA_BASE_ENTRIES *onfo_base,int num_base,int *ifound,
-                      MDONFO *onfo,int *isearch,int nsearch,int icon_flag)
+    MDONFO *onfo,int *isearch,int nsearch,int icon_flag)
 { /*begin routine */
   /*=======================================================================*/
   /*           Local Variables                                             */
@@ -1422,7 +1422,7 @@ void assign_base_onfo(DATA_BASE_ENTRIES *onfo_base,int num_base,int *ifound,
     }/*endif*/
   }/*endfor*/
 
-/*--------------------------------------------------------------------------*/
+  /*--------------------------------------------------------------------------*/
 } /* end routine */
 /*==========================================================================*/
 
@@ -1434,11 +1434,11 @@ void assign_base_onfo(DATA_BASE_ENTRIES *onfo_base,int num_base,int *ifound,
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 void assign_base_grpbnd(DATA_BASE_ENTRIES *bond_base,int num_base,int *ifound,
-                        MDGRP_BOND_CON *grp_bond_con,
-                        MDGRP_BOND_WATTS *grp_bond_watts,
-                        int *isearch,int nsearch,
-                        int icon_flag)
-/*=======================================================================*/
+    MDGRP_BOND_CON *grp_bond_con,
+    MDGRP_BOND_WATTS *grp_bond_watts,
+    int *isearch,int nsearch,
+    int icon_flag)
+  /*=======================================================================*/
 { /*begin routine */
   /*=======================================================================*/
   /*           Local Variables                                             */
@@ -1469,104 +1469,104 @@ void assign_base_grpbnd(DATA_BASE_ENTRIES *bond_base,int num_base,int *ifound,
 
   switch(icon_flag){
     case 1: /* Group 21 [1-2,1-3]                  */
-         n = grp_bond_con->ntyp_21;
-         for(i=1;i<=n;i++){
-           if(ifound[i] > 0 && isearch[i]==nsearch){
-             ibase = ifound[i];
-             eq_21[1][i] = bond_base[ibase].eq;
-/*      PRINTF("%d %d %g\n",ifound[i],i,bond_base[ibase].eq);*/
-           }/*endif*/
-         }/*endfor*/
-         break;
+      n = grp_bond_con->ntyp_21;
+      for(i=1;i<=n;i++){
+        if(ifound[i] > 0 && isearch[i]==nsearch){
+          ibase = ifound[i];
+          eq_21[1][i] = bond_base[ibase].eq;
+          /*      PRINTF("%d %d %g\n",ifound[i],i,bond_base[ibase].eq);*/
+        }/*endif*/
+      }/*endfor*/
+      break;
     case 2: /* Group 23 [1-2,1-3]                  */
-         n = 2*grp_bond_con->ntyp_23;
-         j=0;k=0;
-         for(i=1;i<=n;i++){
-           if(((i-1)%2)==0){j++;k=0;}k++;
-           if(ifound[i] > 0 && isearch[i]==nsearch){
-             ibase = ifound[i];
-             eq_23[k][j] = bond_base[ibase].eq;
-           }/*endif*/
-         }/*endfor*/
-         break;
+      n = 2*grp_bond_con->ntyp_23;
+      j=0;k=0;
+      for(i=1;i<=n;i++){
+        if(((i-1)%2)==0){j++;k=0;}k++;
+        if(ifound[i] > 0 && isearch[i]==nsearch){
+          ibase = ifound[i];
+          eq_23[k][j] = bond_base[ibase].eq;
+        }/*endif*/
+      }/*endfor*/
+      break;
     case 3: /* Group 33 [1-2,1-3,2-3]              */
-         n = 3*grp_bond_con->ntyp_33;
-         j=0;k=0;
-         for(i=1;i<=n;i++){
-           if(((i-1)%3)==0){j++;k=0;}k++;
-           if(ifound[i] > 0 && isearch[i]==nsearch){
-             ibase = ifound[i];
-             eq_33[k][j] = bond_base[ibase].eq;
-/*      PRINTF("%d %d %d %d %g\n",ifound[i],i,j,k,bond_base[ibase].eq);*/
-           }/*endif*/
-         }/*endfor*/
-         break;
+      n = 3*grp_bond_con->ntyp_33;
+      j=0;k=0;
+      for(i=1;i<=n;i++){
+        if(((i-1)%3)==0){j++;k=0;}k++;
+        if(ifound[i] > 0 && isearch[i]==nsearch){
+          ibase = ifound[i];
+          eq_33[k][j] = bond_base[ibase].eq;
+          /*      PRINTF("%d %d %d %d %g\n",ifound[i],i,j,k,bond_base[ibase].eq);*/
+        }/*endif*/
+      }/*endfor*/
+      break;
     case 4: /* Group 43 [1-2,1-3,2-3]              */
-         n = 3*grp_bond_con->ntyp_43;
-         j=0;k=0;
-         for(i=1;i<=n;i++){
-           if(((i-1)%3)==0){j++;k=0;}k++;
-           if(ifound[i] > 0 && isearch[i]==nsearch){
-             ibase = ifound[i];
-             eq_43[k][j] = bond_base[ibase].eq;
-           }/*endif*/
-         }/*endfor*/
-         break;
+      n = 3*grp_bond_con->ntyp_43;
+      j=0;k=0;
+      for(i=1;i<=n;i++){
+        if(((i-1)%3)==0){j++;k=0;}k++;
+        if(ifound[i] > 0 && isearch[i]==nsearch){
+          ibase = ifound[i];
+          eq_43[k][j] = bond_base[ibase].eq;
+        }/*endif*/
+      }/*endfor*/
+      break;
     case 5: /* Group 46 [1-2,1-3,1-4,2-3,2-4,3-4]  */
-         n = 6*grp_bond_con->ntyp_46;
-         j=0;k=0;
-         for(i=1;i<=n;i++){
-           if(((i-1)%6)==0){j++;k=0;}k++;
-           if(ifound[i] > 0 && isearch[i]==nsearch){
-             ibase = ifound[i];
-             eq_46[k][j] = bond_base[ibase].eq;
-           }/*endif*/
-         }/*endfor*/
-         break;
+      n = 6*grp_bond_con->ntyp_46;
+      j=0;k=0;
+      for(i=1;i<=n;i++){
+        if(((i-1)%6)==0){j++;k=0;}k++;
+        if(ifound[i] > 0 && isearch[i]==nsearch){
+          ibase = ifound[i];
+          eq_46[k][j] = bond_base[ibase].eq;
+        }/*endif*/
+      }/*endfor*/
+      break;
     case 6: /* Group 33 [1-2,1-3,2-3]              */
-         n = 3*grp_bond_watts->ntyp_33;
-         j=0;k=0;
-         for(i=1;i<=n;i++){
-           if(((i-1)%3)==0){j++;k=0;}k++;
-           if(ifound[i] > 0 && isearch[i]==nsearch){
-             ibase = ifound[i];
-             c_0_watt_33[k][j] = bond_base[ibase].c_0;
-             c_1_watt_33[k][j] = bond_base[ibase].c_1;
-             c_2_watt_33[k][j] = bond_base[ibase].c_2;
-             c_3_watt_33[k][j] = bond_base[ibase].c_3;
-             c_4_watt_33[k][j] = bond_base[ibase].c_4;
-             c_5_watt_33[k][j] = bond_base[ibase].c_5;
-             c_6_watt_33[k][j] = bond_base[ibase].c_6;
-             dc_0_watt_33[k][j] = bond_base[ibase].dc_0;
-             dc_1_watt_33[k][j] = bond_base[ibase].dc_1;
-             dc_2_watt_33[k][j] = bond_base[ibase].dc_2;
-             dc_3_watt_33[k][j] = bond_base[ibase].dc_3;
-             dc_4_watt_33[k][j] = bond_base[ibase].dc_4;
-             dc_5_watt_33[k][j] = bond_base[ibase].dc_5;
-             dc_6_watt_33[k][j] = bond_base[ibase].dc_6;
-             eq_watt_33[k][j] = bond_base[ibase].eq;
-             if(k==3){
-               eq_watt_33[k][j] *= (BOHR*M_PI/180.0);
-               cos_thet0_2[j] = cos(0.5*eq_watt_33[k][j]);
-               sin_thet0_2[j] = sin(0.5*eq_watt_33[k][j]);
-               c_1_watt_33[k][j] /= BOHR;
-               c_2_watt_33[k][j] /= BOHR*BOHR;
-               c_3_watt_33[k][j] /= BOHR*BOHR*BOHR;
-               c_4_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR;
-               c_5_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR*BOHR;
-               c_6_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR*BOHR*BOHR;
-               dc_1_watt_33[k][j] /= BOHR;
-               dc_2_watt_33[k][j] /= BOHR*BOHR;
-               dc_3_watt_33[k][j] /= BOHR*BOHR*BOHR;
-               dc_4_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR;
-               dc_5_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR*BOHR;
-               dc_6_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR*BOHR*BOHR;
- 	     }/*endif*/
-           }/*endif*/
-         }/*endfor*/
-         break;
+      n = 3*grp_bond_watts->ntyp_33;
+      j=0;k=0;
+      for(i=1;i<=n;i++){
+        if(((i-1)%3)==0){j++;k=0;}k++;
+        if(ifound[i] > 0 && isearch[i]==nsearch){
+          ibase = ifound[i];
+          c_0_watt_33[k][j] = bond_base[ibase].c_0;
+          c_1_watt_33[k][j] = bond_base[ibase].c_1;
+          c_2_watt_33[k][j] = bond_base[ibase].c_2;
+          c_3_watt_33[k][j] = bond_base[ibase].c_3;
+          c_4_watt_33[k][j] = bond_base[ibase].c_4;
+          c_5_watt_33[k][j] = bond_base[ibase].c_5;
+          c_6_watt_33[k][j] = bond_base[ibase].c_6;
+          dc_0_watt_33[k][j] = bond_base[ibase].dc_0;
+          dc_1_watt_33[k][j] = bond_base[ibase].dc_1;
+          dc_2_watt_33[k][j] = bond_base[ibase].dc_2;
+          dc_3_watt_33[k][j] = bond_base[ibase].dc_3;
+          dc_4_watt_33[k][j] = bond_base[ibase].dc_4;
+          dc_5_watt_33[k][j] = bond_base[ibase].dc_5;
+          dc_6_watt_33[k][j] = bond_base[ibase].dc_6;
+          eq_watt_33[k][j] = bond_base[ibase].eq;
+          if(k==3){
+            eq_watt_33[k][j] *= (BOHR*M_PI/180.0);
+            cos_thet0_2[j] = cos(0.5*eq_watt_33[k][j]);
+            sin_thet0_2[j] = sin(0.5*eq_watt_33[k][j]);
+            c_1_watt_33[k][j] /= BOHR;
+            c_2_watt_33[k][j] /= BOHR*BOHR;
+            c_3_watt_33[k][j] /= BOHR*BOHR*BOHR;
+            c_4_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR;
+            c_5_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR*BOHR;
+            c_6_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR*BOHR*BOHR;
+            dc_1_watt_33[k][j] /= BOHR;
+            dc_2_watt_33[k][j] /= BOHR*BOHR;
+            dc_3_watt_33[k][j] /= BOHR*BOHR*BOHR;
+            dc_4_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR;
+            dc_5_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR*BOHR;
+            dc_6_watt_33[k][j] /= BOHR*BOHR*BOHR*BOHR*BOHR*BOHR;
+          }/*endif*/
+        }/*endif*/
+      }/*endfor*/
+      break;
   }/*end switch*/
-/*--------------------------------------------------------------------------*/
+  /*--------------------------------------------------------------------------*/
 } /* end routine */
 /*==========================================================================*/
 

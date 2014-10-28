@@ -5,8 +5,8 @@
 #include "ckmulticast.h"
 
 /** @addtogroup Ortho
-    @{
-*/
+  @{
+ */
 
 /*
  * The CLA_Matrix class should not be used directy by the user. See comments
@@ -16,56 +16,56 @@ class CLA_Matrix : public CBase_CLA_Matrix{
   friend class CLA_Matrix_interface;
 
   public:
-    CLA_Matrix(){}
-    CLA_Matrix(CkMigrateMessage *m){}
-    ~CLA_Matrix();
-    virtual void pup(PUP::er &p);
-    virtual void ResumeFromSync();
-    inline void synchronize(void){AtSync();}
+  CLA_Matrix(){}
+  CLA_Matrix(CkMigrateMessage *m){}
+  ~CLA_Matrix();
+  virtual void pup(PUP::er &p);
+  virtual void ResumeFromSync();
+  inline void synchronize(void){AtSync();}
 
-    /* For 2D algorihtm */
-    CLA_Matrix(int M, int K, int N, int m, int k, int n, int strideM,
-     int strideN, int strideK, int part,
-     CProxy_CLA_Matrix other1, CProxy_CLA_Matrix other2, CkCallback ready, int gemmSplitOrtho);
-    void receiveA(CLA_Matrix_msg *m);
-    void receiveB(CLA_Matrix_msg *m);
+  /* For 2D algorihtm */
+  CLA_Matrix(int M, int K, int N, int m, int k, int n, int strideM,
+      int strideN, int strideK, int part,
+      CProxy_CLA_Matrix other1, CProxy_CLA_Matrix other2, CkCallback ready, int gemmSplitOrtho);
+  void receiveA(CLA_Matrix_msg *m);
+  void receiveB(CLA_Matrix_msg *m);
 
-    /* For 3D algorithm */
-    CLA_Matrix(CProxy_CLA_MM3D_multiplier p, int M, int K, int N, int m, int k,
-     int n, int strideM, int strideK, int strideN, int part, CkCallback cb,
-     CkGroupID gid, int gemmSplitOrtho);
-    void ready(CkReductionMsg *m);
-    void readyC(CkReductionMsg *m);
-    void mult_done(CkReductionMsg *m);
+  /* For 3D algorithm */
+  CLA_Matrix(CProxy_CLA_MM3D_multiplier p, int M, int K, int N, int m, int k,
+      int n, int strideM, int strideK, int strideN, int part, CkCallback cb,
+      CkGroupID gid, int gemmSplitOrtho);
+  void ready(CkReductionMsg *m);
+  void readyC(CkReductionMsg *m);
+  void mult_done(CkReductionMsg *m);
   private:
-    void multiply(double alpha, double beta, internalType *data,
-     void (*fptr) (void *), void *usr_data);
-    void multiply();
+  void multiply(double alpha, double beta, internalType *data,
+      void (*fptr) (void *), void *usr_data);
+  void multiply();
 
-    /* shared */
-    int M, K, N, m, k, n, um, uk, un;
-    int M_chunks, K_chunks, N_chunks;
-    int M_stride, K_stride, N_stride;
-    int part;
-    int algorithm;
-    int gemmSplitOrtho;
-    void (*fcb) (void *obj);
-    void *user_data;
-    double alpha, beta;
+  /* shared */
+  int M, K, N, m, k, n, um, uk, un;
+  int M_chunks, K_chunks, N_chunks;
+  int M_stride, K_stride, N_stride;
+  int part;
+  int algorithm;
+  int gemmSplitOrtho;
+  void (*fcb) (void *obj);
+  void *user_data;
+  double alpha, beta;
 
-    /* For 2D algorithm */
-    CProxySection_CLA_Matrix commGroup2D; // used by A and B
-    internalType *tmpA, *tmpB, *dest; // used by C
-    int row_count, col_count; // used by C
-    CProxy_CLA_Matrix other1; // For A, B. For B, A. For C, A.
-    CProxy_CLA_Matrix other2; // For A, C. For B, C. For C, B.
+  /* For 2D algorithm */
+  CProxySection_CLA_Matrix commGroup2D; // used by A and B
+  internalType *tmpA, *tmpB, *dest; // used by C
+  int row_count, col_count; // used by C
+  CProxy_CLA_Matrix other1; // For A, B. For B, A. For C, A.
+  CProxy_CLA_Matrix other2; // For A, C. For B, C. For C, B.
 
-    /* For 3D algorithm */
-    CProxySection_CLA_MM3D_multiplier commGroup3D; // used by all
-    /* below used only by C */
-    CkCallback init_cb;
-    CkReductionMsg *res_msg;
-    bool got_start, got_data;
+  /* For 3D algorithm */
+  CProxySection_CLA_MM3D_multiplier commGroup3D; // used by all
+  /* below used only by C */
+  CkCallback init_cb;
+  CkReductionMsg *res_msg;
+  bool got_start, got_data;
 };
 
 
@@ -80,7 +80,7 @@ class CLA_Matrix_interface {
   public:
     CLA_Matrix_interface(){}
     inline void multiply(double alpha, double beta, internalType *data,
-     void (*fptr) (void *), void *usr_data, int x, int y){
+        void (*fptr) (void *), void *usr_data, int x, int y){
       p(x, y).ckLocal()->multiply(alpha, beta, data, fptr, usr_data);
     }
     inline void sync(int x, int y){
@@ -91,12 +91,12 @@ class CLA_Matrix_interface {
     CProxy_CLA_Matrix p;
     inline void setProxy(CProxy_CLA_Matrix pp){ p = pp; }
 
-  friend int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
-   CLA_Matrix_interface *C, CProxy_ArrayElement bindA,
-   CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
-   int M, int K, int N, int m, int k, int n, int strideM, int strideK,
-   int strideN, CkCallback cbA, CkCallback cbB,
-   CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho);
+    friend int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
+        CLA_Matrix_interface *C, CProxy_ArrayElement bindA,
+        CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
+        int M, int K, int N, int m, int k, int n, int strideM, int strideK,
+        int strideN, CkCallback cbA, CkCallback cbB,
+        CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho);
 };
 
 
@@ -105,7 +105,7 @@ class CLA_Matrix_interface {
 class CLA_Matrix_msg : public CkMcastBaseMsg, public CMessage_CLA_Matrix_msg {
   public:
     CLA_Matrix_msg(internalType *data, int d1, int d2, int fromX, int fromY);
-//    ~CLA_Matrix_msg(){delete [] data;}
+    //    ~CLA_Matrix_msg(){delete [] data;}
     internalType *data;
     int d1, d2;
     int fromX, fromY;
@@ -115,18 +115,18 @@ class CLA_Matrix_msg : public CkMcastBaseMsg, public CMessage_CLA_Matrix_msg {
 
 
 class CLA_MM3D_mult_init_msg : public CkMcastBaseMsg,
- public CMessage_CLA_MM3D_mult_init_msg {
-  public:
-    CLA_MM3D_mult_init_msg(CkGroupID gid, CkCallback ready,
-       CkCallback reduce){
-      this->gid = gid;
-      this->ready = ready;
-      this->reduce = reduce;
-    }
-    CkGroupID gid;
-    CkCallback ready;
-    CkCallback reduce;
-};
+  public CMessage_CLA_MM3D_mult_init_msg {
+    public:
+      CLA_MM3D_mult_init_msg(CkGroupID gid, CkCallback ready,
+          CkCallback reduce){
+        this->gid = gid;
+        this->ready = ready;
+        this->reduce = reduce;
+      }
+      CkGroupID gid;
+      CkCallback ready;
+      CkCallback reduce;
+  };
 
 
 
@@ -143,7 +143,7 @@ class CLA_MM3D_Map : public CkArrayMap {
     virtual int procNum(int arrayHdl, const CkArrayIndex &idx){
       CkArrayIndex3D idx3d = *(CkArrayIndex3D *) &idx;
       return (N_chunks * idx3d.index[0] + N_chunks * M_chunks * idx3d.index[2] +
-       idx3d.index[1]) % pes;
+          idx3d.index[1]) % pes;
     }
   private:
     int M_chunks, K_chunks, N_chunks, pes;
@@ -169,9 +169,9 @@ class CLA_MM3D_multiplier : public CBase_CLA_MM3D_multiplier{
     CkSectionInfo sectionCookie;
     CkCallback reduce_CB;
     CkMulticastMgr *redGrp;
-/*
-    double *A, *B, *C;
-*/
+    /*
+       double *A, *B, *C;
+     */
 };
 
 
@@ -198,14 +198,14 @@ class CLA_MM3D_multiplier : public CBase_CLA_MM3D_multiplier{
  *  ERR_INVALID_DIM: invalid dimensions were given
  */
 int make_multiplier(
-        CLA_Matrix_interface *A, CLA_Matrix_interface *B, CLA_Matrix_interface *C,
-        CProxy_ArrayElement bindA, CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
-        int M, int K, int N,
-        int m, int k, int n,
-        int strideM, int strideK, int strideZ,
-        CkCallback cbA, CkCallback cbB, CkCallback cbC,
-        CkGroupID gid, int algorithm, int gemmSplitOrtho
-        );
+    CLA_Matrix_interface *A, CLA_Matrix_interface *B, CLA_Matrix_interface *C,
+    CProxy_ArrayElement bindA, CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
+    int M, int K, int N,
+    int m, int k, int n,
+    int strideM, int strideK, int strideZ,
+    CkCallback cbA, CkCallback cbB, CkCallback cbC,
+    CkGroupID gid, int algorithm, int gemmSplitOrtho
+    );
 
 
 
@@ -230,7 +230,7 @@ int make_multiplier(
 
 
 /* Transpose data, which has dimension m x n */
-template <typename T>
+  template <typename T>
 void transpose(T *data, int m, int n)
 {
   if(m == n){

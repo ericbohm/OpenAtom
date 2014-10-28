@@ -7,9 +7,9 @@
 
 mainmodule main_charm{
 
-//---------------------------------------------------------------------------
-// OATOM_MAINCHARE is the mainchare : charm has its own main function. you no
-//  longer control it. The mainchare constructor is invoked on 1 proc. only!
+  //---------------------------------------------------------------------------
+  // OATOM_MAINCHARE is the mainchare : charm has its own main function. you no
+  //  longer control it. The mainchare constructor is invoked on 1 proc. only!
   readonly int nElements;
 
 
@@ -23,8 +23,8 @@ mainmodule main_charm{
   };
 
 
-//---------------------------------------------------------------------------
-// invokes the pup routine for each global readonly class automatically
+  //---------------------------------------------------------------------------
+  // invokes the pup routine for each global readonly class automatically
 
   readonly MDINTEGRATE  readonly_mdintegrate;
   readonly MDATOMS      readonly_mdatoms;
@@ -33,6 +33,6 @@ mainmodule main_charm{
   readonly GENERAL_DATA readonly_general_data;
   readonly CP           readonly_cp; 
 
-//---------------------------------------------------------------------------
-    };// end mainmodule main_charm
+  //---------------------------------------------------------------------------
+};// end mainmodule main_charm
 //===========================================================================

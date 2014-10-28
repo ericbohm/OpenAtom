@@ -19,12 +19,12 @@
 /*==========================================================================*/
 
 void set_res_name_params(DICT_WORD res_name_dict[],int num_res_name_dict,
-                         char fun_key[],char file_name[],NAME res_typ[],
-                         int natm_jres_jmol_typ[],int jmol_typ,
-                         int jres,int jres_off,
-                         int ires_typ_jres_jmol_typ[])
+    char fun_key[],char file_name[],NAME res_typ[],
+    int natm_jres_jmol_typ[],int jmol_typ,
+    int jres,int jres_off,
+    int ires_typ_jres_jmol_typ[])
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int num,i,index,index2;
   /*=======================================================================*/

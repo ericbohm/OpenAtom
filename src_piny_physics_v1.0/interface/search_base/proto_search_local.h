@@ -4,10 +4,10 @@
 void sort_atm_list(CATM_LAB *,int ,int *, WILD *,int );
 
 void match_data_base(CATM_LAB *, CATM_LAB *, int , int ,int , int *,
-                     int *,int *,int *,int *,int ,WILD *,int );
+    int *,int *,int *,int *,int ,WILD *,int );
 
 void match_wild_base(CATM_LAB *, CATM_LAB *, int , int , int , int , int *,
-                     int *,int *,int *,int ,WILD *,int );
+    int *,int *,int *,int ,WILD *,int );
 
 void comp_atmlst(int *,CATM_LAB *,WILD *,int ,int ,int );
 
@@ -37,25 +37,25 @@ void set_potonfo_dict(DICT_WORD *[],int *,int);
 void set_potsurf_dict(DICT_WORD *[], int *, int ); 
 
 void inter_coef(DICT_WORD *,char [],char [], DATA_BASE_ENTRIES *,
-                     CATM_LAB *,int );
+    CATM_LAB *,int );
 
 void bond_coef(DICT_WORD *,char *,char *,DATA_BASE_ENTRIES *,CATM_LAB *,
-                int );
+    int );
 
 void bend_coef(DICT_WORD *,char *,char *,DATA_BASE_ENTRIES *,CATM_LAB *,
-               int );
+    int );
 
 void tors_coef(DICT_WORD *,char *,char *,DATA_BASE_ENTRIES *,CATM_LAB *,
-               int );
+    int );
 
 void onfo_coef(DICT_WORD *,char *,char *,DATA_BASE_ENTRIES *,CATM_LAB *,
-               int );
+    int );
 
 void bend_bnd_coef(DICT_WORD *,char *,char *,DATA_BASE_ENTRIES *,
-                   CATM_LAB *, int );
+    CATM_LAB *, int );
 
 
 void surf_coef(DICT_WORD *, char *, char *, DATA_BASE_ENTRIES *, 
-               CATM_LAB *, int );
+    CATM_LAB *, int );
 
 /*---------------------------------------------------------------------*/

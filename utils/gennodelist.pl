@@ -15,8 +15,8 @@ print $outfile "group main +shell ssh\n";
 print "creating nodelist file $nodelistname\n";
 foreach my $node (<$infile>)
 {
-    chomp $node;
-    print $outfile "host $node\n";
+  chomp $node;
+  print $outfile "host $node\n";
 }
 close $infile;
 close $outfile;

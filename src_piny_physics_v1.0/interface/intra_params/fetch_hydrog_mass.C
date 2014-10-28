@@ -32,54 +32,54 @@
 /*==========================================================================*/
 
 void fetch_hydrog_mass(CLASS_PARSE *class_parse, MDATOM_MAPS *atommaps, 
-                       MDCONSTRNT *constrnt,BUILD_INTRA *build_intra, 
-                       START_INDEX *start_index, MDCLATOMS_INFO *clatoms_info, 
-                       int jmol_typ)
+    MDCONSTRNT *constrnt,BUILD_INTRA *build_intra, 
+    START_INDEX *start_index, MDCLATOMS_INFO *clatoms_info, 
+    int jmol_typ)
 
-/*==========================================================================*/
-/*begin routine*/{
+  /*==========================================================================*/
+  /*begin routine*/{
 
-/*==========================================================================*/
-/* Define Local variable */
+    /*==========================================================================*/
+    /* Define Local variable */
 
     int i,iii;
     int mass_now;
 
-/*==========================================================================*/
-/* I) All hydrogen masses changed */ 
-  if(class_parse->mol_hydrog_mass_opt[jmol_typ]==1){
-       for(i=start_index->natm+1;i<=clatoms_info->natm_tot;i++){
+    /*==========================================================================*/
+    /* I) All hydrogen masses changed */ 
+    if(class_parse->mol_hydrog_mass_opt[jmol_typ]==1){
+      for(i=start_index->natm+1;i<=clatoms_info->natm_tot;i++){
         mass_now = (int)(clatoms_info->mass[i]);
         if(mass_now<=2){
           clatoms_info->mass[i] = (class_parse->mol_hydrog_mass_val[jmol_typ]);
         }/*endif*/
       }/*endfor*/
-   }/*endif*/
+    }/*endif*/
 
-/*==========================================================================*/
-/* II) Backbone hydrogen mass changes */ 
+    /*==========================================================================*/
+    /* II) Backbone hydrogen mass changes */ 
 
-  if(class_parse->mol_hydrog_mass_opt[jmol_typ]==2){
-     for(i=start_index->natm+1;i<=clatoms_info->natm_tot;i++){
+    if(class_parse->mol_hydrog_mass_opt[jmol_typ]==2){
+      for(i=start_index->natm+1;i<=clatoms_info->natm_tot;i++){
         mass_now = (int)(clatoms_info->mass[i]);
-       if((constrnt->atom_label[i] == 1) && (mass_now<=2)){
-         clatoms_info->mass[i] = (class_parse->mol_hydrog_mass_val[jmol_typ]);
-       }/*endif*/
+        if((constrnt->atom_label[i] == 1) && (mass_now<=2)){
+          clatoms_info->mass[i] = (class_parse->mol_hydrog_mass_val[jmol_typ]);
+        }/*endif*/
       }/*endfor*/
-  }/*endif*/
+    }/*endif*/
 
-/*==========================================================================*/
-/* II) Sidechain hydrogen mass changes */
+    /*==========================================================================*/
+    /* II) Sidechain hydrogen mass changes */
 
-  if(class_parse->mol_hydrog_mass_opt[jmol_typ]==3){
-     for(i=start_index->natm+1;i<=clatoms_info->natm_tot;i++){
+    if(class_parse->mol_hydrog_mass_opt[jmol_typ]==3){
+      for(i=start_index->natm+1;i<=clatoms_info->natm_tot;i++){
         mass_now = (int)(clatoms_info->mass[i]);
-       if((constrnt->atom_label[i] == 2) && (mass_now<=2)){
-         clatoms_info->mass[i] = (class_parse->mol_hydrog_mass_val[jmol_typ]);
-       }/*endif*/
+        if((constrnt->atom_label[i] == 2) && (mass_now<=2)){
+          clatoms_info->mass[i] = (class_parse->mol_hydrog_mass_val[jmol_typ]);
+        }/*endif*/
       }/*endfor*/
-  }/*endif*/
+    }/*endif*/
 
-/*--------------------------------------------------------------------------*/
-}/*end routine*/ 
+    /*--------------------------------------------------------------------------*/
+  }/*end routine*/ 
 /*==========================================================================*/

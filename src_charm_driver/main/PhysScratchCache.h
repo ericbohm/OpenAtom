@@ -24,11 +24,11 @@
 
 
 class PhysScratchCache: public Group {
- public:
-  PSSCRATCH *psscratch;
-  PhysScratchCache();
-  PhysScratchCache(CkMigrateMessage *m) {}
-  ~PhysScratchCache(){ delete psscratch; }
+  public:
+    PSSCRATCH *psscratch;
+    PhysScratchCache();
+    PhysScratchCache(CkMigrateMessage *m) {}
+    ~PhysScratchCache(){ delete psscratch; }
 
 };
 

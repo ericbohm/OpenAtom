@@ -30,27 +30,27 @@
 /*==========================================================================*/
 
 void set_bond_free_params(char *molsetname,char fun_key[],
-                          DICT_WORD bond_free_dict[], int num_bond_free_dict,
-                          MDBOND_FREE *mdbond_free,FREE_PARSE *free_parse,
-                          int nmol_typ)     
+    DICT_WORD bond_free_dict[], int num_bond_free_dict,
+    MDBOND_FREE *mdbond_free,FREE_PARSE *free_parse,
+    int nmol_typ)     
 
-/*========================================================================*/
-  {/*begin routine */
-/*========================================================================*/
-/* Local variables */
+  /*========================================================================*/
+{/*begin routine */
+  /*========================================================================*/
+  /* Local variables */
   int num,i,index;
   double dnum;
-/*========================================================================*/
-/* I) Check for missing key words*/
+  /*========================================================================*/
+  /* I) Check for missing key words*/
 
   for(i=1;i<num_bond_free_dict;i++){
     if(bond_free_dict[i].iuset==0 && bond_free_dict[i].key_type==1){
       keyword_miss(bond_free_dict,molsetname,fun_key,i);}
   }/*endfor*/
 
-/*=========================================================================*/
-/* II) Set the params */
-/*-----------------------------------------------------------------------*/ 
+  /*=========================================================================*/
+  /* II) Set the params */
+  /*-----------------------------------------------------------------------*/ 
   /*  1)\atom1_moltyp_ind{} */
   sscanf(bond_free_dict[1].keyarg,"%d",&num);
   free_parse->imoltyp_bond_free[1] = num; 
@@ -147,28 +147,28 @@ void set_bond_free_params(char *molsetname,char fun_key[],
   /*-----------------------------------------------------------------------*/
 
   mdbond_free->del =((mdbond_free->rmax)- (mdbond_free->rmin))/
-                       ((double)(mdbond_free->nhist));
-/*-----------------------------------------------------------------------*/
-/*end routine*/}
-/*==========================================================================*/
+    ((double)(mdbond_free->nhist));
+  /*-----------------------------------------------------------------------*/
+  /*end routine*/}
+  /*==========================================================================*/
 
 
 
 
 
-/*==========================================================================*/
-/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
-/*==========================================================================*/
+  /*==========================================================================*/
+  /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+  /*==========================================================================*/
 
 void set_bend_free_params(char *molsetname,char fun_key[],
-                          DICT_WORD bend_free_dict[], int num_bend_free_dict,
-                          MDBEND_FREE *mdbend_free,FREE_PARSE *free_parse,
-                          int nmol_typ)
+    DICT_WORD bend_free_dict[], int num_bend_free_dict,
+    MDBEND_FREE *mdbend_free,FREE_PARSE *free_parse,
+    int nmol_typ)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {/*begin routine*/
-/*==========================================================================*/
-/* Local variables*/
+  /*==========================================================================*/
+  /* Local variables*/
   int i,num,index;
   double dnum;
   /*=======================================================================*/
@@ -323,17 +323,17 @@ void set_bend_free_params(char *molsetname,char fun_key[],
 /*==========================================================================*/
 
 void set_tors_free_params(char molsetname[],char fun_key[],
-                          DICT_WORD tors_free_dict[], int num_tors_free_dict,
-                          MDTORS_FREE *mdtors_free,FREE_PARSE *free_parse,
-                          int nmol_typ)
+    DICT_WORD tors_free_dict[], int num_tors_free_dict,
+    MDTORS_FREE *mdtors_free,FREE_PARSE *free_parse,
+    int nmol_typ)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {/*begin routine*/
-/*==========================================================================*/
-/* Local variables */
+  /*==========================================================================*/
+  /* Local variables */
   int i,num,index,ntors;
   double dnum;
-/*==========================================================================*/
+  /*==========================================================================*/
   /* I) Check for missing key words*/
   for(i=1;i<=num_tors_free_dict;i++){
     if(tors_free_dict[i].iuset==0 && tors_free_dict[i].key_type==1){
@@ -341,7 +341,7 @@ void set_tors_free_params(char molsetname[],char fun_key[],
     }
   }    /*endfor*/
 
- /*==========================================================================*/
+  /*==========================================================================*/
   /* II) Set the params */
 
   /*-----------------------------------------------------------------------*/ 
@@ -674,8 +674,8 @@ void set_tors_free_params(char molsetname[],char fun_key[],
   mdtors_free->del = (2.0*M_PI)/((double)(mdtors_free->nhist));
 
   /*-----------------------------------------------------------------------*/
-   }  /*end routine*/
- /*========================================================================*/
+}  /*end routine*/
+/*========================================================================*/
 
 
 
@@ -684,21 +684,21 @@ void set_tors_free_params(char molsetname[],char fun_key[],
 /*==========================================================================*/
 
 void set_rbar_free_params(char *molsetname,char fun_key[],
-                          DICT_WORD rbar_free_dict[], int num_rbar_free_dict,
-                          MDRBAR_SIG_FREE *mdrbar_sig_free,FREE_PARSE *free_parse,
-                          int nmol_typ)     
+    DICT_WORD rbar_free_dict[], int num_rbar_free_dict,
+    MDRBAR_SIG_FREE *mdrbar_sig_free,FREE_PARSE *free_parse,
+    int nmol_typ)     
 
-/*========================================================================*/
-  {/*begin routine */
-/*========================================================================*/
-/* Local variables */
+  /*========================================================================*/
+{/*begin routine */
+  /*========================================================================*/
+  /* Local variables */
 
   int num,i,index;
   double dnum;
   FILE *fp;
 
-/*========================================================================*/
-/* I) Check for missing key words*/
+  /*========================================================================*/
+  /* I) Check for missing key words*/
 
   for(i=1;i<num_rbar_free_dict;i++){
     if((rbar_free_dict[i].iuset==0) && (rbar_free_dict[i].key_type==1)){
@@ -706,146 +706,146 @@ void set_rbar_free_params(char *molsetname,char fun_key[],
     }/*endif*/
   }/*endfor*/
 
-/*=========================================================================*/
-/* II) Set the params */
+  /*=========================================================================*/
+  /* II) Set the params */
 
   /*-----------------------------------------------------------------------*/ 
   /* 1)\num_bond{}     */
-   sscanf(rbar_free_dict[1].keyarg,"%d",&num);
-   mdrbar_sig_free->nfree  = num;
-   free_parse->nbar_bond = num;
-   index = 1;
-   if((num <=0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[1].keyarg,"%d",&num);
+  mdrbar_sig_free->nfree  = num;
+  free_parse->nbar_bond = num;
+  index = 1;
+  if((num <=0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 3)\eq_bar{}               */
-   sscanf(rbar_free_dict[3].keyarg,"%lg",&dnum);
-   mdrbar_sig_free->eq_bar = dnum/BOHR;
-   index = 3;
-   if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[3].keyarg,"%lg",&dnum);
+  mdrbar_sig_free->eq_bar = dnum/BOHR;
+  index = 3;
+  if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 4)\fk_bar{}               */
-   sscanf(rbar_free_dict[4].keyarg,"%lg",&dnum);
-   mdrbar_sig_free->fk_bar = dnum*BOHR*BOHR/BOLTZ;
-   index = 4;
-   if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[4].keyarg,"%lg",&dnum);
+  mdrbar_sig_free->fk_bar = dnum*BOHR*BOHR/BOLTZ;
+  index = 4;
+  if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 5)\eq_sig{}               */
-   sscanf(rbar_free_dict[5].keyarg,"%lg",&dnum);
-   mdrbar_sig_free->eq_sigma = dnum/BOHR;
-   index = 5;
-   if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[5].keyarg,"%lg",&dnum);
+  mdrbar_sig_free->eq_sigma = dnum/BOHR;
+  index = 5;
+  if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 6)\fk_sig{}               */
-   sscanf(rbar_free_dict[6].keyarg,"%lg",&dnum);
-   mdrbar_sig_free->fk_sigma = dnum*BOHR*BOHR/BOLTZ;
-   index = 6;
-   if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[6].keyarg,"%lg",&dnum);
+  mdrbar_sig_free->fk_sigma = dnum*BOHR*BOHR/BOLTZ;
+  index = 6;
+  if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 7)\rmin_hist{}         */
-   sscanf(rbar_free_dict[7].keyarg,"%lg",&dnum);
-   mdrbar_sig_free->rmin = dnum/BOHR;
-   index = 7;
-   if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[7].keyarg,"%lg",&dnum);
+  mdrbar_sig_free->rmin = dnum/BOHR;
+  index = 7;
+  if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 8)\rmax_hist{}         */
-   sscanf(rbar_free_dict[8].keyarg,"%lg",&dnum);
-   mdrbar_sig_free->rmax = dnum/BOHR;
-   index = 8;
-   if((dnum < 0)|| (dnum< mdrbar_sig_free->rmin)){
-                       keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[8].keyarg,"%lg",&dnum);
+  mdrbar_sig_free->rmax = dnum/BOHR;
+  index = 8;
+  if((dnum < 0)|| (dnum< mdrbar_sig_free->rmin)){
+    keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 9)\num_rbar_hist{}         */
-   sscanf(rbar_free_dict[9].keyarg,"%d",&num);
-   mdrbar_sig_free->nhist_bar = num;
-   index = 9;
-   if((num <=0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[9].keyarg,"%d",&num);
+  mdrbar_sig_free->nhist_bar = num;
+  index = 9;
+  if((num <=0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 10)\smin_hist{}         */
-   sscanf(rbar_free_dict[10].keyarg,"%lg",&dnum);
-   mdrbar_sig_free->smin = dnum/BOHR;
-   index = 10;
-   if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[10].keyarg,"%lg",&dnum);
+  mdrbar_sig_free->smin = dnum/BOHR;
+  index = 10;
+  if((dnum < 0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 11)\smax_hist{}         */
-   sscanf(rbar_free_dict[11].keyarg,"%lg",&dnum);
-   mdrbar_sig_free->smax = dnum/BOHR;
-   index = 11;
-   if((dnum < 0)|| (dnum< mdrbar_sig_free->smin)){
-                       keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[11].keyarg,"%lg",&dnum);
+  mdrbar_sig_free->smax = dnum/BOHR;
+  index = 11;
+  if((dnum < 0)|| (dnum< mdrbar_sig_free->smin)){
+    keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 12)\num_sig_hist{}         */
-   sscanf(rbar_free_dict[12].keyarg,"%d",&num);
-   mdrbar_sig_free->nhist_sig = num;
-   index = 12;
-   if((num <=0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
+  sscanf(rbar_free_dict[12].keyarg,"%d",&num);
+  mdrbar_sig_free->nhist_sig = num;
+  index = 12;
+  if((num <=0)){keyarg_barf(rbar_free_dict,molsetname,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 13)\hist_file{}        */
-   strcpy(mdrbar_sig_free->file,rbar_free_dict[13].keyarg);
+  strcpy(mdrbar_sig_free->file,rbar_free_dict[13].keyarg);
   /*-----------------------------------------------------------------------*/
 
-/*=========================================================================*/
-/* III) Use the data and malloc                                            */
+  /*=========================================================================*/
+  /* III) Use the data and malloc                                            */
 
   mdrbar_sig_free->del_bar = ((mdrbar_sig_free->rmax)- (mdrbar_sig_free->rmin))/
-                           ((double)(mdrbar_sig_free->nhist_bar));
+    ((double)(mdrbar_sig_free->nhist_bar));
   mdrbar_sig_free->del_sig = ((mdrbar_sig_free->smax)- (mdrbar_sig_free->smin))/
-                           ((double)(mdrbar_sig_free->nhist_sig));
+    ((double)(mdrbar_sig_free->nhist_sig));
 
   num                    = mdrbar_sig_free->nfree;
   mdrbar_sig_free->rnfree  = (double) num;
 
   free_parse->imoltyp_rbar1_free = 
-         (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
+    (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
   free_parse->imoltyp_rbar2_free = 
-         (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
+    (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
   free_parse->imol_rbar1_free    = 
-         (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
+    (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
   free_parse->imol_rbar2_free    = 
-         (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
+    (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
   free_parse->ires_rbar1_free    = 
-         (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
+    (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
   free_parse->ires_rbar2_free    = 
-         (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
+    (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
   free_parse->iatm_rbar1_free    = 
-         (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
+    (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
   free_parse->iatm_rbar2_free    = 
-         (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
+    (int *)cmalloc(num*sizeof(int),"set_rbar_free_params")-1;
 
-/*=========================================================================*/
-/* IV) Read in the indicies                                                */
+  /*=========================================================================*/
+  /* IV) Read in the indicies                                                */
 
   fp = cfopen((const char *)rbar_free_dict[2].keyarg,"r");
 
   if(fscanf(fp,"%d",&num)){}
   readtoendofline(fp);
   if(num!=mdrbar_sig_free->nfree){
-     PRINTF("To have no errors,\n");
-     PRINTF("Would be life without meaning,\n");
-     PRINTF("No struggle, no joy.\n");
-     PRINTF("Number of free energy bonds %d in file %s,\n",num,
-                                             rbar_free_dict[2].keyarg);
-     PRINTF("does not match the request value %d \n",mdrbar_sig_free->nfree);
-     FFLUSH(stdout);
-     EXIT(1);
+    PRINTF("To have no errors,\n");
+    PRINTF("Would be life without meaning,\n");
+    PRINTF("No struggle, no joy.\n");
+    PRINTF("Number of free energy bonds %d in file %s,\n",num,
+        rbar_free_dict[2].keyarg);
+    PRINTF("does not match the request value %d \n",mdrbar_sig_free->nfree);
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
 
   for(i=1;i<=num;i++){
     if(fscanf(fp,"%d %d %d %d",
-               &(free_parse->imoltyp_rbar1_free[i]),
-               &(free_parse->imol_rbar1_free[i]),
-               &(free_parse->ires_rbar1_free[i]),
-	      &(free_parse->iatm_rbar1_free[i]))){}
+          &(free_parse->imoltyp_rbar1_free[i]),
+          &(free_parse->imol_rbar1_free[i]),
+          &(free_parse->ires_rbar1_free[i]),
+          &(free_parse->iatm_rbar1_free[i]))){}
     readtoendofline(fp);
     if(fscanf(fp,"%d %d %d %d",
-               &(free_parse->imoltyp_rbar2_free[i]),
-               &(free_parse->imol_rbar2_free[i]),
-               &(free_parse->ires_rbar2_free[i]),
-	      &(free_parse->iatm_rbar2_free[i]))){}
+          &(free_parse->imoltyp_rbar2_free[i]),
+          &(free_parse->imol_rbar2_free[i]),
+          &(free_parse->ires_rbar2_free[i]),
+          &(free_parse->iatm_rbar2_free[i]))){}
     readtoendofline(fp);
   }/*endfor*/
 
   fclose(fp);
 
-/*-----------------------------------------------------------------------*/
-   }/*end routine*/
+  /*-----------------------------------------------------------------------*/
+}/*end routine*/
 /*==========================================================================*/

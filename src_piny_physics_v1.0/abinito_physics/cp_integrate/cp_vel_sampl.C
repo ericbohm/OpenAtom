@@ -3,7 +3,7 @@
 //==========================================================================
 /** \file name cp_integrate_dyn
  ** \brief The physics routines sample fictitious wavefunctions (psi)
-    velocities and CPNHC velocities for CPAIMD evolution
+ velocities and CPNHC velocities for CPAIMD evolution
  */
 //==========================================================================
 #include "standard_include.h"
@@ -21,34 +21,34 @@
 //============================================================================
 /* 
  ** \brief Sample fictictious velocities for the psi and CPNHC variables for
-   evoluation under CPAIMD
+ evoluation under CPAIMD
  */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,int nck_nhc,
-                            double *mNHC,double ***vNHC,double ***xNHC, double ***xNHCP,
-                            double *a2NHC, double kT,int istart_typ_cp,
-                            int nkx0_red,int nkx0_uni,int nkx0_zero,
-                            double degfree,double degfreeNHC)
-//============================================================================
-    {//Begin Function
-//============================================================================
-// Sample the velocities 
+    double *mNHC,double ***vNHC,double ***xNHC, double ***xNHCP,
+    double *a2NHC, double kT,int istart_typ_cp,
+    int nkx0_red,int nkx0_uni,int nkx0_zero,
+    double degfree,double degfreeNHC)
+  //============================================================================
+{//Begin Function
+  //============================================================================
+  // Sample the velocities 
 
   if(istart_typ_cp<3){
-     double *vtmp = new double [n];
-       sampl1DVelOneT(n,vtmp,m,kT);
-       for(int i=0;i<n;i++){v[i].re = vtmp[i];}
-       sampl1DVelOneT(n,vtmp,m,kT);
-       for(int i=0;i<n;i++){v[i].im = vtmp[i];}
-     delete [] vtmp;
+    double *vtmp = new double [n];
+    sampl1DVelOneT(n,vtmp,m,kT);
+    for(int i=0;i<n;i++){v[i].re = vtmp[i];}
+    sampl1DVelOneT(n,vtmp,m,kT);
+    for(int i=0;i<n;i++){v[i].im = vtmp[i];}
+    delete [] vtmp;
   }//endif
   cpSamplNHC(len_nhc,num_nhc,nck_nhc,vNHC,xNHC,xNHCP,mNHC,a2NHC,kT);
 
-//============================================================================
-// Scale the velocities
-  
+  //============================================================================
+  // Scale the velocities
+
   if(istart_typ_cp<3){
     int istrt0 = nkx0_red;
     int istrt  = nkx0_red+nkx0_zero;
@@ -65,8 +65,8 @@ void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,i
     for(int i=0;i<n;i++){v[i].re *= scale;  v[i].im *= scale;}
   }//endif
 
-//============================================================================
-    }// End function
+  //============================================================================
+}// End function
 //============================================================================
 
 
@@ -78,124 +78,124 @@ void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,i
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==================================================================== 
 void CPINTEGRATE::sampl1DVelOneT(int n, double* v,double* mass,
-                                   double  kT)
-//=================================================================== 
-   {//begin routine 
-//===================================================================
+    double  kT)
+  //=================================================================== 
+{//begin routine 
+  //===================================================================
 
   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();                  
 #include "../class_defs/allclass_strip_mdintegrate.h"
-   double *qseed  =  &(mdvel_samp->qseed);
-   long   *iseed  =  &(mdvel_samp->iseed);
-   long   *iseed2 =  &(mdvel_samp->iseed2);
+  double *qseed  =  &(mdvel_samp->qseed);
+  long   *iseed  =  &(mdvel_samp->iseed);
+  long   *iseed2 =  &(mdvel_samp->iseed2);
 
-//===================================================================
-// Sample unit gaussian
+  //===================================================================
+  // Sample unit gaussian
 
-   double *temp  = new double[n];
-   double *ptemp = temp-1;
+  double *temp  = new double[n];
+  double *ptemp = temp-1;
 
-   gaussran(n,iseed,iseed2,qseed,ptemp);
-   for(int i=0;i<n;i++){v[i] = temp[i]; }
+  gaussran(n,iseed,iseed2,qseed,ptemp);
+  for(int i=0;i<n;i++){v[i] = temp[i]; }
 
-   delete [] temp;
+  delete [] temp;
 
-//===================================================================
-// Apply the width
+  //===================================================================
+  // Apply the width
 
-   for(int i=0;i<n;i++){
-     double width = sqrt(kT/mass[i]); //kT has boltz
-     v[i] *= width;
-   }//endfor 
+  for(int i=0;i<n;i++){
+    double width = sqrt(kT/mass[i]); //kT has boltz
+    v[i] *= width;
+  }//endfor 
 
-//------------------------------------------------------------------
- } //end routine 
+  //------------------------------------------------------------------
+} //end routine 
 //=================================================================== 
 
 //============================================================================
 /* 
  ** \brief Use gaussian random numbers to sample CPNHC velocities 
-           and initial positions from Maxwell Boltz
+ and initial positions from Maxwell Boltz
  */
 //==================================================================== 
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==================================================================== 
 void CPINTEGRATE::cpSamplNHC(int len,int num,int nck,
-                             double*** v,double ***x,double ***xp,
-                             double *mass, double *a2,  double  kT)
-//=================================================================== 
-   {//begin routine 
-//===================================================================
+    double*** v,double ***x,double ***xp,
+    double *mass, double *a2,  double  kT)
+  //=================================================================== 
+{//begin routine 
+  //===================================================================
 
   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();                  
 #include "../class_defs/allclass_strip_mdintegrate.h"
-   double *qseed  =  &(mdvel_samp->qseed);
-   long   *iseed  =  &(mdvel_samp->iseed);
-   long   *iseed2 =  &(mdvel_samp->iseed2);
+  double *qseed  =  &(mdvel_samp->qseed);
+  long   *iseed  =  &(mdvel_samp->iseed);
+  long   *iseed2 =  &(mdvel_samp->iseed2);
 
-//===================================================================
-// Sample unit gaussian
+  //===================================================================
+  // Sample unit gaussian
 
-   int n = num*len*nck;
-   double *temp  = new double[n];
-   double *ptemp = temp-1;
+  int n = num*len*nck;
+  double *temp  = new double[n];
+  double *ptemp = temp-1;
 
-   gaussran(n,iseed,iseed2,qseed,ptemp);
-   int iii=0;
-   for(int k=0;k<nck;k++){
-   for(int i=0;i<num;i++){
-   for(int j=0;j<len;j++){
-     v[k][i][j]=temp[iii];
-     iii++;
-   }}}//endfor
+  gaussran(n,iseed,iseed2,qseed,ptemp);
+  int iii=0;
+  for(int k=0;k<nck;k++){
+    for(int i=0;i<num;i++){
+      for(int j=0;j<len;j++){
+        v[k][i][j]=temp[iii];
+        iii++;
+      }}}//endfor
 
-   gaussran(n,iseed,iseed2,qseed,ptemp);
+  gaussran(n,iseed,iseed2,qseed,ptemp);
 
-   iii=0;
-   for(int k=0;k<nck;k++){   
-   for(int i=0;i<num;i++){
-   for(int j=0;j<len;j++){
-     xp[k][i][j]=temp[iii];
-     iii++;
-   }}}//endfor
+  iii=0;
+  for(int k=0;k<nck;k++){   
+    for(int i=0;i<num;i++){
+      for(int j=0;j<len;j++){
+        xp[k][i][j]=temp[iii];
+        iii++;
+      }}}//endfor
 
-   delete []temp;
+  delete []temp;
 
-//===================================================================
-// Add the width
+  //===================================================================
+  // Add the width
 
-   for(int k=0;k<nck;k++){
-   for(int j=0;j<len;j++){
-     double width = sqrt(kT/mass[j]); //kT has boltz
-     for(int i=0;i<num;i++){
-       v[k][i][j]  *= width;
-       xp[k][i][j] *= sqrt(a2[i]);
-     }//endfor
-   }}//endfor
+  for(int k=0;k<nck;k++){
+    for(int j=0;j<len;j++){
+      double width = sqrt(kT/mass[j]); //kT has boltz
+      for(int i=0;i<num;i++){
+        v[k][i][j]  *= width;
+        xp[k][i][j] *= sqrt(a2[i]);
+      }//endfor
+    }}//endfor
 
-//===================================================================
-// Apply isokinetic constraint to each dimer
+  //===================================================================
+  // Apply isokinetic constraint to each dimer
 
-   if(len!=2){
-     PRINTF("@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@\n");
-     PRINTF("Deprecated len_nhc_cp %d \n",len);
-     PRINTF("len_nhc_cp must be equal to 2 now\n");
-     PRINTF("@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@\n");
-     EXIT(1);
-   }//endif
+  if(len!=2){
+    PRINTF("@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@\n");
+    PRINTF("Deprecated len_nhc_cp %d \n",len);
+    PRINTF("len_nhc_cp must be equal to 2 now\n");
+    PRINTF("@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
 
-   for(int k=0;k<nck;k++){
-   for(int i=0;i<num;i++){
-     double ekin = mass[0]*v[k][i][0]*v[k][i][0]
-                 + mass[1]*v[k][i][1]*v[k][i][1];
-     double sc   = sqrt(kT/ekin);
-     x[k][i][0] = 0.0;
-     v[k][i][0] *= sc;
-     v[k][i][1] *= sc;
-   }}//endfor
+  for(int k=0;k<nck;k++){
+    for(int i=0;i<num;i++){
+      double ekin = mass[0]*v[k][i][0]*v[k][i][0]
+        + mass[1]*v[k][i][1]*v[k][i][1];
+      double sc   = sqrt(kT/ekin);
+      x[k][i][0] = 0.0;
+      v[k][i][0] *= sc;
+      v[k][i][1] *= sc;
+    }}//endfor
 
-//------------------------------------------------------------------
-  } //end routine 
+  //------------------------------------------------------------------
+} //end routine 
 //=================================================================== 
 
 //============================================================================
@@ -206,20 +206,20 @@ void CPINTEGRATE::cpSamplNHC(int len,int num,int nck,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPINTEGRATE::CPrandomPsi(int n, int ntot, complex *psi){
-//============================================================================
+  //============================================================================
   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();                  
 #include "../class_defs/allclass_strip_mdintegrate.h"
-   double *qseed  =  &(mdvel_samp->qseed);
-   long   *iseed  =  &(mdvel_samp->iseed);
-   long   *iseed2 =  &(mdvel_samp->iseed2);
+  double *qseed  =  &(mdvel_samp->qseed);
+  long   *iseed  =  &(mdvel_samp->iseed);
+  long   *iseed2 =  &(mdvel_samp->iseed2);
 
-   for(int i=0;i<n;i++){
-     double xxx  = altRandom(iseed)-0.5;
-     double yyy  = altRandom(iseed)-0.5;
-     double size = (psi[i].re*psi[i].re+psi[i].im*psi[i].im)*1.e-05;
-     psi[i].re += xxx*size;
-     psi[i].im += yyy*size;
-   }//endfor
-//============================================================================
-  }//end routine
+  for(int i=0;i<n;i++){
+    double xxx  = altRandom(iseed)-0.5;
+    double yyy  = altRandom(iseed)-0.5;
+    double size = (psi[i].re*psi[i].re+psi[i].im*psi[i].im)*1.e-05;
+    psi[i].re += xxx*size;
+    psi[i].im += yyy*size;
+  }//endfor
+  //============================================================================
+}//end routine
 //============================================================================

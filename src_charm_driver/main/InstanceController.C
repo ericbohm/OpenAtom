@@ -43,26 +43,26 @@ InstanceController::InstanceController() {
   // 0th k, 0th spin makes this to lockdown everyone so the atoms
   // shared across all k and spin can start sanely
   if((config.UberMmax >1 || config.UberJmax>1) && instance.idxU.y==0 && instance.idxU.s==0)
+  {
+    // make section for k-points and spins
+    CkVec <CkArrayIndex1D> elems;
+    for(int kp =0; kp<config.UberJmax; kp++)
     {
-      // make section for k-points and spins
-      CkVec <CkArrayIndex1D> elems;
-      for(int kp =0; kp<config.UberJmax; kp++)
-	{
-	  instance.idxU.y=kp;
-	  for(int spin =0; spin<config.UberMmax; spin++)
-	    {
-	      instance.idxU.s=spin;
-	      instance.setPO();
-	      elems.push_back(CkArrayIndex1D(instance.proxyOffset));
-	    }
-	}
-
-      CProxySection_InstanceController sectProxy=CProxySection_InstanceController::ckNew(thisProxy.ckGetArrayID(),elems.getVec(),elems.size());
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-      sectProxy.ckSectionDelegate(mcastGrp);
-      ICCookieMsg *cookieme=new ICCookieMsg;
-      sectProxy.initCookie(cookieme);
+      instance.idxU.y=kp;
+      for(int spin =0; spin<config.UberMmax; spin++)
+      {
+        instance.idxU.s=spin;
+        instance.setPO();
+        elems.push_back(CkArrayIndex1D(instance.proxyOffset));
+      }
     }
+
+    CProxySection_InstanceController sectProxy=CProxySection_InstanceController::ckNew(thisProxy.ckGetArrayID(),elems.getVec(),elems.size());
+    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+    sectProxy.ckSectionDelegate(mcastGrp);
+    ICCookieMsg *cookieme=new ICCookieMsg;
+    sectProxy.initCookie(cookieme);
+  }
 }
 
 //============================================================================
@@ -72,37 +72,37 @@ void InstanceController::init(){
   UberCollection instance=UberCollection(thisIndex);
   // 0th bead, 0th temper makes this to sync beads and tempers
   if((config.UberImax >1 || config.UberKmax>1) && instance.idxU.x==0 && instance.idxU.z==0)
+  {
+    // make section for beads and tempers
+    int numDestinations=config.UberImax*config.UberKmax;
+    CkArrayID *beadArrayIds= new CkArrayID[numDestinations];
+    CkArrayIndex **elems  = new CkArrayIndex*[numDestinations];
+    int *naelems = new int[numDestinations];
+    for(int bead =0; bead<config.UberImax; bead++)
     {
-      // make section for beads and tempers
-      int numDestinations=config.UberImax*config.UberKmax;
-      CkArrayID *beadArrayIds= new CkArrayID[numDestinations];
-      CkArrayIndex **elems  = new CkArrayIndex*[numDestinations];
-      int *naelems = new int[numDestinations];
-      for(int bead =0; bead<config.UberImax; bead++)
-	{
-	  instance.idxU.x=bead;
-	  for(int temper =0; temper<config.UberKmax; temper++)
-	    {
-	      int index=bead*config.UberKmax+temper;
-	      elems[index]= new CkArrayIndex2D[1];
-	      naelems[index]=1;
-	      instance.idxU.z=temper;
-	      instance.setPO();
-	      CkPrintf("fmag sync section adding bead %d temper %d index %d proxyOffset %d\n",bead, temper, index, instance.proxyOffset);
-	      beadArrayIds[index]=UgSpacePlaneProxy[instance.proxyOffset].ckGetArrayID();
-	      elems[index][0]=CkArrayIndex2D(0,0);
-	    }
-	}
-      //finish setting this up      
-      gTemperBeadProxy=CProxySection_CP_State_GSpacePlane(numDestinations, beadArrayIds, elems, naelems);
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-      gTemperBeadProxy.ckSectionDelegate(mcastGrp);
-      ICCookieMsg *cookieme=new ICCookieMsg;
-      CkCallback *cb = new CkCallback(CkIndex_InstanceController::fmagMinTest(NULL),CkArrayIndex1D(0),thisProxy);
-      mcastGrp->setReductionClient(gTemperBeadProxy,cb);
-      gTemperBeadProxy.initBeadCookie(cookieme);
-      
+      instance.idxU.x=bead;
+      for(int temper =0; temper<config.UberKmax; temper++)
+      {
+        int index=bead*config.UberKmax+temper;
+        elems[index]= new CkArrayIndex2D[1];
+        naelems[index]=1;
+        instance.idxU.z=temper;
+        instance.setPO();
+        CkPrintf("fmag sync section adding bead %d temper %d index %d proxyOffset %d\n",bead, temper, index, instance.proxyOffset);
+        beadArrayIds[index]=UgSpacePlaneProxy[instance.proxyOffset].ckGetArrayID();
+        elems[index][0]=CkArrayIndex2D(0,0);
+      }
     }
+    //finish setting this up      
+    gTemperBeadProxy=CProxySection_CP_State_GSpacePlane(numDestinations, beadArrayIds, elems, naelems);
+    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+    gTemperBeadProxy.ckSectionDelegate(mcastGrp);
+    ICCookieMsg *cookieme=new ICCookieMsg;
+    CkCallback *cb = new CkCallback(CkIndex_InstanceController::fmagMinTest(NULL),CkArrayIndex1D(0),thisProxy);
+    mcastGrp->setReductionClient(gTemperBeadProxy,cb);
+    gTemperBeadProxy.initBeadCookie(cookieme);
+
+  }
 }
 //============================================================================
 
@@ -126,66 +126,66 @@ void InstanceController::fmagMinTest(CkReductionMsg *m){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /** \addtogroup startup
- # Parallel Startup Phases:
+# Parallel Startup Phases:
 
 1.  Phase 0 is kicked off by reaching the end of main. This turns
-    execution completely over to the Charm++ scheduler, at which point it
-    will process the object constructor messages that we triggered in the
-    proxy creation in main.  Object construction will occur
-    in this order + all readonlies will be initialized.  + all groups
-    will be constructed + all arrays will be constructed
+execution completely over to the Charm++ scheduler, at which point it
+will process the object constructor messages that we triggered in the
+proxy creation in main.  Object construction will occur
+in this order + all readonlies will be initialized.  + all groups
+will be constructed + all arrays will be constructed
 
-    The ordering within those phases is non-deterministic, so we don't
-    expect to have control over the ordering of chare array
-    construction.  The upshot of this is that in order to safely make
-    array sections we wait until the objects are constructed and then
-    call a second phase of initialization.  In practice this means
-    that arrays will contribute to reductions during construction and
-    the completion of those reductions will trigger a chain of section
-    creation which will eventually feed back into a reduction that
-    reports to the global startup phase ordering in
-    InstanceController.
+The ordering within those phases is non-deterministic, so we don't
+expect to have control over the ordering of chare array
+construction.  The upshot of this is that in order to safely make
+array sections we wait until the objects are constructed and then
+call a second phase of initialization.  In practice this means
+that arrays will contribute to reductions during construction and
+the completion of those reductions will trigger a chain of section
+creation which will eventually feed back into a reduction that
+reports to the global startup phase ordering in
+InstanceController.
 2. Phase 2 and 3 are automatically triggered during the construction
-    process.  These phases are ortho constructing proxies to sections
-    of the paircalculators.  In each case they construct a section and
-    send a message on that section to its elements to initialize a
-    cookie.  Receipt of that cookie increments a counter and when each
-    PC element has received all the cookies it expects, it contributes
-    to a reduction which reports to InstanceController::doneInit().
-    There is a phase for symmetric and asymmetric calculator, they
-    could complete in either order.
+process.  These phases are ortho constructing proxies to sections
+of the paircalculators.  In each case they construct a section and
+send a message on that section to its elements to initialize a
+cookie.  Receipt of that cookie increments a counter and when each
+PC element has received all the cookies it expects, it contributes
+to a reduction which reports to InstanceController::doneInit().
+There is a phase for symmetric and asymmetric calculator, they
+could complete in either order.
 3.  Phase 4 triggers the post construction initialization of section
-    proxies and cache registrations in RhoReal RhoG RhoGHartExt.  The
-    big ticket item here is the sections of RealSpace made by RhoReal.
-    These operate in the previously described fashion wherein you make
-    a section, initialize the cookies with a dummy message and report
-    on completion via a reduction along the section. When realspace
-    has received as many cookies as there are rhoreal subplanes, it
-    contributes to a reduction reporting to
-    InstanceController::doneInit.
+proxies and cache registrations in RhoReal RhoG RhoGHartExt.  The
+big ticket item here is the sections of RealSpace made by RhoReal.
+These operate in the previously described fashion wherein you make
+a section, initialize the cookies with a dummy message and report
+on completion via a reduction along the section. When realspace
+has received as many cookies as there are rhoreal subplanes, it
+contributes to a reduction reporting to
+InstanceController::doneInit.
 4.  Phase 5 is triggered by the completion of the RS sections. When
-    EES is enabled, phase 5 will launch the section construction and
-    registration process in RealParticlePlane.  The coalesced
-    completion of eesCache, enlSection, and planeRedSection
-    initialization contributes to a single reduction reporting to
-    InstanceController::doneInit.  This phase always triggers the
-    loading and multicasting of the gspace state data from the
-    statefiles. When all elements of gspace are initialized with that
-    data they contribute to a reduction which reports to
-    InstanceController::doneInit.
+EES is enabled, phase 5 will launch the section construction and
+registration process in RealParticlePlane.  The coalesced
+completion of eesCache, enlSection, and planeRedSection
+initialization contributes to a single reduction reporting to
+InstanceController::doneInit.  This phase always triggers the
+loading and multicasting of the gspace state data from the
+statefiles. When all elements of gspace are initialized with that
+data they contribute to a reduction which reports to
+InstanceController::doneInit.
 5.  Phase 6 happens only if EES is enabled, it broadcasts
-    registrationDone to all RealParticlePlane elements.
+registrationDone to all RealParticlePlane elements.
 6.  Phase 7 (or 6 if no realparticleplane) means that all
-    initialization is complete and startup is effectively over.
-    Control is then turned over to the gSpaceDriver::startControl.
-    Some chares will do a little local first iteration initialization
-    after this.  Semantically it should now be safe to engage in any
-    operation as the previous phases should have taken care of any
-    synchronized initialization issues.  */
+initialization is complete and startup is effectively over.
+Control is then turned over to the gSpaceDriver::startControl.
+Some chares will do a little local first iteration initialization
+after this.  Semantically it should now be safe to engage in any
+operation as the previous phases should have taken care of any
+synchronized initialization issues.  */
 /**@{*/
 void InstanceController::doneInit(CkReductionMsg *msg){
-    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
-    CkPrintf("{%d} Done_init for %d userflag %d\n",thisIndex, (int)((int *)msg->getData())[0],msg->getUserFlag());
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+  CkPrintf("{%d} Done_init for %d userflag %d\n",thisIndex, (int)((int *)msg->getData())[0],msg->getUserFlag());
   // This assert should be a formality.
   // Also, when paircalc becomes completely instance unaware, it will fail. This single assert is not enough motivation
   // to provide instance info to the pc/ortho bubble. @todo: remove this assert
@@ -194,58 +194,58 @@ void InstanceController::doneInit(CkReductionMsg *msg){
   if(CPcharmParaInfo::get()->ees_nloc_on==1)
     numPhases++;
   delete msg;
-    double newtime=CmiWallTimer();
-    CkAssert(done_init<numPhases+1);
-    
-    if(done_init<numPhases){
-      CkPrintf("{%d} Completed chare instantiation phase %d in %g\n",thisIndex,done_init+1,newtime-Timer);
-    }
-    if (done_init==3)
-      { // kick off post constructor inits
-	if(thisIndex==0) init();
-	UberCollection thisInstance(thisIndex);
-	if(thisInstance.idxU.y==0)
-	  {
-	    UrhoRealProxy[thisIndex].init();
-	    UrhoGProxy[thisIndex].init();
-	    UrhoGHartExtProxy[thisIndex].init();
-	    if(sim->ees_eext_on)
-	      {UrhoRHartExtProxy[thisIndex].init();}
-	  }
-      }
-    if (done_init == 4){
-      // We do this after we know gsp, pp, rp, rpp exist
-      if(CPcharmParaInfo::get()->ees_nloc_on==1)
-	{UrealParticlePlaneProxy[thisIndex].init();}
-      // kick off file reading in gspace
-      CkPrintf("{%d} Initiating import of states\n",thisIndex);
-      CkPrintf("{%d} IC uGSpacePlaneProxy[%d] is %d\n",thisIndex,thisIndex, CkGroupID(UgSpacePlaneProxy[thisIndex].ckGetArrayID()).idx);
-      for(int s=0;s<nstates;s++) {
-        UgSpacePlaneProxy[thisIndex](s,UplaneUsedByNLZ[thisIndex][s]).readFile();
-      } //endfor
+  double newtime=CmiWallTimer();
+  CkAssert(done_init<numPhases+1);
 
-    }//endif
-    if (done_init == 5 && CPcharmParaInfo::get()->ees_nloc_on==1){
-      CkPrintf("{%d} Completed chare data acquisition phase %d in %g\n",thisIndex, done_init+1,newtime-Timer);
-      UrealParticlePlaneProxy[thisIndex].registrationDone();
+  if(done_init<numPhases){
+    CkPrintf("{%d} Completed chare instantiation phase %d in %g\n",thisIndex,done_init+1,newtime-Timer);
+  }
+  if (done_init==3)
+  { // kick off post constructor inits
+    if(thisIndex==0) init();
+    UberCollection thisInstance(thisIndex);
+    if(thisInstance.idxU.y==0)
+    {
+      UrhoRealProxy[thisIndex].init();
+      UrhoGProxy[thisIndex].init();
+      UrhoGHartExtProxy[thisIndex].init();
+      if(sim->ees_eext_on)
+      {UrhoRHartExtProxy[thisIndex].init();}
     }
+  }
+  if (done_init == 4){
+    // We do this after we know gsp, pp, rp, rpp exist
+    if(CPcharmParaInfo::get()->ees_nloc_on==1)
+    {UrealParticlePlaneProxy[thisIndex].init();}
+    // kick off file reading in gspace
+    CkPrintf("{%d} Initiating import of states\n",thisIndex);
+    CkPrintf("{%d} IC uGSpacePlaneProxy[%d] is %d\n",thisIndex,thisIndex, CkGroupID(UgSpacePlaneProxy[thisIndex].ckGetArrayID()).idx);
+    for(int s=0;s<nstates;s++) {
+      UgSpacePlaneProxy[thisIndex](s,UplaneUsedByNLZ[thisIndex][s]).readFile();
+    } //endfor
 
-    if (done_init >= numPhases) {
-      if (done_init == numPhases){ 
-	//          PRINT_LINE_STAR;
-	CkPrintf("{%d} Chare array launch and initialization complete       \n",thisIndex);
-          if(CPcharmParaInfo::get()->cp_min_opt==1){
-            CkPrintf("{%d} Running Open Atom CP Minimization: \n",thisIndex);
-	  }else{
-            CkPrintf("{%d} Running Open Atom CP Dynamics: \n",thisIndex);
-	  }//endif
-	  //          PRINT_LINE_STAR; CkPrintf("\n");
-	  //          PRINT_LINE_STAR;
-	  UgSpaceDriverProxy[thisIndex].startControl();
+  }//endif
+  if (done_init == 5 && CPcharmParaInfo::get()->ees_nloc_on==1){
+    CkPrintf("{%d} Completed chare data acquisition phase %d in %g\n",thisIndex, done_init+1,newtime-Timer);
+    UrealParticlePlaneProxy[thisIndex].registrationDone();
+  }
+
+  if (done_init >= numPhases) {
+    if (done_init == numPhases){ 
+      //          PRINT_LINE_STAR;
+      CkPrintf("{%d} Chare array launch and initialization complete       \n",thisIndex);
+      if(CPcharmParaInfo::get()->cp_min_opt==1){
+        CkPrintf("{%d} Running Open Atom CP Minimization: \n",thisIndex);
+      }else{
+        CkPrintf("{%d} Running Open Atom CP Dynamics: \n",thisIndex);
       }//endif
-    }
-    Timer=newtime;
-    ++done_init;
+      //          PRINT_LINE_STAR; CkPrintf("\n");
+      //          PRINT_LINE_STAR;
+      UgSpaceDriverProxy[thisIndex].startControl();
+    }//endif
+  }
+  Timer=newtime;
+  ++done_init;
 }
 //============================================================================
 /**@}*/
@@ -254,8 +254,8 @@ void InstanceController::doneInit(CkReductionMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void InstanceController::initCookie(ICCookieMsg *msg){
-    CkGetSectionInfo(allKPcookie, msg);
-    //    delete msg; nokeep
+  CkGetSectionInfo(allKPcookie, msg);
+  //    delete msg; nokeep
 }
 //============================================================================
 
@@ -264,7 +264,7 @@ void InstanceController::initCookie(ICCookieMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void InstanceController::printEnergyHart(CkReductionMsg *msg){
-//============================================================================
+  //============================================================================
   //  double ehart = 0, eext = 0.0, ewd = 0.0;
   void *data=msg->getData();
   double ehart = ((double *)data)[0];
@@ -281,8 +281,8 @@ void InstanceController::printEnergyHart(CkReductionMsg *msg){
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EWD, ewd);
   delete msg;
 
-//============================================================================
-  }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 
@@ -291,7 +291,7 @@ void InstanceController::printEnergyHart(CkReductionMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void InstanceController::printEnergyEexc(CkReductionMsg *msg){
-//============================================================================
+  //============================================================================
 
   double eexc = 0;
   double egga = 0;
@@ -300,11 +300,11 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg){
   egga += ((double *)data)[1];
   FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
   int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
-  
+
   fprintf(temperScreenFile,"Iter [%d] EEXC        = %5.8lf\n", iteration, eexc);
   fprintf(temperScreenFile,"Iter [%d] EGGA        = %5.8lf\n", iteration, egga);
   fprintf(temperScreenFile,"Iter [%d] EEXC+EGGA   = %5.8lf\n", iteration, eexc+egga);
-      
+
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EEXC, eexc);
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EGGA, egga);
 
@@ -314,8 +314,8 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg){
 #endif
   delete msg;
 
-//============================================================================
-  }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 //============================================================================
@@ -323,8 +323,8 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-  void InstanceController::printEnergyEke(CkReductionMsg *m){
-//============================================================================  
+void InstanceController::printEnergyEke(CkReductionMsg *m){
+  //============================================================================  
   double d = ((double *)m->getData())[0];
   delete m;
 #ifdef _CP_DEBUG_SFNL_OFF_
@@ -347,8 +347,8 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-  void InstanceController::printFictEke(CkReductionMsg *m){
-//============================================================================  
+void InstanceController::printFictEke(CkReductionMsg *m){
+  //============================================================================  
   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
   double d0   = ((double *)m->getData())[0];
   double d1   = ((double *)m->getData())[1];
@@ -370,8 +370,8 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg){
   }//endif
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_FICTEKE, d0);  
 
-//============================================================================
-  }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 
@@ -392,34 +392,34 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void InstanceController::allDoneCPForces(CkReductionMsg *m){
-//============================================================================
+  //============================================================================
   delete m;
   // only the 0th instance of each k-point and spin is allowed to do this 
-  
+
   UberCollection thisInstance(thisIndex);
   if(config.UberJmax>1 || config.UberMmax >1 ) 
-    {
-      // contribute to the section which includes all k-points of this
-      // bead
-      long unsigned int foo(1);
-      UberCollection instance=thisInstance;
-      instance.idxU.y=0;
-      int offset=instance.calcPO();
+  {
+    // contribute to the section which includes all k-points of this
+    // bead
+    long unsigned int foo(1);
+    UberCollection instance=thisInstance;
+    instance.idxU.y=0;
+    int offset=instance.calcPO();
 
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-      CkCallback cb(CkIndex_InstanceController::allDoneCPForcesAllKPoint(NULL),CkArrayIndex1D(offset),thisProxy);
-      mcastGrp->contribute(sizeof(long unsigned int),&foo,CkReduction::sum_int,  allKPcookie, cb);
-    }
+    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+    CkCallback cb(CkIndex_InstanceController::allDoneCPForcesAllKPoint(NULL),CkArrayIndex1D(offset),thisProxy);
+    mcastGrp->contribute(sizeof(long unsigned int),&foo,CkReduction::sum_int,  allKPcookie, cb);
+  }
   else
-    {
-      FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
-      int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
+  {
+    FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
+    int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
 
-      fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration,thisInstance.idxU.x);  
-      UatomsComputeProxy[thisIndex].startRealSpaceForces();
-    }
+    fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration,thisInstance.idxU.x);  
+    UatomsComputeProxy[thisIndex].startRealSpaceForces();
+  }
 
-//============================================================================
+  //============================================================================
 }//end routine
 //============================================================================
 
@@ -432,8 +432,8 @@ void InstanceController::allDoneCPForcesAllKPoint(CkReductionMsg *m){
   FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
   int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
 
-      fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration,thisInstance.idxU.x);  
-      UatomsComputeProxy[thisIndex].startRealSpaceForces();
+  fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration,thisInstance.idxU.x);  
+  UatomsComputeProxy[thisIndex].startRealSpaceForces();
 }
 
 //============================================================================
@@ -448,7 +448,7 @@ void InstanceController::cleanExit(CkReductionMsg *m)
   delete m;
   int exited=1;
   contribute(sizeof(int), &exited, CkReduction::sum_int, 
-	     CkCallback(CkIndex_InstanceController::cleanExitAll(NULL),CkArrayIndex1D(0),thisProxy), 0);
+      CkCallback(CkIndex_InstanceController::cleanExitAll(NULL),CkArrayIndex1D(0),thisProxy), 0);
 }
 
 
@@ -461,20 +461,20 @@ void InstanceController::acceptNewTemperature(double temperature){
   // NOTE: this should be done using a section
   //  CkPrintf("[%d] acceptNewTemperature\n",thisIndex);
   UberCollection anIndex(thisIndex);
-    for(int integral=0; integral< config.UberImax; integral++)
-      {
-	anIndex.idxU.x=integral;
-      for(int kpoint=0; kpoint< config.UberJmax; kpoint++)
-	{
-	  anIndex.idxU.y=kpoint;
-	    for(int spin=0; spin< config.UberMmax; spin++) {
-	      anIndex.idxU.s=spin;
-	      anIndex.setPO();
-	      thisProxy[anIndex.proxyOffset].useNewTemperature(temperature);
-	    }
-	}
+  for(int integral=0; integral< config.UberImax; integral++)
+  {
+    anIndex.idxU.x=integral;
+    for(int kpoint=0; kpoint< config.UberJmax; kpoint++)
+    {
+      anIndex.idxU.y=kpoint;
+      for(int spin=0; spin< config.UberMmax; spin++) {
+        anIndex.idxU.s=spin;
+        anIndex.setPO();
+        thisProxy[anIndex.proxyOffset].useNewTemperature(temperature);
       }
-    
+    }
+  }
+
 }
 //============================================================================
 

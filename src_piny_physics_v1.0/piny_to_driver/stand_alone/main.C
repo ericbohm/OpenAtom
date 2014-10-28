@@ -44,10 +44,10 @@
 
 int main (int argc, char *argv[])
 
-//==========================================================================
-   {// begin routine  
-//==========================================================================
-//   Local Variables 
+  //==========================================================================
+{// begin routine  
+  //==========================================================================
+  //   Local Variables 
 
   int pi_beads,ip,natm_tot;
   int iextended_on,num_nhc,len_nhc;
@@ -59,14 +59,14 @@ int main (int argc, char *argv[])
   GENERAL_DATA   general_data;
   CP             cp; 
 
-// classes to read in position data for leanMD
+  // classes to read in position data for leanMD
   MDCLATOMS_POS *mdclatoms_pos;
   MDTHERM_POS    therm_class;
   MDTHERM_POS   *therm_bead;
 
 
-//=======================================================================
-//  I)             Check for input file                                  
+  //=======================================================================
+  //  I)             Check for input file                                  
 
   if(argc < 2) {
     printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -76,13 +76,13 @@ int main (int argc, char *argv[])
     exit(1);
   }//endif
 
-//=======================================================================
-// II)            Invoke User Interface                                  
+  //=======================================================================
+  // II)            Invoke User Interface                                  
 
   parse(&mdintegrate,&mdatoms,&mdinter,&mdintra,&general_data,&cp,argv[1]);
 
-//=======================================================================
-// III) output state of classes 
+  //=======================================================================
+  // III) output state of classes 
 
 #define DEBUG_PARSE
 #ifdef DEBUG_PARSE
@@ -94,28 +94,28 @@ int main (int argc, char *argv[])
   cp.state_class_out(); 
 #endif
 
-//=======================================================================
-// IV) Allocate classes, read the coordinates 
+  //=======================================================================
+  // IV) Allocate classes, read the coordinates 
 
   pi_beads      = (mdatoms.mdclatoms_info.pi_beads);
   natm_tot      = (mdatoms.mdclatoms_info.natm_tot);
   iextended_on  = (mdintegrate.mdtherm_info.iextended_on);
 
   mdclatoms_pos = (MDCLATOMS_POS *)
-                   cmalloc(pi_beads*sizeof(MDCLATOMS_POS),"main.C")-1;
+    cmalloc(pi_beads*sizeof(MDCLATOMS_POS),"main.C")-1;
 
   for(ip=1;ip<=pi_beads;ip++){
-   mdclatoms_pos[ip].natm_tot = natm_tot;
-   mdclatoms_pos[ip].x = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-   mdclatoms_pos[ip].y = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-   mdclatoms_pos[ip].z = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-   mdclatoms_pos[ip].vx =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-   mdclatoms_pos[ip].vy =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-   mdclatoms_pos[ip].vz =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+    mdclatoms_pos[ip].natm_tot = natm_tot;
+    mdclatoms_pos[ip].x = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+    mdclatoms_pos[ip].y = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+    mdclatoms_pos[ip].z = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+    mdclatoms_pos[ip].vx =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+    mdclatoms_pos[ip].vy =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+    mdclatoms_pos[ip].vz =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
   }// endfor
 
   therm_bead    = (MDTHERM_POS *)
-                   cmalloc(pi_beads*sizeof(MDTHERM_POS),"main.C")-1;
+    cmalloc(pi_beads*sizeof(MDTHERM_POS),"main.C")-1;
 
   if(iextended_on==1){
     num_nhc = (mdintegrate.mdtherm_info.num_nhc);
@@ -127,18 +127,18 @@ int main (int argc, char *argv[])
   }// endif
 
   read_coord(&mdintegrate,&mdatoms,&mdinter,&mdintra,&general_data,&cp,
-             mdclatoms_pos,&therm_class,therm_bead);
+      mdclatoms_pos,&therm_class,therm_bead);
 
-//=======================================================================
-// V)  Exit, stage left 
+  //=======================================================================
+  // V)  Exit, stage left 
 
   fflush(stdout);
   fflush(stderr);
   exit(0); 
   return 0;
 
-//----------------------------------------------------------------------
-   }//end routine
+  //----------------------------------------------------------------------
+}//end routine
 //==========================================================================
 
 

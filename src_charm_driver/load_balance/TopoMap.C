@@ -31,32 +31,32 @@
 int GSMap::procNum(int handle, const CkArrayIndex &iIndex)
 {
 #if CMK_TRACE_ENABLED
-  	double StartTime=CmiWallTimer();
+  double StartTime=CmiWallTimer();
 #endif
 
-	int *index=(int *) iIndex.data();
+  int *index=(int *) iIndex.data();
 #if 0
-	if(maptable==NULL)
-	{
-	  CkPrintf("Warning! GSMap::procnum had to assign maptable on pe %d!\n",CkMyPe());
+  if(maptable==NULL)
+  {
+    CkPrintf("Warning! GSMap::procnum had to assign maptable on pe %d!\n",CkMyPe());
 #ifdef USE_INT_MAP
-	  maptable= &GSImaptable;
+    maptable= &GSImaptable;
 #else
-	  maptable= &GSmaptable;
+    maptable= &GSmaptable;
 #endif
-	}
+  }
 #endif
 
 #ifdef USE_INT_MAP
-	int retval=maptable->get(index[0],index[1]);
+  int retval=maptable->get(index[0],index[1]);
 #else
-	int retval=maptable->get(intdual(index[0],index[1]));
+  int retval=maptable->get(intdual(index[0],index[1]));
 #endif
 #if CMK_TRACE_ENABLED
-	traceUserBracketEvent(10000, StartTime, CmiWallTimer());
+  traceUserBracketEvent(10000, StartTime, CmiWallTimer());
 #endif
 
-	return retval;
+  return retval;
 }
 
 /** Function for PairCalc objects
@@ -69,39 +69,39 @@ int GSMap::procNum(int handle, const CkArrayIndex &iIndex)
 int SCalcMap::procNum(int handle, const CkArrayIndex &iIndex)
 {
 #if CMK_TRACE_ENABLED
-  	double StartTime=CmiWallTimer();
+  double StartTime=CmiWallTimer();
 #endif
 
 
 #if 0
-	/* this works due to 4D being stored as 2 ints */
-	if(maptable==NULL)
-	{
-	  CkPrintf("Warning! SCalc::Procnum had to assign maptable on %d !\n",CkMyPe());
+  /* this works due to 4D being stored as 2 ints */
+  if(maptable==NULL)
+  {
+    CkPrintf("Warning! SCalc::Procnum had to assign maptable on %d !\n",CkMyPe());
 #ifdef USE_INT_MAP
-	  if(symmetric)
-	    maptable= &SymScalcImaptable;
-	  else
-	    maptable= &AsymScalcImaptable;
+    if(symmetric)
+      maptable= &SymScalcImaptable;
+    else
+      maptable= &AsymScalcImaptable;
 #else
-	  if(symmetric)
-	    maptable= &SymScalcmaptable;
-	  else
-	    maptable= &AsymScalcmaptable;
+    if(symmetric)
+      maptable= &SymScalcmaptable;
+    else
+      maptable= &AsymScalcmaptable;
 #endif
-	}
+  }
 #endif
 #ifdef USE_INT_MAP
-	short *sindex=(short *) iIndex.data();
-	int retval=maptable->get(sindex[0], sindex[1], sindex[2], sindex[3]);
+  short *sindex=(short *) iIndex.data();
+  int retval=maptable->get(sindex[0], sindex[1], sindex[2], sindex[3]);
 #else
-	int *index=(int *) iIndex.data();
-	int retval=maptable->get(intdual(index[0], index[1]));
+  int *index=(int *) iIndex.data();
+  int retval=maptable->get(intdual(index[0], index[1]));
 #endif
 #if CMK_TRACE_ENABLED
-	traceUserBracketEvent(30000, StartTime, CmiWallTimer());
+  traceUserBracketEvent(30000, StartTime, CmiWallTimer());
 #endif
-	return retval;
+  return retval;
 }
 
 /** Function for RealSpace objects
@@ -111,57 +111,57 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &iIndex)
 int RSMap::procNum(int handle, const CkArrayIndex &iIndex)
 {
 #if CMK_TRACE_ENABLED
-  	double StartTime=CmiWallTimer();
+  double StartTime=CmiWallTimer();
 #endif
 
-	int *index=(int *) iIndex.data();
+  int *index=(int *) iIndex.data();
 #if 0
-	if(maptable==NULL)
-	{
-	  CkPrintf("Warning! RSMap::Procnum had to assign maptable on %d!\n",CkMyPe());
+  if(maptable==NULL)
+  {
+    CkPrintf("Warning! RSMap::Procnum had to assign maptable on %d!\n",CkMyPe());
 #ifdef USE_INT_MAP
-	  maptable= &RSImaptable;
+    maptable= &RSImaptable;
 #else
-	  maptable= &RSmaptable;
+    maptable= &RSmaptable;
 #endif
-	}
+  }
 #endif
 
 #ifdef USE_INT_MAP
-	int retval=maptable->get(index[0], index[1]);
+  int retval=maptable->get(index[0], index[1]);
 #else
-	int retval=maptable->get(intdual(index[0], index[1]));
+  int retval=maptable->get(intdual(index[0], index[1]));
 #endif
 #if CMK_TRACE_ENABLED
-	traceUserBracketEvent(20000, StartTime, CmiWallTimer());
+  traceUserBracketEvent(20000, StartTime, CmiWallTimer());
 #endif
 
-	return retval;
+  return retval;
 
 }
 
 int RSPMap::procNum(int handle, const CkArrayIndex &index)
 {
-	CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &index;
+  CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &index;
 
 #if 0
-	if(maptable==NULL)
-	{
-	  CkPrintf("Warning! RSMap::Procnum had to assign maptable on %d!\n",CkMyPe());
+  if(maptable==NULL)
+  {
+    CkPrintf("Warning! RSMap::Procnum had to assign maptable on %d!\n",CkMyPe());
 #ifdef USE_INT_MAP
-	  maptable= &RSPImaptable;
+    maptable= &RSPImaptable;
 #else
-	  maptable= &RSPmaptable;
+    maptable= &RSPmaptable;
 #endif
-	}
+  }
 #endif 
 
 #ifdef USE_INT_MAP
-	int retval=maptable->get(idx2d.index[0], idx2d.index[1]);
+  int retval=maptable->get(idx2d.index[0], idx2d.index[1]);
 #else
-	int retval=maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+  int retval=maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
 #endif
-	return retval;
+  return retval;
 
 }
 
@@ -174,46 +174,46 @@ int RhoRSMap::procNum(int arrayHdl, const CkArrayIndex &iIndex)
 {
   int *index=(int *) iIndex.data();
 
-      if(maptable==NULL)
-      {
-	CkPrintf("Warning! RhoRSMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
+  if(maptable==NULL)
+  {
+    CkPrintf("Warning! RhoRSMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
 #ifdef USE_INT_MAP
-        maptable= &RhoRSImaptable;
+    maptable= &RhoRSImaptable;
 #else
-        maptable= &RhoRSmaptable;
+    maptable= &RhoRSmaptable;
 #endif
 
-      }  
+  }  
 #ifdef USE_INT_MAP
-	int retval=maptable->get(index[0], 0);
+  int retval=maptable->get(index[0], 0);
 #else
-	int retval=maptable->get(intdual(index[0], 0));
+  int retval=maptable->get(intdual(index[0], 0));
 #endif
-	return retval;
+  return retval;
 
 }
 
-    
+
 int RhoGSMap::procNum(int arrayHdl, const CkArrayIndex &iIndex)
 {
   int *index=(int *) iIndex.data();
-      if(maptable==NULL)
-      {
-	CkPrintf("Warning! RhoGSMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
+  if(maptable==NULL)
+  {
+    CkPrintf("Warning! RhoGSMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
 #ifdef USE_INT_MAP
-        maptable= &RhoGSImaptable;
+    maptable= &RhoGSImaptable;
 #else
-        maptable= &RhoGSmaptable;
+    maptable= &RhoGSmaptable;
 #endif
-      }  
+  }  
 #ifdef USE_INT_MAP
-      int retval=maptable->get(index[0], 0);
+  int retval=maptable->get(index[0], 0);
 #else
-      int retval=maptable->get(intdual(index[0], 0));
+  int retval=maptable->get(intdual(index[0], 0));
 #endif
-      CkAssert(retval>=0);
-      CkAssert(retval<CkNumPes());
-      return retval;
+  CkAssert(retval>=0);
+  CkAssert(retval<CkNumPes());
+  return retval;
 
 }
 
@@ -221,47 +221,47 @@ int RhoGSMap::procNum(int arrayHdl, const CkArrayIndex &iIndex)
 int RhoGHartMap::procNum(int arrayHdl, const CkArrayIndex &iIndex)
 {
   int *index=(int *) iIndex.data();
-      if(maptable==NULL)
-      {
-	CkPrintf("Warning! RhoGHartMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
+  if(maptable==NULL)
+  {
+    CkPrintf("Warning! RhoGHartMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
 #ifdef USE_INT_MAP
-        maptable= &RhoGHartImaptable;
+    maptable= &RhoGHartImaptable;
 #else
-        maptable= &RhoGHartmaptable;
+    maptable= &RhoGHartmaptable;
 #endif
 
-      }  
+  }  
 #ifdef USE_INT_MAP
-      int retval=maptable->get(index[0], 0);
+  int retval=maptable->get(index[0], 0);
 #else
-      int retval=maptable->get(intdual(index[0], 0));
+  int retval=maptable->get(intdual(index[0], 0));
 #endif
-      CkAssert(retval>=0);
-      CkAssert(retval<CkNumPes());
-      return retval;
+  CkAssert(retval>=0);
+  CkAssert(retval<CkNumPes());
+  return retval;
 
 }    
 
 int RhoRHartMap::procNum(int arrayHdl, const CkArrayIndex &idx)
 {
-      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
-      if(maptable==NULL)
-      {
-	CkPrintf("Warning! RhoRHartMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
+  CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+  if(maptable==NULL)
+  {
+    CkPrintf("Warning! RhoRHartMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
 #ifdef USE_INT_MAP
-        maptable= &RhoRHartImaptable;
+    maptable= &RhoRHartImaptable;
 #else
-        maptable= &RhoRHartmaptable;
+    maptable= &RhoRHartmaptable;
 #endif
 
-      }  
+  }  
 #ifdef USE_INT_MAP
-      int retval=maptable->get(idx2d.index[0], 0);
+  int retval=maptable->get(idx2d.index[0], 0);
 #else
-      int retval=maptable->get(intdual(idx2d.index[0], 0));
+  int retval=maptable->get(intdual(idx2d.index[0], 0));
 #endif
-      CkAssert(retval>=0);
-      CkAssert(retval<CkNumPes());
-      return retval;
+  CkAssert(retval>=0);
+  CkAssert(retval<CkNumPes());
+  return retval;
 
 }    

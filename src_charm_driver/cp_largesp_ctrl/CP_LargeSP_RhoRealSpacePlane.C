@@ -54,8 +54,8 @@ bool is_pow2(int );
 
 
 /** @addtogroup LargeSparse
-    @{
-*/
+  @{
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -66,37 +66,37 @@ bool is_pow2(int );
 //
 //============================================================================
 CP_LargeSP_RhoRealSpacePlane::CP_LargeSP_RhoRealSpacePlane(
-					     UberCollection _instance) :
+    UberCollection _instance) :
   thisInstance(_instance)
-//============================================================================
-   {//begin routine
-//============================================================================
+  //============================================================================
+{//begin routine
+  //============================================================================
 
 #ifdef _CP_DEBUG_LARGESP_RHOREAL_VERBOSE_
-    CkPrintf("[%d %d] LargeSP_RhoReal constructs \n",thisIndex.x, thisIndex.y);
+  CkPrintf("[%d %d] LargeSP_RhoReal constructs \n",thisIndex.x, thisIndex.y);
 #endif
 
-//============================================================================
-// Get parameters from the globals/groups
+  //============================================================================
+  // Get parameters from the globals/groups
 
-    CPcharmParaInfo *sim = CPcharmParaInfo::get();
-
-
-
-//============================================================================
-// handle class member local initialization
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
 
 
 
-//============================================================================
-// Migration
-
-    usesAtSync = true;
-    setMigratable(false);
+  //============================================================================
+  // handle class member local initialization
 
 
-//---------------------------------------------------------------------------
-   }//end routine
+
+  //============================================================================
+  // Migration
+
+  usesAtSync = true;
+  setMigratable(false);
+
+
+  //---------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 /** post constructor initialization */
@@ -105,9 +105,9 @@ CP_LargeSP_RhoRealSpacePlane::CP_LargeSP_RhoRealSpacePlane(
 //============================================================================
 void CP_LargeSP_RhoRealSpacePlane::init(){
 
-// place holder
+  // place holder
 
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 }
 //============================================================================
 
@@ -117,7 +117,7 @@ void CP_LargeSP_RhoRealSpacePlane::init(){
 //============================================================================
 CP_LargeSP_RhoRealSpacePlane::~CP_LargeSP_RhoRealSpacePlane(){
 
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 }
 //============================================================================
 
@@ -129,8 +129,8 @@ CP_LargeSP_RhoRealSpacePlane::~CP_LargeSP_RhoRealSpacePlane(){
 //============================================================================
 void CP_LargeSP_RhoRealSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
-//---------------------------------------------------------------------------
-   }//end routine
+  //---------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 
@@ -144,17 +144,17 @@ void CP_LargeSP_RhoRealSpacePlane::pup(PUP::er &p){
  */
 //============================================================================
 void CP_LargeSP_RhoRealSpacePlane::acceptRhoR() {
-//============================================================================
+  //============================================================================
 
 #ifdef _CP_DEBUG_LARGE_RHOREAL_VERBOSE_
-    CkPrintf("[%d,%d] LSP_RhoReal accepting Density %d \n",
-              thisIndex.x,thisIndex.y,CkMyPe());
+  CkPrintf("[%d,%d] LSP_RhoReal accepting Density %d \n",
+      thisIndex.x,thisIndex.y,CkMyPe());
 #endif
 
 
 
-//----------------------------------------------------------------------------
-  }//end routine
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 //============================================================================
@@ -167,17 +167,17 @@ void CP_LargeSP_RhoRealSpacePlane::acceptRhoR() {
  */
 //============================================================================
 void CP_LargeSP_RhoRealSpacePlane::acceptLSPRhoG() {
-//============================================================================
+  //============================================================================
 
 #ifdef _CP_DEBUG_LARGE_RHOREAL_VERBOSE_
-    CkPrintf("[%d, %d] LSP_RhoReal accepting LSPRhoG %d\n",
-              thisIndex.x,thisIndex.y,CkMyPe());
+  CkPrintf("[%d, %d] LSP_RhoReal accepting LSPRhoG %d\n",
+      thisIndex.x,thisIndex.y,CkMyPe());
 #endif
 
 
 
-//----------------------------------------------------------------------------
-  }//end routine
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 

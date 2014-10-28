@@ -7,7 +7,7 @@ class OATOM_MAINCHARE:public CBase_OATOM_MAINCHARE{
 
   public :
     OATOM_MAINCHARE(CkArgMsg *);      // constructor 
-   ~OATOM_MAINCHARE(){};
+    ~OATOM_MAINCHARE(){};
 
 }; // end class
 

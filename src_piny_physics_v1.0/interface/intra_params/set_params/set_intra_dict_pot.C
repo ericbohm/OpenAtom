@@ -38,7 +38,7 @@ void set_potbond_dict(DICT_WORD *bond_dict[],int *num_bond_dict,int ifirst)
   if(ifirst==1){
     *num_bond_dict=16;
     *bond_dict = (DICT_WORD *)
-         cmalloc(*num_bond_dict*sizeof(DICT_WORD),"set_potbond_dict")-1;
+      cmalloc(*num_bond_dict*sizeof(DICT_WORD),"set_potbond_dict")-1;
   }/*endif*/
   /*=======================================================================*/
   /* I) Assign the users set flags 0 */
@@ -130,7 +130,7 @@ void set_potbond_dict(DICT_WORD *bond_dict[],int *num_bond_dict,int ifirst)
   strcpy((*bond_dict)[15].keyarg,"");
   strcpy((*bond_dict)[15].error_mes,"");
   /*-----------------------------------------------------------------------*/ 
-}/*end routine*/
+  }/*end routine*/
 /*==========================================================================*/
 
 /*==========================================================================*/
@@ -142,10 +142,10 @@ void set_potbend_dict(DICT_WORD *bend_dict[],int *num_bend_dict,int ifirst)
   /*========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
-     *num_bend_dict=14;
-     *bend_dict = (DICT_WORD *)
-           cmalloc(*num_bend_dict*sizeof(DICT_WORD),"set_potbend_dict")-1;
-   }/*endif*/
+    *num_bend_dict=14;
+    *bend_dict = (DICT_WORD *)
+      cmalloc(*num_bend_dict*sizeof(DICT_WORD),"set_potbend_dict")-1;
+  }/*endif*/
   /*=======================================================================*/
   /* I) Assign the users set flags 0 */
   for(i=1;i<=*num_bend_dict;i++){(*bend_dict)[i].iuset = 0;}
@@ -243,7 +243,7 @@ void set_pottors_dict(DICT_WORD *tors_dict[],int *num_tors_dict,int ifirst)
   if(ifirst==1){
     *num_tors_dict=28;
     *tors_dict = (DICT_WORD *)
-           cmalloc(*num_tors_dict*sizeof(DICT_WORD),"set_tors_dict")-1;
+      cmalloc(*num_tors_dict*sizeof(DICT_WORD),"set_tors_dict")-1;
   }/*endif*/
   /*=======================================================================*/
   /* I) Assign the users set flags 0 */
@@ -414,10 +414,10 @@ void set_potonfo_dict(DICT_WORD *onfo_dict[],int *num_onfo_dict,int ifirst)
   /*========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
-     *num_onfo_dict=7;
-     *onfo_dict = (DICT_WORD *)
-         cmalloc(*num_onfo_dict*sizeof(DICT_WORD),"set_potonfo_dict")-1;
-   }/*endif*/
+    *num_onfo_dict=7;
+    *onfo_dict = (DICT_WORD *)
+      cmalloc(*num_onfo_dict*sizeof(DICT_WORD),"set_potonfo_dict")-1;
+  }/*endif*/
   /*=======================================================================*/
   /* I) Assign the users set flags 0 */
   for(i=1;i<=*num_onfo_dict;i++){(*onfo_dict)[i].iuset = 0;}
@@ -476,10 +476,10 @@ void set_potfun_dict(DICT_WORD *fun_dict[],int *num_fun_dict,int ifirst)
   /*========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
-     *num_fun_dict=9;
-     *fun_dict = (DICT_WORD *)
-            cmalloc(*num_fun_dict*sizeof(DICT_WORD),"set_potfun_dict")-1;
-   }/*endif*/
+    *num_fun_dict=9;
+    *fun_dict = (DICT_WORD *)
+      cmalloc(*num_fun_dict*sizeof(DICT_WORD),"set_potfun_dict")-1;
+  }/*endif*/
   /*========================================================================*/
   /* I) Assign the users set flags 0 */
   for(i=1;i<=*num_fun_dict;i++){(*fun_dict)[i].iuset = 0;}
@@ -552,20 +552,20 @@ void set_potfun_dict(DICT_WORD *fun_dict[],int *num_fun_dict,int ifirst)
 /*==========================================================================*/
 
 void set_potbend_bnd_dict(DICT_WORD *bend_bnd_dict[],int *num_bend_bnd_dict,
-                          int ifirst)
+    int ifirst)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {/*begin routine*/
-/*==========================================================================*/
+  /*==========================================================================*/
   int i;
 
-/*========================================================================*/
-/* 0) Malloc the dictionary */
+  /*========================================================================*/
+  /* 0) Malloc the dictionary */
   if(ifirst==1){
-     *num_bend_bnd_dict=26;
-     *bend_bnd_dict = (DICT_WORD *)
-       cmalloc(*num_bend_bnd_dict*sizeof(DICT_WORD),"set_potbend_bnd_dict")-1;
-   }/*endif*/
+    *num_bend_bnd_dict=26;
+    *bend_bnd_dict = (DICT_WORD *)
+      cmalloc(*num_bend_bnd_dict*sizeof(DICT_WORD),"set_potbend_bnd_dict")-1;
+  }/*endif*/
   /*=======================================================================*/
   /* I) Assign the users set flags 0 */
   for(i=1;i<=*num_bend_bnd_dict;i++){(*bend_bnd_dict)[i].iuset = 0;}
@@ -646,7 +646,7 @@ void set_potbend_bnd_dict(DICT_WORD *bend_bnd_dict[],int *num_bend_bnd_dict,
   strcpy((*bend_bnd_dict)[14].keyword,"pot_type_bond");
   strcpy((*bend_bnd_dict)[14].keyarg,"Null");
   strcpy((*bend_bnd_dict)[14].error_mes,
-                       "Null,harmonic,power-series,freq_series");
+      "Null,harmonic,power-series,freq_series");
   /*-----------------------------------------------------------------------*/ 
   /*  15) \fk_bond{} */
   strcpy((*bend_bnd_dict)[15].keyword,"fk_bond");
@@ -708,6 +708,6 @@ void set_potbend_bnd_dict(DICT_WORD *bend_bnd_dict[],int *num_bend_bnd_dict,
   strcpy((*bend_bnd_dict)[26].keyarg,"");
   strcpy((*bend_bnd_dict)[26].error_mes,"");
   /*-----------------------------------------------------------------------*/ 
-}/*end routine*/
+  }/*end routine*/
 
 

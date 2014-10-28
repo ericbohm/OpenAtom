@@ -14,69 +14,69 @@
 #define _MDVEL_SAMP_
 
 class MDVEL_SAMP {
- public:
-  int ivel_smpl_on;            /* Opt: Periodic atm vel resampl opt   */
-  int ivel_scale_on;           /* Opt: Periodic atm vel resampl opt   */
-  int nvx_smpl;                /* Num: Freq of atm vel resampling     */
-  int nvx_scale;               /* Num: Freq of atm vel rescaling      */
-  int nvnhc_smpl;              /* Num: Freq of atm NHC vel resamp     */
-  long iseed,iseed2;           /* Num: Random seeds                   */
-  double qseed;                /* Num: Real seed for essl ran()       */
+  public:
+    int ivel_smpl_on;            /* Opt: Periodic atm vel resampl opt   */
+    int ivel_scale_on;           /* Opt: Periodic atm vel resampl opt   */
+    int nvx_smpl;                /* Num: Freq of atm vel resampling     */
+    int nvx_scale;               /* Num: Freq of atm vel rescaling      */
+    int nvnhc_smpl;              /* Num: Freq of atm NHC vel resamp     */
+    long iseed,iseed2;           /* Num: Random seeds                   */
+    double qseed;                /* Num: Real seed for essl ran()       */
 
-//=============================================================================
-// Default constructor/destructor
+    //=============================================================================
+    // Default constructor/destructor
 
-   MDVEL_SAMP(){}
-  ~MDVEL_SAMP(){}
+    MDVEL_SAMP(){}
+    ~MDVEL_SAMP(){}
 
-//============================================================================
-// Pack/Unpack
+    //============================================================================
+    // Pack/Unpack
 
 #ifdef PUP_ON
-  void pup(PUP::er &p){
+    void pup(PUP::er &p){
 
-    // PUP ints
+      // PUP ints
 
-    p | ivel_smpl_on;
-    p | ivel_scale_on;
-    p | nvx_smpl;     
-    p | nvx_scale;    
-    p | nvnhc_smpl;   
-    p | iseed;
-    p | iseed2;       
+      p | ivel_smpl_on;
+      p | ivel_scale_on;
+      p | nvx_smpl;     
+      p | nvx_scale;    
+      p | nvnhc_smpl;   
+      p | iseed;
+      p | iseed2;       
 
-    // PUP doubles
-    
-    p | qseed;
+      // PUP doubles
+
+      p | qseed;
 #ifdef _PARALLEL_DEBUG_        
-    if (p.isUnpacking())
-     state_class_out ();
+      if (p.isUnpacking())
+        state_class_out ();
 #endif  
-  } // end pack/unpack
+    } // end pack/unpack
 #endif
 
-//==============================================================================
-// Print out state of the class
+    //==============================================================================
+    // Print out state of the class
 
-  void state_class_out(){
-    
-     char fileName [255];
-     sprintf (fileName, "%d_mdvel_samp.state", CkMyPe());
-     FILE *fp;  fp = fopen(fileName,"w");
+    void state_class_out(){
 
-     fprintf(fp,"mdvel_samp:  ivel_samp_on %d\n",ivel_smpl_on);
-     fprintf(fp,"mdvel_samp:  ivel_scale_on %d\n",ivel_scale_on);
-     fprintf(fp,"mdvel_samp:  nvx_samp %d\n",nvx_smpl);
-     fprintf(fp,"mdvel_samp:  nvx_scale %d\n",nvx_scale);
-     fprintf(fp,"mdvel_samp:  nvnhc_smpl %d\n",nvnhc_smpl);
-     fprintf(fp,"mdvel_samp:  iseed1 %ld\n",iseed);
-     fprintf(fp,"mdvel_samp:  iseed2 %ld\n",iseed2);
+      char fileName [255];
+      sprintf (fileName, "%d_mdvel_samp.state", CkMyPe());
+      FILE *fp;  fp = fopen(fileName,"w");
 
-     fprintf(fp,"mdvel_samp:  qseed %.12g\n",qseed);
+      fprintf(fp,"mdvel_samp:  ivel_samp_on %d\n",ivel_smpl_on);
+      fprintf(fp,"mdvel_samp:  ivel_scale_on %d\n",ivel_scale_on);
+      fprintf(fp,"mdvel_samp:  nvx_samp %d\n",nvx_smpl);
+      fprintf(fp,"mdvel_samp:  nvx_scale %d\n",nvx_scale);
+      fprintf(fp,"mdvel_samp:  nvnhc_smpl %d\n",nvnhc_smpl);
+      fprintf(fp,"mdvel_samp:  iseed1 %ld\n",iseed);
+      fprintf(fp,"mdvel_samp:  iseed2 %ld\n",iseed2);
 
-     fclose(fp);
-  }// end member function
-  
+      fprintf(fp,"mdvel_samp:  qseed %.12g\n",qseed);
+
+      fclose(fp);
+    }// end member function
+
 }; // end class definition
 //==============================================================================
 

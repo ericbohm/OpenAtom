@@ -9,23 +9,23 @@
 #include "group_bond_con_46.h"
 
 void doShake (
-  int     numAtoms,
-  Vector* position,      // size [numAtoms] positions of the atoms
-  Vector* position_old,  // size [numAtoms] positions of the atoms
-  Vector* velocity,      // size [numAtoms] velocities for each atom
-  int*    atomID,
-  double  dt,            // time step
-  RigidBondInfo* rBonds
-);
+    int     numAtoms,
+    Vector* position,      // size [numAtoms] positions of the atoms
+    Vector* position_old,  // size [numAtoms] positions of the atoms
+    Vector* velocity,      // size [numAtoms] velocities for each atom
+    int*    atomID,
+    double  dt,            // time step
+    RigidBondInfo* rBonds
+    );
 
 void doRattle (
-  int     numAtoms,
-  Vector* position,      // size [numAtoms] positions of the atoms
-  Vector* position_old,  // size [numAtoms] positions of the atoms
-  Vector* velocity,      // size [numAtoms] velocities for each atom
-  int*    atomID,
-  double  dt,            // time step
-  RigidBondInfo* rBonds
-);
+    int     numAtoms,
+    Vector* position,      // size [numAtoms] positions of the atoms
+    Vector* position_old,  // size [numAtoms] positions of the atoms
+    Vector* velocity,      // size [numAtoms] velocities for each atom
+    int*    atomID,
+    double  dt,            // time step
+    RigidBondInfo* rBonds
+    );
 
 #endif

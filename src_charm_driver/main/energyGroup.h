@@ -12,9 +12,9 @@
 /** EnergyGroup class.
  */
 class EnergyGroup : public Group {
-    
- public:
-  const UberCollection thisInstance;
+
+  public:
+    const UberCollection thisInstance;
     EnergyStruct estruct;
     EnergyGroup(UberCollection thisInstance);
     int iteration_gsp;
@@ -27,7 +27,7 @@ class EnergyGroup : public Group {
     void resumeFromTemper();
 
     inline EnergyStruct getEnergyStruct(){return estruct;}
- private:
+  private:
     int ktemps;
 };
 /*EnergyStruct GetEnergyStruct();*/

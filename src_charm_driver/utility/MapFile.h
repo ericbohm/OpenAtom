@@ -19,7 +19,7 @@ class MapFile
     char* mapName;	// name of the map
     int numDim;		// number of dimensions in this map
     int* sizeDim;  	// array of size numDim, size of each dimension
-    
+
     int numProcs;	// number of processors
     char* mapOrder;	// is the mapping TXYZ or XYZT
     int Xmax;
@@ -27,16 +27,16 @@ class MapFile
     int Zmax;
     int Tmax;
     int stride;         // stride for non dense indices NOTE evil
-                        // hardcoding assuming 4D uses stride in inner
-                        // 2 indices.  There should be a stride for
-                        // each index.
-    
+    // hardcoding assuming 4D uses stride in inner
+    // 2 indices.  There should be a stride for
+    // each index.
+
   public:
     MapFile(const char* name, int numpes); 
     MapFile(const char* name, int num, int* size, int numpes, const char *order, int x, int y, int z, int t, int stride=1); 
     MapFile();		// default constructor
     ~MapFile();		// destructor
-     
+
     void setSize(int num, int* size); 
     void setAttributes(int num, int* size, char *order, int x, int y, int z, int t, int stride);
     void dumpMap(MapType2 *map, char c);

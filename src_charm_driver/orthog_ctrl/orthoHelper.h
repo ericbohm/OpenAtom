@@ -39,14 +39,14 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 class OrthoHelperMsg : public CMessage_OrthoHelperMsg {
-public:
-  internalType *A;
-  internalType *B;
-  int size; 
-  double factorA;
-  double factorB;
-  double factorC;
-  void init(int insize, internalType* inA, internalType* inB, double infactorA, double infactorB, double infactorC)
+  public:
+    internalType *A;
+    internalType *B;
+    int size; 
+    double factorA;
+    double factorB;
+    double factorC;
+    void init(int insize, internalType* inA, internalType* inB, double infactorA, double infactorB, double infactorC)
     {
       size=insize;
       memcpy(A,inA,size*sizeof(internalType));
@@ -55,74 +55,74 @@ public:
       factorB=infactorB;
       factorC=infactorC;
     }
- friend class CMessage_OrthoHelperMsg;
+    friend class CMessage_OrthoHelperMsg;
 };
 //============================================================================
 
 
 class OrthoHelper : public CBase_OrthoHelper 
 {
- public:
-  OrthoHelper(){}
-  OrthoHelper(int _m, int _n, CLA_Matrix_interface matA2,
-	      CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, 
-	      CkCallback _orthoCB):
-    m(_m), n(_n), matA (matA2), matB(matB2), matC(matC2), uponCompletion(_orthoCB)
-    {
-      C= new internalType[m*n];
-      A=NULL;
-      B=NULL;
-      trigger=NULL;
-    }
-  OrthoHelper(CkMigrateMessage *m){}
-  ~OrthoHelper(){
-    delete [] C;
+  public:
+    OrthoHelper(){}
+    OrthoHelper(int _m, int _n, CLA_Matrix_interface matA2,
+        CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, 
+        CkCallback _orthoCB):
+      m(_m), n(_n), matA (matA2), matB(matB2), matC(matC2), uponCompletion(_orthoCB)
+  {
+    C= new internalType[m*n];
+    A=NULL;
+    B=NULL;
+    trigger=NULL;
   }
+    OrthoHelper(CkMigrateMessage *m){}
+    ~OrthoHelper(){
+      delete [] C;
+    }
 
-  void recvAB(OrthoHelperMsg *msg)
+    void recvAB(OrthoHelperMsg *msg)
     {  
       trigger = msg;
       A = trigger->A;  // no sense in making extra copies
       B = trigger->B;
       matA.multiply(trigger->factorA, 0, A, OrthoHelper::step_cb, (void*) this,
-		     thisIndex.x, thisIndex.y);
+          thisIndex.x, thisIndex.y);
       CmiNetworkProgress();
       matB.multiply(trigger->factorB, 0, B, OrthoHelper::step_cb, (void*) this,
-		     thisIndex.x, thisIndex.y);
+          thisIndex.x, thisIndex.y);
       CmiNetworkProgress();
       matC.multiply(trigger->factorC, 0, C, OrthoHelper::step_cb, (void*) this,
-		     thisIndex.x, thisIndex.y);
+          thisIndex.x, thisIndex.y);
       // DO NOT DELETE MSG we're using that memory in A and B
     }
 
-  void sendMatrix()
+    void sendMatrix()
     {
-        if(trigger!=NULL)
-            delete trigger;
-        uponCompletion.send(m*n, C);
+      if(trigger!=NULL)
+        delete trigger;
+      uponCompletion.send(m*n, C);
     }
 
 
-  virtual void pup(PUP::er &p){
-//    CBase_Ortho::pup(p);
-    ArrayElement2D::pup(p);
-    p | m;
-    p | n;
-    if(p.isUnpacking()){
-      C = new internalType[m * n];
+    virtual void pup(PUP::er &p){
+      //    CBase_Ortho::pup(p);
+      ArrayElement2D::pup(p);
+      p | m;
+      p | n;
+      if(p.isUnpacking()){
+        C = new internalType[m * n];
+      }
+      PUParray(p, C, m * n);
     }
-    PUParray(p, C, m * n);
-  }
-  static inline void step_cb(void *obj){
-    ((OrthoHelper *) obj)->sendMatrix();
-  }
-  int m;
-  int n;
-  internalType *A, *B, *C;
-  OrthoHelperMsg *trigger;
-  CLA_Matrix_interface matA, matB, matC;
-  /// Callback to the owner ortho chare array to be used at the end of my work (step 2)
-  CkCallback uponCompletion;
+    static inline void step_cb(void *obj){
+      ((OrthoHelper *) obj)->sendMatrix();
+    }
+    int m;
+    int n;
+    internalType *A, *B, *C;
+    OrthoHelperMsg *trigger;
+    CLA_Matrix_interface matA, matB, matC;
+    /// Callback to the owner ortho chare array to be used at the end of my work (step 2)
+    CkCallback uponCompletion;
 };
 
 #endif 	    /* !ORTHOHELPER_H_ */

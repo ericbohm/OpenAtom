@@ -1,28 +1,28 @@
 #!/bin/sh
 sysCoords=water.coords_initial
 if [ $# -gt 1 ] ; then
-    sysCoords=$1
+sysCoords=$1
 fi
 if [ -f $sysCoords ] ; then
-    echo "converting $sysCoords to new structure"
-    if [ ! -d ATOM_COORDS_IN ] ; then
-	mkdir -p ATOM_COORDS_IN/Bead.0_Temper.0
-	mkdir -p ATOM_COORDS_OUT/Bead.0_Temper.0
-	mkdir -p TEMPER_OUT/Temper.0
-	if [ -h $sysCoords ] ; then
-	    echo "making new symlink"
-	    ln -s ../../`readlink $sysCoords` ATOM_COORDS_IN/Bead.0_Temper.0/$sysCoords
-	else
-	    mv $sysCoords ATOM_COORDS_IN/Bead.0_Temper.0
-	fi
-    fi   
-    echo "converting states to new structure"
-    if [ ! -d STATES/Spin.0_Kpt.0_Bead.0_Temper.0 ] ; then
-	mkdir -p STATES/Spin.0_Kpt.0_Bead.0_Temper.0
-	mv STATES/state*.out* STATES/Spin.0_Kpt.0_Bead.0_Temper.0/
-	mkdir -p STATES_OUT/Spin.0_Kpt.0_Bead.0_Temper.0
-    fi
+echo "converting $sysCoords to new structure"
+if [ ! -d ATOM_COORDS_IN ] ; then
+mkdir -p ATOM_COORDS_IN/Bead.0_Temper.0
+mkdir -p ATOM_COORDS_OUT/Bead.0_Temper.0
+mkdir -p TEMPER_OUT/Temper.0
+if [ -h $sysCoords ] ; then
+echo "making new symlink"
+ln -s ../../`readlink $sysCoords` ATOM_COORDS_IN/Bead.0_Temper.0/$sysCoords
 else
-    echo "cannot find initial coordinates file $sysCoords, please pass as argument"
+mv $sysCoords ATOM_COORDS_IN/Bead.0_Temper.0
+fi
+fi   
+echo "converting states to new structure"
+if [ ! -d STATES/Spin.0_Kpt.0_Bead.0_Temper.0 ] ; then
+mkdir -p STATES/Spin.0_Kpt.0_Bead.0_Temper.0
+mv STATES/state*.out* STATES/Spin.0_Kpt.0_Bead.0_Temper.0/
+mkdir -p STATES_OUT/Spin.0_Kpt.0_Bead.0_Temper.0
+fi
+else
+echo "cannot find initial coordinates file $sysCoords, please pass as argument"
 fi
 

@@ -33,16 +33,16 @@
 /*==========================================================================*/
 
 void control_mol_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, 
-                        MDINTER *mdinter, GENERAL_DATA *general_data,
-                        MDINTRA *mdintra,CP *cp,
-                        CLASS_PARSE *class_parse,CP_PARSE *cp_parse,
-                        FREE_PARSE *free_parse,
-                        FILENAME_PARSE *filename_parse)
+    MDINTER *mdinter, GENERAL_DATA *general_data,
+    MDINTRA *mdintra,CP *cp,
+    CLASS_PARSE *class_parse,CP_PARSE *cp_parse,
+    FREE_PARSE *free_parse,
+    FILENAME_PARSE *filename_parse)
 
-/*==========================================================================*/
-    { /*begin routine*/
-/*========================================================================*/
-/*             Local variable declarations                                */
+  /*==========================================================================*/
+{ /*begin routine*/
+  /*========================================================================*/
+  /*             Local variable declarations                                */
 
 #include "../class_defs/allclass_strip_mdatoms.h"
 #include "../class_defs/allclass_strip_mdintegrate.h"
@@ -72,39 +72,39 @@ void control_mol_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   int pi_beads       = mdatoms->mdclatoms_info.pi_beads;
   int iextend,ipress;
   iextend            = (general_data->genensopts.nvt 
-                       +general_data->genensopts.npt_i  
-                       +general_data->genensopts.npt_f
-                       +general_data->genensopts.nst);
+      +general_data->genensopts.npt_i  
+      +general_data->genensopts.npt_f
+      +general_data->genensopts.nst);
   ipress             = (general_data->genensopts.npt_i
-                       +general_data->genensopts.npt_f);
+      +general_data->genensopts.npt_f);
 
   cp_on  =    general_data->gensimopts.cp_min 
-            + general_data->gensimopts.cp_wave_min 
-            + general_data->gensimopts.cp_wave_min_pimd
-            + general_data->gensimopts.cp
-            + general_data->gensimopts.cp_wave
-            + general_data->gensimopts.cp_pimd 
-            + general_data->gensimopts.cp_wave_pimd
-            + general_data->gensimopts.debug_cp
-            + general_data->gensimopts.debug_cp_pimd;
+    + general_data->gensimopts.cp_wave_min 
+    + general_data->gensimopts.cp_wave_min_pimd
+    + general_data->gensimopts.cp
+    + general_data->gensimopts.cp_wave
+    + general_data->gensimopts.cp_pimd 
+    + general_data->gensimopts.cp_wave_pimd
+    + general_data->gensimopts.debug_cp
+    + general_data->gensimopts.debug_cp_pimd;
 
 
-/*========================================================================*/
-/* 0) Output to screen */
+  /*========================================================================*/
+  /* 0) Output to screen */
 
   PRINTF("\n");  PRINT_LINE_STAR;
   PRINTF("Reading molecular set up file %s\n",molsetname);
   PRINT_LINE_DASH;PRINTF("\n");
 
-/*========================================================================*/
-/* I) Set up dictionaries and malloc temporaries                          */
+  /*========================================================================*/
+  /* I) Set up dictionaries and malloc temporaries                          */
 
   ifirst = 1;
 
   set_molset_fun_dict(&dict_mol.fun_dict,&dict_mol.num_fun_dict);
   set_mol_dict(&dict_mol.mol_dict,&dict_mol.num_mol_dict,
-               iextend,class_parse->tau_nhc_def,
-               general_data->genstatepoint.t_ext,ifirst);
+      iextend,class_parse->tau_nhc_def,
+      general_data->genstatepoint.t_ext,ifirst);
 
   set_wave_dict(&dict_mol.wave_dict,&dict_mol.num_wave_dict,cp_parse);
   set_bond_free_dict(&dict_mol.bond_free_dict,&dict_mol.num_bond_free_dict);
@@ -120,10 +120,10 @@ void control_mol_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   word = (DICT_WORD *)cmalloc(sizeof(DICT_WORD),"control_mol_params");
   fun_key = (char *)cmalloc(MAXWORD*sizeof(char),"control_mol_params");
 
-/*========================================================================*/
-/* II) Read the moleset file and count the molecule types                 */
-/*       and the free energy stuff                                        */
-  
+  /*========================================================================*/
+  /* II) Read the moleset file and count the molecule types                 */
+  /*       and the free energy stuff                                        */
+
   nmol_typ            = 0;
   nline               = 0;
   nfun_key            = 0;
@@ -152,129 +152,129 @@ void control_mol_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   mdintra->mdrbar_sig_free.nfree = 0;
 
   if((bond_free_num+bend_free_num+tors_free_num+rbar_sig_free_iopt)>1){
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("Only one free energy definition permitted\n");
-      PRINTF("in set up file %s \n",molsetname);
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      FFLUSH(stdout);
-      EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Only one free energy definition permitted\n");
+    PRINTF("in set up file %s \n",molsetname);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
 
 #ifdef JUNK
   int iperd          = general_data->gencell.iperd;
   if( (nsurf>0) && (iperd != 2)){
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("Surface potentials permitted ONLY in systems with\n");
-      PRINTF("2D periodicity in set up file  %s \n",molsetname);
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      FFLUSH(stdout);
-      EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Surface potentials permitted ONLY in systems with\n");
+    PRINTF("2D periodicity in set up file  %s \n",molsetname);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
 #endif
 
   mdsurface->isurf_on = nsurf;
 
-//========================================================================
-// III) Malloc molecular data storage and initialize                      
-  
+  //========================================================================
+  // III) Malloc molecular data storage and initialize                      
+
   now_memory = (double)((nmol_typ)*(sizeof(int)*2))*1.e-06;
   (*tot_memory) += now_memory;
-  
+
   PRINTF("Allocating molecular memory: %g Mbytes; Total memory: %g Mbytes\n",
-          now_memory,(*tot_memory));
-  
+      now_memory,(*tot_memory));
+
   mdatom_maps->nmol_jmol_typ  = 
-                (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
+    (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
   mdatom_maps->mol_typ        = 
-                (NAME *)cmalloc(nmol_typ*sizeof(NAME),"control_mol_params")-1;
+    (NAME *)cmalloc(nmol_typ*sizeof(NAME),"control_mol_params")-1;
   mdatom_maps->nres_1mol_jmol_typ  = 
-                (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
+    (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
   mdatom_maps->jres_jmol_typ_strt  = 
-                (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
+    (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
   class_parse->ionfo_opt         = 
-                (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
+    (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
   class_parse->ires_bond_conv    = 
-                (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
+    (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
   class_parse->tau_nhc_mol       = 
-                (double*)cmalloc(nmol_typ*sizeof(double),"control_mol_params")-1;
+    (double*)cmalloc(nmol_typ*sizeof(double),"control_mol_params")-1;
   class_parse->text_nhc_mol      = 
-                (double*)cmalloc(nmol_typ*sizeof(double),"control_mol_params")-1;
+    (double*)cmalloc(nmol_typ*sizeof(double),"control_mol_params")-1;
   class_parse->imol_nhc_opt      = 
-                (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;  
+    (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;  
   class_parse->mol_freeze_opt    = 
-                (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;  
+    (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;  
   class_parse->mol_hydrog_mass_opt = 
-                (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
+    (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
   class_parse->mol_hydrog_mass_val = 
-              (double *)cmalloc(nmol_typ*sizeof(double),"control_mol_params")-1;
+    (double *)cmalloc(nmol_typ*sizeof(double),"control_mol_params")-1;
   class_parse->mol_hydrog_con_opt= 
-                (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
+    (int *)cmalloc(nmol_typ*sizeof(int),"control_mol_params")-1;
   filename_parse->mol_param_name = 
-                (NAME *)cmalloc(nmol_typ*sizeof(NAME),"control_mol_params")-1;
+    (NAME *)cmalloc(nmol_typ*sizeof(NAME),"control_mol_params")-1;
   filename_parse->user_intra_name= 
-                (NAME *)cmalloc(num_user*sizeof(NAME),"control_mol_params")-1;
+    (NAME *)cmalloc(num_user*sizeof(NAME),"control_mol_params")-1;
   filename_parse->def_intra_name = 
-                (NAME *)cmalloc(num_def*sizeof(NAME),"control_mol_params")-1;
+    (NAME *)cmalloc(num_def*sizeof(NAME),"control_mol_params")-1;
   if(bond_free_num>0){
     mdintra->mdbond_free.file       = 
-                (char *)cmalloc(MAXWORD*sizeof(char),"control_mol_params");
+      (char *)cmalloc(MAXWORD*sizeof(char),"control_mol_params");
     free_parse->imoltyp_bond_free= 
-                (int *) cmalloc(2*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(2*sizeof(int),"control_mol_params")-1;
     free_parse->imol_bond_free   = 
-                (int *) cmalloc(2*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(2*sizeof(int),"control_mol_params")-1;
     free_parse->ires_bond_free   = 
-                (int *) cmalloc(2*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(2*sizeof(int),"control_mol_params")-1;
     free_parse->iatm_bond_free   = 
-                (int *) cmalloc(2*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(2*sizeof(int),"control_mol_params")-1;
   }
   if(bend_free_num>0){
     mdintra->mdbend_free.file       = 
-                (char *)cmalloc(MAXWORD*sizeof(char),"control_mol_params");
+      (char *)cmalloc(MAXWORD*sizeof(char),"control_mol_params");
     free_parse->imoltyp_bend_free= 
-                (int *) cmalloc(3*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(3*sizeof(int),"control_mol_params")-1;
     free_parse->imol_bend_free   = 
-                (int *) cmalloc(3*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(3*sizeof(int),"control_mol_params")-1;
     free_parse->ires_bend_free   = 
-                (int *) cmalloc(3*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(3*sizeof(int),"control_mol_params")-1;
     free_parse->iatm_bend_free   = 
-                (int *) cmalloc(3*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(3*sizeof(int),"control_mol_params")-1;
   }
   if(tors_free_num>0){
     mdintra->mdtors_free.file       = 
-                (char *)cmalloc(MAXWORD*sizeof(char),"control_mol_params");
+      (char *)cmalloc(MAXWORD*sizeof(char),"control_mol_params");
     free_parse->imoltyp_tors_free= 
-                (int *) cmalloc(8*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(8*sizeof(int),"control_mol_params")-1;
     free_parse->imol_tors_free   = 
-                (int *) cmalloc(8*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(8*sizeof(int),"control_mol_params")-1;
     free_parse->ires_tors_free   = 
-                (int *) cmalloc(8*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(8*sizeof(int),"control_mol_params")-1;
     free_parse->iatm_tors_free   = 
-                (int *) cmalloc(8*sizeof(int),"control_mol_params")-1;
+      (int *) cmalloc(8*sizeof(int),"control_mol_params")-1;
   }
 
   if(rbar_sig_free_iopt>0){
     mdintra->mdrbar_sig_free.file   = 
-                (char *)cmalloc(MAXWORD*sizeof(char),"control_mol_params");
+      (char *)cmalloc(MAXWORD*sizeof(char),"control_mol_params");
   }
   mdclatoms_info->text_mol   = 
-                (double*)cmalloc(nmol_typ*sizeof(double),"control_mol_params")-1;
+    (double*)cmalloc(nmol_typ*sizeof(double),"control_mol_params")-1;
 
   text_mol       = mdclatoms_info->text_mol;
   text_nhc_mol   = class_parse->text_nhc_mol;
   mol_freeze_opt = class_parse->mol_freeze_opt;
   imol_nhc_opt   = class_parse->imol_nhc_opt;
 
-/*========================================================================*/
-/* IV) Get molecular/CP setup information */
+  /*========================================================================*/
+  /* IV) Get molecular/CP setup information */
 
- control_set_mol_params(mdatom_maps,&(cp->cpopts),
-                         &(cp->cpcoeffs_info),cp_parse,class_parse,
-                         mdintra,mdsurface,
-                         filename_parse,free_parse,
-                         &dict_mol,word,
-                         fun_key,&nfun_key,iextend,
-                         general_data->genstatepoint.t_ext,
-                         ifirst,pi_beads);
+  control_set_mol_params(mdatom_maps,&(cp->cpopts),
+      &(cp->cpcoeffs_info),cp_parse,class_parse,
+      mdintra,mdsurface,
+      filename_parse,free_parse,
+      &dict_mol,word,
+      fun_key,&nfun_key,iextend,
+      general_data->genstatepoint.t_ext,
+      ifirst,pi_beads);
   if(tors_free_num==1){
     tors_free_num = mdintra->mdtors_free.num; /* changed in above routine */
   }/*endif*/
@@ -283,25 +283,25 @@ void control_mol_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     text_mol[i] = text_nhc_mol[i];   
   }/*endfor*/
 
-/*========================================================================*/
-/* V) Free some memory and malloc some other                              */
+  /*========================================================================*/
+  /* V) Free some memory and malloc some other                              */
 
   if(bond_free_num>0){
     nhist = (mdintra->mdbond_free.nhist);
     mdintra->mdbond_free.hist = 
-            (double *)cmalloc(nhist*sizeof(double),"control_mol_params")-1;
+      (double *)cmalloc(nhist*sizeof(double),"control_mol_params")-1;
   }/*endif*/
 
   if(bend_free_num>0){
     nhist = (mdintra->mdbend_free.nhist);
     mdintra->mdbend_free.hist = 
-            (double *)cmalloc(nhist*sizeof(double),"control_mol_params")-1;
+      (double *)cmalloc(nhist*sizeof(double),"control_mol_params")-1;
   }/*endif*/
 
   if(tors_free_num==1){
     nhist = (mdintra->mdtors_free.nhist);
     mdintra->mdtors_free.hist = 
-           (double *)cmalloc(nhist*sizeof(double),"control_mol_params")-1;
+      (double *)cmalloc(nhist*sizeof(double),"control_mol_params")-1;
   }/*endif*/
   if(tors_free_num==2){
     nhist = (mdintra->mdtors_free.nhist);
@@ -313,9 +313,9 @@ void control_mol_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     nhist_sig = (mdintra->mdrbar_sig_free.nhist_sig);
     nfree     = (mdintra->mdrbar_sig_free.nfree);
     mdintra->mdrbar_sig_free.hist    = 
-              cmall_mat(1,nhist_bar,1,nhist_sig,"control_mol_params");
+      cmall_mat(1,nhist_bar,1,nhist_sig,"control_mol_params");
     mdintra->mdrbar_sig_free.hist_rn = 
-              cmall_mat(1,nfree,1,nhist_bar,"control_mol_params");
+      cmall_mat(1,nfree,1,nhist_bar,"control_mol_params");
   }/*endif*/
 
   cfree(fun_key,"control_mol_params");
@@ -352,26 +352,26 @@ void control_mol_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 
   }/*endfor*/
 
-/*========================================================================*/
-/* Error check */
- 
+  /*========================================================================*/
+  /* Error check */
+
   nmol_tot = 0;
   nmol_jmol_typ  = mdatom_maps->nmol_jmol_typ;
   for(i=1;i<=nmol_typ;i++){nmol_tot+= nmol_jmol_typ[i];}
 
   if(cp_on==1 && cp->cpopts.cp_dual_grid_opt >= 1){
-   if(cp_parse->cp_ecut_dual_grid > cp_parse->cp_ecut){
+    if(cp_parse->cp_ecut_dual_grid > cp_parse->cp_ecut){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");   
       PRINTF("The small dense grid cutoff is less than the large sparse");
       PRINTF("grid cutoff. This might work, but I doubut it\n");
       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       FFLUSH(stdout);
       EXIT(1);
-   }
+    }
   }
 
-/*========================================================================*/
-/* VI) Done                                                               */
+  /*========================================================================*/
+  /* VI) Done                                                               */
 
   PRINTF("The class contains %d molecule types\n",nmol_typ);
   PRINTF("\n"); 
@@ -381,8 +381,8 @@ void control_mol_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   PRINT_LINE_STAR;
   PRINTF("\n");
 
-/*------------------------------------------------------------------------*/
-   }/*end routine*/
+  /*------------------------------------------------------------------------*/
+}/*end routine*/
 /*===========================================================================*/
 
 

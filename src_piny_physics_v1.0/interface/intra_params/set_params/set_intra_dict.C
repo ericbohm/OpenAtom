@@ -32,18 +32,18 @@
 
 void set_intra_fun_dict(DICT_WORD *fun_dict[],int *num_fun_dict,int ifirst)
 
-/*==========================================================================*/
-/*       Begin Routine */
-  {/*begin routine*/
-/*==========================================================================*/
-/*       Local Variables */
+  /*==========================================================================*/
+  /*       Begin Routine */
+{/*begin routine*/
+  /*==========================================================================*/
+  /*       Local Variables */
   int i;
-/*=======================================================================*/
+  /*=======================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
     *num_fun_dict=15;
     *fun_dict   = (DICT_WORD *)
-         cmalloc(*num_fun_dict*sizeof(DICT_WORD),"set_intra_fun_dict")-1;  
+      cmalloc(*num_fun_dict*sizeof(DICT_WORD),"set_intra_fun_dict")-1;  
   }/*endif*/
   /*========================================================================*/
   /* I) Assign the users set flags 0 */
@@ -155,18 +155,18 @@ void set_intra_fun_dict(DICT_WORD *fun_dict[],int *num_fun_dict,int ifirst)
 
 void set_atm_dict(DICT_WORD *atm_dict[],int *num_atm_dict, int ifirst)
 
-/*==========================================================================*/
-/*       Begin Routine */
-  {/*begin routine*/
-/*==========================================================================*/
-/*       Local Variables */
+  /*==========================================================================*/
+  /*       Begin Routine */
+{/*begin routine*/
+  /*==========================================================================*/
+  /*       Local Variables */
   int i,ioff,joff;
-/*========================================================================*/
+  /*========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
     *num_atm_dict=19+NCOEF_GHOST_MAX;
     *atm_dict    = (DICT_WORD *)
-         cmalloc(*num_atm_dict*sizeof(DICT_WORD),"set_atm_dict")-1;  
+      cmalloc(*num_atm_dict*sizeof(DICT_WORD),"set_atm_dict")-1;  
   }/*endif*/
   /*========================================================================*/
   /* I) Assign the users set flags 0 */
@@ -222,25 +222,25 @@ void set_atm_dict(DICT_WORD *atm_dict[],int *num_atm_dict, int ifirst)
   strcpy((*atm_dict)[9].keyword,"bond_site_1");
   strcpy((*atm_dict)[9].keyarg,"null,-1,-1");
   strcpy((*atm_dict)[9].error_mes,
-	 "a bondsite (char), branch (int), atoms from branch");
+      "a bondsite (char), branch (int), atoms from branch");
   /*------------------------------------------------------------------------*/ 
   /*  10) /bond_site_2{} */
   strcpy((*atm_dict)[10].keyword,"bond_site_2");
   strcpy((*atm_dict)[10].keyarg,"null,-1,-1");
   strcpy((*atm_dict)[10].error_mes,
-	 "a bondsite (char), branch (int), atoms from branch");
+      "a bondsite (char), branch (int), atoms from branch");
   /*------------------------------------------------------------------------*/ 
   /*  11) /bond_site_3{} */
   strcpy((*atm_dict)[11].keyword,"bond_site_3");
   strcpy((*atm_dict)[11].keyarg,"null,-1,-1");
   strcpy((*atm_dict)[11].error_mes,
-	 "a bondsite (char), branch (int), atoms from branch");
+      "a bondsite (char), branch (int), atoms from branch");
   /*------------------------------------------------------------------------*/ 
   /*  12) /bond_site_4{} */
   strcpy((*atm_dict)[12].keyword,"bond_site_4");
   strcpy((*atm_dict)[12].keyarg,"null,-1,-1");
   strcpy((*atm_dict)[12].error_mes,
-	 "a bondsite (char), branch (int), atoms from branch");
+      "a bondsite (char), branch (int), atoms from branch");
   /*------------------------------------------------------------------------*/ 
   /*  13) /cp_valence_up{} */
   strcpy((*atm_dict)[13].keyword,"cp_valence_up");
@@ -261,17 +261,17 @@ void set_atm_dict(DICT_WORD *atm_dict[],int *num_atm_dict, int ifirst)
   ioff = 15;
   joff = (int) '0';
   for(i=1;i<=NCOEF_GHOST_MAX;i++){
-   strcpy((*atm_dict)[(i+ioff)].keyword,"def_ghost");
-   (*atm_dict)[(i+ioff)].keyword[9] = (char) (i+joff);
-   strcpy((*atm_dict)[(i+ioff)].keyarg,"0,0");
-   strcpy((*atm_dict)[(i+ioff)].error_mes,"an index, a coefficient");
+    strcpy((*atm_dict)[(i+ioff)].keyword,"def_ghost");
+    (*atm_dict)[(i+ioff)].keyword[9] = (char) (i+joff);
+    strcpy((*atm_dict)[(i+ioff)].keyarg,"0,0");
+    strcpy((*atm_dict)[(i+ioff)].error_mes,"an index, a coefficient");
   }
   /*------------------------------------------------------------------------*/ 
   /*  16+NCOEF_GHOST_MAX)  /label{} */
   strcpy((*atm_dict)[(16+NCOEF_GHOST_MAX)].keyword,"label");
   strcpy((*atm_dict)[(16+NCOEF_GHOST_MAX)].keyarg,"standard");
   strcpy((*atm_dict)[(16+NCOEF_GHOST_MAX)].error_mes,
-	 "backbone, sidechain, standard");
+      "backbone, sidechain, standard");
   /*------------------------------------------------------------------------*/ 
   /*  17+NCOEF_GHOST_MAX)  /pdb_typ{} */
   strcpy((*atm_dict)[(17+NCOEF_GHOST_MAX)].keyword,"pdb_typ");
@@ -287,7 +287,7 @@ void set_atm_dict(DICT_WORD *atm_dict[],int *num_atm_dict, int ifirst)
   strcpy((*atm_dict)[(19+NCOEF_GHOST_MAX)].keyword,"cp_valence_true_dn");
   strcpy((*atm_dict)[(19+NCOEF_GHOST_MAX)].keyarg,"0");
   strcpy((*atm_dict)[(19+NCOEF_GHOST_MAX)].error_mes,"a number <= cp_valence_dn >= 0");
-/*==========================================================================*/
+  /*==========================================================================*/
 }/*end routine*/
 /*==========================================================================*/
 
@@ -302,19 +302,19 @@ void set_atm_dict(DICT_WORD *atm_dict[],int *num_atm_dict, int ifirst)
 
 void set_intra_dict(DICT_WORD *intra_dict[],int *num_intra_dict, int ifirst)
 
-/*==========================================================================*/
-/*       Begin Routine */
-   {/*begin routine*/
-/*==========================================================================*/
-/*       Local Variables */
+  /*==========================================================================*/
+  /*       Begin Routine */
+{/*begin routine*/
+  /*==========================================================================*/
+  /*       Local Variables */
   int i;
-/*========================================================================*/
+  /*========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
     *num_intra_dict=12;
     *intra_dict = (DICT_WORD *)
-        cmalloc(*num_intra_dict*sizeof(DICT_WORD),"set_intra_dict")-1;
-    }/*endif*/
+      cmalloc(*num_intra_dict*sizeof(DICT_WORD),"set_intra_dict")-1;
+  }/*endif*/
   /*========================================================================*/
   /* I) Assign the users set flags 0 */
   for(i=1;i<=*num_intra_dict;i++){(*intra_dict)[i].iuset = 0;}
@@ -398,19 +398,19 @@ void set_intra_dict(DICT_WORD *intra_dict[],int *num_intra_dict, int ifirst)
 /*==========================================================================*/
 
 void set_mol_name_dict(DICT_WORD *mol_name_dict[],int *num_mol_name_dict,
-                        int ifirst)
-/*==========================================================================*/
-/*       Begin Routine */
-  {/*begin routine*/
-/*========================================================================*/
-/*       Local Variables */
+    int ifirst)
+  /*==========================================================================*/
+  /*       Begin Routine */
+{/*begin routine*/
+  /*========================================================================*/
+  /*       Local Variables */
   int i;
-/*========================================================================*/
+  /*========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
     *num_mol_name_dict=3;
     *mol_name_dict=(DICT_WORD*)
-       cmalloc(*num_mol_name_dict*sizeof(DICT_WORD),"set_mol_name_dict")-1;
+      cmalloc(*num_mol_name_dict*sizeof(DICT_WORD),"set_mol_name_dict")-1;
   }/*endif*/
   /*========================================================================*/
   /* I) Assign the users set flags 0 */
@@ -429,13 +429,13 @@ void set_mol_name_dict(DICT_WORD *mol_name_dict[],int *num_mol_name_dict,
   strcpy((*mol_name_dict)[2].keyword,"nresidue");
   strcpy((*mol_name_dict)[2].keyarg,"0");
   strcpy((*mol_name_dict)[2].error_mes,
-	 "a number > 0 : = the same as specified in the molset file");
+      "a number > 0 : = the same as specified in the molset file");
   /*-----------------------------------------------------------------------*/ 
   /* 3) \natom{} */
   strcpy((*mol_name_dict)[3].keyword,"natom");
   strcpy((*mol_name_dict)[3].keyarg,"0");
   strcpy((*mol_name_dict)[3].error_mes,
-	 "a number > 0 : = the same as specified in the molset file");
+      "a number > 0 : = the same as specified in the molset file");
   (*mol_name_dict)[3].key_type = 1;  /* must spec */
   /*-----------------------------------------------------------------------*/ 
 }/*end routine*/
@@ -451,20 +451,20 @@ void set_mol_name_dict(DICT_WORD *mol_name_dict[],int *num_mol_name_dict,
 /*==========================================================================*/
 
 void set_res_name_dict(DICT_WORD *res_name_dict[],int *num_res_name_dict,
-                        int ifirst)
+    int ifirst)
 
-/*==========================================================================*/
-/*       Begin Routine */
-  {/*begin routine*/
-/*========================================================================*/
-/*       Local Variables */
+  /*==========================================================================*/
+  /*       Begin Routine */
+{/*begin routine*/
+  /*========================================================================*/
+  /*       Local Variables */
   int i;
-/*========================================================================*/
+  /*========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
     *num_res_name_dict=3;
     *res_name_dict=(DICT_WORD*)
-         cmalloc(*num_res_name_dict*sizeof(DICT_WORD),"set_res_name_dict")-1;
+      cmalloc(*num_res_name_dict*sizeof(DICT_WORD),"set_res_name_dict")-1;
   }/*endif*/
   /*========================================================================*/
   /* I) Assign the users set flags 0 */
@@ -477,21 +477,21 @@ void set_res_name_dict(DICT_WORD *res_name_dict[],int *num_res_name_dict,
   strcpy((*res_name_dict)[1].keyword,"residue_name");
   strcpy((*res_name_dict)[1].keyarg,"RESIDUE");
   strcpy((*res_name_dict)[1].error_mes,
-             "the same as specified in molecule parameter file");
+      "the same as specified in molecule parameter file");
   (*res_name_dict)[1].key_type = 1;  /* must spec */
   /*-------------------------------------------------------------------------*/
- /* 2) \nresidue{} */
+  /* 2) \nresidue{} */
   strcpy((*res_name_dict)[2].keyword,"nresidue");
   strcpy((*res_name_dict)[2].keyarg,"0");
   strcpy((*res_name_dict)[2].error_mes,
-             "a number > 0 or same as specified in molecular parm file");
+      "a number > 0 or same as specified in molecular parm file");
   (*res_name_dict)[2].key_type = 0;  /* must spec */
   /*-------------------------------------------------------------------------*/
- /* 3) \natom{} */
+  /* 3) \natom{} */
   strcpy((*res_name_dict)[3].keyword,"natom");
   strcpy((*res_name_dict)[3].keyarg,"0");
   strcpy((*res_name_dict)[3].error_mes,
-             "a number > 0 or same as specified in molecular parm file");
+      "a number > 0 or same as specified in molecular parm file");
   (*res_name_dict)[3].key_type = 1;  /* must spec */
   /*-----------------------------------------------------------------------*/ 
 }/*end routine*/
@@ -507,19 +507,19 @@ void set_res_name_dict(DICT_WORD *res_name_dict[],int *num_res_name_dict,
 /*==========================================================================*/
 
 void set_res_def_dict(DICT_WORD *res_def_dict[],int *num_res_def_dict,
-		      int ifirst)
+    int ifirst)
 
-/*==========================================================================*/
-/*       Begin Routine */
-  {/*begin routine*/
-/*========================================================================*/
-/*       Local Variables */
+  /*==========================================================================*/
+  /*       Begin Routine */
+{/*begin routine*/
+  /*========================================================================*/
+  /*       Local Variables */
   int i;
-/*========================================================================*/
+  /*========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
-   *num_res_def_dict = 5;
-   *res_def_dict = (DICT_WORD *)
+    *num_res_def_dict = 5;
+    *res_def_dict = (DICT_WORD *)
       cmalloc(*num_res_def_dict*sizeof(DICT_WORD),"set_res_ref_dict")-1;
   }/*endif*/
   /*========================================================================*/
@@ -570,20 +570,20 @@ void set_res_def_dict(DICT_WORD *res_def_dict[],int *num_res_def_dict,
 /*==========================================================================*/
 
 void set_res_bond_dict(DICT_WORD *res_bond_dict[],int *num_res_bond_dict,
-                       int ifirst)
+    int ifirst)
 
-/*==========================================================================*/
-/*       Begin Routine */
-  {/*begin routine*/
-/*========================================================================*/
-/*       Local Variables */
+  /*==========================================================================*/
+  /*       Begin Routine */
+{/*begin routine*/
+  /*========================================================================*/
+  /*       Local Variables */
   int i;
-/*========================================================================*/
-/* 0) Malloc the dictionary */
+  /*========================================================================*/
+  /* 0) Malloc the dictionary */
   if(ifirst==1){
     *num_res_bond_dict =  10;
     *res_bond_dict = (DICT_WORD *)
-    cmalloc(*num_res_bond_dict*sizeof(DICT_WORD),"set_res_bond_dict")-1;
+      cmalloc(*num_res_bond_dict*sizeof(DICT_WORD),"set_res_bond_dict")-1;
   }/*endif*/
   /*========================================================================*/
   /* I) Assign the users set flags 0 */

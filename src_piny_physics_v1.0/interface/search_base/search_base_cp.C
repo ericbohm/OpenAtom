@@ -26,14 +26,14 @@
 /*==========================================================================*/
 
 void search_base_vps(char filename[],CVPS *cvps_typ,
-                     DICT_WORD fun_dict[],int num_fun_dict,
-                     DICT_WORD *vps_dict_tmp[],
-                     DICT_WORD vps_dict[],int num_vps_dict_ret,int *ifound)
+    DICT_WORD fun_dict[],int num_fun_dict,
+    DICT_WORD *vps_dict_tmp[],
+    DICT_WORD vps_dict[],int num_vps_dict_ret,int *ifound)
 
-/*==========================================================================*/
-    {/*begin routine*/
-/*=======================================================================*/
-/*             Local variable declarations                               */
+  /*==========================================================================*/
+{/*begin routine*/
+  /*=======================================================================*/
+  /*             Local variable declarations                               */
 
   int nline,nkey,i,num;
   int ifirst,nfun_key;
@@ -42,7 +42,7 @@ void search_base_vps(char filename[],CVPS *cvps_typ,
   DICT_WORD word;
   FILE *fp;
 
-/*========================================================================*/
+  /*========================================================================*/
 
   fp       = cfopen((const char *)filename,"r");
   *ifound  = 0;
@@ -52,19 +52,19 @@ void search_base_vps(char filename[],CVPS *cvps_typ,
   nfun_key = 0;
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,filename)){
     get_fun_key_index(fun_key,num_fun_dict,fun_dict,nline,
-                      nfun_key,filename,&num);
+        nfun_key,filename,&num);
     if(num==6){
       set_potvps_dict(vps_dict_tmp,&num_vps_dict,ifirst);
       while(get_word(fp,&word,&nline,&nkey,nfun_key,filename)){
         put_word_dict(&word,*vps_dict_tmp,num_vps_dict,
-                      fun_key,nline,nkey,nfun_key,filename);
+            fun_key,nline,nkey,nfun_key,filename);
       }/*endwhile*/
       if(strcasecmp((*vps_dict_tmp)[1].keyarg,cvps_typ->atm1)==0){
         *ifound = 1;
         dict_save(*vps_dict_tmp,vps_dict,num_vps_dict);
       }
     }else{
-        close_fun_key_cnt(fp,fun_key,&nline,nfun_key,filename);      
+      close_fun_key_cnt(fp,fun_key,&nline,nfun_key,filename);      
     }/*endif*/
   }/*end while*/
   fclose(fp);
@@ -75,8 +75,8 @@ void search_base_vps(char filename[],CVPS *cvps_typ,
     }/*endfor*/
   }/*endif*/
 
-/*==========================================================================*/
-   } /*end routine*/
+  /*==========================================================================*/
+} /*end routine*/
 /*==========================================================================*/
 
 

@@ -27,32 +27,32 @@
 /*==========================================================================*/
 
 void count_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
-                      int *nbase, int ibase_want)
+    int *nbase, int ibase_want)
 
-/*==========================================================================*/
-   {/*begin routine*/
-/*=======================================================================*/
-/*          Local variable declarations                                  */
+  /*==========================================================================*/
+{/*begin routine*/
+  /*=======================================================================*/
+  /*          Local variable declarations                                  */
 
   int nline,nfun_key,nbase_now,num;
   NAME fun_key;
   DICT_WORD word;
   FILE *fp;
 
-/*=======================================================================*/
+  /*=======================================================================*/
   fp        = cfopen((const char *) filename,"r");
   nline     = 0;
   nfun_key  = 0;
   nbase_now = 0;
   while(get_fun_key_cnt(fp,fun_key,&nline,&nfun_key,filename)){
     get_fun_key_index(fun_key,num_fun_dict,fun_dict,nline,nfun_key,
-                      filename,&num);
+        filename,&num);
     if(num==ibase_want){nbase_now++;}
   }/*endwhile*/
   fclose(fp);
   *nbase = nbase_now;
-/*-----------------------------------------------------------------------*/
-  } /*end routine*/
+  /*-----------------------------------------------------------------------*/
+} /*end routine*/
 /*==========================================================================*/
 
 
@@ -63,12 +63,12 @@ void count_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
 /*==========================================================================*/
 
 void read_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
-                    DATA_BASE_ENTRIES *data_base,CATM_LAB *cbase,
-                    int ibase_want, int nbase)
-/*==========================================================================*/
-   {/*begin routine*/
-/*=======================================================================*/
-/*          Local variable declarations                                  */
+    DATA_BASE_ENTRIES *data_base,CATM_LAB *cbase,
+    int ibase_want, int nbase)
+  /*==========================================================================*/
+{/*begin routine*/
+  /*=======================================================================*/
+  /*          Local variable declarations                                  */
 
   int nline,nkey,i,num,nfun_key;  
   int ifirst,ibase;
@@ -78,8 +78,8 @@ void read_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
   int num_base_dict;
   FILE *fp;
 
-/*=======================================================================*/
-/* I) Set up the dictionaries.  */
+  /*=======================================================================*/
+  /* I) Set up the dictionaries.  */
 
   ifirst   = 1;
   switch(ibase_want){
@@ -92,8 +92,8 @@ void read_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
     case 8: set_potsurf_dict(&base_dict,&num_base_dict,ifirst);  break;
   }/*endswitch*/
 
-/*=======================================================================*/
-/* II) Pack the data base into data_base and cbase.  */
+  /*=======================================================================*/
+  /* II) Pack the data base into data_base and cbase.  */
 
   ifirst   = 0;
   fp       = cfopen((const char *)filename,"r");
@@ -103,7 +103,7 @@ void read_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
   ibase = 0;
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,filename)){
     get_fun_key_index(fun_key,num_fun_dict,fun_dict,nline,
-                      nfun_key,filename,&num);
+        nfun_key,filename,&num);
     if(num==ibase_want){
       ibase++;
       switch(ibase_want){
@@ -117,34 +117,34 @@ void read_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
       }/*endswitch*/
       while(get_word(fp,&word,&nline,&nkey,nfun_key,filename)){
         put_word_dict(&word,base_dict,num_base_dict,
-                      fun_key,nline,nkey,nfun_key,filename);
+            fun_key,nline,nkey,nfun_key,filename);
       }/*endwhile*/
       switch(ibase_want){
         case 1: inter_coef(base_dict,filename,fun_key,data_base,
-                           cbase,ibase);
+                    cbase,ibase);
                 break;
         case 2: bond_coef(base_dict,filename,fun_key,data_base,
-                              cbase,ibase);
+                    cbase,ibase);
                 break;
         case 3: bend_bnd_coef(base_dict,filename,fun_key,data_base,
-                              cbase,ibase);
+                    cbase,ibase);
                 break;
         case 4: tors_coef(base_dict,filename,fun_key,data_base,
-                          cbase,ibase);
+                    cbase,ibase);
                 break;
         case 5: onfo_coef(base_dict,filename,fun_key,data_base,
-                          cbase,ibase);
+                    cbase,ibase);
                 break;
         case 7: bend_bnd_coef(base_dict,filename,fun_key,data_base,
-                              cbase,ibase);
+                    cbase,ibase);
         case 8: surf_coef(base_dict,filename,fun_key,data_base,
-                          cbase,ibase);
+                    cbase,ibase);
                 break;
       }/*endswitch*/
     }else{
       close_fun_key_cnt(fp,fun_key,&nline,nfun_key,filename);      
     }/*endelse*/
- }/*end while*/
+  }/*end while*/
   fclose(fp);
 
   /*=======================================================================*/
@@ -190,7 +190,7 @@ void read_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
       strcpy(cbase[(i+nbase)].atm2,cbase[i].atm3);
       strcpy(cbase[(i+nbase)].atm1,cbase[i].atm4);
       if((strcasecmp(cbase[i].atm1,cbase[i].atm4)==0)
-      && (strcasecmp(cbase[i].atm2,cbase[i].atm3)==0)){
+          && (strcasecmp(cbase[i].atm2,cbase[i].atm3)==0)){
         strcpy(cbase[(i+nbase)].label,"XSYMX");
       }else{
         strcpy(cbase[(i+nbase)].label,cbase[i].label);
@@ -201,6 +201,6 @@ void read_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
   /*=======================================================================*/
   /* IV) Free the memory.                                                  */
   cfree(&base_dict[1],"read_data_base");
-/*-------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------*/
 }  /*end routine*/
 /*=========================================================================*/

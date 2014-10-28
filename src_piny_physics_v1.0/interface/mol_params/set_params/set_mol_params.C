@@ -29,16 +29,16 @@
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
-		    DICT_WORD mol_dict[], int num_mol_dict,
-		    CLASS_PARSE *class_parse,MDATOM_MAPS *mdatom_maps,
-                    int mol_ind_chk[],int pi_beads)
+    DICT_WORD mol_dict[], int num_mol_dict,
+    CLASS_PARSE *class_parse,MDATOM_MAPS *mdatom_maps,
+    int mol_ind_chk[],int pi_beads)
 {
   int i,num,index,mol_ind,ifound,inum;
   char *strip,*strip2;
   double dnum;
   /*=======================================================================*/
   /* I) Check for missing key words*/
-  
+
   for(i=1;i<num_mol_dict;i++){
     if(mol_dict[i].iuset==0 && mol_dict[i].key_type==1){
       keyword_miss(mol_dict,filename_parse->molsetname,fun_key,i);}
@@ -65,7 +65,7 @@ void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
   if((num<=0)){
     keyarg_barf(mol_dict,filename_parse->molsetname,fun_key,index);
   }
-  
+
   /*-----------------------------------------------------------------------*/ 
   /*  3)\mol_parm_file{} */
 
@@ -108,8 +108,8 @@ void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
     EXIT(1);
   }//endif
 
-/*-----------------------------------------------------------------------*/ 
-/*  5)\mol_tau_nhc{} */
+  /*-----------------------------------------------------------------------*/ 
+  /*  5)\mol_tau_nhc{} */
 
   sscanf(mol_dict[5].keyarg,"%lg",&dnum);
   class_parse->tau_nhc_mol[mol_ind]=dnum;
@@ -118,8 +118,8 @@ void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
     keyarg_barf(mol_dict,filename_parse->molsetname,fun_key,index);
   }
 
-/*-----------------------------------------------------------------------*/ 
-/*  6)\mol_text_nhc{} */
+  /*-----------------------------------------------------------------------*/ 
+  /*  6)\mol_text_nhc{} */
 
   sscanf(mol_dict[6].keyarg,"%lg",&dnum);
   class_parse->text_nhc_mol[mol_ind]=dnum;
@@ -127,13 +127,13 @@ void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
   if((dnum <=0)){
     keyarg_barf(mol_dict,filename_parse->molsetname,fun_key,index);}
 
-/*-----------------------------------------------------------------------*/ 
-/*  7)\mol_name{} */
+  /*-----------------------------------------------------------------------*/ 
+  /*  7)\mol_name{} */
 
   strcpy(mdatom_maps->mol_typ[mol_ind],mol_dict[7].keyarg);
-  
-/*-----------------------------------------------------------------------*/ 
-/*  8)\num_residue{} */
+
+  /*-----------------------------------------------------------------------*/ 
+  /*  8)\num_residue{} */
 
   sscanf(mol_dict[8].keyarg,"%d",&inum);
   index = 8;
@@ -142,8 +142,8 @@ void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
   }/*endif*/
   mdatom_maps->nres_1mol_jmol_typ[mol_ind] = inum;
 
-/*-----------------------------------------------------------------------*/ 
-/*  9)\onefour_opt{} */
+  /*-----------------------------------------------------------------------*/ 
+  /*  9)\onefour_opt{} */
 
   index  = 9;
   ifound = 0;
@@ -157,8 +157,8 @@ void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
     keyarg_barf(mol_dict,filename_parse->molsetname,fun_key,index);    
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/ 
-/*  10)\res_bond_convention{} */
+  /*-----------------------------------------------------------------------*/ 
+  /*  10)\res_bond_convention{} */
 
   index  = 10;
   ifound = 0;
@@ -175,8 +175,8 @@ void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
     keyarg_barf(mol_dict,filename_parse->molsetname,fun_key,index);    
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/ 
-/*  11)\mol_freeze_opt{} */
+  /*-----------------------------------------------------------------------*/ 
+  /*  11)\mol_freeze_opt{} */
 
   index  = 11;
   ifound = 0;
@@ -196,22 +196,22 @@ void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
     keyarg_barf(mol_dict,filename_parse->molsetname,fun_key,index);    
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/*  12)\hydrog_mass_opt{} */
+  /*-----------------------------------------------------------------------*/
+  /*  12)\hydrog_mass_opt{} */
   index  = 12;
   strip  = (char *)cmalloc(MAXWORD*sizeof(char),"set_mol_params");
   strip2 = (char *)cmalloc(MAXWORD*sizeof(char),"set_mol_params");
   strcpy(strip,mol_dict[12].keyarg);
   parse_hydrog_mass(strip,strip2,&(class_parse->mol_hydrog_mass_opt[mol_ind]),
-                 &(class_parse->mol_hydrog_mass_val[mol_ind]),&ifound);
+      &(class_parse->mol_hydrog_mass_val[mol_ind]),&ifound);
   if(ifound==0){
     keyarg_barf(mol_dict,filename_parse->molsetname,fun_key,index);
   }/*endif*/
   cfree(strip,"set_mol_params");
   cfree(strip2,"set_mol_params");
 
-/*-----------------------------------------------------------------------*/
-/*  13)\hydrog_con_opt{} */
+  /*-----------------------------------------------------------------------*/
+  /*  13)\hydrog_con_opt{} */
   index  = 13;
   ifound = 0;
   if(strcasecmp(mol_dict[13].keyarg,"off")==0){
@@ -227,35 +227,35 @@ void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
     keyarg_barf(mol_dict,filename_parse->molsetname,fun_key,index);
   }/*endif*/
   if(class_parse->mol_hydrog_con_opt[mol_ind] != 0 && pi_beads>1){
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");        
-      PRINTF("The code, while most excellent, cannot as yet perform  \n");
-      PRINTF("path integral simulations with constrained bonds, which\n");
-      PRINTF("are somewhat nasty.  Contact sales rep.       \n");
-      PRINTF("Turn off the \\hydrog_con option \n");
-      PRINTF("in file %s molecule %s\n",
-              filename_parse->molsetname,mdatom_maps->mol_typ[mol_ind]);
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      FFLUSH(stdout);
-      EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");        
+    PRINTF("The code, while most excellent, cannot as yet perform  \n");
+    PRINTF("path integral simulations with constrained bonds, which\n");
+    PRINTF("are somewhat nasty.  Contact sales rep.       \n");
+    PRINTF("Turn off the \\hydrog_con option \n");
+    PRINTF("in file %s molecule %s\n",
+        filename_parse->molsetname,mdatom_maps->mol_typ[mol_ind]);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }
 
 
-/*==========================================================================*/
-/* III) Error checking */
+  /*==========================================================================*/
+  /* III) Error checking */
 
-   if((mdatom_maps->nres_1mol_jmol_typ[mol_ind]==0)&&
+  if((mdatom_maps->nres_1mol_jmol_typ[mol_ind]==0)&&
       (class_parse->imol_nhc_opt[mol_ind]==4)){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");        
-     PRINTF("The molecule type specified %s in file %s      \n",
-             mdatom_maps->mol_typ[mol_ind],filename_parse->molsetname);
-     PRINTF("does not contain residues. Therefore, the res_mol \n");
-     PRINTF("thermostat option is not an appropriate choice    \n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     FFLUSH(stdout);
-     EXIT(1);
-   }/*endif*/
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");        
+    PRINTF("The molecule type specified %s in file %s      \n",
+        mdatom_maps->mol_typ[mol_ind],filename_parse->molsetname);
+    PRINTF("does not contain residues. Therefore, the res_mol \n");
+    PRINTF("thermostat option is not an appropriate choice    \n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
+  }/*endif*/
 
-/*-----------------------------------------------------------------------*/ 
+  /*-----------------------------------------------------------------------*/ 
 }  /*end routine*/
 /*==========================================================================*/
 

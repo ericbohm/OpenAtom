@@ -23,8 +23,8 @@
 // In-line functions, typedefs and structures
 
 typedef struct complex{
-    double  re;
-    double  im;   
+  double  re;
+  double  im;   
 };
 #define PRINTF printf
 #define EXIT(N) {exit(N);}
@@ -43,7 +43,7 @@ void readtoendofline(FILE *);
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 int main (int argc, char *argv[]){
-//==========================================================================
+  //==========================================================================
 
   int nktot,nktot2,n1,n2,n3;
   int *kx,*ky,*kz;
@@ -52,8 +52,8 @@ int main (int argc, char *argv[]){
   char directory[1024];
   FILE *fp;
 
-//=========================================================================
-//             Check for input file                                 
+  //=========================================================================
+  //             Check for input file                                 
 
   if(argc < 2) {
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -62,14 +62,14 @@ int main (int argc, char *argv[]){
     EXIT(1);
   }/*endif*/
 
-//==========================================================================
-// Read the input file
+  //==========================================================================
+  // Read the input file
 
   int nstate,ibinary;
   PRINTF("\nReading input parameters from %s\n",argv[1]);
   fp = fopen(argv[1],"r");
-    fscanf(fp,"%d %d",&nstate,&ibinary); readtoendofline(fp);
-    fscanf(fp,"%s ",directory); readtoendofline(fp);
+  fscanf(fp,"%d %d",&nstate,&ibinary); readtoendofline(fp);
+  fscanf(fp,"%s ",directory); readtoendofline(fp);
   fclose(fp);
   PRINTF("Finished reading input parameters from %s\n\n",argv[1]);
 
@@ -85,13 +85,13 @@ int main (int argc, char *argv[]){
     EXIT(1);
   }//endif
 
-//==========================================================================
-// Read in the header information and malloc some memory
+  //==========================================================================
+  // Read in the header information and malloc some memory
 
   if(ibinary==0){
-   sprintf(fname,"%s/state1.out",directory);
-   fp = fopen(fname,"r");
-   fscanf(fp,"%d %d %d %d",&nktot,&n1,&n2,&n3);
+    sprintf(fname,"%s/state1.out",directory);
+    fp = fopen(fname,"r");
+    fscanf(fp,"%d %d %d %d",&nktot,&n1,&n2,&n3);
   }else{
     fp = fopen(fname,"rb");
     int n=1;
@@ -106,12 +106,12 @@ int main (int argc, char *argv[]){
   ky   = (int *)malloc(nktot2*sizeof(int));
   kz   = (int *)malloc(nktot2*sizeof(int));
 
-//==========================================================================
-// Read in the each state, flip it, and write the flipped guy back out
+  //==========================================================================
+  // Read in the each state, flip it, and write the flipped guy back out
 
   for(int is=0;is<nstate;is++){
-//---------------------------------------------------------------------------
-// Read in the state
+    //---------------------------------------------------------------------------
+    // Read in the state
     sprintf(fname,"%s/state%d.out",directory,is + 1);
     if(ibinary==0){
       fp = fopen(fname,"r");
@@ -142,13 +142,13 @@ int main (int argc, char *argv[]){
       }//endfor 
     }//endif
     fclose(fp);
-//-----------------------------------------------------------------------------------
-// Flip the state
+    //-----------------------------------------------------------------------------------
+    // Flip the state
     flip_data_set(nktot,kx,ky,kz,data);
 
     sprintf(fname,"%s_flipped/state%d.out",directory,is + 1);
-//---------------------------------------------------------------------------
-// Write the flipped state out
+    //---------------------------------------------------------------------------
+    // Write the flipped state out
     if(ibinary==0){
       fp = fopen(fname,"w");
       PRINTF("Writing file: %s\n",fname);
@@ -183,12 +183,12 @@ int main (int argc, char *argv[]){
     fclose(fp);
   }//endfor; is=states
 
-//==========================================================================
+  //==========================================================================
 
   return 1;
 
-//--------------------------------------------------------------------------
-  }//end main
+  //--------------------------------------------------------------------------
+}//end main
 //==========================================================================
 
 
@@ -203,10 +203,10 @@ int main (int argc, char *argv[]){
 
 void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
 
-//==========================================================================
-    {//begin routine 
-//==========================================================================
-// Count half plane kx=0 of piny data : check piny data
+  //==========================================================================
+{//begin routine 
+  //==========================================================================
+  // Count half plane kx=0 of piny data : check piny data
 
   int nplane0 = 0;
   for(int i=0;i<nktot;i++){
@@ -243,8 +243,8 @@ void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
     EXIT(1);
   }//endif
 
-//==========================================================================
-// Expand the data set
+  //==========================================================================
+  // Expand the data set
 
   for(int i=nktot-2;i>=0;i--){
     kx[(i+nplane0)]   = kx[i];
@@ -253,8 +253,8 @@ void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
     data[(i+nplane0)] = data[i];
   }//endfor
 
-//==========================================================================
-// Create the bottom half of plane zero by symmetry : 
+  //==========================================================================
+  // Create the bottom half of plane zero by symmetry : 
 
   int i1 = 0;
   for(int i=0;i<nplane0-1;i++){
@@ -293,16 +293,16 @@ void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
   }
 #endif
 
-//==========================================================================
-// Exit
+  //==========================================================================
+  // Exit
 
   free(kxt);
   free(kyt);
   free(kzt);
   free(datat);
 
-//==========================================================================
-// Now we have full planes in the upper half space. We can flip them over
+  //==========================================================================
+  // Now we have full planes in the upper half space. We can flip them over
 
   int nnow = nktot + nplane0 - 1;
   int nktot2 = 2*nktot - 1;
@@ -336,8 +336,8 @@ void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
     data[i].im = -data[j].im;
   }
 
-//==========================================================================
-    }//end routine
+  //==========================================================================
+}//end routine
 //==========================================================================
 
 
@@ -352,10 +352,10 @@ void readtoendofline(FILE *fp){
   ch = eol+1;
   while(ch!=eol){ch=fgetc(fp);}
   if(ch==EOF){
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("ERROR: Unexpected end of file reached          \n");
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("ERROR: Unexpected end of file reached          \n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
   }//endif
 }// end routine 
 //==========================================================================

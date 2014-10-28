@@ -24,43 +24,43 @@
 
 //==========================================================================
 /** \brief Compute hartree and external (local pseudopotentail) energy via
-        N^2 method  : Invoked from RhoG
-*/
+  N^2 method  : Invoked from RhoG
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *atoms,
-                                complex *vks, double *ehart_ret,double *eext_ret,
-                                double *ewd_ret,int *k_x, int *k_y, int *k_z, 
-                                double *perdCorr,int index, PSSCRATCH *pscratch,
-				int nfreq_cmi_update )
-//============================================================================
-// Function:  Hartree and External potentials
-//
-// NOTE FOR RAMKUMAR:  INVERSE BOX MATRIX (hmati) AND VOLUME (vol) 
-//                     MUST BE PASSED IN AND ehart_ret AND eext_ret
-//                     MUST BE SENT OUT.  FOR CUBIC SYSTEMS, HMATI 
-//                     JUST 1/L ON ITS DIAGONAL, BUT ONE SHOULD ALLOW
-//                     FOR A GENERAL 3x3 MATRIX (hmat) AND ITS INVERSE (hmati).
-//                     I ALSO ASSUME vks IS ZEROED SOMEWHERE SO THAT I
-//                     CAN ACCUMULATE IT.
-//                     FINALLY, THE ATOMIC COORDINATES (x,y,z) AND THEIR CHARGES (q)
-//                     NEED TO BE PASSED IN
-//----------------------------------------------------------------------------
-// Expressions for Hartree and external energies:
-//
-//  ehart = (1/vol) sum_{gx,gy,gz} (4*pi/g**2)|rho_g|**2  (excluding (0,0,0))
-//
-//  eext  = (1/vol) sum_{gx,gy,gz} (rho_g)^* S_g V_g
-//
-//         where S_g = sum_{I=1}^{natm} q_I exp[i(gx*x[I] + gy*y[I] + gz*z[I])]
-//
-//               V_g = exp(-g^2/4*alpha**2)/(g**2)
-//
-//============================================================================
-   { /* Begin Function */
-//----------------------------------------------------------------------------
-// Local Variables and local pointers
+    complex *vks, double *ehart_ret,double *eext_ret,
+    double *ewd_ret,int *k_x, int *k_y, int *k_z, 
+    double *perdCorr,int index, PSSCRATCH *pscratch,
+    int nfreq_cmi_update )
+  //============================================================================
+  // Function:  Hartree and External potentials
+  //
+  // NOTE FOR RAMKUMAR:  INVERSE BOX MATRIX (hmati) AND VOLUME (vol) 
+  //                     MUST BE PASSED IN AND ehart_ret AND eext_ret
+  //                     MUST BE SENT OUT.  FOR CUBIC SYSTEMS, HMATI 
+  //                     JUST 1/L ON ITS DIAGONAL, BUT ONE SHOULD ALLOW
+  //                     FOR A GENERAL 3x3 MATRIX (hmat) AND ITS INVERSE (hmati).
+  //                     I ALSO ASSUME vks IS ZEROED SOMEWHERE SO THAT I
+  //                     CAN ACCUMULATE IT.
+  //                     FINALLY, THE ATOMIC COORDINATES (x,y,z) AND THEIR CHARGES (q)
+  //                     NEED TO BE PASSED IN
+  //----------------------------------------------------------------------------
+  // Expressions for Hartree and external energies:
+  //
+  //  ehart = (1/vol) sum_{gx,gy,gz} (4*pi/g**2)|rho_g|**2  (excluding (0,0,0))
+  //
+  //  eext  = (1/vol) sum_{gx,gy,gz} (rho_g)^* S_g V_g
+  //
+  //         where S_g = sum_{I=1}^{natm} q_I exp[i(gx*x[I] + gy*y[I] + gz*z[I])]
+  //
+  //               V_g = exp(-g^2/4*alpha**2)/(g**2)
+  //
+  //============================================================================
+{ /* Begin Function */
+  //----------------------------------------------------------------------------
+  // Local Variables and local pointers
 
   MDATOMS      *mdatoms      = MDATOMS::get();
   GENERAL_DATA *general_data = GENERAL_DATA::get();
@@ -69,10 +69,10 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
 #include "../class_defs/allclass_strip_cp.h"
 #include "../class_defs/allclass_strip_mdatoms.h"
 #include "../class_defs/allclass_strip_gen.h"
-PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
+  PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
 
-/*--------------------------------------------*/
-/*         Local Pointer declarations         */
+  /*--------------------------------------------*/
+  /*         Local Pointer declarations         */
 
   /*------------------*/
   /* Atom information */
@@ -115,307 +115,307 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
   double tpi        = 2.0*M_PI;
   double fpi        = 4.0*M_PI;
 
-// -----------------------------------------------------------
-// Local variables 
+  // -----------------------------------------------------------
+  // Local variables 
 
-   double gx,gy,gz,g2,g;
-   double HartreeFact,EwdFact;
-   complex s;
-   complex vext,sewd;
+  double gx,gy,gz,g2,g;
+  double HartreeFact,EwdFact;
+  complex s;
+  complex vext,sewd;
 
-//============================================================================
-// Debug output
+  //============================================================================
+  // Debug output
 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-   char myFileName[100];
-   sprintf(myFileName, "Vext_Gspace_%d.out", index);
-   FILE *fp = fopen(myFileName,"w");
-   sprintf(myFileName, "Ewd_Gspace_%d.out", index);
-   FILE *fp2 = fopen(myFileName,"w");
-   double *fxt = new double [natm];
-   double *fyt = new double [natm];
-   double *fzt = new double [natm];
-   double *fxt_ewd = new double [natm];
-   double *fyt_ewd = new double [natm];
-   double *fzt_ewd = new double [natm];
-   for(int i =0;i<natm;i++){
-     fxt[i] = 0.0;
-     fyt[i] = 0.0;
-     fzt[i] = 0.0;
-     fxt_ewd[i] = 0.0;
-     fyt_ewd[i] = 0.0;
-     fzt_ewd[i] = 0.0;
-   }//endforp
+  char myFileName[100];
+  sprintf(myFileName, "Vext_Gspace_%d.out", index);
+  FILE *fp = fopen(myFileName,"w");
+  sprintf(myFileName, "Ewd_Gspace_%d.out", index);
+  FILE *fp2 = fopen(myFileName,"w");
+  double *fxt = new double [natm];
+  double *fyt = new double [natm];
+  double *fzt = new double [natm];
+  double *fxt_ewd = new double [natm];
+  double *fyt_ewd = new double [natm];
+  double *fzt_ewd = new double [natm];
+  for(int i =0;i<natm;i++){
+    fxt[i] = 0.0;
+    fyt[i] = 0.0;
+    fzt[i] = 0.0;
+    fxt_ewd[i] = 0.0;
+    fyt_ewd[i] = 0.0;
+    fzt_ewd[i] = 0.0;
+  }//endforp
 #endif
 
 #ifdef GJM_DEBUG_SIZE
-   PRINTF(" %d : coefs in CP_hart_eext_calc\n",ncoef);
+  PRINTF(" %d : coefs in CP_hart_eext_calc\n",ncoef);
 #endif
 
-//============================================================================
-// Initialize vks(g) from Hartree and Exchange Correlation
-//                   and  useful constants
+  //============================================================================
+  // Initialize vks(g) from Hartree and Exchange Correlation
+  //                   and  useful constants
 
-   double falp2     = 4.0*alp_ewd*alp_ewd;
-   double wght_now  = 1.0;
-   double wght      = 2.0;
-   double ehart     = 0.0;
-   double eext      = 0.0;
-   double EwdEnergy = 0.0;
-   //vks zeroed outside the routine
+  double falp2     = 4.0*alp_ewd*alp_ewd;
+  double wght_now  = 1.0;
+  double wght      = 2.0;
+  double ehart     = 0.0;
+  double eext      = 0.0;
+  double EwdEnergy = 0.0;
+  //vks zeroed outside the routine
 
-//============================================================================
-// Set up variables for break point calculations (helpful vectors!)
+  //============================================================================
+  // Set up variables for break point calculations (helpful vectors!)
 
-   // piny style malloc so add 1 to anybody who wants to start at 0
-   int *index_atm  = pscratch->index_atm;
-   double *vtemp   = pscratch->vtemp+1;
-   complex *ei_inc = pscratch->ei_inc+1;
-   complex *h      = pscratch->ti_inc+1;
+  // piny style malloc so add 1 to anybody who wants to start at 0
+  int *index_atm  = pscratch->index_atm;
+  double *vtemp   = pscratch->vtemp+1;
+  complex *ei_inc = pscratch->ei_inc+1;
+  complex *h      = pscratch->ti_inc+1;
 
-   int izero         = -10;
-   int igo           = 0;
-   double count      = 0.0;
-   double count_slow = 0.0;
-   int kx_old        = k_x[0];
-   int ky_old        = k_y[0];
-   int kz_old        = k_z[0];
+  int izero         = -10;
+  int igo           = 0;
+  double count      = 0.0;
+  double count_slow = 0.0;
+  int kx_old        = k_x[0];
+  int ky_old        = k_y[0];
+  int kz_old        = k_z[0];
 
-   // kx moves fastest through memory : see CP_Rho_GSpacePlane::computeK
-   for(int iatm = 0; iatm < natm; iatm++){
-      double arg_tmp = tpi*(hmati[3]*x[iatm] + hmati[6]*y[iatm]
-                          + hmati[9]*z[iatm]);
-      ei_inc[iatm] = complex(cos(arg_tmp),sin(arg_tmp));
-   }/* endfor */
+  // kx moves fastest through memory : see CP_Rho_GSpacePlane::computeK
+  for(int iatm = 0; iatm < natm; iatm++){
+    double arg_tmp = tpi*(hmati[3]*x[iatm] + hmati[6]*y[iatm]
+        + hmati[9]*z[iatm]);
+    ei_inc[iatm] = complex(cos(arg_tmp),sin(arg_tmp));
+  }/* endfor */
 
-   for(int itype=1;itype<=natm_typ;itype++){
-      index_atm[itype] =  (itype-1)*nsplin_g*(n_ang_max+1)*n_rad_max
-                       +  loc_opt[itype]*nsplin_g*n_rad_max;
-   }/*endfor*/
+  for(int itype=1;itype<=natm_typ;itype++){
+    index_atm[itype] =  (itype-1)*nsplin_g*(n_ang_max+1)*n_rad_max
+      +  loc_opt[itype]*nsplin_g*n_rad_max;
+  }/*endfor*/
 
-//============================================================================
-// Begin loop over FFT grid.
+  //============================================================================
+  // Begin loop over FFT grid.
 
-   for(int i = 0; i < ncoef; i++){/* Note that the (0,0,0) term is excluded! */
+  for(int i = 0; i < ncoef; i++){/* Note that the (0,0,0) term is excluded! */
 
-  //----------------------------------------------------------------------------
-  // I.  Construct the reciprocal space vectors and their square magnitudes
+    //----------------------------------------------------------------------------
+    // I.  Construct the reciprocal space vectors and their square magnitudes
 
-     gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
-     gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
-     gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
+    gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
+    gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
+    gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
 
-     g2 = gx*gx + gy*gy + gz*gz;
+    g2 = gx*gx + gy*gy + gz*gz;
 
-     if(g2==0){izero=i;}
-     if(g2 <= ecut4 && g2 != 0){
+    if(g2==0){izero=i;}
+    if(g2 <= ecut4 && g2 != 0){
 
-       wght_now = (k_x[i]==0 ? 1.0 : wght);
-  //----------------------------------------------------------------------------
-  // II. Use these to construct the Hartree energy and its potential
+      wght_now = (k_x[i]==0 ? 1.0 : wght);
+      //----------------------------------------------------------------------------
+      // II. Use these to construct the Hartree energy and its potential
 
-       HartreeFact = fpi/(g2*vol);
-       if(iperd!=3){HartreeFact += perdCorr[i]/vol;}
-       ehart      += HartreeFact*rho[i].getMagSqr()*wght_now;
+      HartreeFact = fpi/(g2*vol);
+      if(iperd!=3){HartreeFact += perdCorr[i]/vol;}
+      ehart      += HartreeFact*rho[i].getMagSqr()*wght_now;
 
-       vks[i] = rho[i]*HartreeFact;
-       count+=1.0;
+      vks[i] = rho[i]*HartreeFact;
+      count+=1.0;
 
-  //----------------------------------------------------------------------------
-  // III. Get the structure factor:  If condition chosen to ensure we get in first time
+      //----------------------------------------------------------------------------
+      // III. Get the structure factor:  If condition chosen to ensure we get in first time
 
-       if(kx_old != k_x[i] || ky_old != k_y[i] || kz_old != k_z[i]-1 || igo==0) {
-         for(int iatm = 0; iatm < natm; iatm++){
-           double arg = x[iatm]*gx + y[iatm]*gy + z[iatm]*gz;
-           h[iatm] = complex(cos(arg),sin(arg));
-         } /* endfor */
-         count_slow+=1.0;
-       }/* endif */
+      if(kx_old != k_x[i] || ky_old != k_y[i] || kz_old != k_z[i]-1 || igo==0) {
+        for(int iatm = 0; iatm < natm; iatm++){
+          double arg = x[iatm]*gx + y[iatm]*gy + z[iatm]*gz;
+          h[iatm] = complex(cos(arg),sin(arg));
+        } /* endfor */
+        count_slow+=1.0;
+      }/* endif */
 
-       g = sqrt(g2);
-       CP_get_vpsnow(index_atm,nsplin_g,gmin_spl,dg_spl,g,
-                 vps0,vps1,vps2,vps3,vtemp,iatm_typ,natm_typ,natm,vol); 
+      g = sqrt(g2);
+      CP_get_vpsnow(index_atm,nsplin_g,gmin_spl,dg_spl,g,
+          vps0,vps1,vps2,vps3,vtemp,iatm_typ,natm_typ,natm,vol); 
 
-       sewd = complex(0.0,0.0);
-       vext  = complex(0.0,0.0);
-       double vsave = 0;
-       for(int iatm = 0; iatm < natm; iatm++){
-         if(iperd!=3){vtemp[iatm] -= q[iatm]*perdCorr[i]/vol;} // charge on electron is -1
-#ifdef _CP_DEBUG_VKS_HART_EEXT_
-         if(iatm_typ[(iatm+1)]==2){
-           vsave  = vtemp[iatm];
-           vext  += h[iatm]*vtemp[iatm];
-         }//endif
-#else
-         vext  += h[iatm]*vtemp[iatm];
-#endif
-         sewd  += h[iatm]*q[iatm];
-       }//endfor
-
-  //----------------------------------------------------------------------------
-  // IV. Use structure factor to evaluate external potential
-
-       EwdFact    = fpi*exp(-g2/falp2)/(g2*vol);
-       if(iperd!=3){EwdFact += perdCorr[i]/vol;}
-       if(iperd==0){EwdFact=0.0;}
-       EwdEnergy += EwdFact*sewd.getMagSqr()*wght_now;
-
-       double sumr   = sewd.re*EwdFact*wght_now;
-       double sumi   = sewd.im*EwdFact*wght_now;
-       double rho_r  = rho[i].re*wght_now;
-       double rho_i  = rho[i].im*wght_now;
-       for(int iatm=0; iatm < natm; iatm++){
-         double rho_temp_r = ( rho_r*vtemp[iatm] + sumr*q[iatm]);
-         double rho_temp_i = (-rho_i*vtemp[iatm] + sumi*q[iatm]);
-         double srx        = (gx*rho_temp_r);
-         double sry        = (gy*rho_temp_r);
-         double srz        = (gz*rho_temp_r);
-         double six        = (gx*rho_temp_i);
-         double siy        = (gy*rho_temp_i);
-         double siz        = (gz*rho_temp_i);
-         fx[iatm]         += (srx*h[iatm].im - six*h[iatm].re);
-         fy[iatm]         += (sry*h[iatm].im - siy*h[iatm].re);
-         fz[iatm]         += (srz*h[iatm].im - siz*h[iatm].re); 
-#ifdef _CP_DEBUG_VKS_HART_EEXT_
-         if(iatm_typ[(iatm+1)]==2){
- 	   rho_temp_r = ( rho_r*vtemp[iatm] );
-   	   rho_temp_i = (-rho_i*vtemp[iatm] );
-           srx = (gx*rho_temp_r);
-           sry = (gy*rho_temp_r);
-           srz = (gz*rho_temp_r);
-           six = (gx*rho_temp_i);
-           siy = (gy*rho_temp_i);
-           siz = (gz*rho_temp_i);
-           fxt[iatm] +=  (srx*h[iatm].im - six*h[iatm].re);
-           fyt[iatm] +=  (sry*h[iatm].im - siy*h[iatm].re);
-           fzt[iatm] +=  (srz*h[iatm].im - siz*h[iatm].re);
-         }//endif
-         rho_temp_r = sumr*q[iatm];
-         rho_temp_i = sumi*q[iatm];
-         srx = (gx*rho_temp_r);
-         sry = (gy*rho_temp_r);
-         srz = (gz*rho_temp_r);
-         six = (gx*rho_temp_i);
-         siy = (gy*rho_temp_i);
-         siz = (gz*rho_temp_i);
-         fxt_ewd[iatm] +=  (srx*h[iatm].im - six*h[iatm].re);
-         fyt_ewd[iatm] +=  (sry*h[iatm].im - siy*h[iatm].re);
-         fzt_ewd[iatm] +=  (srz*h[iatm].im - siz*h[iatm].re);
-#endif
-       }/*endfor*/
-
-       vks[i] += vext.conj(); 
-       eext += (rho[i]*vext).re*wght_now;
-       for(int iatm=0; iatm < natm; iatm++){h[iatm] = h[iatm]*ei_inc[iatm];}
-
-#ifdef _CP_DEBUG_VKS_HART_EEXT_
-       fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g : %g\n",k_x[i],k_y[i],k_z[i],
-	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart,vsave);
-       fprintf(fp2,"%d %d %d : %g %g : %g %g\n",k_x[i],k_y[i],k_z[i],
-  	          sewd.re,sewd.im,sewd.getMagSqr(),EwdFact);
-#endif
-       kx_old = k_x[i];
-       ky_old = k_y[i];
-       kz_old = k_z[i];
-       igo    = 1;
-     }else{
-       igo    = 0;
-     }// endif : ecut
-
-   }/* endfor : icoef*/
-
-//============================================================================
-// Deal with g=0 : double pack weight is 1 just like non-double pack
-
-   if(izero>=0){
-     vext.re = 0.0;   vext.im = 0.0;
-     sewd.re = 0.0;   sewd.im = 0.0;
-     for(int iatm=0;iatm< natm; iatm++){
-        sewd.re    += q[iatm];   
-        vtemp[iatm] = gzvps[iatm_typ[(iatm+1)]]/vol;
-	if(iperd!=3){vtemp[iatm] -= q[iatm]*perdCorr[izero]/vol;} // charge on electron is -1
+      sewd = complex(0.0,0.0);
+      vext  = complex(0.0,0.0);
+      double vsave = 0;
+      for(int iatm = 0; iatm < natm; iatm++){
+        if(iperd!=3){vtemp[iatm] -= q[iatm]*perdCorr[i]/vol;} // charge on electron is -1
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
         if(iatm_typ[(iatm+1)]==2){
-          vext.re += vtemp[iatm];
-	}//endif
+          vsave  = vtemp[iatm];
+          vext  += h[iatm]*vtemp[iatm];
+        }//endif
 #else
-        vext.re += vtemp[iatm];
+        vext  += h[iatm]*vtemp[iatm];
 #endif
-     }/*endfor*/
-     int i = izero;
-     vks[i].re  = vext.re;
-     vks[i].im  = 0.0;
-     eext += (vext.re*rho[i].re);
-     if(iperd!=0 && iperd!=3){
-       EwdEnergy += 0.5*sewd.re*sewd.re*perdCorr[izero]/vol;
-     }//endif
+        sewd  += h[iatm]*q[iatm];
+      }//endfor
+
+      //----------------------------------------------------------------------------
+      // IV. Use structure factor to evaluate external potential
+
+      EwdFact    = fpi*exp(-g2/falp2)/(g2*vol);
+      if(iperd!=3){EwdFact += perdCorr[i]/vol;}
+      if(iperd==0){EwdFact=0.0;}
+      EwdEnergy += EwdFact*sewd.getMagSqr()*wght_now;
+
+      double sumr   = sewd.re*EwdFact*wght_now;
+      double sumi   = sewd.im*EwdFact*wght_now;
+      double rho_r  = rho[i].re*wght_now;
+      double rho_i  = rho[i].im*wght_now;
+      for(int iatm=0; iatm < natm; iatm++){
+        double rho_temp_r = ( rho_r*vtemp[iatm] + sumr*q[iatm]);
+        double rho_temp_i = (-rho_i*vtemp[iatm] + sumi*q[iatm]);
+        double srx        = (gx*rho_temp_r);
+        double sry        = (gy*rho_temp_r);
+        double srz        = (gz*rho_temp_r);
+        double six        = (gx*rho_temp_i);
+        double siy        = (gy*rho_temp_i);
+        double siz        = (gz*rho_temp_i);
+        fx[iatm]         += (srx*h[iatm].im - six*h[iatm].re);
+        fy[iatm]         += (sry*h[iatm].im - siy*h[iatm].re);
+        fz[iatm]         += (srz*h[iatm].im - siz*h[iatm].re); 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-     fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g\n",
-		rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
+        if(iatm_typ[(iatm+1)]==2){
+          rho_temp_r = ( rho_r*vtemp[iatm] );
+          rho_temp_i = (-rho_i*vtemp[iatm] );
+          srx = (gx*rho_temp_r);
+          sry = (gy*rho_temp_r);
+          srz = (gz*rho_temp_r);
+          six = (gx*rho_temp_i);
+          siy = (gy*rho_temp_i);
+          siz = (gz*rho_temp_i);
+          fxt[iatm] +=  (srx*h[iatm].im - six*h[iatm].re);
+          fyt[iatm] +=  (sry*h[iatm].im - siy*h[iatm].re);
+          fzt[iatm] +=  (srz*h[iatm].im - siz*h[iatm].re);
+        }//endif
+        rho_temp_r = sumr*q[iatm];
+        rho_temp_i = sumi*q[iatm];
+        srx = (gx*rho_temp_r);
+        sry = (gy*rho_temp_r);
+        srz = (gz*rho_temp_r);
+        six = (gx*rho_temp_i);
+        siy = (gy*rho_temp_i);
+        siz = (gz*rho_temp_i);
+        fxt_ewd[iatm] +=  (srx*h[iatm].im - six*h[iatm].re);
+        fyt_ewd[iatm] +=  (sry*h[iatm].im - siy*h[iatm].re);
+        fzt_ewd[iatm] +=  (srz*h[iatm].im - siz*h[iatm].re);
+#endif
+      }/*endfor*/
+
+      vks[i] += vext.conj(); 
+      eext += (rho[i]*vext).re*wght_now;
+      for(int iatm=0; iatm < natm; iatm++){h[iatm] = h[iatm]*ei_inc[iatm];}
+
+#ifdef _CP_DEBUG_VKS_HART_EEXT_
+      fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g : %g\n",k_x[i],k_y[i],k_z[i],
+          rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart,vsave);
+      fprintf(fp2,"%d %d %d : %g %g : %g %g\n",k_x[i],k_y[i],k_z[i],
+          sewd.re,sewd.im,sewd.getMagSqr(),EwdFact);
+#endif
+      kx_old = k_x[i];
+      ky_old = k_y[i];
+      kz_old = k_z[i];
+      igo    = 1;
+    }else{
+      igo    = 0;
+    }// endif : ecut
+
+  }/* endfor : icoef*/
+
+  //============================================================================
+  // Deal with g=0 : double pack weight is 1 just like non-double pack
+
+  if(izero>=0){
+    vext.re = 0.0;   vext.im = 0.0;
+    sewd.re = 0.0;   sewd.im = 0.0;
+    for(int iatm=0;iatm< natm; iatm++){
+      sewd.re    += q[iatm];   
+      vtemp[iatm] = gzvps[iatm_typ[(iatm+1)]]/vol;
+      if(iperd!=3){vtemp[iatm] -= q[iatm]*perdCorr[izero]/vol;} // charge on electron is -1
+#ifdef _CP_DEBUG_VKS_HART_EEXT_
+      if(iatm_typ[(iatm+1)]==2){
+        vext.re += vtemp[iatm];
+      }//endif
+#else
+      vext.re += vtemp[iatm];
+#endif
+    }/*endfor*/
+    int i = izero;
+    vks[i].re  = vext.re;
+    vks[i].im  = 0.0;
+    eext += (vext.re*rho[i].re);
+    if(iperd!=0 && iperd!=3){
+      EwdEnergy += 0.5*sewd.re*sewd.re*perdCorr[izero]/vol;
+    }//endif
+#ifdef _CP_DEBUG_VKS_HART_EEXT_
+    fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g\n",
+        rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
 #endif
 
-   }//endif
+  }//endif
 
-//============================================================================
-// VI. Return values and memory clean up
+  //============================================================================
+  // VI. Return values and memory clean up
 
-   *ehart_ret = ehart/2.0;
-   *eext_ret  = eext;
-   *ewd_ret   = EwdEnergy/2.0;
+  *ehart_ret = ehart/2.0;
+  *eext_ret  = eext;
+  *ewd_ret   = EwdEnergy/2.0;
 
-//============================================================================
-// VIII. Debug output Control
+  //============================================================================
+  // VIII. Debug output Control
 
 #ifdef GJM_DEBUG_SIZE
-   PRINTF("Hart eext : tot %g slow %g\n",count,count_slow);
+  PRINTF("Hart eext : tot %g slow %g\n",count,count_slow);
 #endif
 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-   fclose(fp);
-   fclose(fp2);
+  fclose(fp);
+  fclose(fp2);
 
-   sprintf(myFileName, "fatm_%d.out",index);
-   fp = fopen(myFileName,"w");
-   for(int i=0;i<natm;i++){
-     fprintf(fp,"%d %g %g %g\n",i,fxt[i],fyt[i],fzt[i]);
-   }//endfor
-   fclose(fp);   
-   delete [] fxt;
-   delete [] fyt;
-   delete [] fzt;
-   sprintf(myFileName, "fatm_%d.out.ewd",index);
-   fp = fopen(myFileName,"w");
-   for(int i=0;i<natm;i++){
-     fprintf(fp,"%d %g %g %g\n",i,fxt_ewd[i],fyt_ewd[i],fzt_ewd[i]);
-   }//endfor
-   fclose(fp);   
-   delete [] fxt_ewd;
-   delete [] fyt_ewd;
-   delete [] fzt_ewd;
+  sprintf(myFileName, "fatm_%d.out",index);
+  fp = fopen(myFileName,"w");
+  for(int i=0;i<natm;i++){
+    fprintf(fp,"%d %g %g %g\n",i,fxt[i],fyt[i],fzt[i]);
+  }//endfor
+  fclose(fp);   
+  delete [] fxt;
+  delete [] fyt;
+  delete [] fzt;
+  sprintf(myFileName, "fatm_%d.out.ewd",index);
+  fp = fopen(myFileName,"w");
+  for(int i=0;i<natm;i++){
+    fprintf(fp,"%d %g %g %g\n",i,fxt_ewd[i],fyt_ewd[i],fzt_ewd[i]);
+  }//endfor
+  fclose(fp);   
+  delete [] fxt_ewd;
+  delete [] fyt_ewd;
+  delete [] fzt_ewd;
 #endif
-   
-//============================================================================
-   }/* End function */
+
+  //============================================================================
+}/* End function */
 //============================================================================
 
 
 //==========================================================================
 /** \brief Spline look up the non-local pseudopotential for N^2 method -
-    only invoked by routines local to class. 
-*/
+  only invoked by routines local to class. 
+ */
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 
 void CPLOCAL::CP_get_vpsnow(int *index_atm,int nsplin_g,
-               double gmin_spl,double  dg_spl,double g,
-               double *vps0,double *vps1,double *vps2,double *vps3,
-               double *vtemp,int *iatm_typ,int natm_typ,int npart,double vol)
+    double gmin_spl,double  dg_spl,double g,
+    double *vps0,double *vps1,double *vps2,double *vps3,
+    double *vtemp,int *iatm_typ,int natm_typ,int npart,double vol)
 
-/*========================================================================*/
- {/*begin routine*/
-/*========================================================================*/
-/*        Local variable declarations            */
+  /*========================================================================*/
+{/*begin routine*/
+  /*========================================================================*/
+  /*        Local variable declarations            */
 
   int ipart,itype,iii;
   int index_now;
@@ -430,8 +430,8 @@ void CPLOCAL::CP_get_vpsnow(int *index_atm,int nsplin_g,
     FFLUSH(stdout); EXIT(1);
   }//endif
 
-/*==========================================================================*/
-/* Loop over atom types to calculate pseudopotential                        */
+  /*==========================================================================*/
+  /* Loop over atom types to calculate pseudopotential                        */
 
 
   for(itype=1;itype<=natm_typ;itype++){
@@ -453,24 +453,24 @@ void CPLOCAL::CP_get_vpsnow(int *index_atm,int nsplin_g,
     vtemp[(ipart-1)] = vtemp_atyp[iatm_typ[ipart]];  // changed vtemp to start at 0
   }//endfor
 
-//--------------------------------------------------------------------------
- }//end routine
+  //--------------------------------------------------------------------------
+}//end routine
 //==========================================================================
 
 
 //==========================================================================
 /** \brief Fetch the local pseudo EES grid size interpolation order and 
-     number of atoms for use in the class from the
-     CP->cppseudo readonly class.
+  number of atoms for use in the class from the
+  CP->cppseudo readonly class.
  */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::getEesPrms(int *ngrid_a, int *ngrid_b, int *ngrid_c,
-                         int *n_interp, int *natm)
-//==========================================================================
-  { // begin routine 
-//==========================================================================
+    int *n_interp, int *natm)
+  //==========================================================================
+{ // begin routine 
+  //==========================================================================
   CP           *cp           = CP::get();
   MDATOMS      *mdatoms      = MDATOMS::get();
 #include "../class_defs/allclass_strip_cp.h"
@@ -482,24 +482,24 @@ void CPLOCAL::getEesPrms(int *ngrid_a, int *ngrid_b, int *ngrid_c,
   n_interp[0] = cppseudo->n_interp_ps;
   natm[0]     = mdclatoms_info->natm_tot;
 
-  }//end routine
+}//end routine
 //==========================================================================
 
 
 //==========================================================================
 /** \brief  Compute the g-space weights for the set of g-vectors given.
-              The weight only depends on g-vectors given.
-              The EESgroup should call the routine ONCE for each collection 
-              it is assigned.
-*/
+  The weight only depends on g-vectors given.
+  The EESgroup should call the routine ONCE for each collection 
+  it is assigned.
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
-                                double *b_re, double *b_im, 
-                                int nkf1,int nkf2,int nkf3,int n_interp)
-//==========================================================================
-  { // begin routine 
+    double *b_re, double *b_im, 
+    int nkf1,int nkf2,int nkf3,int n_interp)
+  //==========================================================================
+{ // begin routine 
   CP           *cp           = CP::get();
 #include "../class_defs/allclass_strip_cp.h"
   int nkf1_t = cppseudo->ngrid_eext_a;
@@ -509,83 +509,83 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
   if(nkf1_t!=nkf1 || nkf2_t!=nkf2 || nkf3_t!=nkf3){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("Incorrect Eext FFT size %d %d %d vs %d %d %d",
-            nkf1,nkf2,nkf3,nkf1_t,nkf2_t,nkf3_t);
+        nkf1,nkf2,nkf3,nkf1_t,nkf2_t,nkf3_t);
     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
     FFLUSH(stdout); EXIT(1);
   }//endif
 
-//==========================================================================
-// I) Calculate bweight for this set of points
+  //==========================================================================
+  // I) Calculate bweight for this set of points
 
-//--------------------------------------------------------------------------
-//   A) Malloc memory and define constants                                
+  //--------------------------------------------------------------------------
+  //   A) Malloc memory and define constants                                
 
-   int dim_k;
-   int ngrid_a = nkf1;
-   int ngrid_b = nkf2;
-   int ngrid_c = nkf3;
+  int dim_k;
+  int ngrid_a = nkf1;
+  int ngrid_b = nkf2;
+  int ngrid_c = nkf3;
 
-   dim_k = ngrid_a;
-   double *bden_a_r  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
-   double *bden_a_i  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
-   double *bweight_a = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  dim_k = ngrid_a;
+  double *bden_a_r  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  double *bden_a_i  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  double *bweight_a = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
 
-   dim_k = ngrid_b;
-   double *bden_b_r  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
-   double *bden_b_i  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
-   double *bweight_b = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  dim_k = ngrid_b;
+  double *bden_b_r  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  double *bden_b_i  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  double *bweight_b = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
 
-   dim_k = ngrid_c;
-   double *bden_c_r  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
-   double *bden_c_i  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
-   double *bweight_c = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  dim_k = ngrid_c;
+  double *bden_c_r  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  double *bden_c_i  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  double *bweight_c = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
 
-   dim_k = n_interp;
-   double *aj   = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
-   double *rn   = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
-   double *rn1  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
-   double *mn_k = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
-   double *uk   = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  dim_k = n_interp;
+  double *aj   = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  double *rn   = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  double *rn1  = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  double *mn_k = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
+  double *uk   = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
 
-//--------------------------------------------------------------------------
-//   B) Construct the weighting Function                                  
+  //--------------------------------------------------------------------------
+  //   B) Construct the weighting Function                                  
 
-   get_bspline_wght1d(n_interp,ngrid_a,aj,rn,rn1,mn_k,uk,
-                      bden_a_r,bden_a_i,bweight_a);
-   get_bspline_wght1d(n_interp,ngrid_b,aj,rn,rn1,mn_k,uk,
-                      bden_b_r,bden_b_i,bweight_b);
-   get_bspline_wght1d(n_interp,ngrid_c,aj,rn,rn1,mn_k,uk,
-                      bden_c_r,bden_c_i,bweight_c);
+  get_bspline_wght1d(n_interp,ngrid_a,aj,rn,rn1,mn_k,uk,
+      bden_a_r,bden_a_i,bweight_a);
+  get_bspline_wght1d(n_interp,ngrid_b,aj,rn,rn1,mn_k,uk,
+      bden_b_r,bden_b_i,bweight_b);
+  get_bspline_wght1d(n_interp,ngrid_c,aj,rn,rn1,mn_k,uk,
+      bden_c_r,bden_c_i,bweight_c);
 
-   for(int i=1;i <=ncoef; ++i){
-     int ka = ka_in[(i-1)];
-     int kb = kb_in[(i-1)];
-     int kc = kc_in[(i-1)];
-     int kap,kbp,kcp;
-     if (kc < 0) {kcp = kc + nkf3 + 1;} else {kcp = kc + 1;}
-     if (kb < 0) {kbp = kb + nkf2 + 1;} else {kbp = kb + 1;}
-     if (ka < 0) {kap = ka + nkf1 + 1;} else {kap = ka + 1;}
-     double tmp_a_r,tmp_a_i;
-     tmp_a_r     = bden_a_r[kap];
-     tmp_a_i     = bden_a_i[kap];
-     double tmp_b_r,tmp_b_i;
-     tmp_b_r     = bden_b_r[kbp];
-     tmp_b_i     = bden_b_i[kbp];
-     double tmp_c_r,tmp_c_i;
-     tmp_c_r     = bden_c_r[kcp];
-     tmp_c_i     = bden_c_i[kcp];
-     double tmp_ab_r,tmp_ab_i;
-     tmp_ab_r    = tmp_a_r*tmp_b_r - tmp_a_i*tmp_b_i;
-     tmp_ab_i    = tmp_a_i*tmp_b_r + tmp_a_r*tmp_b_i;
-     b_re[(i-1)] = tmp_ab_r*tmp_c_r - tmp_ab_i*tmp_c_i;
-     b_im[(i-1)] = tmp_ab_i*tmp_c_r + tmp_ab_r*tmp_c_i;
-     if(ka==0&&kb==0&&kc==0){ //safety
-       b_re[(i-1)] = bden_a_r[1]*bden_b_r[1]*bden_c_r[1];
-       b_im[(i-1)] = 0.0;
+  for(int i=1;i <=ncoef; ++i){
+    int ka = ka_in[(i-1)];
+    int kb = kb_in[(i-1)];
+    int kc = kc_in[(i-1)];
+    int kap,kbp,kcp;
+    if (kc < 0) {kcp = kc + nkf3 + 1;} else {kcp = kc + 1;}
+    if (kb < 0) {kbp = kb + nkf2 + 1;} else {kbp = kb + 1;}
+    if (ka < 0) {kap = ka + nkf1 + 1;} else {kap = ka + 1;}
+    double tmp_a_r,tmp_a_i;
+    tmp_a_r     = bden_a_r[kap];
+    tmp_a_i     = bden_a_i[kap];
+    double tmp_b_r,tmp_b_i;
+    tmp_b_r     = bden_b_r[kbp];
+    tmp_b_i     = bden_b_i[kbp];
+    double tmp_c_r,tmp_c_i;
+    tmp_c_r     = bden_c_r[kcp];
+    tmp_c_i     = bden_c_i[kcp];
+    double tmp_ab_r,tmp_ab_i;
+    tmp_ab_r    = tmp_a_r*tmp_b_r - tmp_a_i*tmp_b_i;
+    tmp_ab_i    = tmp_a_i*tmp_b_r + tmp_a_r*tmp_b_i;
+    b_re[(i-1)] = tmp_ab_r*tmp_c_r - tmp_ab_i*tmp_c_i;
+    b_im[(i-1)] = tmp_ab_i*tmp_c_r + tmp_ab_r*tmp_c_i;
+    if(ka==0&&kb==0&&kc==0){ //safety
+      b_re[(i-1)] = bden_a_r[1]*bden_b_r[1]*bden_c_r[1];
+      b_im[(i-1)] = 0.0;
     }//endfor
   }//endif
 
-//==========================================================================
+  //==========================================================================
 
   cfree(&bden_a_r[1],"set_ees_wgt"); 
   cfree(&bden_a_i[1],"set_ees_wgt"); 
@@ -602,28 +602,28 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
   cfree(&uk[1],"set_ees_wgt"); 
   cfree(&mn_k[1],"set_ees_wgt"); 
 
-//--------------------------------------------------------------------------
-  }//end routine
+  //--------------------------------------------------------------------------
+}//end routine
 //==========================================================================
 
 
 //==========================================================================
 /** \brief  Compute in real space, the B-Spline coefficients of the atoms
-    for the local pseudo grid.
-    Should be invoked by EESgroup members with real space planes at each time step:
-     EESGroup should provide a list of ALL allowed real space planes.
-       allowed_planes[ip] = 1, if I want the Bspline coefs on plane ip
-       allowed_planes[ip] = 0, if I DONT want the Bspline coefs on plane ip
-    where ip=0 ... nfftc-1 or ngrid_c-1. 
-*/
+  for the local pseudo grid.
+  Should be invoked by EESgroup members with real space planes at each time step:
+  EESGroup should provide a list of ALL allowed real space planes.
+  allowed_planes[ip] = 1, if I want the Bspline coefs on plane ip
+  allowed_planes[ip] = 0, if I DONT want the Bspline coefs on plane ip
+  where ip=0 ... nfftc-1 or ngrid_c-1. 
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, 
-                                RHORHARTDATA **RhoRHartData, PSSCRATCH *pscratch)
-//==========================================================================
-  {// begin routine 
-//==========================================================================
+    RHORHARTDATA **RhoRHartData, PSSCRATCH *pscratch)
+  //==========================================================================
+{// begin routine 
+  //==========================================================================
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP           *cp           = CP::get();
@@ -677,249 +677,249 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
 
   double cpu1,cpu2;
 
-//==========================================================================
-// 0) Useful Constants 
+  //==========================================================================
+  // 0) Useful Constants 
 
-   for(j=1;j<=n_interp;j++){
-     aj[j] = (double) (j-1);
-     rn[j] = (double) (j);
-     if(j > 1){rn1[j] = 1.0/((double)(j-1));}
-   }//endfor
-   rn1[1] = 0.0;
+  for(j=1;j<=n_interp;j++){
+    aj[j] = (double) (j-1);
+    rn[j] = (double) (j);
+    if(j > 1){rn1[j] = 1.0/((double)(j-1));}
+  }//endfor
+  rn1[1] = 0.0;
 
-   grid_a    = (double) ngrid_a;
-   grid_b    = (double) ngrid_b;
-   grid_c    = (double) ngrid_c;
+  grid_a    = (double) ngrid_a;
+  grid_b    = (double) ngrid_b;
+  grid_c    = (double) ngrid_c;
 
-//==========================================================================
-// I) scaled coordinates                                                   
+  //==========================================================================
+  // I) scaled coordinates                                                   
 
 #ifdef TIME_BSPLINE
-   cputime(&cpu1);
+  cputime(&cpu1);
 #endif
 
-   for(i=0;i<natm;i++){
-     x = xatm[i];
-     y = yatm[i];
-     z = zatm[i];
-     atemp = x*hmati[1] + y*hmati[4] + z*hmati[7];
-     btemp = x*hmati[2] + y*hmati[5] + z*hmati[8];
-     ctemp = x*hmati[3] + y*hmati[6] + z*hmati[9];
-     atemp -= NINT((atemp-0.5));
-     btemp -= NINT((btemp-0.5));
-     ctemp -= NINT((ctemp-0.5));
-     atemp = (atemp==1.0 ? 0.0 : atemp);
-     btemp = (btemp==1.0 ? 0.0 : btemp);
-     ctemp = (ctemp==1.0 ? 0.0 : ctemp);
-     atemp = atemp*grid_a;
-     btemp = btemp*grid_b;
-     ctemp = ctemp*grid_c;
-     iatemp[i] = (int) (atemp);
-     ibtemp[i] = (int) (btemp);
-     ictemp[i] = (int) (ctemp);
-     frac_a[i] = atemp - (double) (iatemp[i]);
-     frac_b[i] = btemp - (double) (ibtemp[i]);
-     frac_c[i] = ctemp - (double) (ictemp[i]);
-   }//endfor
-//==========================================================================
-// II) Using current fraction, find the grid points on which M_n is non-zero 
+  for(i=0;i<natm;i++){
+    x = xatm[i];
+    y = yatm[i];
+    z = zatm[i];
+    atemp = x*hmati[1] + y*hmati[4] + z*hmati[7];
+    btemp = x*hmati[2] + y*hmati[5] + z*hmati[8];
+    ctemp = x*hmati[3] + y*hmati[6] + z*hmati[9];
+    atemp -= NINT((atemp-0.5));
+    btemp -= NINT((btemp-0.5));
+    ctemp -= NINT((ctemp-0.5));
+    atemp = (atemp==1.0 ? 0.0 : atemp);
+    btemp = (btemp==1.0 ? 0.0 : btemp);
+    ctemp = (ctemp==1.0 ? 0.0 : ctemp);
+    atemp = atemp*grid_a;
+    btemp = btemp*grid_b;
+    ctemp = ctemp*grid_c;
+    iatemp[i] = (int) (atemp);
+    ibtemp[i] = (int) (btemp);
+    ictemp[i] = (int) (ctemp);
+    frac_a[i] = atemp - (double) (iatemp[i]);
+    frac_b[i] = btemp - (double) (ibtemp[i]);
+    frac_c[i] = ctemp - (double) (ictemp[i]);
+  }//endfor
+  //==========================================================================
+  // II) Using current fraction, find the grid points on which M_n is non-zero 
 
-   for(j=1;j<=n_interp;j++){
-     for(i=0;i<natm;i++){
-       ua[j][i] = frac_a[i] + aj[j];
-       ub[j][i] = frac_b[i] + aj[j];
-       uc[j][i] = frac_c[i] + aj[j];
-       j2       = j-2;
-       ia       = iatemp[i] - j2;
-       ib       = ibtemp[i] - j2;
-       ic       = ictemp[i] - j2;
-       ia       = (ia>0 ? ia:ngrid_a+ia);
-       ib       = (ib>0 ? ib:ngrid_b+ib);
-       ic       = (ic>0 ? ic:ngrid_c+ic);
-       ia       = (ia<=ngrid_a ? ia:ia-ngrid_a);
-       ib       = (ib<=ngrid_b ? ib:ib-ngrid_b);
-       ic       = (ic<=ngrid_c ? ic:ic-ngrid_c);
-       igrid_a[j][i] = ia-1;
-       igrid_b[j][i] = (ib - 1);
-       igrid_c[j][i] = (ic - 1);  // use to assign to planes
-     }//endfor
-   }//endfor
+  for(j=1;j<=n_interp;j++){
+    for(i=0;i<natm;i++){
+      ua[j][i] = frac_a[i] + aj[j];
+      ub[j][i] = frac_b[i] + aj[j];
+      uc[j][i] = frac_c[i] + aj[j];
+      j2       = j-2;
+      ia       = iatemp[i] - j2;
+      ib       = ibtemp[i] - j2;
+      ic       = ictemp[i] - j2;
+      ia       = (ia>0 ? ia:ngrid_a+ia);
+      ib       = (ib>0 ? ib:ngrid_b+ib);
+      ic       = (ic>0 ? ic:ngrid_c+ic);
+      ia       = (ia<=ngrid_a ? ia:ia-ngrid_a);
+      ib       = (ib<=ngrid_b ? ib:ib-ngrid_b);
+      ic       = (ic<=ngrid_c ? ic:ic-ngrid_c);
+      igrid_a[j][i] = ia-1;
+      igrid_b[j][i] = (ib - 1);
+      igrid_c[j][i] = (ic - 1);  // use to assign to planes
+    }//endfor
+  }//endfor
 
-//==========================================================================
-// III) Initialize M2 and get the Mn's using the recursion relation         
-//    Note: M_n is defined on 0 to n. Since frac between 0 and 1, the       
-//          calculation is performed in an order that takes advantage of it 
-   for(i=0;i<natm;i++){
-     mn_a[1][i] = 1.0 - fabs(ua[1][i]-1.0);
-     mn_b[1][i] = 1.0 - fabs(ub[1][i]-1.0);
-     mn_c[1][i] = 1.0 - fabs(uc[1][i]-1.0);
-     mn_a[2][i] = 1.0 - fabs(ua[2][i]-1.0);
-     mn_b[2][i] = 1.0 - fabs(ub[2][i]-1.0);
-     mn_c[2][i] = 1.0 - fabs(uc[2][i]-1.0);
-   }//endfor
-   for(j=3;j<=n_interp;j++){
-     for(i=0;i<natm;i++){
-       mn_a[j][i]   = 0.0;
-       mn_b[j][i]   = 0.0;
-       mn_c[j][i]   = 0.0;
-     }//endfor
-   }//endfor
-   for(n=3;n<=n_interp;n++){
+  //==========================================================================
+  // III) Initialize M2 and get the Mn's using the recursion relation         
+  //    Note: M_n is defined on 0 to n. Since frac between 0 and 1, the       
+  //          calculation is performed in an order that takes advantage of it 
+  for(i=0;i<natm;i++){
+    mn_a[1][i] = 1.0 - fabs(ua[1][i]-1.0);
+    mn_b[1][i] = 1.0 - fabs(ub[1][i]-1.0);
+    mn_c[1][i] = 1.0 - fabs(uc[1][i]-1.0);
+    mn_a[2][i] = 1.0 - fabs(ua[2][i]-1.0);
+    mn_b[2][i] = 1.0 - fabs(ub[2][i]-1.0);
+    mn_c[2][i] = 1.0 - fabs(uc[2][i]-1.0);
+  }//endfor
+  for(j=3;j<=n_interp;j++){
+    for(i=0;i<natm;i++){
+      mn_a[j][i]   = 0.0;
+      mn_b[j][i]   = 0.0;
+      mn_c[j][i]   = 0.0;
+    }//endfor
+  }//endfor
+  for(n=3;n<=n_interp;n++){
 
-     for(j=n;j>=2;j--){
-       j1 = j-1;
-       for(i=0;i<natm;i++){
-         mn_a_tmp  = (ua[j][i]*mn_a[j][i]+(rn[n]-ua[j][i])*mn_a[j1][i])*rn1[n];
-         mn_b_tmp  = (ub[j][i]*mn_b[j][i]+(rn[n]-ub[j][i])*mn_b[j1][i])*rn1[n];
-         mn_c_tmp  = (uc[j][i]*mn_c[j][i]+(rn[n]-uc[j][i])*mn_c[j1][i])*rn1[n];
-         mn_a[j][i] = mn_a_tmp;
-         mn_b[j][i] = mn_b_tmp;
-         mn_c[j][i] = mn_c_tmp;
-       }//end for: i
-     }//end for: j
-     for(i=0;i<natm;i++){
-       mn_a[1][i] = ua[1][i]*mn_a[1][i]*rn1[n];
-       mn_b[1][i] = ub[1][i]*mn_b[1][i]*rn1[n];
-       mn_c[1][i] = uc[1][i]*mn_c[1][i]*rn1[n];
-     }//endfor 
+    for(j=n;j>=2;j--){
+      j1 = j-1;
+      for(i=0;i<natm;i++){
+        mn_a_tmp  = (ua[j][i]*mn_a[j][i]+(rn[n]-ua[j][i])*mn_a[j1][i])*rn1[n];
+        mn_b_tmp  = (ub[j][i]*mn_b[j][i]+(rn[n]-ub[j][i])*mn_b[j1][i])*rn1[n];
+        mn_c_tmp  = (uc[j][i]*mn_c[j][i]+(rn[n]-uc[j][i])*mn_c[j1][i])*rn1[n];
+        mn_a[j][i] = mn_a_tmp;
+        mn_b[j][i] = mn_b_tmp;
+        mn_c[j][i] = mn_c_tmp;
+      }//end for: i
+    }//end for: j
+    for(i=0;i<natm;i++){
+      mn_a[1][i] = ua[1][i]*mn_a[1][i]*rn1[n];
+      mn_b[1][i] = ub[1][i]*mn_b[1][i]*rn1[n];
+      mn_c[1][i] = uc[1][i]*mn_c[1][i]*rn1[n];
+    }//endfor 
 
-     if(n==(n_interp-1)){
-       for(i=0;i<natm;i++){
-         dmn_a[1][i] = mn_a[1][i];
-         dmn_b[1][i] = mn_b[1][i];
-         dmn_c[1][i] = mn_c[1][i];
-       }//endfor
-       for(j=2;j<=n_interp;j++){    
-         j1 = j-1;
-         for(i=0;i<natm;i++){
-           dmn_a[j][i] = mn_a[j][i] - mn_a[j1][i];
-           dmn_b[j][i] = mn_b[j][i] - mn_b[j1][i];
-           dmn_c[j][i] = mn_c[j][i] - mn_c[j1][i];
-         }//endfor: i
-       }//endfor : j
-     }//endif : get derivative
+    if(n==(n_interp-1)){
+      for(i=0;i<natm;i++){
+        dmn_a[1][i] = mn_a[1][i];
+        dmn_b[1][i] = mn_b[1][i];
+        dmn_c[1][i] = mn_c[1][i];
+      }//endfor
+      for(j=2;j<=n_interp;j++){    
+        j1 = j-1;
+        for(i=0;i<natm;i++){
+          dmn_a[j][i] = mn_a[j][i] - mn_a[j1][i];
+          dmn_b[j][i] = mn_b[j][i] - mn_b[j1][i];
+          dmn_c[j][i] = mn_c[j][i] - mn_c[j1][i];
+        }//endfor: i
+      }//endfor : j
+    }//endif : get derivative
 
-   }//end for: n
+  }//end for: n
 
-//==========================================================================
-// IV) put together the separable bits and store 
+  //==========================================================================
+  // IV) put together the separable bits and store 
 
-   // Zero array mapping plane index, j, to interpolation index, jc.
-   int    rhoRsubplanes;
-   int    *subStr;
-   int    *subEnd;
-   int    *subSiz;
-   int    *plane_index;
-   int    *ntemp;
-   int    **itemp;
-   int    **nSub;
-   int    ***igrid; 
-   double ***mn,***dmn_x,***dmn_y,***dmn_z;
-  
+  // Zero array mapping plane index, j, to interpolation index, jc.
+  int    rhoRsubplanes;
+  int    *subStr;
+  int    *subEnd;
+  int    *subSiz;
+  int    *plane_index;
+  int    *ntemp;
+  int    **itemp;
+  int    **nSub;
+  int    ***igrid; 
+  double ***mn,***dmn_x,***dmn_y,***dmn_z;
 
-   // Zero array mapping plane index, j, to interpolation index, jc.
-   for(j=0;j<ngrid_c;j++){
-     if(allowed_planes[j]==1){
-       rhoRsubplanes = RhoRHartData[j]->rhoRsubplanes;
-       plane_index   = RhoRHartData[j]->plane_index;
-       nSub          = RhoRHartData[j]->nSub;
-       for(i=0;i<natm;i++){plane_index[i] = 0;}
-       for(int s=0;s<rhoRsubplanes;s++){for(i=0;i<natm;i++){nSub[s][i]=0;}}
-     }//endif
-   }//endfor
 
-   for(i=0;i<natm;i++){
-   for(jc=1;jc<=n_interp;jc++){
-     int ip = igrid_c[jc][i];
-     // plane decomp
-     if(allowed_planes[ip]==1){ // if the group wants this plane
-       
-       rhoRsubplanes = RhoRHartData[ip]->rhoRsubplanes;
-       subStr        = RhoRHartData[ip]->subStr;
-       subEnd        = RhoRHartData[ip]->subEnd;
-       subSiz        = RhoRHartData[ip]->subSiz;
-       ntemp         = RhoRHartData[ip]->ntemp;
-       itemp         = RhoRHartData[ip]->itemp;
-       nSub          = RhoRHartData[ip]->nSub;
-       igrid         = RhoRHartData[ip]->igrid;
-       mn            = RhoRHartData[ip]->mn;
-       dmn_x         = RhoRHartData[ip]->dmn_x;
-       dmn_y         = RhoRHartData[ip]->dmn_y;
-       dmn_z         = RhoRHartData[ip]->dmn_z;
-       plane_index   = RhoRHartData[ip]->plane_index;
+  // Zero array mapping plane index, j, to interpolation index, jc.
+  for(j=0;j<ngrid_c;j++){
+    if(allowed_planes[j]==1){
+      rhoRsubplanes = RhoRHartData[j]->rhoRsubplanes;
+      plane_index   = RhoRHartData[j]->plane_index;
+      nSub          = RhoRHartData[j]->nSub;
+      for(i=0;i<natm;i++){plane_index[i] = 0;}
+      for(int s=0;s<rhoRsubplanes;s++){for(i=0;i<natm;i++){nSub[s][i]=0;}}
+    }//endif
+  }//endfor
 
-       // subplane decomp
-       for(int s=0;s<rhoRsubplanes;s++){
-         ntemp[s] = 0;
-         for(jb=1;jb<=n_interp;jb++){
-           if(subStr[s]<=igrid_b[jb][i] && igrid_b[jb][i]<subEnd[s]){
-             ntemp[s]++;
-             itemp[s][ntemp[s]] = jb;
-	   }//endif
-         }//endfor
-       }//endfor
-        
-       // do all the subplanes : only some will be used : fix if too slow later
-       for(int s=0;s<rhoRsubplanes;s++){
-         jj = 1;
-         for(kb=1;kb<=ntemp[s];kb++){
-           jb      = itemp[s][kb];
-           int iii = (igrid_b[jb][i]-subStr[s])*(ngrid_a+2);
-           for(ja=1,j=jj;ja<=n_interp;ja++,j++){
-             igrid[s][i][j] = igrid_a[ja][i]+iii; //plane index only
-             atemp          = dmn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i]*grid_a;
-             btemp          =  mn_a[ja][i]*dmn_b[jb][i]* mn_c[jc][i]*grid_b;
-             ctemp          =  mn_a[ja][i]* mn_b[jb][i]*dmn_c[jc][i]*grid_c;
-             mn[s][i][j]    =  mn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i];
-             dmn_x[s][i][j] = atemp*hmati[1]+btemp*hmati[2]+ctemp*hmati[3];
-             dmn_y[s][i][j] = atemp*hmati[4]+btemp*hmati[5]+ctemp*hmati[6];
-             dmn_z[s][i][j] = atemp*hmati[7]+btemp*hmati[8]+ctemp*hmati[9];
-           }//endfor : ja
-           jj += n_interp;
-         }//endfor : jb
-         nSub[s][i] = jj-1;
-       }//endfor : s
-       plane_index[i] = jc; // each jc is a different plane
+  for(i=0;i<natm;i++){
+    for(jc=1;jc<=n_interp;jc++){
+      int ip = igrid_c[jc][i];
+      // plane decomp
+      if(allowed_planes[ip]==1){ // if the group wants this plane
 
-     }//endif : allowed
-   }}//endfor : iatm and jc
+        rhoRsubplanes = RhoRHartData[ip]->rhoRsubplanes;
+        subStr        = RhoRHartData[ip]->subStr;
+        subEnd        = RhoRHartData[ip]->subEnd;
+        subSiz        = RhoRHartData[ip]->subSiz;
+        ntemp         = RhoRHartData[ip]->ntemp;
+        itemp         = RhoRHartData[ip]->itemp;
+        nSub          = RhoRHartData[ip]->nSub;
+        igrid         = RhoRHartData[ip]->igrid;
+        mn            = RhoRHartData[ip]->mn;
+        dmn_x         = RhoRHartData[ip]->dmn_x;
+        dmn_y         = RhoRHartData[ip]->dmn_y;
+        dmn_z         = RhoRHartData[ip]->dmn_z;
+        plane_index   = RhoRHartData[ip]->plane_index;
+
+        // subplane decomp
+        for(int s=0;s<rhoRsubplanes;s++){
+          ntemp[s] = 0;
+          for(jb=1;jb<=n_interp;jb++){
+            if(subStr[s]<=igrid_b[jb][i] && igrid_b[jb][i]<subEnd[s]){
+              ntemp[s]++;
+              itemp[s][ntemp[s]] = jb;
+            }//endif
+          }//endfor
+        }//endfor
+
+        // do all the subplanes : only some will be used : fix if too slow later
+        for(int s=0;s<rhoRsubplanes;s++){
+          jj = 1;
+          for(kb=1;kb<=ntemp[s];kb++){
+            jb      = itemp[s][kb];
+            int iii = (igrid_b[jb][i]-subStr[s])*(ngrid_a+2);
+            for(ja=1,j=jj;ja<=n_interp;ja++,j++){
+              igrid[s][i][j] = igrid_a[ja][i]+iii; //plane index only
+              atemp          = dmn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i]*grid_a;
+              btemp          =  mn_a[ja][i]*dmn_b[jb][i]* mn_c[jc][i]*grid_b;
+              ctemp          =  mn_a[ja][i]* mn_b[jb][i]*dmn_c[jc][i]*grid_c;
+              mn[s][i][j]    =  mn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i];
+              dmn_x[s][i][j] = atemp*hmati[1]+btemp*hmati[2]+ctemp*hmati[3];
+              dmn_y[s][i][j] = atemp*hmati[4]+btemp*hmati[5]+ctemp*hmati[6];
+              dmn_z[s][i][j] = atemp*hmati[7]+btemp*hmati[8]+ctemp*hmati[9];
+            }//endfor : ja
+            jj += n_interp;
+          }//endfor : jb
+          nSub[s][i] = jj-1;
+        }//endfor : s
+        plane_index[i] = jc; // each jc is a different plane
+
+      }//endif : allowed
+    }}//endfor : iatm and jc
 
 
 #ifdef DEBUG_GJM_BSPLINE
-   for(i=0;i<natm;i++){
+  for(i=0;i<natm;i++){
     printf("frac[%d] : %g %g %g\n",i,frac_a[i],frac_b[i],frac_c[i]);
     for(j=1;j<=n_interp;j++){
       printf("mn[%d][%d] : %g %g %g\n",j,i,mn_a[j][i],mn_b[j][i],mn_c[j][i]);
     }//endfor
     printf("\n"); scanf("%d",&kkk);
-   }//endfor
+  }//endfor
 #endif
 
 #ifdef TIME_BSPLINE
-   cputime(&cpu2);
-   printf("Bspline timing %g\n",cpu2-cpu1);
+  cputime(&cpu2);
+  printf("Bspline timing %g\n",cpu2-cpu1);
 #endif
 
-//--------------------------------------------------------------------------
-  }//end routine
+  //--------------------------------------------------------------------------
+}//end routine
 //==========================================================================
 
 
 
 //==========================================================================
 /** \brief 
-     Use the B-spline coefs to generate sfAtmTypR (real space SF for spec. type)
-     Invoked by RhoRHart chare which controls type loop
-*/
+  Use the B-spline coefs to generate sfAtmTypR (real space SF for spec. type)
+  Invoked by RhoRHart chare which controls type loop
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplane,
-                                int sIndex, int ***igrid, double ***mn, int *plane_index, 
-                                int **nSub, int ngrid_b)
-//==========================================================================
-  {// begin routine 
-//==========================================================================
+    int sIndex, int ***igrid, double ***mn, int *plane_index, 
+    int **nSub, int ngrid_b)
+  //==========================================================================
+{// begin routine 
+  //==========================================================================
 
   MDATOMS      *mdatoms      = MDATOMS::get();
   CP           *cp           = CP::get();
@@ -931,7 +931,7 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
   int **map_eext = cppseudo->map_eext;
   int s          = sIndex;
 
-//==========================================================================
+  //==========================================================================
 
   int nroll = 5; // you can't change this without changing the code below
 
@@ -942,63 +942,63 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
     int jc   = plane_index[iatm];  // interpolation pt of plane
     int ngo  = nSub[s][iatm];      // subPlane decomp
     if(jc>0 && ngo>0){
-       int nrem  = (ngo % nroll);
-       int jstrt = (ngo-nrem+1);
-       int jend  = (ngo-nrem);
-       for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
-           j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
-         sfAtmTypR[igrid[s][iatm][j]]  += mn[s][iatm][j];  // contribute to zmatrix
-         sfAtmTypR[igrid[s][iatm][j1]] += mn[s][iatm][j1]; // contribute to zmatrix
-         sfAtmTypR[igrid[s][iatm][j2]] += mn[s][iatm][j2]; // contribute to zmatrix
-         sfAtmTypR[igrid[s][iatm][j3]] += mn[s][iatm][j3]; // contribute to zmatrix
-         sfAtmTypR[igrid[s][iatm][j4]] += mn[s][iatm][j4]; // contribute to zmatrix
-       }//endfor
-       for(int j=jstrt;j<=ngo;j++){
-         sfAtmTypR[igrid[s][iatm][j]] += mn[s][iatm][j]; // contribute to zmatrix
-       }//endfor
+      int nrem  = (ngo % nroll);
+      int jstrt = (ngo-nrem+1);
+      int jend  = (ngo-nrem);
+      for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
+          j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+        sfAtmTypR[igrid[s][iatm][j]]  += mn[s][iatm][j];  // contribute to zmatrix
+        sfAtmTypR[igrid[s][iatm][j1]] += mn[s][iatm][j1]; // contribute to zmatrix
+        sfAtmTypR[igrid[s][iatm][j2]] += mn[s][iatm][j2]; // contribute to zmatrix
+        sfAtmTypR[igrid[s][iatm][j3]] += mn[s][iatm][j3]; // contribute to zmatrix
+        sfAtmTypR[igrid[s][iatm][j4]] += mn[s][iatm][j4]; // contribute to zmatrix
+      }//endfor
+      for(int j=jstrt;j<=ngo;j++){
+        sfAtmTypR[igrid[s][iatm][j]] += mn[s][iatm][j]; // contribute to zmatrix
+      }//endfor
     }//endif
   }//endfor
 
-//==========================================================================
-// sfatmtypr is ready to be ffted and used to generate eext
+  //==========================================================================
+  // sfatmtypr is ready to be ffted and used to generate eext
 
 #define _Glenn_DEBUG_KPT_OFF_
 #ifdef _Glenn_DEBUG_KPT_
-   char myFileName[100];
-   sprintf(myFileName, "sfAtmTypR_eext.p%d.s%d.t%d",iplane,sIndex,ityp);
-   FILE *fp = fopen(myFileName,"w");
-     for(int i=0;i<(ngrid_a+2)*ngrid_b;i++){
-       fprintf(fp,"%g\n",sfAtmTypR[i]);
-     }//endfor
-   fclose(fp);
+  char myFileName[100];
+  sprintf(myFileName, "sfAtmTypR_eext.p%d.s%d.t%d",iplane,sIndex,ityp);
+  FILE *fp = fopen(myFileName,"w");
+  for(int i=0;i<(ngrid_a+2)*ngrid_b;i++){
+    fprintf(fp,"%g\n",sfAtmTypR[i]);
+  }//endfor
+  fclose(fp);
 #endif
 
-//--------------------------------------------------------------------------
-  }//end routine
+  //--------------------------------------------------------------------------
+}//end routine
 //==========================================================================
 
 
 //==========================================================================
 //==========================================================================
 /** \brief 
- Invoked from RhoGHart chare : SfatmTypG is result of fft of sfatmtypr
-                        sfAtomTotG is charged weighted SF that is accumulated
-                        during the `ityp' control loop along with vks.
-                        Generate eext and hartree(ityp==1 only) energies and
-                        vks(G).
-*/
+  Invoked from RhoGHart chare : SfatmTypG is result of fft of sfatmtypr
+  sfAtomTotG is charged weighted SF that is accumulated
+  during the `ityp' control loop along with vks.
+  Generate eext and hartree(ityp==1 only) energies and
+  vks(G).
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks, 
-                                complex *sfAtmTypG, complex *sfAtmTotG,
-                                double *b_re, double *b_im,
-                                double *ehart_ret,double *eext_ret,
-                                int *k_x,int *k_y,int *k_z,double *perdCorr,
-                                int index,int nfreq_cmi_update)
-//==========================================================================
-  {// begin routine 
-//==========================================================================
+    complex *sfAtmTypG, complex *sfAtmTotG,
+    double *b_re, double *b_im,
+    double *ehart_ret,double *eext_ret,
+    int *k_x,int *k_y,int *k_z,double *perdCorr,
+    int index,int nfreq_cmi_update)
+  //==========================================================================
+{// begin routine 
+  //==========================================================================
 
   MDATOMS      *mdatoms      = MDATOMS::get();
   GENERAL_DATA *general_data = GENERAL_DATA::get();
@@ -1049,185 +1049,185 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
   double temp_r,temp_i;
   complex vext;
 
-//==========================================================================
-// DEBUG output
+  //==========================================================================
+  // DEBUG output
 
 #define _CP_DEBUG_VKS_HART_EEXT_FOO_OFF_
 #ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
-   printf("Qtyp[%d] %g\n",ityp,q_typ[ityp]);
-   char myFileName[100];
-   sprintf(myFileName, "Vext_Gspace_%d.out.ees.%d", index,ityp);
-   FILE *fp = fopen(myFileName,"w");
+  printf("Qtyp[%d] %g\n",ityp,q_typ[ityp]);
+  char myFileName[100];
+  sprintf(myFileName, "Vext_Gspace_%d.out.ees.%d", index,ityp);
+  FILE *fp = fopen(myFileName,"w");
 #endif
 
-//==========================================================================
-// Initialize atom information
+  //==========================================================================
+  // Initialize atom information
 
   int index_atm    =  (ityp-1)*nsplin_g*(n_ang_max+1)*n_rad_max
-                   +  loc_opt[ityp]*nsplin_g*n_rad_max;
+    +  loc_opt[ityp]*nsplin_g*n_rad_max;
 
-//==========================================================================
-// Loop over g-space and do it up!
+  //==========================================================================
+  // Loop over g-space and do it up!
 
-   double ehart = 0.0;
-   double eext  = 0.0;
-   int izero    = -10;  // deal with g=0
+  double ehart = 0.0;
+  double eext  = 0.0;
+  int izero    = -10;  // deal with g=0
 
-   for(int i = 0; i < ncoef; i++){
+  for(int i = 0; i < ncoef; i++){
 
-   //----------------------------------------------------------------------------
-   //----------------------------------------------------------------------------
-   // I.  Construct the reciprocal space vectors and their square magnitudes
-     gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
-     gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
-     gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
-     g2 = gx*gx + gy*gy + gz*gz;
-     g  = sqrt(g2);
-     if(g2==0){izero=i;}
-     if(g2 <= ecut4 && g2 != 0){
-       wght_now = (k_x[i]==0 ? 1.0 : wght);
-   //----------------------------------------------------------------------------
-   // II. Use these to construct the Hartree energy and its potential
-       if(ityp==1){
-          HartreeFact = fpi/(g2*vol);
-          if(iperd!=3){HartreeFact += perdCorr[i]/vol;}
-          ehart      += HartreeFact*rho[i].getMagSqr()*wght_now;
-          vks[i]     += rho[i]*HartreeFact;
-       }/*endif*/
-   //----------------------------------------------------------------------------
-   // III. Get the structure factor and pseudopotential interaction
+    //----------------------------------------------------------------------------
+    //----------------------------------------------------------------------------
+    // I.  Construct the reciprocal space vectors and their square magnitudes
+    gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
+    gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
+    gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
+    g2 = gx*gx + gy*gy + gz*gz;
+    g  = sqrt(g2);
+    if(g2==0){izero=i;}
+    if(g2 <= ecut4 && g2 != 0){
+      wght_now = (k_x[i]==0 ? 1.0 : wght);
+      //----------------------------------------------------------------------------
+      // II. Use these to construct the Hartree energy and its potential
+      if(ityp==1){
+        HartreeFact = fpi/(g2*vol);
+        if(iperd!=3){HartreeFact += perdCorr[i]/vol;}
+        ehart      += HartreeFact*rho[i].getMagSqr()*wght_now;
+        vks[i]     += rho[i]*HartreeFact;
+      }/*endif*/
+      //----------------------------------------------------------------------------
+      // III. Get the structure factor and pseudopotential interaction
       //------------------------------------------------------
       // a)Atm SF : apply ees g-space weight : add to the total SF
-       temp_r           = (sfAtmTypG[i].re*b_re[i]-sfAtmTypG[i].im*b_im[i]);
-       temp_i           = (sfAtmTypG[i].re*b_im[i]+sfAtmTypG[i].im*b_re[i]);
-       sfAtmTotG[i].re += (sfAtmTypG[i].re*q_typ[ityp]); // bweight added later
-       sfAtmTotG[i].im += (sfAtmTypG[i].im*q_typ[ityp]); // bweight added later
+      temp_r           = (sfAtmTypG[i].re*b_re[i]-sfAtmTypG[i].im*b_im[i]);
+      temp_i           = (sfAtmTypG[i].re*b_im[i]+sfAtmTypG[i].im*b_re[i]);
+      sfAtmTotG[i].re += (sfAtmTypG[i].re*q_typ[ityp]); // bweight added later
+      sfAtmTotG[i].im += (sfAtmTypG[i].im*q_typ[ityp]); // bweight added later
       //------------------------------------------------------
       // b)Atm-electron interaction
-       int iii        = (int)((g-gmin_spl)/dg_spl + 1);
-       iii            = MIN(iii,nsplin_g);
-       iii            = MAX(iii,1);
-       double h0      = ( (double)(iii-1)*dg_spl+gmin_spl );
-       double h       = (g-h0);
-       int index_now  = index_atm + iii;
-       double partem1 = vps0[index_now];
-       double partem2 = vps1[index_now];
-       double partem3 = vps2[index_now];
-       double partem4 = vps3[index_now];
-       double vtemp   = (((partem4*h+partem3)*h+partem2)*h + partem1)/vol;
-       if(iperd!=3){vtemp -= q_typ[ityp]*perdCorr[i]/vol;} // charge on electron is -1
-       vext.re        = temp_r*vtemp;
-       vext.im        = temp_i*vtemp;
-       eext          += (rho[i]*vext).re*wght_now;
-       //------------------------------------------------------
-       // c)electron force
-       vks[i] += vext.conj();
+      int iii        = (int)((g-gmin_spl)/dg_spl + 1);
+      iii            = MIN(iii,nsplin_g);
+      iii            = MAX(iii,1);
+      double h0      = ( (double)(iii-1)*dg_spl+gmin_spl );
+      double h       = (g-h0);
+      int index_now  = index_atm + iii;
+      double partem1 = vps0[index_now];
+      double partem2 = vps1[index_now];
+      double partem3 = vps2[index_now];
+      double partem4 = vps3[index_now];
+      double vtemp   = (((partem4*h+partem3)*h+partem2)*h + partem1)/vol;
+      if(iperd!=3){vtemp -= q_typ[ityp]*perdCorr[i]/vol;} // charge on electron is -1
+      vext.re        = temp_r*vtemp;
+      vext.im        = temp_i*vtemp;
+      eext          += (rho[i]*vext).re*wght_now;
+      //------------------------------------------------------
+      // c)electron force
+      vks[i] += vext.conj();
 #ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
- //       fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g : %g\n",
- //               k_x[i],k_y[i],k_z[i],
- //	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart,vtemp);
-         fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g \n",
-               k_x[i],k_y[i],k_z[i],rho[i].re,rho[i].im,
-               sfAtmTypG[i].re,sfAtmTypG[i].im,b_re[i],b_im[i]);
+      //       fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g : %g\n",
+      //               k_x[i],k_y[i],k_z[i],
+      //	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart,vtemp);
+      fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g \n",
+          k_x[i],k_y[i],k_z[i],rho[i].re,rho[i].im,
+          sfAtmTypG[i].re,sfAtmTypG[i].im,b_re[i],b_im[i]);
 #endif
-       //------------------------------------------------------
-       // d)atom force : set up backtransform
-       temp_r          =  (rho[i].re*b_re[i]-rho[i].im*b_im[i]);
-       temp_i          = -(rho[i].re*b_im[i]+rho[i].im*b_re[i]);
-       sfAtmTypG[i].re = vtemp*temp_r;
-       sfAtmTypG[i].im = vtemp*temp_i;
-     }else{
-       if(g2!=0.0){
-         sfAtmTypG[i].re = 0.0;
-         sfAtmTypG[i].im = 0.0;
-         sfAtmTotG[i].re = 0.0;
-         sfAtmTotG[i].im = 0.0;
-         vks[i].re       = 0.0;
-         vks[i].im       = 0.0;
-       }//endif
-     }// endif : ecut
+      //------------------------------------------------------
+      // d)atom force : set up backtransform
+      temp_r          =  (rho[i].re*b_re[i]-rho[i].im*b_im[i]);
+      temp_i          = -(rho[i].re*b_im[i]+rho[i].im*b_re[i]);
+      sfAtmTypG[i].re = vtemp*temp_r;
+      sfAtmTypG[i].im = vtemp*temp_i;
+    }else{
+      if(g2!=0.0){
+        sfAtmTypG[i].re = 0.0;
+        sfAtmTypG[i].im = 0.0;
+        sfAtmTotG[i].re = 0.0;
+        sfAtmTotG[i].im = 0.0;
+        vks[i].re       = 0.0;
+        vks[i].im       = 0.0;
+      }//endif
+    }// endif : ecut
 
-   }// endfor : coefs
+  }// endfor : coefs
 
-//=======================================================================
-// Deal with g=0 : double pack weight is 1 just like non-double pack
+  //=======================================================================
+  // Deal with g=0 : double pack weight is 1 just like non-double pack
 
-   if(izero>=0){
-     int i = izero;
+  if(izero>=0){
+    int i = izero;
     //------------------------------------------------------
     // Atm SF : apply ees gspace weight : add to the total SF
-     temp_r           = sfAtmTypG[i].re*b_re[i];
-     sfAtmTotG[i].re += (sfAtmTypG[i].re*q_typ[ityp]);
-     sfAtmTotG[i].im  = 0.0;
+    temp_r           = sfAtmTypG[i].re*b_re[i];
+    sfAtmTotG[i].re += (sfAtmTypG[i].re*q_typ[ityp]);
+    sfAtmTotG[i].im  = 0.0;
     //------------------------------------------------------
     // Atm-electron interaction
-     double vtemp = gzvps[ityp]/vol;
-     if(iperd!=3){vtemp -= q_typ[ityp]*perdCorr[i]/vol;} // charge on electron is -1
-     vext.re      = vtemp*temp_r;
-     vext.im      = 0.0;
-     eext        += (rho[i].re*vext.re);
+    double vtemp = gzvps[ityp]/vol;
+    if(iperd!=3){vtemp -= q_typ[ityp]*perdCorr[i]/vol;} // charge on electron is -1
+    vext.re      = vtemp*temp_r;
+    vext.im      = 0.0;
+    eext        += (rho[i].re*vext.re);
     //------------------------------------------------------
     // electron force
-     vks[i].re   += vext.re;
-     vks[i].im    = 0.0;
+    vks[i].re   += vext.re;
+    vks[i].im    = 0.0;
     //------------------------------------------------------
     // atom force : set up backtransform
-     temp_r          = rho[i].re*b_re[i];
-     sfAtmTypG[i].re = vtemp*temp_r;
-     sfAtmTypG[i].im = 0.0;
+    temp_r          = rho[i].re*b_re[i];
+    sfAtmTypG[i].re = vtemp*temp_r;
+    sfAtmTypG[i].im = 0.0;
 #ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
-            fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g : %g %g \n",
-     	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart);
+    fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g : %g %g \n",
+        rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart);
 #endif
-   }//endif
+  }//endif
 
-//==========================================================================
-// Set return values
+  //==========================================================================
+  // Set return values
 
-   if(ityp==1){ehart_ret[0] = ehart/2.0;}
-   eext_ret[0] += eext;
+  if(ityp==1){ehart_ret[0] = ehart/2.0;}
+  eext_ret[0] += eext;
 
-//==========================================================================
-// Debug output
+  //==========================================================================
+  // Debug output
 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
-   fclose(fp);
+  fclose(fp);
 #endif
 
-//==========================================================================
-// sfAtmTypG is now inversed FFT to get atom forces
-// if itype loop is done, sfAtmTotG is complete and Ewald energy is computed.
+  //==========================================================================
+  // sfAtmTypG is now inversed FFT to get atom forces
+  // if itype loop is done, sfAtmTotG is complete and Ewald energy is computed.
 
-//--------------------------------------------------------------------------
-  }//end routine
+  //--------------------------------------------------------------------------
+}//end routine
 //==========================================================================
 
 
 //==========================================================================
 /** \brief 
- Invoked from RhoGHart chare : sfAtomTotG is charged weighted SF e.g. summed over 
-                        all atm types. It is used to generate ewald energy.
-*/
+  Invoked from RhoGHart chare : sfAtomTotG is charged weighted SF e.g. summed over 
+  all atm types. It is used to generate ewald energy.
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
-                             double *b_re, double *b_im,double *ewd_ret,
-                             int *k_x, int *k_y, int *k_z,
-                             double *perdCorr,int index,int nfreq_cmi_update)
-//==========================================================================
-  {// begin routine 
-//==========================================================================
+    double *b_re, double *b_im,double *ewd_ret,
+    int *k_x, int *k_y, int *k_z,
+    double *perdCorr,int index,int nfreq_cmi_update)
+  //==========================================================================
+{// begin routine 
+  //==========================================================================
   GENERAL_DATA *general_data = GENERAL_DATA::get();
 
 #include "../class_defs/allclass_strip_gen.h"
 
- // Cell information
+  // Cell information
   double *hmati   = gencell->hmati;
   double vol      = gencell->vol;
   int    iperd    = gencell->iperd;
 
- // Ewald and g-space constants
+  // Ewald and g-space constants
   double alp_ewd  = genewald->alp_ewd;
   double tpi      = 2.0*M_PI;
   double falp2    = 4.0*alp_ewd*alp_ewd;
@@ -1235,28 +1235,28 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
   double wght_now = 2.0;
   double wght     = 2.0;
 
- // Local variables
+  // Local variables
   double aka,akb,akc;
   double xk,yk,zk,g2,preg,smag,bmag,prep;
   double temp_r,temp_i;
 
-//==========================================================================
-// Debug output
+  //==========================================================================
+  // Debug output
 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-   char myFileName[100];
-   sprintf(myFileName, "Ewd_Gspace_%d.out.ees", index);
-   FILE *fp = fopen(myFileName,"w");
+  char myFileName[100];
+  sprintf(myFileName, "Ewd_Gspace_%d.out.ees", index);
+  FILE *fp = fopen(myFileName,"w");
 #endif
 
-//==========================================================================
-// Do the Ewald sum
+  //==========================================================================
+  // Do the Ewald sum
 
   double vnow = 0.0;
 
   for(int i=0;i<ncoef;i++) {
-   //---------------------------------------
-   // Compute kvectors form recip lattice puppies
+    //---------------------------------------
+    // Compute kvectors form recip lattice puppies
     aka = tpi*( (double) k_x[i] );
     akb = tpi*( (double) k_y[i] );
     akc = tpi*( (double) k_z[i] );
@@ -1265,8 +1265,8 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
     zk  = (aka*hmati[7] + akb*hmati[8] + akc*hmati[9]);
     g2  = xk*xk + yk*yk + zk*zk;
     if(g2!=0.0){
-     //---------------------------------------
-     // Compute Ewald energy
+      //---------------------------------------
+      // Compute Ewald energy
       wght_now = (k_x[i]==0 ? 1.0 : wght);
       preg     = fpi*exp(-g2/falp2)/(g2*vol);
       if(iperd!=3){preg += perdCorr[i]/vol;}
@@ -1278,10 +1278,10 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
       temp_i   = (sfAtmTotG[i].re*b_im[i]+sfAtmTotG[i].im*b_re[i]);
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
       fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g\n",k_x[i],k_y[i],k_z[i],
-  	          temp_r,temp_i,b_re[i],b_im[i],sfAtmTotG[i].getMagSqr()*bmag,preg);
+          temp_r,temp_i,b_re[i],b_im[i],sfAtmTotG[i].getMagSqr()*bmag,preg);
 #endif
-     //---------------------------------------
-     // Ewald force : Setup inverse FFT
+      //---------------------------------------
+      // Ewald force : Setup inverse FFT
       prep     = preg*bmag;      // there is 1/2 below canceling 2x
       sfAtmTotG[i].re *= prep;
       sfAtmTotG[i].im *= prep;
@@ -1291,40 +1291,40 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
     }//endif
   }//endfor
 
-//==========================================================================
-// Energy return values
+  //==========================================================================
+  // Energy return values
 
   ewd_ret[0] = vnow/2.0;
 
-//==========================================================================
-// Debug me baby
+  //==========================================================================
+  // Debug me baby
 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
   fclose(fp);
 #endif
 
-//==========================================================================
-// sfAtmTotG is ready to be FFTed and used to generate atom forces
+  //==========================================================================
+  // sfAtmTotG is ready to be FFTed and used to generate atom forces
 
-//==========================================================================
-  }//end routine
+  //==========================================================================
+}//end routine
 //==========================================================================
 
 
 //==========================================================================
 /** \brief Compute for atom forces for the local pseudo
-     RhoRHartExt invokes this for each non-local loop iteration
-*/
+  RhoRHartExt invokes this for each non-local loop iteration
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp, 
-                int ***igrid, double ***dmn_x, double ***dmn_y, double ***dmn_z, 
-		int *plane_index, int **nSub,  double *sfAtmTypR, 
-                int iplane,int sIndex,int flag)
-//==========================================================================
-  {// begin routine 
-//==========================================================================
+    int ***igrid, double ***dmn_x, double ***dmn_y, double ***dmn_z, 
+    int *plane_index, int **nSub,  double *sfAtmTypR, 
+    int iplane,int sIndex,int flag)
+  //==========================================================================
+{// begin routine 
+  //==========================================================================
 
   MDATOMS      *mdatoms      = MDATOMS::get();
   CP           *cp           = CP::get();
@@ -1341,24 +1341,24 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
   double *fy    = atoms->fy;
   double *fz    = atoms->fz;
 
-//==========================================================================
-// Setup some debug output
+  //==========================================================================
+  // Setup some debug output
 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-   double *fxt = new double [natm];
-   double *fyt = new double [natm];
-   double *fzt = new double [natm];
-   for(int i =0;i<natm;i++){
-     fxt[i] = 0.0;
-     fyt[i] = 0.0;
-     fzt[i] = 0.0;
-   }//endfor
+  double *fxt = new double [natm];
+  double *fyt = new double [natm];
+  double *fzt = new double [natm];
+  for(int i =0;i<natm;i++){
+    fxt[i] = 0.0;
+    fyt[i] = 0.0;
+    fzt[i] = 0.0;
+  }//endfor
 #endif
 
 
-//==========================================================================
-// Compute the Eext forces from the back transformed ityp SF   : flag=0
-// Compute the Ewald forces from the back transformed total SF : flag=1
+  //==========================================================================
+  // Compute the Eext forces from the back transformed ityp SF   : flag=0
+  // Compute the Ewald forces from the back transformed total SF : flag=1
 
   int nroll = 5; // you can't change this without changing the code
 
@@ -1380,14 +1380,14 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
         double p3  = sfAtmTypR[igrid[s][iatm][j3]];
         double p4  = sfAtmTypR[igrid[s][iatm][j4]];
         fxx += (dmn_x[s][iatm][j]*p0  + dmn_x[s][iatm][j1]*p1
-               +dmn_x[s][iatm][j2]*p2 + dmn_x[s][iatm][j3]*p3
-               +dmn_x[s][iatm][j4]*p4);
+            +dmn_x[s][iatm][j2]*p2 + dmn_x[s][iatm][j3]*p3
+            +dmn_x[s][iatm][j4]*p4);
         fyy += (dmn_y[s][iatm][j]*p0  + dmn_y[s][iatm][j1]*p1
-               +dmn_y[s][iatm][j2]*p2 + dmn_y[s][iatm][j3]*p3
-               +dmn_y[s][iatm][j4]*p4);
+            +dmn_y[s][iatm][j2]*p2 + dmn_y[s][iatm][j3]*p3
+            +dmn_y[s][iatm][j4]*p4);
         fzz += (dmn_z[s][iatm][j]*p0  + dmn_z[s][iatm][j1]*p1
-               +dmn_z[s][iatm][j2]*p2 + dmn_z[s][iatm][j3]*p3
-               +dmn_z[s][iatm][j4]*p4);
+            +dmn_z[s][iatm][j2]*p2 + dmn_z[s][iatm][j3]*p3
+            +dmn_z[s][iatm][j4]*p4);
       }//endfor
       for(int j=jstrt;j<=ngo;j++){
         double p  = sfAtmTypR[igrid[s][iatm][j]];
@@ -1411,31 +1411,31 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
     }//endif : plane is allowed
   }//endfor : atm type is allowed
 
-//==========================================================================
-// Debug output
+  //==========================================================================
+  // Debug output
 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-   char myFileName[100];
-   if(flag==0){
-     sprintf(myFileName, "fatm_%d.out.ees.%d",iplane,ityp);
-   }else{
-     sprintf(myFileName, "fatm_%d.out.ees.ewd",iplane);
-   }//endif
-   FILE *fp = fopen(myFileName,"w");
-     for(int i=0;i<natm;i++){
-       fprintf(fp,"%d %g %g %g\n",i,fxt[i],fyt[i],fzt[i]);
-     }//endfor
-   fclose(fp);   
-   delete []fxt;
-   delete []fyt;
-   delete []fzt;
+  char myFileName[100];
+  if(flag==0){
+    sprintf(myFileName, "fatm_%d.out.ees.%d",iplane,ityp);
+  }else{
+    sprintf(myFileName, "fatm_%d.out.ees.ewd",iplane);
+  }//endif
+  FILE *fp = fopen(myFileName,"w");
+  for(int i=0;i<natm;i++){
+    fprintf(fp,"%d %g %g %g\n",i,fxt[i],fyt[i],fzt[i]);
+  }//endfor
+  fclose(fp);   
+  delete []fxt;
+  delete []fyt;
+  delete []fzt;
 #endif
 
-//==========================================================================
-// Done with the present atom type or if flag==1 we're totally done!
+  //==========================================================================
+  // Done with the present atom type or if flag==1 we're totally done!
 
-//==========================================================================
-  }//end routine
+  //==========================================================================
+}//end routine
 //==========================================================================
 
 

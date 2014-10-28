@@ -32,32 +32,32 @@
 
 class PeList 
 {
- public:
-  int *TheList;
-  int *sortIdx;
-  int current;
-  int size;
-  bool sorted;  // if pe list is kept in sorted order we can bin search it
-  PeList();  //default constructor
+  public:
+    int *TheList;
+    int *sortIdx;
+    int current;
+    int size;
+    bool sorted;  // if pe list is kept in sorted order we can bin search it
+    PeList();  //default constructor
 
-  // boxy constructor for Torus machines
-  PeList(int boxX, int boxY, int boxZ, int order, int maxX, int maxY, int maxZ, int maxT);
+    // boxy constructor for Torus machines
+    PeList(int boxX, int boxY, int boxZ, int order, int maxX, int maxY, int maxZ, int maxT);
 
-  PeList(int _size): size(_size)
+    PeList(int _size): size(_size)
+  {
+    sorted=true;
+    TheList = new int [size+1];
+    sortIdx = new int [size+1];
+    for(int i=0;i<size;i++)
     {
-      sorted=true;
-      TheList = new int [size+1];
-      sortIdx = new int [size+1];
-      for(int i=0;i<size;i++)
-	{
-	  TheList[i]=i;
-	  sortIdx[i]=i;
-	}
-      current=0;
+      TheList[i]=i;
+      sortIdx[i]=i;
     }
+    current=0;
+  }
 
 
-  PeList(CkVec <int> inlist)
+    PeList(CkVec <int> inlist)
     {
       inlist.quickSort();
       sorted=true;
@@ -68,19 +68,19 @@ class PeList
       TheList[0]=inlist[0];
       int count=0;
       for(int i=1;i<inlist.size();i++)
-	{ //remove duplicates from sorted list
-	  if(inlist[i]!=TheList[count])
-	    {
-	      count++;
-	      TheList[count]=inlist[i];
-	      sortIdx[count]=count;
-	    }
-	  
-	}
+      { //remove duplicates from sorted list
+        if(inlist[i]!=TheList[count])
+        {
+          count++;
+          TheList[count]=inlist[i];
+          sortIdx[count]=count;
+        }
+
+      }
       size=count;
     }
 
-  PeList(PeList &inlist)
+    PeList(PeList &inlist)
     {
       CmiAssert(inlist.size > 0);
       size=inlist.size;
@@ -88,15 +88,15 @@ class PeList
       TheList = new int [size+1];
       sortIdx = new int [size+1];
       for(int i=0;i<inlist.size;i++)
-	{
-	  TheList[i]=inlist.TheList[i];
-	  sortIdx[i]=inlist.sortIdx[i];
-	}
+      {
+        TheList[i]=inlist.TheList[i];
+        sortIdx[i]=inlist.sortIdx[i];
+      }
       current=inlist.current;
     }
 
 
-  PeList(int _size, int *a)
+    PeList(int _size, int *a)
     {
       sorted=false;
       current=0;
@@ -104,13 +104,13 @@ class PeList
       TheList=new int [size+1];
       sortIdx=new int [size+1];
       for(int i=0;i<size;i++)
-	{
-	  TheList[i]=a[i];
-	  sortIdx[i]=i;
-	}
+      {
+        TheList[i]=a[i];
+        sortIdx[i]=i;
+      }
     }	 // use an array to construct
 
-  PeList(PeList *a, int start, int _size)
+    PeList(PeList *a, int start, int _size)
     {
       sorted=false;
       CkAssert(start<a->size);
@@ -120,294 +120,294 @@ class PeList
       TheList=new int [size+1];
       sortIdx=new int [size+1];
       for(int i=0;i<size;i++)
-	{
-	  TheList[i]=a->TheList[a->sortIdx[i+start]];
-	}
+      {
+        TheList[i]=a->TheList[a->sortIdx[i+start]];
+      }
       reindex();
     };	 // make a copy of a sublist
-  
-  // given the max grid/torus dimenions and the volume of a desired subpartition
-  
-  inline bool noPes() 
+
+    // given the max grid/torus dimenions and the volume of a desired subpartition
+
+    inline bool noPes() 
     {
       return(size-current<1);
     }
-  
-  inline int count() { return(size-current);  }
-  
-  inline void reindex(){
+
+    inline int count() { return(size-current);  }
+
+    inline void reindex(){
       for(int ri=0;ri<size;ri++)
-	sortIdx[ri]=ri;
+        sortIdx[ri]=ri;
       current=0;
-  } 
-  inline int exists(int target)
+    } 
+    inline int exists(int target)
     {
       for(int i=0;i<size;i++)
-	if(TheList[i]==target)
-	  return i;
+        if(TheList[i]==target)
+          return i;
       return -1;
     }
-  void rebuild(); 
+    void rebuild(); 
 
-  void reset(){current=0;} 
+    void reset(){current=0;} 
 
-  //! return a processor at minumum distance from source
-  int  minDist(int source);
+    //! return a processor at minumum distance from source
+    int  minDist(int source);
 
-  void resort(){   sortSource(TheList[0]);   }; 
+    void resort(){   sortSource(TheList[0]);   }; 
 
-  void append(PeList &inlist)
-  {
-    // make array large enough for both, paste together
-    int newsize=inlist.size+size;
-    int *newlist= new int [newsize+1];
-    int *newIndex= new int [newsize+1];
-    int i=0;
-    for(; i< size ; i++)
+    void append(PeList &inlist)
+    {
+      // make array large enough for both, paste together
+      int newsize=inlist.size+size;
+      int *newlist= new int [newsize+1];
+      int *newIndex= new int [newsize+1];
+      int i=0;
+      for(; i< size ; i++)
       {
-	newlist[i]=TheList[i];
-	newIndex[i]=sortIdx[i];
+        newlist[i]=TheList[i];
+        newIndex[i]=sortIdx[i];
       }
-    for(int j=0; (i< newsize && j<inlist.size) ; i++,j++)
+      for(int j=0; (i< newsize && j<inlist.size) ; i++,j++)
       {
-	newlist[i]=inlist.TheList[j];
-	newIndex[i]=i;
+        newlist[i]=inlist.TheList[j];
+        newIndex[i]=i;
       }
-    size=newsize;
-    delete [] TheList;
-    delete [] sortIdx;
-    TheList=newlist;
-    sortIdx=newIndex;
-  }
-  
-  bool binsearch(int pe);
+      size=newsize;
+      delete [] TheList;
+      delete [] sortIdx;
+      TheList=newlist;
+      sortIdx=newIndex;
+    }
 
-  inline bool find(int pe)
+    bool binsearch(int pe);
+
+    inline bool find(int pe)
     {
       bool found=false;
       if(sorted)
-	{ // bin search
-	  found=binsearch(pe);
-	}
+      { // bin search
+        found=binsearch(pe);
+      }
       else // brute
-	{
-	  int i=0;
-	  while(!found && i< size)
-	    {
-	      if(TheList[i]==pe)
-		{
-		  found=true;
-		}
-	      i++;
-	    }
-	}
+      {
+        int i=0;
+        while(!found && i< size)
+        {
+          if(TheList[i]==pe)
+          {
+            found=true;
+          }
+          i++;
+        }
+      }
       return(found);
     }
 
-  int *pelower_bound(int pe);
+    int *pelower_bound(int pe);
 
-  inline void mergeOne(int pe)
-  {
-    
-    // make array large enough for both, paste together
-    if(sorted)
-      { // maintain sort order by insertion
-	if(size==1 && pe>TheList[0])
-	  {
-	    appendOne(pe);
-	  }
-	else{
-	  int *loc=pelower_bound(pe);
-	  int location=loc-TheList;
-
-	  if(location>=size || loc==NULL)
-	    { // 
-	      appendOne(pe);
-	    }
-	  else if ((loc>TheList) && (loc[-1] ==pe))
-	    {
-	      // do nothing
-	    }
-	  else if(TheList[location] ==pe)
-	    {
-	      // do nothing
-	    }
-	  
-	  else if((size>1) &&(location<size-1) && (TheList[location+1]==pe))
-	    {
-	      // do nothing
-	    }
-	  else
-	    { // not already present
-
-	      int newsize=size+1;
-	      int *newlist= new int [newsize+1];
-	      int *newIndex= new int [newsize+1];
-	      if(loc!=TheList) // there are things before location
-		CmiMemcpy(newlist,TheList,location*sizeof(int));
-	      newlist[location]=pe;
-	      CmiMemcpy(&newlist[location+1],loc,(size-(location))*sizeof(int));
-	      // your index is shot
-	      bzero(newIndex,(newsize+1)*sizeof(int));
-	      delete [] TheList;
-	      delete [] sortIdx;
-	      TheList=newlist;
-	      sortIdx=newIndex;
-	      size=newsize;
-	      current=0;
-	    }
-	}
-      }
-    else
-      {
-	bool found=find(pe);
-	if(!found)
-	  {
-	    appendOne(pe);
-	  }
-      }
-  }
-
-  inline void appendOne(int pe)
+    inline void mergeOne(int pe)
     {
-	int newsize=size+1;
-	int *newlist= new int [newsize+1];
-	int *newIndex= new int [newsize+1];
-	CmiMemcpy(&newlist[0],&TheList[0],sizeof(int)*size);
-	CmiMemcpy(&newIndex[0],&sortIdx[0],sizeof(int)*size);
-	newlist[size]=pe;
-	newIndex[size]=size;
-	size=newsize;
-	delete [] TheList;
-	delete [] sortIdx;
-	TheList=newlist;
-	sortIdx=newIndex;
+
+      // make array large enough for both, paste together
+      if(sorted)
+      { // maintain sort order by insertion
+        if(size==1 && pe>TheList[0])
+        {
+          appendOne(pe);
+        }
+        else{
+          int *loc=pelower_bound(pe);
+          int location=loc-TheList;
+
+          if(location>=size || loc==NULL)
+          { // 
+            appendOne(pe);
+          }
+          else if ((loc>TheList) && (loc[-1] ==pe))
+          {
+            // do nothing
+          }
+          else if(TheList[location] ==pe)
+          {
+            // do nothing
+          }
+
+          else if((size>1) &&(location<size-1) && (TheList[location+1]==pe))
+          {
+            // do nothing
+          }
+          else
+          { // not already present
+
+            int newsize=size+1;
+            int *newlist= new int [newsize+1];
+            int *newIndex= new int [newsize+1];
+            if(loc!=TheList) // there are things before location
+              CmiMemcpy(newlist,TheList,location*sizeof(int));
+            newlist[location]=pe;
+            CmiMemcpy(&newlist[location+1],loc,(size-(location))*sizeof(int));
+            // your index is shot
+            bzero(newIndex,(newsize+1)*sizeof(int));
+            delete [] TheList;
+            delete [] sortIdx;
+            TheList=newlist;
+            sortIdx=newIndex;
+            size=newsize;
+            current=0;
+          }
+        }
+      }
+      else
+      {
+        bool found=find(pe);
+        if(!found)
+        {
+          appendOne(pe);
+        }
+      }
     }
 
-  int findNext();       // return next available, increment liststart
+    inline void appendOne(int pe)
+    {
+      int newsize=size+1;
+      int *newlist= new int [newsize+1];
+      int *newIndex= new int [newsize+1];
+      CmiMemcpy(&newlist[0],&TheList[0],sizeof(int)*size);
+      CmiMemcpy(&newIndex[0],&sortIdx[0],sizeof(int)*size);
+      newlist[size]=pe;
+      newIndex[size]=size;
+      size=newsize;
+      delete [] TheList;
+      delete [] sortIdx;
+      TheList=newlist;
+      sortIdx=newIndex;
+    }
 
-  void sortSource(int srcPe); // implementation depends on BG/L or not
+    int findNext();       // return next available, increment liststart
 
-  PeList &operator=(PeList &inlist) {TheList=inlist.TheList; sortIdx=inlist.sortIdx;return *this;}   
+    void sortSource(int srcPe); // implementation depends on BG/L or not
+
+    PeList &operator=(PeList &inlist) {TheList=inlist.TheList; sortIdx=inlist.sortIdx;return *this;}   
 
 
-  // need to rebuild your sortIdx after set union
-  inline PeList &operator+(PeList &inlist) { 
-    // make array large enough for both, paste together
-    int newsize=inlist.size+size;
-    int *newlist= new int [newsize];
-    int *newIndex= new int [newsize];
-    int i=0;
-    for(; i< size ; i++)
+    // need to rebuild your sortIdx after set union
+    inline PeList &operator+(PeList &inlist) { 
+      // make array large enough for both, paste together
+      int newsize=inlist.size+size;
+      int *newlist= new int [newsize];
+      int *newIndex= new int [newsize];
+      int i=0;
+      for(; i< size ; i++)
       {
-	newlist[i]=TheList[i];
-	newIndex[i]=sortIdx[i];
+        newlist[i]=TheList[i];
+        newIndex[i]=sortIdx[i];
       }
-    for(int j=0; (i< newsize &j<inlist.size); i++)
+      for(int j=0; (i< newsize &j<inlist.size); i++)
       {
-	newlist[i]=inlist.TheList[j];
-	newIndex[i]=i;
+        newlist[i]=inlist.TheList[j];
+        newIndex[i]=i;
       }
-    size=newsize;
-    delete [] TheList;
-    delete [] sortIdx;
-    TheList=newlist;
-    sortIdx=newIndex;
-    return *this; 
-  }
-  
-  // need to rebuild your sortIdx after unary set difference
-  inline PeList &operator-(PeList &inlist) {
-    for(int i=0; i< inlist.size;i++)
+      size=newsize;
+      delete [] TheList;
+      delete [] sortIdx;
+      TheList=newlist;
+      sortIdx=newIndex;
+      return *this; 
+    }
+
+    // need to rebuild your sortIdx after unary set difference
+    inline PeList &operator-(PeList &inlist) {
+      for(int i=0; i< inlist.size;i++)
       {
-	int j=0;
-	while(j< size)
-	  if(TheList[j]==inlist.TheList[i])
-	    {
-	      remove(j);
-	      //	      CkPrintf("removed %d containing %d leaving %d\n",i,inlist.TheList[i], size);
+        int j=0;
+        while(j< size)
+          if(TheList[j]==inlist.TheList[i])
+          {
+            remove(j);
+            //	      CkPrintf("removed %d containing %d leaving %d\n",i,inlist.TheList[i], size);
 
-	    }
-	  else
-	    {
-	      j++;
-	    }
+          }
+          else
+          {
+            j++;
+          }
       }
-    current=0;  // your index is useless now anyway
-    return *this;
-  }
+      current=0;  // your index is useless now anyway
+      return *this;
+    }
 
-  inline void remove(int pos)
+    inline void remove(int pos)
     {
       if(pos < size)
-	{
+      {
 
-	  for (int i=pos; i<size-1; i++)
-	    {
-	      TheList[i] = TheList[i+1];
-	    }
+        for (int i=pos; i<size-1; i++)
+        {
+          TheList[i] = TheList[i+1];
+        }
 
-	  //	  CmiMemcpy(&TheList[pos],&TheList[pos+1],(size-(pos+1))*sizeof(int));
-	  size--;
-	}
+        //	  CmiMemcpy(&TheList[pos],&TheList[pos+1],(size-(pos+1))*sizeof(int));
+        size--;
+      }
     }
 
-  void trimUsed()
+    void trimUsed()
     {
       // build a new array that doesn't include used elements
       // theoretically this could be done in place, but haste makes waste
       if(current>0 && size>0)
-	{
-	  if(noPes())
-	    {
-	      size=0;
-	      current=0;
-	    }
-	  else
-	    {
-	      int newSize= size-current;
-	      int *newList = new int[newSize+1];
-	      int *newSortIdx = new int[newSize+1];
-	      for(int i=0; i<newSize;i++)
-		{
-		  // if we just copy in sorted order we end up with a sorted list
-		  newSortIdx[i]=i;
-		  newList[i]=TheList[sortIdx[i+current]];
-		}
-	      delete [] TheList;
-	      delete [] sortIdx;
-	      TheList=newList;
-	      sortIdx=newSortIdx;
-	      current=0;
-	      size=newSize;
-	    }
-	}
+      {
+        if(noPes())
+        {
+          size=0;
+          current=0;
+        }
+        else
+        {
+          int newSize= size-current;
+          int *newList = new int[newSize+1];
+          int *newSortIdx = new int[newSize+1];
+          for(int i=0; i<newSize;i++)
+          {
+            // if we just copy in sorted order we end up with a sorted list
+            newSortIdx[i]=i;
+            newList[i]=TheList[sortIdx[i+current]];
+          }
+          delete [] TheList;
+          delete [] sortIdx;
+          TheList=newList;
+          sortIdx=newSortIdx;
+          current=0;
+          size=newSize;
+        }
+      }
     }
 
-  void removeIdx(int pos)
+    void removeIdx(int pos)
     {
       if(pos < size)
-	{
-	  for (int i=pos; i<size-1; i++)
-	    {
-	      sortIdx[i] = sortIdx[i+1];
-	    }
-	  size--;
-	}
+      {
+        for (int i=pos; i<size-1; i++)
+        {
+          sortIdx[i] = sortIdx[i+1];
+        }
+        size--;
+      }
     }
-  void dump()
+    void dump()
     {
       CkPrintf("PeList\n");
       for(int j=0; j< size;j++)
-	CkPrintf("%d list %d sortidx %d \n",j,TheList[j], sortIdx[j]);
+        CkPrintf("%d list %d sortidx %d \n",j,TheList[j], sortIdx[j]);
     }
-  ~PeList(){
-    if(TheList !=NULL)
-      delete [] TheList;
-    if(sortIdx !=NULL)
-      delete [] sortIdx;
+    ~PeList(){
+      if(TheList !=NULL)
+        delete [] TheList;
+      if(sortIdx !=NULL)
+        delete [] sortIdx;
 
-  }
+    }
 
 
 };
@@ -422,44 +422,44 @@ class PeList
  */
 class PeListFactory
 {
-    public:
-        /// Default constructor
-  PeListFactory()
+  public:
+    /// Default constructor
+    PeListFactory()
     {
       CkAbort("I hate that we end up in this function");
     }
 
 
-       PeListFactory(int _size): 
-            useDefault(true),
-            boxX(0), boxY(0), boxZ(0), order(0),
-	      maxX(0), maxY(0), maxZ(0), maxT(0), size(_size)
-        {}
+    PeListFactory(int _size): 
+      useDefault(true),
+      boxX(0), boxY(0), boxZ(0), order(0),
+      maxX(0), maxY(0), maxZ(0), maxT(0), size(_size)
+  {}
 
-        /// Use this constructor when you want a PeList created using its boxy constructor
-        PeListFactory(int bxX, int bxY, int bxZ, int ordr, int mxX, int mxY, int mxZ, int mxT):
-            useDefault(false),
-            boxX(bxX), boxY(bxY), boxZ(bxZ), order(ordr),
-            maxX(mxX), maxY(mxY), maxZ(mxZ), maxT(mxT)
-	    { }
+    /// Use this constructor when you want a PeList created using its boxy constructor
+    PeListFactory(int bxX, int bxY, int bxZ, int ordr, int mxX, int mxY, int mxZ, int mxT):
+      useDefault(false),
+      boxX(bxX), boxY(bxY), boxZ(bxZ), order(ordr),
+      maxX(mxX), maxY(mxY), maxZ(mxZ), maxT(mxT)
+  { }
 
 
-        /// Return an appropriately constructed PeList
-	    PeList* operator() () const
-        {
-            if (useDefault)
-	      return new PeList(size);
-            else
-                return new PeList(boxX, boxY, boxZ, order, maxX, maxY, maxZ, maxT);
-        }
+    /// Return an appropriately constructed PeList
+    PeList* operator() () const
+    {
+      if (useDefault)
+        return new PeList(size);
+      else
+        return new PeList(boxX, boxY, boxZ, order, maxX, maxY, maxZ, maxT);
+    }
 
-    private:
-        // Should I return a default PeList or a boxy PeList
-        bool useDefault;
-        // Parameters used to create a boxy PeList. Refer PeList code for more details
-        int boxX, boxY, boxZ, order, maxX, maxY, maxZ, maxT, size;
+  private:
+    // Should I return a default PeList or a boxy PeList
+    bool useDefault;
+    // Parameters used to create a boxy PeList. Refer PeList code for more details
+    int boxX, boxY, boxZ, order, maxX, maxY, maxZ, maxT, size;
 };
 PUPbytes(PeListFactory)
 
-//@}
+  //@}
 #endif

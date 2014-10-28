@@ -9,25 +9,25 @@
 
 class CPORTHOG{
 
- //---------------------------------------------------------------------------
- public:
+  //---------------------------------------------------------------------------
+  public:
 
- //---------------------------------------------------------------------------
- //con-destruct:
+    //---------------------------------------------------------------------------
+    //con-destruct:
 
-   CPORTHOG(){};
-  ~CPORTHOG(){};
+    CPORTHOG(){};
+    ~CPORTHOG(){};
 
- //---------------------------------------------------------------------------
- // functions 
+    //---------------------------------------------------------------------------
+    // functions 
 
-static void CP_orthoTransform(double *, const double *, int );
-static void get_iter_Tmat(const double *,double *,int );
-static void get_diag_Tmat(const double *,double *,int );
-static void get_unit_Tmat(double *,int );
+    static void CP_orthoTransform(double *, const double *, int );
+    static void get_iter_Tmat(const double *,double *,int );
+    static void get_diag_Tmat(const double *,double *,int );
+    static void get_unit_Tmat(double *,int );
 
-//---------------------------------------------------------------------------
-   }; //CPORTHOG
+    //---------------------------------------------------------------------------
+}; //CPORTHOG
 //==========================================================================
 
 #endif

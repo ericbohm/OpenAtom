@@ -38,81 +38,81 @@ class CP; extern CP readonly_cp;
 
 class CP {
 
- public:
-  int num_pup;
-  CPOPTS        cpopts;
-  CPCOEFFS_INFO cpcoeffs_info;
-  CPTHERM_INFO  cptherm_info;
-  CPATOM_MAPS   cpatom_maps;
-  CPCONSTRNT    cpconstrnt;
-  CPEWALD       cpewald;
-  CPPSEUDO      cppseudo; 
-  CPDUAL_PME    cpdual_pme;
-  CPATOM_PME    cpatom_pme;
-  CPVEL_SAMP    cpvel_samp;
-  CPYLM_CONS    cpylm_cons;
-  GEN_WAVE      cpgen_wave; 
+  public:
+    int num_pup;
+    CPOPTS        cpopts;
+    CPCOEFFS_INFO cpcoeffs_info;
+    CPTHERM_INFO  cptherm_info;
+    CPATOM_MAPS   cpatom_maps;
+    CPCONSTRNT    cpconstrnt;
+    CPEWALD       cpewald;
+    CPPSEUDO      cppseudo; 
+    CPDUAL_PME    cpdual_pme;
+    CPATOM_PME    cpatom_pme;
+    CPVEL_SAMP    cpvel_samp;
+    CPYLM_CONS    cpylm_cons;
+    GEN_WAVE      cpgen_wave; 
 
-//-------------------------------------------------------------------------
-  CP(){num_pup=0;};
- ~CP(){};
+    //-------------------------------------------------------------------------
+    CP(){num_pup=0;};
+    ~CP(){};
 
 #ifdef CHARM_ON
-  static CP *get(){
-    return &readonly_cp;  // return the pointer of the global instance
-  }
+    static CP *get(){
+      return &readonly_cp;  // return the pointer of the global instance
+    }
 #endif
 
-//-------------------------------------------------------------------------
-  void state_class_out(){
-   PRINTF("\n");
-   PRINT_LINE_STAR;
-   PRINTF("CP state_class_out \n");
-   cpopts.state_class_out();
-   cpcoeffs_info.state_class_out();
-   cptherm_info.state_class_out();
-   cpatom_maps.state_class_out();
-   cpconstrnt.state_class_out();
-   cpewald.state_class_out();
-   cppseudo.state_class_out();
-   cpdual_pme.state_class_out();
-   cpatom_pme.state_class_out();
-   cpvel_samp.state_class_out();
-   cpylm_cons.state_class_out();
-   cpgen_wave.state_class_out();
-   PRINT_LINE_STAR;
-   PRINTF("\n");
-  }// end routine
+    //-------------------------------------------------------------------------
+    void state_class_out(){
+      PRINTF("\n");
+      PRINT_LINE_STAR;
+      PRINTF("CP state_class_out \n");
+      cpopts.state_class_out();
+      cpcoeffs_info.state_class_out();
+      cptherm_info.state_class_out();
+      cpatom_maps.state_class_out();
+      cpconstrnt.state_class_out();
+      cpewald.state_class_out();
+      cppseudo.state_class_out();
+      cpdual_pme.state_class_out();
+      cpatom_pme.state_class_out();
+      cpvel_samp.state_class_out();
+      cpylm_cons.state_class_out();
+      cpgen_wave.state_class_out();
+      PRINT_LINE_STAR;
+      PRINTF("\n");
+    }// end routine
 
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 #ifdef PUP_ON
-  void pup(PUP::er &p){
-    p | num_pup;
-    cpopts.pup(p);
-    cpcoeffs_info.pup(p);
-    cptherm_info.pup(p);
-    cpatom_maps.pup(p);
-    cpconstrnt.pup(p);
-    cpewald.pup(p);
-    cppseudo.pup(p);
-    cpdual_pme.pup(p);
-    cpatom_pme.pup(p);
-    cpvel_samp.pup(p);
-    cpylm_cons.pup(p);
-    cpgen_wave.pup(p);
-    num_pup++;
-    if(num_pup==2){
-     PUP_PRINTF("\n");
-     PUP_PRINT_LINE_STAR;
-     PUP_PRINTF("CP PUP COMPLETED\n");
-     PUP_PRINT_LINE_STAR;
-     PUP_PRINTF("\n");
-    }//endif
-  }
+    void pup(PUP::er &p){
+      p | num_pup;
+      cpopts.pup(p);
+      cpcoeffs_info.pup(p);
+      cptherm_info.pup(p);
+      cpatom_maps.pup(p);
+      cpconstrnt.pup(p);
+      cpewald.pup(p);
+      cppseudo.pup(p);
+      cpdual_pme.pup(p);
+      cpatom_pme.pup(p);
+      cpvel_samp.pup(p);
+      cpylm_cons.pup(p);
+      cpgen_wave.pup(p);
+      num_pup++;
+      if(num_pup==2){
+        PUP_PRINTF("\n");
+        PUP_PRINT_LINE_STAR;
+        PUP_PRINTF("CP PUP COMPLETED\n");
+        PUP_PRINT_LINE_STAR;
+        PUP_PRINTF("\n");
+      }//endif
+    }
 #endif
 
-//-------------------------------------------------------------------------
-  }; // end class CP
+    //-------------------------------------------------------------------------
+}; // end class CP
 //==========================================================================
 
 #ifdef PUP_ON

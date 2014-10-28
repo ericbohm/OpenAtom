@@ -12,16 +12,16 @@
 //==========================================================================
 
 void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts,
-                int *kx_line, int *ky_line,
-		int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,
- 	        int *nline_lgrp,
-                int *kx_str_lgrp,int *kx_end_lgrp,
-                int *ky_str_lgrp,int *ky_end_lgrp)
+    int *kx_line, int *ky_line,
+    int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,
+    int *nline_lgrp,
+    int *kx_str_lgrp,int *kx_end_lgrp,
+    int *ky_str_lgrp,int *ky_end_lgrp)
 
-//==========================================================================
-   {
-//==========================================================================
-// Find the best load balancing factor
+  //==========================================================================
+{
+  //==========================================================================
+  // Find the best load balancing factor
 
   double dev_min  = 0.0;
   int nbal_min    = 0;
@@ -47,16 +47,16 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
     nmax = MAX(nmax,nnow);
     double dev = 100.0*((double)(nmax-nmin))/((double)MAX(nmin,1));
     if(ic==nplane-1){
-     if(dev<dev_min || ibal==1){
-       dev_min  = dev;
-       nbal_min = nbal;
-       ibal_min = ibal;
-     }//endif
+      if(dev<dev_min || ibal==1){
+        dev_min  = dev;
+        nbal_min = nbal;
+        ibal_min = ibal;
+      }//endif
     }//endif
   }//endfor
 
-//==========================================================================
-// Store the good decomposition
+  //==========================================================================
+  // Store the good decomposition
 
   int ntarg = (nktot/nplane);
   if(ntarg > nbal_min){ntarg = ntarg-nbal_min;}
@@ -69,11 +69,11 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
     npts_lgrp[ic] += npts[i];
     nline_lgrp[ic]+= 1;
     if( (npts_lgrp[ic]>=ntarg) && (ic<(nplane-1)) ){
-       iend_lgrp[ic]  = i+1;
-       ic+=1;
-       npts_lgrp[ic]  = 0;
-       nline_lgrp[ic] = 0;
-       istrt_lgrp[ic] = i+1;
+      iend_lgrp[ic]  = i+1;
+      ic+=1;
+      npts_lgrp[ic]  = 0;
+      nline_lgrp[ic] = 0;
+      istrt_lgrp[ic] = i+1;
     }//endif
   }//endfor
   iend_lgrp[(nplane-1)]  = nline;
@@ -85,8 +85,8 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
     ky_end_lgrp[i] = ky_line[(iend_lgrp[i]-1)];
   }//endfor
 
-//==========================================================================
-// Output some statistics 
+  //==========================================================================
+  // Output some statistics 
 
   int nmax      = 0;
   int nmin      = npts_lgrp[0];
@@ -99,8 +99,8 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
   double dev = 100.0*((double)(nmax-nmin))/((double)MAX(nmin,1));
   printf("max=%d : min=%d : dev=%g : %d %d\n",nmax,nmin,dev,nbal_min,ibal_min);
 
-//==========================================================================
-// Error check
+  //==========================================================================
+  // Error check
 
   int ierr = 0;
 
@@ -123,8 +123,8 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
     EXIT(1);
   }//endif
 
-//==========================================================================
-   }
+  //==========================================================================
+}
 //==========================================================================
 
 
@@ -133,13 +133,13 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
 //==========================================================================
 
 void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *kz
- //                                 ,complex *data
-                                 )
+    //                                 ,complex *data
+    )
 
 //==========================================================================
-    {//begin routine 
-//==========================================================================
-// Count half plane kx=0 of piny data : check piny data
+{//begin routine 
+  //==========================================================================
+  // Count half plane kx=0 of piny data : check piny data
 
   PRINTF("Flip the Complex data!!\n");
 
@@ -150,13 +150,13 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
   int *kxt = (int *)malloc(nplane0*sizeof(int));
   int *kyt = (int *)malloc(nplane0*sizeof(int));
   int *kzt = (int *)malloc(nplane0*sizeof(int));
-//  complex *datat = (complex *)malloc(nplane0*sizeof(complex));
+  //  complex *datat = (complex *)malloc(nplane0*sizeof(complex));
 
   for(int i=0;i<nplane0-1;i++){
     kxt[i]= kx[i];
     kyt[i]= ky[i];
     kzt[i]= kz[i];
-//    datat[i]= data[i];
+    //    datat[i]= data[i];
     if(kx[i]!=0){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("Error while flipping piny dblpack data set\n");
@@ -167,7 +167,7 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
   kxt[(nplane0-1)] = kx[(nktot-1)];
   kyt[(nplane0-1)] = ky[(nktot-1)];
   kzt[(nplane0-1)] = kz[(nktot-1)];
-//    datat[(nplane0-1)]= data[(nktot-1)];
+  //    datat[(nplane0-1)]= data[(nktot-1)];
   if(kx[(nktot-1)]!=0 || ky[(nktot-1)] || kz[(nktot-1)]){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("Error while flipping piny dblpack data set\n");
@@ -175,8 +175,8 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
     EXIT(1);
   }//endif
 
-//==========================================================================
-// Expand the data set
+  //==========================================================================
+  // Expand the data set
 
   for(int i=nktot-2;i>=0;i--){
     kx[(i+nplane0)] = kx[i];
@@ -185,16 +185,16 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
     //data[(i+nplane0)] =  data[i];
   }//endfor
 
-//==========================================================================
-// Create the bottom half of plane zero by symmetry : 
+  //==========================================================================
+  // Create the bottom half of plane zero by symmetry : 
 
   int i1 = 0;
   for(int i=0;i<nplane0-1;i++){
     kx[i] =  kxt[nplane0-i-2];
     ky[i] = -kyt[nplane0-i-2];
     kz[i] = -kzt[nplane0-i-2];
-//   data[i].re =  datat[i].re;
-//   data[i].im = -datat[i].im;
+    //   data[i].re =  datat[i].re;
+    //   data[i].im = -datat[i].im;
     if(kx[i]!=0 || ky[i]<ky[i1]){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("Error while flipping piny dblpack data set\n");
@@ -222,14 +222,14 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
   }
 #endif
 
-//==========================================================================
-// Exit
+  //==========================================================================
+  // Exit
 
   (*n_ret) = (nktot+nplane0-1);
   free(kxt);
   free(kyt);
   free(kzt);
 
-//==========================================================================
-   }//end routine
+  //==========================================================================
+}//end routine
 //==========================================================================

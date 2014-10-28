@@ -30,7 +30,7 @@ void TemperController::acceptData(int temper, EnergyStruct &energies)
      bead, but which ones we actually care about summing is for Glenn
      to figure out. */
   if(reportedIn == numTempers*numBeads)
-      acceptData();
+    acceptData();
 
 }
 
@@ -44,12 +44,12 @@ void TemperController::acceptData()
   UberCollection index;
   // average out the 
   for(int i=0; i < numTempers; i++)
-    { 
-      index.idxU.x=i;
-      index.setPO();
-      //      CkPrintf("sending temp to %d,%d,%d,%d\n",index.idxU.x, index.idxU.y, index.idxU.z, index.idxU.s);
-      instControllerProxy[i].acceptNewTemperature(temperatures[i]);
-    }
+  { 
+    index.idxU.x=i;
+    index.setPO();
+    //      CkPrintf("sending temp to %d,%d,%d,%d\n",index.idxU.x, index.idxU.y, index.idxU.z, index.idxU.s);
+    instControllerProxy[i].acceptNewTemperature(temperatures[i]);
+  }
 }
 
 TemperController::~TemperController()

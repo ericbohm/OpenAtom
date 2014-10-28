@@ -58,16 +58,16 @@ void DGEFA(double *, int *, int *, int *, int * );
 void DGESL(double *, int *, int *, int *, double *, int * );
 
 void DGEMM (char *, char *, int *, int *, int *, double *, double *, 
-                  int *, double *, int *, double *, double *, int * );
+    int *, double *, int *, double *, double *, int * );
 
 void CFTFAX(int *,int *,double *);
 
 void CFFT99(double *,double *,double *,
-           int *,int *,int *,int *,int *,int *);
+    int *,int *,int *,int *,int *,int *);
 
 void DCFT(int *,double *,int *,int *,
-          double *, int *,int *,int *,int *,int *,double *,
-          double *,int *,double *,int *);
+    double *, int *,int *,int *,int *,int *,double *,
+    double *,int *,double *,int *);
 
 void ZFFT1DI(int *,double *);
 
@@ -84,7 +84,7 @@ void DCFFTF_GENERIC(int *,double *,double *);
 void DCFFTB_GENERIC(int *,double *,double *);
 
 void RS(int *,int *,double [],double [],int *,double [],
-        double [],double [],int *);
+    double [],double [],int *);
 
 /*----------------------------------------------------------------------*/
 
@@ -133,8 +133,8 @@ void DURAND(double *,int *, double *,int *);
 /*----------------------------------------------------------------------*/
 
 void  GEN_MATMUL(double *,int *,int *,double *,int *,int *,
-                 double *,int *,int *,int *,int *,
-                 double *,double *);
+    double *,int *,int *,int *,int *,
+    double *,double *);
 
 /*----------------------------------------------------------------------*/
 

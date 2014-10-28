@@ -30,17 +30,17 @@
 /*==========================================================================*/
 
 void set_surf_params(char *molsetname, char *fun_key,
-                     DICT_WORD surface_dict[],int num_surface_dict,
-                     MDSURFACE *mdsurface)  
-/*==========================================================================*/
-  {  /* Begin routine */
-/*==========================================================================*/
+    DICT_WORD surface_dict[],int num_surface_dict,
+    MDSURFACE *mdsurface)  
+  /*==========================================================================*/
+{  /* Begin routine */
+  /*==========================================================================*/
 
   int    i,index;
   double real_key_arg;
 
-/*==========================================================================*/
-/* I) Check for missing key words*/
+  /*==========================================================================*/
+  /* I) Check for missing key words*/
 
   for(i=1;i<num_surface_dict;i++){
     if(surface_dict[i].iuset==0 && surface_dict[i].key_type==1){
@@ -48,36 +48,36 @@ void set_surf_params(char *molsetname, char *fun_key,
     }/*endif*/
   }/*endfor*/
 
-/*==========================================================================*/
-/* II) Fill the surface structure */ 
+  /*==========================================================================*/
+  /* II) Fill the surface structure */ 
 
   /*------------------------------------------------------------------------*/
   /* 1)\surface_type{}                                                      */
-   strcpy(mdsurface->surface_type,surface_dict[1].keyarg);
+  strcpy(mdsurface->surface_type,surface_dict[1].keyarg);
   /*------------------------------------------------------------------------*/
   /* 2)\surface_height{}                                                    */
-   sscanf(surface_dict[2].keyarg,"%lg",&real_key_arg);
-   mdsurface->surface_height = real_key_arg;
+  sscanf(surface_dict[2].keyarg,"%lg",&real_key_arg);
+  mdsurface->surface_height = real_key_arg;
   /*------------------------------------------------------------------------*/
   /* 3)\num_spline_pts{}                                                    */
-   sscanf(surface_dict[3].keyarg,"%lg",&real_key_arg);
-   mdsurface->nsplin_surf = (int) real_key_arg;
-   index = 3;
-   if(real_key_arg<=0.0){
+  sscanf(surface_dict[3].keyarg,"%lg",&real_key_arg);
+  mdsurface->nsplin_surf = (int) real_key_arg;
+  index = 3;
+  if(real_key_arg<=0.0){
     keyarg_barf(surface_dict,molsetname,fun_key,index);
-   }/*endif*/
+  }/*endif*/
   /*------------------------------------------------------------------------*/
   /* 4)\healing_length{}                                                    */
-   sscanf(surface_dict[4].keyarg,"%lg",&real_key_arg);
-   mdsurface->zheal = real_key_arg;
-   index = 4;
-   if(real_key_arg<=0.0){
+  sscanf(surface_dict[4].keyarg,"%lg",&real_key_arg);
+  mdsurface->zheal = real_key_arg;
+  index = 4;
+  if(real_key_arg<=0.0){
     keyarg_barf(surface_dict,molsetname,fun_key,index);
-   }/*endif*/
+  }/*endif*/
   /*------------------------------------------------------------------------*/
 
-/*==========================================================================*/
-    }/*end routine*/
+  /*==========================================================================*/
+}/*end routine*/
 /*==========================================================================*/
 
 

@@ -21,12 +21,12 @@
 /*==========================================================================*/
 
 void set_onfo_params(DICT_WORD *intra_dict,int num_intra_dict,
-                     char *fun_key,char *file_name,int jmol_typ,
-                     MDCLATOMS_INFO *clatoms_info,MDATOM_MAPS *atommaps,
-                     MDONFO *onfo,NULL_INTER_PARSE *null_inter_parse,
-                     BUILD_INTRA *build_intra, int iresidue, int ires_off)
+    char *fun_key,char *file_name,int jmol_typ,
+    MDCLATOMS_INFO *clatoms_info,MDATOM_MAPS *atommaps,
+    MDONFO *onfo,NULL_INTER_PARSE *null_inter_parse,
+    BUILD_INTRA *build_intra, int iresidue, int ires_off)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {/*begin routine */
   int num,index,ifound,igo;
   int itype1,itype2;
@@ -34,8 +34,8 @@ void set_onfo_params(DICT_WORD *intra_dict,int num_intra_dict,
   int imask1,imask2;
   int i,itype;
 
-/*=======================================================================*/
-/* I) Check for missing key words*/
+  /*=======================================================================*/
+  /* I) Check for missing key words*/
   for(i=1;i<=2;i++){
     if(intra_dict[i].iuset==0 && intra_dict[i].key_type==1){
       keyword_miss(intra_dict,file_name,fun_key,i);}
@@ -87,47 +87,47 @@ void set_onfo_params(DICT_WORD *intra_dict,int num_intra_dict,
     if(onfo->num+1 > build_intra->nonfo_max){
       build_intra->nonfo_max += NMEM_MIN;
       onfo->j1 =(int *) crealloc(&(onfo->j1)[1],
-             build_intra->nonfo_max*sizeof(int),"set_onfo_params")-1;
+          build_intra->nonfo_max*sizeof(int),"set_onfo_params")-1;
       onfo->j2 =(int *) crealloc(&(onfo->j2)[1],
-             build_intra->nonfo_max*sizeof(int),"set_onfo_params")-1;
+          build_intra->nonfo_max*sizeof(int),"set_onfo_params")-1;
       onfo->jtyp =(int *) crealloc(&(onfo->jtyp)[1],
-             build_intra->nonfo_max*sizeof(int),"set_onfo_params")-1;
+          build_intra->nonfo_max*sizeof(int),"set_onfo_params")-1;
     }/*endif*/
     /*--------------------------------------------------------------------*/
     /* C) Check type */
     itype = (onfo->ntyp)+1;
     for(i=1;i<=onfo->ntyp;i++){
       if((strcasecmp(build_intra->confo_typ[i].atm1,
-                     build_intra->confo_typ_now->atm1)==0)
-         &&(strcasecmp(build_intra->confo_typ[i].atm2,
-                       build_intra->confo_typ_now->atm2)==0)
-         &&(strcasecmp(build_intra->confo_typ[i].label,
-                       build_intra->confo_typ_now->label)==0)) {itype=i;}
+              build_intra->confo_typ_now->atm1)==0)
+          &&(strcasecmp(build_intra->confo_typ[i].atm2,
+              build_intra->confo_typ_now->atm2)==0)
+          &&(strcasecmp(build_intra->confo_typ[i].label,
+              build_intra->confo_typ_now->label)==0)) {itype=i;}
       if((strcasecmp(build_intra->confo_typ[i].atm1,
-                     build_intra->confo_typ_now->atm2)==0)
-         &&(strcasecmp(build_intra->confo_typ[i].atm2,
-                       build_intra->confo_typ_now->atm1)==0)
-         &&(strcasecmp(build_intra->confo_typ[i].label,
-                       build_intra->confo_typ_now->label)==0)) {itype=i;}
+              build_intra->confo_typ_now->atm2)==0)
+          &&(strcasecmp(build_intra->confo_typ[i].atm2,
+              build_intra->confo_typ_now->atm1)==0)
+          &&(strcasecmp(build_intra->confo_typ[i].label,
+              build_intra->confo_typ_now->label)==0)) {itype=i;}
     }/*endfor*/
     /*---------------------------------------------------------------------*/
     /* D) Add space */
     if(itype>build_intra->nonfo_typ_max){
-     build_intra->nonfo_typ_max += NMEM_MIN;
-     build_intra->confo_typ      = (CBOND *) 
-      crealloc(&(build_intra->confo_typ)[1],
-           build_intra->nonfo_typ_max*sizeof(CBOND),"set_onfo_params")-1;
+      build_intra->nonfo_typ_max += NMEM_MIN;
+      build_intra->confo_typ      = (CBOND *) 
+        crealloc(&(build_intra->confo_typ)[1],
+            build_intra->nonfo_typ_max*sizeof(CBOND),"set_onfo_params")-1;
     }/*endif*/
     /*---------------------------------------------------------------------*/
     /* E) Add a type */
     if(itype==(onfo->ntyp)+1){
       onfo->ntyp+=1;
       strcpy(build_intra->confo_typ[itype].atm1,
-             build_intra->confo_typ_now->atm1);
+          build_intra->confo_typ_now->atm1);
       strcpy(build_intra->confo_typ[itype].atm2,
-             build_intra->confo_typ_now->atm2);
+          build_intra->confo_typ_now->atm2);
       strcpy(build_intra->confo_typ[itype].label,
-             build_intra->confo_typ_now->label);
+          build_intra->confo_typ_now->label);
     }/*endif*/
     /*---------------------------------------------------------------------*/
     /* B) Spread */
@@ -146,18 +146,18 @@ void set_onfo_params(DICT_WORD *intra_dict,int num_intra_dict,
       build_intra->nonfo_nul_max += NMEM_MIN;
       null_inter_parse->jonfo1_nul     = 
         (int *) crealloc(&(null_inter_parse->jonfo1_nul)[1],
-              build_intra->nonfo_nul_max*sizeof(int),"set_onfo_params")-1;
+            build_intra->nonfo_nul_max*sizeof(int),"set_onfo_params")-1;
       null_inter_parse->jonfo2_nul     = 
         (int *) crealloc(&(null_inter_parse->jonfo2_nul)[1],
-              build_intra->nonfo_nul_max*sizeof(int),"set_onfo_params")-1;
+            build_intra->nonfo_nul_max*sizeof(int),"set_onfo_params")-1;
     }/*endif*/
     /*--------------------------------------------------------------------*/
     /* B) Spread */
     null_inter_parse->nonfo_nul += 1;
     null_inter_parse->jonfo1_nul[null_inter_parse->nonfo_nul]
-                                         = iatm_ind1 + clatoms_info->natm_tot;
+      = iatm_ind1 + clatoms_info->natm_tot;
     null_inter_parse->jonfo2_nul[null_inter_parse->nonfo_nul] 
-                                         = iatm_ind2 + clatoms_info->natm_tot;
+      = iatm_ind2 + clatoms_info->natm_tot;
   }/*endif*/
   /*----------------------------------------------------------------------*/
 }/*end routine*/

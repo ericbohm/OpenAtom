@@ -35,12 +35,12 @@ extern int sizeX;
 //==============================================================================
 RhoRealSlab::~RhoRealSlab(){
 
-    fftw_free(densityC);
-    fftw_free(VksC);
-    fftw_free(rhoIRXC);
-    fftw_free(rhoIRYC);
-    fftw_free(rhoIRZC);
-    fftw_free(VksHartC);
+  fftw_free(densityC);
+  fftw_free(VksC);
+  fftw_free(rhoIRXC);
+  fftw_free(rhoIRYC);
+  fftw_free(rhoIRZC);
+  fftw_free(VksHartC);
 }
 //==============================================================================
 
@@ -51,79 +51,79 @@ RhoRealSlab::~RhoRealSlab(){
 /* This gets called at the end of the RealSpaceDensity Constructor */
 //==============================================================================
 void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim, 
-                     int xdimA, int ydimA,  int myIndexX, int myIndexY,
-                     int rhoRsubplanes)
-//==============================================================================
-   {//begin routine
-//==============================================================================
+    int xdimA, int ydimA,  int myIndexX, int myIndexY,
+    int rhoRsubplanes)
+  //==============================================================================
+{//begin routine
+  //==============================================================================
 
-   rho_rs->rhoRsubplanes = rhoRsubplanes;
-   rho_rs->sizeX = xdim;
-   rho_rs->sizeY = ydim;
-   rho_rs->sizeZ = zdim;
+  rho_rs->rhoRsubplanes = rhoRsubplanes;
+  rho_rs->sizeX = xdim;
+  rho_rs->sizeY = ydim;
+  rho_rs->sizeZ = zdim;
 
-   rho_rs->size     = (rho_rs->sizeX+2) * (rho_rs->sizeY);
-   rho_rs->trueSize = (rho_rs->sizeX) * (rho_rs->sizeY);
+  rho_rs->size     = (rho_rs->sizeX+2) * (rho_rs->sizeY);
+  rho_rs->trueSize = (rho_rs->sizeX) * (rho_rs->sizeY);
 
-   int sizenow      = rho_rs->size;
-   int csizenow     = sizenow/2;
+  int sizenow      = rho_rs->size;
+  int csizenow     = sizenow/2;
 
-   complex *dummy;
-   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
-   rho_rs->VksC     = dummy;
-   rho_rs->Vks      = reinterpret_cast<double*> (dummy);
+  complex *dummy;
+  dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+  rho_rs->VksC     = dummy;
+  rho_rs->Vks      = reinterpret_cast<double*> (dummy);
 
-   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
-   rho_rs->densityC = dummy;
-   rho_rs->density  = reinterpret_cast<double*> (dummy); 
+  dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+  rho_rs->densityC = dummy;
+  rho_rs->density  = reinterpret_cast<double*> (dummy); 
 
-   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
-   rho_rs->rhoIRXC  = dummy;
-   rho_rs->rhoIRX   = reinterpret_cast<double*> (dummy);
+  dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+  rho_rs->rhoIRXC  = dummy;
+  rho_rs->rhoIRX   = reinterpret_cast<double*> (dummy);
 
-   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
-   rho_rs->rhoIRYC  = dummy;
-   rho_rs->rhoIRY   = reinterpret_cast<double*> (dummy);
+  dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+  rho_rs->rhoIRYC  = dummy;
+  rho_rs->rhoIRY   = reinterpret_cast<double*> (dummy);
 
-   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
-   rho_rs->rhoIRZC  = dummy;
-   rho_rs->rhoIRZ   = reinterpret_cast<double*> (dummy);
+  dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+  rho_rs->rhoIRZC  = dummy;
+  rho_rs->rhoIRZ   = reinterpret_cast<double*> (dummy);
 
-   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
-   rho_rs->VksHartC = dummy;
-   rho_rs->VksHart  = reinterpret_cast<double*> (dummy);
+  dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+  rho_rs->VksHartC = dummy;
+  rho_rs->VksHart  = reinterpret_cast<double*> (dummy);
 
-   // if you have an extra transpose, you need a little more memory
-   // to receive messages asynchronously from other elements
+  // if you have an extra transpose, you need a little more memory
+  // to receive messages asynchronously from other elements
 
-   rho_rs->csizeInt = 0;
-   rho_rs->rsizeInt = 0;
-   if(rhoRsubplanes>1){
+  rho_rs->csizeInt = 0;
+  rho_rs->rsizeInt = 0;
+  if(rhoRsubplanes>1){
 
-     csizenow = xdimA*ydimA;
-     rho_rs->csizeInt = csizenow;
-     rho_rs->rsizeInt = 2*csizenow;
+    csizenow = xdimA*ydimA;
+    rho_rs->csizeInt = csizenow;
+    rho_rs->rsizeInt = 2*csizenow;
 
-     dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
-     rho_rs->rhoIRXCint  = dummy;
-     rho_rs->rhoIRXint   = reinterpret_cast<double*> (dummy);
+    dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+    rho_rs->rhoIRXCint  = dummy;
+    rho_rs->rhoIRXint   = reinterpret_cast<double*> (dummy);
 
-     dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
-     rho_rs->rhoIRYCint  = dummy;
-     rho_rs->rhoIRYint   = reinterpret_cast<double*> (dummy);
+    dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+    rho_rs->rhoIRYCint  = dummy;
+    rho_rs->rhoIRYint   = reinterpret_cast<double*> (dummy);
 
-     dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
-     rho_rs->rhoIRZCint  = dummy;
-     rho_rs->rhoIRZint   = reinterpret_cast<double*> (dummy);
+    dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+    rho_rs->rhoIRZCint  = dummy;
+    rho_rs->rhoIRZint   = reinterpret_cast<double*> (dummy);
 
-     dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
-     rho_rs->VksHartCint = dummy;
-     rho_rs->VksHartint  = reinterpret_cast<double*> (dummy);
+    dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+    rho_rs->VksHartCint = dummy;
+    rho_rs->VksHartint  = reinterpret_cast<double*> (dummy);
 
-   }//endif
+  }//endif
 
-//==============================================================================
-   }//end routine
+  //==============================================================================
+}//end routine
 //==============================================================================
 
 
@@ -194,40 +194,40 @@ void RhoGSlab::pup(PUP::er &p) {
   p|VksMake;
 
   if(p.isUnpacking()){
-      if(RhoMake)
-	Rho       = (complex *)fftw_malloc(numFull*sizeof(complex));
-      else
-	Rho = NULL;
-      if(divRhoXMake)
-	divRhoX   = (complex *)fftw_malloc(numFull*sizeof(complex));
-      else
-	divRhoX   = NULL;
-      if(divRhoYMake)
-	divRhoY   = (complex *)fftw_malloc(numFull*sizeof(complex));
-      else 
-	divRhoY   = NULL;
-      if(divRhoZMake)
-	divRhoZ   = (complex *)fftw_malloc(numFull*sizeof(complex));
-      else
-	divRhoZ   = NULL;
-      if(packedRhoMake)
-	packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
-      else
-	packedRho  = NULL;
-      if(packedVksMake)
-	packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
-      else
-	packedVks = NULL;
-      if(VksMake)
-	Vks       = (complex *)fftw_malloc(numFull*sizeof(complex));
-      else
-	Vks       = NULL;
-      runs = new RunDescriptor[numRuns];
-      k_x  = (int *)fftw_malloc(numPoints*sizeof(int));
-      k_y  = (int *)fftw_malloc(numPoints*sizeof(int));
-      k_z  = (int *)fftw_malloc(numPoints*sizeof(int));
-      perdCorr = NULL;
-      if(iperd!=3){perdCorr = (double *)fftw_malloc(numPoints*sizeof(double));}
+    if(RhoMake)
+      Rho       = (complex *)fftw_malloc(numFull*sizeof(complex));
+    else
+      Rho = NULL;
+    if(divRhoXMake)
+      divRhoX   = (complex *)fftw_malloc(numFull*sizeof(complex));
+    else
+      divRhoX   = NULL;
+    if(divRhoYMake)
+      divRhoY   = (complex *)fftw_malloc(numFull*sizeof(complex));
+    else 
+      divRhoY   = NULL;
+    if(divRhoZMake)
+      divRhoZ   = (complex *)fftw_malloc(numFull*sizeof(complex));
+    else
+      divRhoZ   = NULL;
+    if(packedRhoMake)
+      packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
+    else
+      packedRho  = NULL;
+    if(packedVksMake)
+      packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
+    else
+      packedVks = NULL;
+    if(VksMake)
+      Vks       = (complex *)fftw_malloc(numFull*sizeof(complex));
+    else
+      Vks       = NULL;
+    runs = new RunDescriptor[numRuns];
+    k_x  = (int *)fftw_malloc(numPoints*sizeof(int));
+    k_y  = (int *)fftw_malloc(numPoints*sizeof(int));
+    k_z  = (int *)fftw_malloc(numPoints*sizeof(int));
+    perdCorr = NULL;
+    if(iperd!=3){perdCorr = (double *)fftw_malloc(numPoints*sizeof(double));}
   }//endif : unpacking malloc
 
   if(RhoMake)       PUParray(p,Rho,numFull);
@@ -244,8 +244,8 @@ void RhoGSlab::pup(PUP::er &p) {
   PUParray(p,k_z,numPoints);
   if(iperd!=3){PUParray(p,perdCorr,numPoints);}
 
-//------------------------------------------------------------------------------
-  }//end intense pupping experience
+  //------------------------------------------------------------------------------
+}//end intense pupping experience
 //==============================================================================
 
 
@@ -257,12 +257,12 @@ void RhoGSlab::pup(PUP::er &p) {
 
 void RhoGSlab::divRhoGdot(double *hmati, double tpi,complex *tmpRho){
 
-//==============================================================================
+  //==============================================================================
 
   int nfftz = sizeZ;
 
-//==============================================================================
-// 
+  //==============================================================================
+  // 
 
   bzero(divRhoX,sizeof(complex)*numFull);  
   bzero(divRhoY,sizeof(complex)*numFull);  
@@ -301,8 +301,8 @@ void RhoGSlab::divRhoGdot(double *hmati, double tpi,complex *tmpRho){
 
   CkAssert(numPoints == koff);
 
-//------------------------------------------------------------------------------
-  }//end routine
+  //------------------------------------------------------------------------------
+}//end routine
 //==============================================================================
 
 
@@ -314,16 +314,16 @@ void RhoGSlab::divRhoGdot(double *hmati, double tpi,complex *tmpRho){
 
 void RhoGSlab::createWhiteByrd(double *hmati, double tpi){
 
-//==============================================================================
+  //==============================================================================
 
   int nfftz = sizeZ;
   double gx,gy,gz;
   complex tmp;
 
-//==============================================================================
+  //==============================================================================
 
   complex *whitebyrd = divRhoX; // zeroing done carefully inside loop
-                                // so that we can save memory by reusing divRhoX
+  // so that we can save memory by reusing divRhoX
   int koff = 0;
   for (int r = 0,l=0; r < numRuns; r+=2,l++) {
 
@@ -354,8 +354,8 @@ void RhoGSlab::createWhiteByrd(double *hmati, double tpi){
   }//endfor
 
   CkAssert(numPoints == koff);
-//------------------------------------------------------------------------------
-  }//end routine
+  //------------------------------------------------------------------------------
+}//end routine
 //==============================================================================
 
 
@@ -370,13 +370,13 @@ void RhoGSlab::createWhiteByrd(double *hmati, double tpi){
 
 void RhoGSlab::setKVectors(int *n){
 
-//======================================================================
-// Construct the k-vectors
+  //======================================================================
+  // Construct the k-vectors
 
   k_x = (int *)fftw_malloc(numPoints*sizeof(int));
   k_y = (int *)fftw_malloc(numPoints*sizeof(int));
   k_z = (int *)fftw_malloc(numPoints*sizeof(int));
-  
+
   int r, i, dataCovered = 0;
   int x, y, z;
   for (r = 0; r < numRuns; r++) { // 2*number of lines z
@@ -397,13 +397,13 @@ void RhoGSlab::setKVectors(int *n){
 
   CkAssert(dataCovered == numPoints);
 
-//==============================================================================
-// Set the return values
+  //==============================================================================
+  // Set the return values
 
   *n    = numPoints;
-  
-//==============================================================================
-  }//end routine
+
+  //==============================================================================
+}//end routine
 //==============================================================================
 
 //==============================================================================
@@ -424,30 +424,30 @@ void RhoRealSlab::pup(PUP::er &p) {
   p|rsizeInt;
 
   if(p.isUnpacking()){
-        int csize  = size/2;
-	VksC       = (complex*) fftw_malloc(csize*sizeof(complex));
-	Vks        =  reinterpret_cast<double*> (VksC);
-	densityC   = (complex*) fftw_malloc(csize*sizeof(complex));
-	density    =  reinterpret_cast<double*> (densityC);
-	rhoIRXC    = (complex*) fftw_malloc(csize*sizeof(complex));
-	rhoIRX     = reinterpret_cast<double*> (rhoIRXC);
-	rhoIRYC    = (complex*) fftw_malloc(csize*sizeof(complex));
-	rhoIRY     = reinterpret_cast<double*> (rhoIRYC);
-	rhoIRZC    = (complex*) fftw_malloc(csize*sizeof(complex));
-	rhoIRZ     = reinterpret_cast<double*> (rhoIRZC);
-	VksHartC   = (complex*) fftw_malloc(csize*sizeof(complex));
-	VksHart    = reinterpret_cast<double*> (VksHartC);
-        if(rhoRsubplanes>1){
-	  rhoIRXCint    = (complex*) fftw_malloc(csizeInt*sizeof(complex));
-	  rhoIRXint     = reinterpret_cast<double*> (rhoIRXCint);
-	  rhoIRYCint    = (complex*) fftw_malloc(csizeInt*sizeof(complex));
-	  rhoIRYint     = reinterpret_cast<double*> (rhoIRYCint);
-	  rhoIRZCint    = (complex*) fftw_malloc(csizeInt*sizeof(complex));
-	  rhoIRZint     = reinterpret_cast<double*> (rhoIRZCint);
-	  VksHartCint   = (complex*) fftw_malloc(csizeInt*sizeof(complex));
-	  VksHartint    = reinterpret_cast<double*> (VksHartCint);
-	}
+    int csize  = size/2;
+    VksC       = (complex*) fftw_malloc(csize*sizeof(complex));
+    Vks        =  reinterpret_cast<double*> (VksC);
+    densityC   = (complex*) fftw_malloc(csize*sizeof(complex));
+    density    =  reinterpret_cast<double*> (densityC);
+    rhoIRXC    = (complex*) fftw_malloc(csize*sizeof(complex));
+    rhoIRX     = reinterpret_cast<double*> (rhoIRXC);
+    rhoIRYC    = (complex*) fftw_malloc(csize*sizeof(complex));
+    rhoIRY     = reinterpret_cast<double*> (rhoIRYC);
+    rhoIRZC    = (complex*) fftw_malloc(csize*sizeof(complex));
+    rhoIRZ     = reinterpret_cast<double*> (rhoIRZC);
+    VksHartC   = (complex*) fftw_malloc(csize*sizeof(complex));
+    VksHart    = reinterpret_cast<double*> (VksHartC);
+    if(rhoRsubplanes>1){
+      rhoIRXCint    = (complex*) fftw_malloc(csizeInt*sizeof(complex));
+      rhoIRXint     = reinterpret_cast<double*> (rhoIRXCint);
+      rhoIRYCint    = (complex*) fftw_malloc(csizeInt*sizeof(complex));
+      rhoIRYint     = reinterpret_cast<double*> (rhoIRYCint);
+      rhoIRZCint    = (complex*) fftw_malloc(csizeInt*sizeof(complex));
+      rhoIRZint     = reinterpret_cast<double*> (rhoIRZCint);
+      VksHartCint   = (complex*) fftw_malloc(csizeInt*sizeof(complex));
+      VksHartint    = reinterpret_cast<double*> (VksHartCint);
     }
+  }
   PUParray(p,Vks,    size);
   PUParray(p,density,size);
   PUParray(p,rhoIRX, size);
@@ -471,7 +471,7 @@ void RhoRealSlab::pup(PUP::er &p) {
 //============================================================================
 void RhoRealSlab::uPackScale(double *uPackData, double *PackData,double scale){
 
- for(int i=0;i<size;i++){uPackData[i] = PackData[i]*scale;}
+  for(int i=0;i<size;i++){uPackData[i] = PackData[i]*scale;}
 
 }//end routine
 //============================================================================

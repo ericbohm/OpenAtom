@@ -32,11 +32,11 @@
 /*==========================================================================*/
 
 void set_intra_potent(MDINTRA *mdintra,BUILD_INTRA *build_intra,
-                      NAME def_intra_name[],NAME user_intra_name[])
+    NAME def_intra_name[],NAME user_intra_name[])
 
-/*========================================================================*/
-    { /* begin routine */
-/*========================================================================*/
+  /*========================================================================*/
+{ /* begin routine */
+  /*========================================================================*/
   /*            Local Variables                                             */
   int i,iii,ifirst,isum,n;
   int num_fun_dict;
@@ -62,18 +62,18 @@ void set_intra_potent(MDINTRA *mdintra,BUILD_INTRA *build_intra,
   /* I) set the bond parameters                                            */
   PRINTF("Setting the bonds\n");
   isum = mdbond->ntyp_pow
-       + mdbond->ntyp_con
-       + mdgrp_bond_con->ntyp_21
-       + mdgrp_bond_con->ntyp_23
-       + mdgrp_bond_con->ntyp_33
-       + mdgrp_bond_watts->ntyp_33
-       + mdgrp_bond_con->ntyp_43
-       + mdgrp_bond_con->ntyp_46;
+    + mdbond->ntyp_con
+    + mdgrp_bond_con->ntyp_21
+    + mdgrp_bond_con->ntyp_23
+    + mdgrp_bond_con->ntyp_33
+    + mdgrp_bond_watts->ntyp_33
+    + mdgrp_bond_con->ntyp_43
+    + mdgrp_bond_con->ntyp_46;
   if(isum > 0){
     set_bond_potent(mdbond,mdgrp_bond_con,
-                    mdgrp_bond_watts,build_intra,
-                    def_intra_name[1],user_intra_name[1],
-                    fun_dict,num_fun_dict);
+        mdgrp_bond_watts,build_intra,
+        def_intra_name[1],user_intra_name[1],
+        fun_dict,num_fun_dict);
   }/*endif*/
 
   /*=======================================================================*/
@@ -81,8 +81,8 @@ void set_intra_potent(MDINTRA *mdintra,BUILD_INTRA *build_intra,
   PRINTF("Setting the onefours\n");
   if((mdonfo->ntyp) > 0){
     set_onfo_potent(mdonfo,build_intra,
-                        def_intra_name[4],user_intra_name[4],
-                        fun_dict,num_fun_dict);
+        def_intra_name[4],user_intra_name[4],
+        fun_dict,num_fun_dict);
   }/*endif*/
 
   /*=======================================================================*/
@@ -91,12 +91,12 @@ void set_intra_potent(MDINTRA *mdintra,BUILD_INTRA *build_intra,
   if((mdbend_bnd->ntyp) > 0){
     n = mdbend_bnd->ntyp;
     build_intra->ibend_bnd_typ_pure = 
-         (int *)cmalloc(n*sizeof(int),"set_intra_potent")-1;
+      (int *)cmalloc(n*sizeof(int),"set_intra_potent")-1;
     build_intra->ibend_bnd_typ_map = 
-         (int *)cmalloc(n*sizeof(int),"set_intra_potent")-1;
+      (int *)cmalloc(n*sizeof(int),"set_intra_potent")-1;
     set_bend_bnd_potent(mdbend_bnd,build_intra,
-                        def_intra_name[2],user_intra_name[2],
-                        fun_dict,num_fun_dict);
+        def_intra_name[2],user_intra_name[2],
+        fun_dict,num_fun_dict);
     PRINTF("Extracting the pure bends from the Urey-Bradley list\n");
     extract_pure_bends(mdbend_bnd,mdbend,build_intra);
     cfree(&(build_intra->ibend_bnd_typ_pure[1]),"set_intra_potent");
@@ -108,15 +108,15 @@ void set_intra_potent(MDINTRA *mdintra,BUILD_INTRA *build_intra,
   PRINTF("Setting the torsions\n");
   if((mdtors->ntyp_pow) > 0){
     set_tors_potent(mdtors,build_intra,
-                    def_intra_name[3],user_intra_name[3],
-                    fun_dict,num_fun_dict);
+        def_intra_name[3],user_intra_name[3],
+        fun_dict,num_fun_dict);
   }/*endif*/
 
-/*=======================================================================*/
+  /*=======================================================================*/
 
   cfree(&fun_dict[1],"set_intra_potent");
 
-/*=======================================================================*/
+  /*=======================================================================*/
 
   PRINT_LINE_DASH;
   PRINTF("Completed the search of the data bases ");
@@ -124,8 +124,8 @@ void set_intra_potent(MDINTRA *mdintra,BUILD_INTRA *build_intra,
   PRINTF("for the intramolecular potential parameters\n");
   PRINT_LINE_STAR;PRINTF("\n");
 
-/*-----------------------------------------------------------------------*/
-   }  /*end routine*/
+  /*-----------------------------------------------------------------------*/
+}  /*end routine*/
 /*==========================================================================*/
 
 
@@ -137,12 +137,12 @@ void set_intra_potent(MDINTRA *mdintra,BUILD_INTRA *build_intra,
 /*==========================================================================*/
 
 void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
-                     MDGRP_BOND_WATTS *grp_bond_watts,
-                     BUILD_INTRA *build_intra,
-                     NAME def_intra_name, NAME user_intra_name,
-                     DICT_WORD fun_dict[],int num_fun_dict)
+    MDGRP_BOND_WATTS *grp_bond_watts,
+    BUILD_INTRA *build_intra,
+    NAME def_intra_name, NAME user_intra_name,
+    DICT_WORD fun_dict[],int num_fun_dict)
 
-/*=======================================================================*/
+  /*=======================================================================*/
 { /*begin routine */ 
   /*=======================================================================*/
   /*           Local Variables                                             */
@@ -169,13 +169,13 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
   int j1,j2,j3,j4,j5,j6;
   char typ[5];
 
-/*=======================================================================*/
-/* 0) Search initialization-> */
+  /*=======================================================================*/
+  /* 0) Search initialization-> */
   natm_srch = 2;
   strcpy(typ,"bond");
 
-/*-----------------------------------------------------------------------*/
-/* A) Power series                                                       */
+  /*-----------------------------------------------------------------------*/
+  /* A) Power series                                                       */
 
   ntyp_pow = bond->ntyp_pow;
   if(ntyp_pow > 0){
@@ -183,7 +183,7 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     isearch_pow = (int *)cmalloc(ntyp_pow*sizeof(int),"set_bond_potent")-1;
     igood_pow = (int *)cmalloc(ntyp_pow*sizeof(int),"set_bond_potent")-1;
     cbond_pow = 
-       (CATM_LAB *)cmalloc(ntyp_pow*sizeof(CATM_LAB),"set_bond_potent")-1;
+      (CATM_LAB *)cmalloc(ntyp_pow*sizeof(CATM_LAB),"set_bond_potent")-1;
     for(i=1;i<=ntyp_pow;i++){
       strcpy(cbond_pow[i].atm1,build_intra->cbond_typ_pow[i].atm1);
       strcpy(cbond_pow[i].atm2,build_intra->cbond_typ_pow[i].atm2);
@@ -192,8 +192,8 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     for(i=1;i<=ntyp_pow;i++){ifound_pow[i]=0;}
     for(i=1;i<=ntyp_pow;i++){igood_pow[i] =6;}
   }/*endif*/
-/*-----------------------------------------------------------------------*/
-/* B.1) Normal cons                                                      */
+  /*-----------------------------------------------------------------------*/
+  /* B.1) Normal cons                                                      */
 
   ntyp_con = bond->ntyp_con;
   if(ntyp_con > 0){
@@ -201,7 +201,7 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     isearch_con = (int *)cmalloc(ntyp_con*sizeof(int),"set_bond_potent")-1;
     igood_con = (int *)cmalloc(ntyp_con*sizeof(int),"set_bond_potent")-1;
     cbond_con = 
-        (CATM_LAB *)cmalloc(ntyp_con*sizeof(CATM_LAB),"set_bond_potent")-1;
+      (CATM_LAB *)cmalloc(ntyp_con*sizeof(CATM_LAB),"set_bond_potent")-1;
     for(i=1;i<=ntyp_con;i++){
       strcpy(cbond_con[i].atm1,build_intra->cbond_typ_con[i].atm1);
       strcpy(cbond_con[i].atm2,build_intra->cbond_typ_con[i].atm2);
@@ -210,8 +210,8 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     for(i=1;i<=ntyp_con;i++){ifound_con[i]=0;}
     for(i=1;i<=ntyp_con;i++){igood_con[i] =6;}
   }/*endif*/
-/*-----------------------------------------------------------------------*/
-/* B.2) Group cons 21 [1-2]                                              */
+  /*-----------------------------------------------------------------------*/
+  /* B.2) Group cons 21 [1-2]                                              */
 
   ntyp_21 = grp_bond_con->ntyp_21;
   if(ntyp_21 > 0){
@@ -219,7 +219,7 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     isearch_21 = (int *)cmalloc(ntyp_21*sizeof(int),"set_bond_potent")-1;
     igood_21 = (int *)cmalloc(ntyp_21*sizeof(int),"set_bond_potent")-1;
     cbond_21 = 
-        (CATM_LAB *)cmalloc(ntyp_21*sizeof(CATM_LAB),"set_bond_potent")-1;
+      (CATM_LAB *)cmalloc(ntyp_21*sizeof(CATM_LAB),"set_bond_potent")-1;
     for(i=1;i<=ntyp_21;i++){
       strcpy(cbond_21[i].atm1,build_intra->cgrp_typ_21[i].atm1);
       strcpy(cbond_21[i].atm2,build_intra->cgrp_typ_21[i].atm2);
@@ -228,8 +228,8 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     for(i=1;i<=ntyp_21;i++){ifound_21[i]=0;}
     for(i=1;i<=ntyp_21;i++){igood_21[i] =6;}
   }/*endif*/
-/*-----------------------------------------------------------------------*/
-/* B.3) Group cons 23  [1-2,1-3]                                        */
+  /*-----------------------------------------------------------------------*/
+  /* B.3) Group cons 23  [1-2,1-3]                                        */
 
   ntyp_23 = grp_bond_con->ntyp_23;
   if(ntyp_23 > 0){
@@ -238,7 +238,7 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     isearch_23 = (int *)cmalloc(ntyp_23_tot*sizeof(int),"set_bond_potent")-1;
     igood_23 = (int *)cmalloc(ntyp_23_tot*sizeof(int),"set_bond_potent")-1;
     cbond_23 = 
-     (CATM_LAB *)cmalloc(ntyp_23_tot*sizeof(CATM_LAB),"set_bond_potent")-1;
+      (CATM_LAB *)cmalloc(ntyp_23_tot*sizeof(CATM_LAB),"set_bond_potent")-1;
     for(i=1;i<=ntyp_23;i++){
       j1 = 2*i-1;
       j2 = 2*i;
@@ -253,8 +253,8 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     for(i=1;i<=ntyp_23_tot;i++){igood_23[i] =6;}
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.4) Group cons 33  [1-2,1-3,2-3]                                     */
+  /*-----------------------------------------------------------------------*/
+  /* B.4) Group cons 33  [1-2,1-3,2-3]                                     */
 
   ntyp_33 = grp_bond_con->ntyp_33;
   if(ntyp_33 > 0){
@@ -282,21 +282,21 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     for(i=1;i<=ntyp_33_tot;i++){igood_33[i] =6;}
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.4) Group watts 33  [1-2,1-3,2-3]                                    */
+  /*-----------------------------------------------------------------------*/
+  /* B.4) Group watts 33  [1-2,1-3,2-3]                                    */
 
 
   ntyp_watt_33 = grp_bond_watts->ntyp_33;
   if(ntyp_watt_33 > 0){
     ntyp_watt_33_tot = 3*grp_bond_watts->ntyp_33;
     ifound_watt_33 = 
-       (int *)cmalloc(ntyp_watt_33_tot*sizeof(int),"set_bond_potent")-1;
+      (int *)cmalloc(ntyp_watt_33_tot*sizeof(int),"set_bond_potent")-1;
     isearch_watt_33 = 
-       (int *)cmalloc(ntyp_watt_33_tot*sizeof(int),"set_bond_potent")-1;
+      (int *)cmalloc(ntyp_watt_33_tot*sizeof(int),"set_bond_potent")-1;
     igood_watt_33 = 
-       (int *)cmalloc(ntyp_watt_33_tot*sizeof(int),"set_bond_potent")-1;
+      (int *)cmalloc(ntyp_watt_33_tot*sizeof(int),"set_bond_potent")-1;
     cbond_watt_33 = 
-    (CATM_LAB *)cmalloc(ntyp_watt_33_tot*sizeof(CATM_LAB),"set_bond_potent")-1;
+      (CATM_LAB *)cmalloc(ntyp_watt_33_tot*sizeof(CATM_LAB),"set_bond_potent")-1;
     for(i=1;i<=ntyp_watt_33;i++){
       j1 = 3*i-2;
       j2 = 3*i-1;
@@ -315,8 +315,8 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     for(i=1;i<=ntyp_watt_33_tot;i++){igood_watt_33[i] =6;}
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.5) Group cons 43    [1-2,1-3,1-4]                                   */
+  /*-----------------------------------------------------------------------*/
+  /* B.5) Group cons 43    [1-2,1-3,1-4]                                   */
 
   ntyp_43 = grp_bond_con->ntyp_43;
   if(ntyp_43 > 0){
@@ -325,7 +325,7 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     isearch_43 = (int *)cmalloc(ntyp_43_tot*sizeof(int),"set_bond_potent")-1;
     igood_43 = (int *)cmalloc(ntyp_43_tot*sizeof(int),"set_bond_potent")-1;
     cbond_43 = 
-       (CATM_LAB *)cmalloc(ntyp_43_tot*sizeof(CATM_LAB),"set_bond_potent")-1;
+      (CATM_LAB *)cmalloc(ntyp_43_tot*sizeof(CATM_LAB),"set_bond_potent")-1;
     for(i=1;i<=ntyp_43;i++){
       j1 = 3*i-2;
       j2 = 3*i-1;
@@ -344,8 +344,8 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     for(i=1;i<=ntyp_43_tot;i++){igood_43[i] =6;}
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.6) Group cons 46 [1-2,1-3,1-4,2-3,2-4,3-4]                          */
+  /*-----------------------------------------------------------------------*/
+  /* B.6) Group cons 46 [1-2,1-3,1-4,2-3,2-4,3-4]                          */
 
   ntyp_46 = grp_bond_con->ntyp_46;
   if(ntyp_46 > 0){
@@ -385,281 +385,281 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     for(i=1;i<=ntyp_46_tot;i++){igood_46[i] =6;}
   }/*endif*/
 
-/*=======================================================================*/
-/* I) Search the user base. */
+  /*=======================================================================*/
+  /* I) Search the user base. */
   if(strlen(user_intra_name) != 0){
     nsearch = 1;
-/*-----------------------------------------------------------------------*/
-/* A) Count the base, malloc and read the base.                          */
+    /*-----------------------------------------------------------------------*/
+    /* A) Count the base, malloc and read the base.                          */
     ibase_want = 2;
     count_data_base(user_intra_name,fun_dict,num_fun_dict,&nbase,ibase_want);
     if(nbase>0){
       nbase2 = 2*nbase;
       bond_base = (DATA_BASE_ENTRIES *)
-            cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_bond_potent")-1;
+        cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_bond_potent")-1;
       cbond_base = 
-           (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_bond_potent")-1;
+        (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_bond_potent")-1;
       read_data_base(user_intra_name,fun_dict,num_fun_dict,bond_base,
-                   cbond_base,ibase_want,nbase);
+          cbond_base,ibase_want,nbase);
     }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.1) Find the power series bonds.                                     */
+    /*-----------------------------------------------------------------------*/
+    /* B.1) Find the power series bonds.                                     */
 
     if(ntyp_pow > 0 && (nbase > 0) ){
       search_base(nbase,nbase2,cbond_base,ntyp_pow,
-                  cbond_pow,igood_pow,ifound_pow,
-                  isearch_pow,nsearch,natm_srch,user_intra_name);
+          cbond_pow,igood_pow,ifound_pow,
+          isearch_pow,nsearch,natm_srch,user_intra_name);
       icon_flag = 0;
       assign_base_bond(bond_base,nbase,ifound_pow,bond,isearch_pow,
-                       nsearch,icon_flag);
+          nsearch,icon_flag);
     }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.2) Find the constrained bonds.                                      */
+    /*-----------------------------------------------------------------------*/
+    /* B.2) Find the constrained bonds.                                      */
 
     if(ntyp_con > 0 &&(nbase > 0)){
       search_base(nbase,nbase2,cbond_base,ntyp_con,
-                  cbond_con,igood_con,ifound_con,
-                  isearch_con,nsearch,natm_srch,user_intra_name);
+          cbond_con,igood_con,ifound_con,
+          isearch_con,nsearch,natm_srch,user_intra_name);
       icon_flag = 1;
       assign_base_bond(bond_base,nbase,ifound_con,bond,isearch_con,
-                       nsearch,icon_flag);
+          nsearch,icon_flag);
     }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.3) Find the group 21                                                */
+    /*-----------------------------------------------------------------------*/
+    /* B.3) Find the group 21                                                */
 
-  if((ntyp_21 > 0)&&(nbase > 0)){
+    if((ntyp_21 > 0)&&(nbase > 0)){
       search_base(nbase,nbase2,cbond_base,ntyp_21,
-                  cbond_21,igood_21,ifound_21,
-                  isearch_21,nsearch,natm_srch,user_intra_name);
+          cbond_21,igood_21,ifound_21,
+          isearch_21,nsearch,natm_srch,user_intra_name);
       icon_flag = 1;
       assign_base_grpbnd(bond_base,nbase,ifound_21,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_21,nsearch,icon_flag);
-  }/*endif*/
+          grp_bond_watts,
+          isearch_21,nsearch,icon_flag);
+    }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.4) Find the group 23                                                */
+    /*-----------------------------------------------------------------------*/
+    /* B.4) Find the group 23                                                */
 
-  if((ntyp_23 > 0)&&(nbase > 0)){
+    if((ntyp_23 > 0)&&(nbase > 0)){
       search_base(nbase,nbase2,cbond_base,ntyp_23_tot,
-                  cbond_23,igood_23,ifound_23,
-                  isearch_23,nsearch,natm_srch,user_intra_name);
+          cbond_23,igood_23,ifound_23,
+          isearch_23,nsearch,natm_srch,user_intra_name);
       icon_flag = 2;
       assign_base_grpbnd(bond_base,nbase,ifound_23,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_23,nsearch,icon_flag);
-  }/*endif*/
+          grp_bond_watts,
+          isearch_23,nsearch,icon_flag);
+    }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.5) Find the group 33                                                */
+    /*-----------------------------------------------------------------------*/
+    /* B.5) Find the group 33                                                */
 
-  if((ntyp_33 > 0)&&(nbase > 0)){
+    if((ntyp_33 > 0)&&(nbase > 0)){
       search_base(nbase,nbase2,cbond_base,ntyp_33_tot,
-                  cbond_33,igood_33,ifound_33,
-                  isearch_33,nsearch,natm_srch,user_intra_name);
+          cbond_33,igood_33,ifound_33,
+          isearch_33,nsearch,natm_srch,user_intra_name);
       icon_flag = 3;
       assign_base_grpbnd(bond_base,nbase,ifound_33,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_33,nsearch,icon_flag);
-  }/*endif*/
+          grp_bond_watts,
+          isearch_33,nsearch,icon_flag);
+    }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.5) Find the group Watts 33                                          */
+    /*-----------------------------------------------------------------------*/
+    /* B.5) Find the group Watts 33                                          */
 
-  if((ntyp_watt_33 > 0)&&(nbase > 0)){
+    if((ntyp_watt_33 > 0)&&(nbase > 0)){
       search_base(nbase,nbase2,cbond_base,ntyp_watt_33_tot,
-                  cbond_watt_33,igood_watt_33,ifound_watt_33,
-                  isearch_watt_33,nsearch,natm_srch,user_intra_name);
+          cbond_watt_33,igood_watt_33,ifound_watt_33,
+          isearch_watt_33,nsearch,natm_srch,user_intra_name);
       icon_flag = 6;
       assign_base_grpbnd(bond_base,nbase,ifound_watt_33,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_watt_33,nsearch,icon_flag);
-  }/*endif*/
+          grp_bond_watts,
+          isearch_watt_33,nsearch,icon_flag);
+    }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.6) Find the group 43                                                */
+    /*-----------------------------------------------------------------------*/
+    /* B.6) Find the group 43                                                */
 
-  if((ntyp_43 > 0)&& (nbase > 0)){
+    if((ntyp_43 > 0)&& (nbase > 0)){
       search_base(nbase,nbase2,cbond_base,ntyp_43_tot,
-                  cbond_43,igood_43,ifound_43,
-                  isearch_43,nsearch,natm_srch,user_intra_name);
+          cbond_43,igood_43,ifound_43,
+          isearch_43,nsearch,natm_srch,user_intra_name);
       icon_flag = 4;
       assign_base_grpbnd(bond_base,nbase,ifound_43,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_43,nsearch,icon_flag);
-  }/*endif*/
+          grp_bond_watts,
+          isearch_43,nsearch,icon_flag);
+    }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.7) Find the group 46                                                */
+    /*-----------------------------------------------------------------------*/
+    /* B.7) Find the group 46                                                */
 
-  if((ntyp_46 > 0)&& (nbase > 0)){
+    if((ntyp_46 > 0)&& (nbase > 0)){
       search_base(nbase,nbase2,cbond_base,ntyp_46_tot,
-                  cbond_46,igood_46,ifound_46,
-                  isearch_46,nsearch,natm_srch,user_intra_name);
+          cbond_46,igood_46,ifound_46,
+          isearch_46,nsearch,natm_srch,user_intra_name);
       icon_flag = 5;
       assign_base_grpbnd(bond_base,nbase,ifound_46,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_46,nsearch,icon_flag);
-  }/*endif*/
+          grp_bond_watts,
+          isearch_46,nsearch,icon_flag);
+    }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* D) Free the bases. */
+    /*-----------------------------------------------------------------------*/
+    /* D) Free the bases. */
     if(nbase>0){
       cfree(&bond_base[1],"set_bond_potent");
       cfree(&cbond_base[1],"set_bond_potent");
     }/*endif*/
   }/*endif*/
 
-/*=======================================================================*/
-/* II) Search the default base. */
+  /*=======================================================================*/
+  /* II) Search the default base. */
   nsearch = 2;
-/*-----------------------------------------------------------------------*/
-/* A) Count the base, malloc and read the base.                          */
+  /*-----------------------------------------------------------------------*/
+  /* A) Count the base, malloc and read the base.                          */
   ibase_want = 2;
   count_data_base(def_intra_name,fun_dict,num_fun_dict,&nbase,ibase_want);
   if(nbase>0){
     nbase2 = 2*nbase;
     bond_base = (DATA_BASE_ENTRIES *)
-             cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_bond_potent")-1;
+      cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_bond_potent")-1;
     cbond_base = 
-         (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_bond_potent")-1;
+      (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_bond_potent")-1;
     read_data_base(def_intra_name,fun_dict,num_fun_dict,bond_base,
-                   cbond_base,ibase_want,nbase);
+        cbond_base,ibase_want,nbase);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.1) Find the power series bonds.                                     */
+  /*-----------------------------------------------------------------------*/
+  /* B.1) Find the power series bonds.                                     */
 
   if((ntyp_pow > 0)&&(nbase > 0)){
     search_base(nbase,nbase2,cbond_base,ntyp_pow,
-                cbond_pow,igood_pow,ifound_pow,
-                isearch_pow,nsearch,natm_srch,def_intra_name);
+        cbond_pow,igood_pow,ifound_pow,
+        isearch_pow,nsearch,natm_srch,def_intra_name);
     icon_flag = 0;
     assign_base_bond(bond_base,nbase,ifound_pow,bond,isearch_pow,
-                     nsearch,icon_flag);
+        nsearch,icon_flag);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.2) Find the constrained bonds.                                      */
+  /*-----------------------------------------------------------------------*/
+  /* B.2) Find the constrained bonds.                                      */
 
   if((ntyp_con > 0)&&( nbase > 0)){
 
     search_base(nbase,nbase2,cbond_base,ntyp_con,
-                cbond_con,igood_con,ifound_con,
-                isearch_con,nsearch,natm_srch,def_intra_name);
+        cbond_con,igood_con,ifound_con,
+        isearch_con,nsearch,natm_srch,def_intra_name);
     icon_flag = 1;
     assign_base_bond(bond_base,nbase,ifound_con,bond,isearch_con,
-                     nsearch,icon_flag);
+        nsearch,icon_flag);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.3) Find the group 21                                                */
+  /*-----------------------------------------------------------------------*/
+  /* B.3) Find the group 21                                                */
 
   if((ntyp_21 > 0)&&(nbase > 0)){
-      search_base(nbase,nbase2,cbond_base,ntyp_21,
-                  cbond_21,igood_21,ifound_21,
-                  isearch_21,nsearch,natm_srch,def_intra_name);
-      icon_flag = 1;
-      assign_base_grpbnd(bond_base,nbase,ifound_21,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_21,nsearch,icon_flag);
+    search_base(nbase,nbase2,cbond_base,ntyp_21,
+        cbond_21,igood_21,ifound_21,
+        isearch_21,nsearch,natm_srch,def_intra_name);
+    icon_flag = 1;
+    assign_base_grpbnd(bond_base,nbase,ifound_21,grp_bond_con,
+        grp_bond_watts,
+        isearch_21,nsearch,icon_flag);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.4) Find the group 23                                                */
+  /*-----------------------------------------------------------------------*/
+  /* B.4) Find the group 23                                                */
 
   if((ntyp_23 > 0)&&(nbase > 0)){
-      search_base(nbase,nbase2,cbond_base,ntyp_23_tot,
-                  cbond_23,igood_23,ifound_23,
-                  isearch_23,nsearch,natm_srch,def_intra_name);
-      icon_flag = 2;
-      assign_base_grpbnd(bond_base,nbase,ifound_23,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_23,nsearch,icon_flag);
+    search_base(nbase,nbase2,cbond_base,ntyp_23_tot,
+        cbond_23,igood_23,ifound_23,
+        isearch_23,nsearch,natm_srch,def_intra_name);
+    icon_flag = 2;
+    assign_base_grpbnd(bond_base,nbase,ifound_23,grp_bond_con,
+        grp_bond_watts,
+        isearch_23,nsearch,icon_flag);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.5) Find the group 33                                                */
+  /*-----------------------------------------------------------------------*/
+  /* B.5) Find the group 33                                                */
 
   if((ntyp_33 > 0)&&(nbase > 0)){
-      search_base(nbase,nbase2,cbond_base,ntyp_33_tot,
-                  cbond_33,igood_33,ifound_33,
-                  isearch_33,nsearch,natm_srch,def_intra_name);
-      icon_flag = 3;
-      assign_base_grpbnd(bond_base,nbase,ifound_33,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_33,nsearch,icon_flag);
+    search_base(nbase,nbase2,cbond_base,ntyp_33_tot,
+        cbond_33,igood_33,ifound_33,
+        isearch_33,nsearch,natm_srch,def_intra_name);
+    icon_flag = 3;
+    assign_base_grpbnd(bond_base,nbase,ifound_33,grp_bond_con,
+        grp_bond_watts,
+        isearch_33,nsearch,icon_flag);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.5) Find the group Watts 33                                          */
+  /*-----------------------------------------------------------------------*/
+  /* B.5) Find the group Watts 33                                          */
 
   if((ntyp_watt_33 > 0)&&(nbase > 0)){
-      search_base(nbase,nbase2,cbond_base,ntyp_watt_33_tot,
-                  cbond_watt_33,igood_watt_33,ifound_watt_33,
-                  isearch_watt_33,nsearch,natm_srch,def_intra_name);
-      icon_flag = 6;
-      assign_base_grpbnd(bond_base,nbase,ifound_watt_33,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_watt_33,nsearch,icon_flag);
+    search_base(nbase,nbase2,cbond_base,ntyp_watt_33_tot,
+        cbond_watt_33,igood_watt_33,ifound_watt_33,
+        isearch_watt_33,nsearch,natm_srch,def_intra_name);
+    icon_flag = 6;
+    assign_base_grpbnd(bond_base,nbase,ifound_watt_33,grp_bond_con,
+        grp_bond_watts,
+        isearch_watt_33,nsearch,icon_flag);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.6) Find the group 43                                                */
+  /*-----------------------------------------------------------------------*/
+  /* B.6) Find the group 43                                                */
 
   if((ntyp_43 > 0)&&(nbase > 0)){
-      search_base(nbase,nbase2,cbond_base,ntyp_43_tot,
-                  cbond_43,igood_43,ifound_43,
-                  isearch_43,nsearch,natm_srch,def_intra_name);
-      icon_flag = 4;
-      assign_base_grpbnd(bond_base,nbase,ifound_43,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_43,nsearch,icon_flag);
+    search_base(nbase,nbase2,cbond_base,ntyp_43_tot,
+        cbond_43,igood_43,ifound_43,
+        isearch_43,nsearch,natm_srch,def_intra_name);
+    icon_flag = 4;
+    assign_base_grpbnd(bond_base,nbase,ifound_43,grp_bond_con,
+        grp_bond_watts,
+        isearch_43,nsearch,icon_flag);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B.7) Find the group 46                                                */
+  /*-----------------------------------------------------------------------*/
+  /* B.7) Find the group 46                                                */
 
   if((ntyp_46 > 0)&&(nbase > 0)){
-      search_base(nbase,nbase2,cbond_base,ntyp_46_tot,
-                  cbond_46,igood_46,ifound_46,
-                  isearch_46,nsearch,natm_srch,def_intra_name);
-      icon_flag = 5;
-      assign_base_grpbnd(bond_base,nbase,ifound_46,grp_bond_con,
-                         grp_bond_watts,
-                         isearch_46,nsearch,icon_flag);
+    search_base(nbase,nbase2,cbond_base,ntyp_46_tot,
+        cbond_46,igood_46,ifound_46,
+        isearch_46,nsearch,natm_srch,def_intra_name);
+    icon_flag = 5;
+    assign_base_grpbnd(bond_base,nbase,ifound_46,grp_bond_con,
+        grp_bond_watts,
+        isearch_46,nsearch,icon_flag);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* D) Free the bases. */
+  /*-----------------------------------------------------------------------*/
+  /* D) Free the bases. */
   if(nbase>0){
     cfree(&bond_base[1],"set_bond_potent");
     cfree(&cbond_base[1],"set_bond_potent");
   }/*endif*/
 
-/*=======================================================================*/
-/* III) Die if bonds are missing. */
+  /*=======================================================================*/
+  /* III) Die if bonds are missing. */
   if(ntyp_pow>0){atmlst_not_found(ntyp_pow,cbond_pow,ifound_pow,
-                                  natm_srch,typ);}
+      natm_srch,typ);}
   if(ntyp_con>0){atmlst_not_found(ntyp_con,cbond_con,ifound_con,
-                                  natm_srch,typ);}
+      natm_srch,typ);}
   if(ntyp_21>0){atmlst_not_found(ntyp_21,cbond_21,ifound_21,
-                                 natm_srch,typ);}
+      natm_srch,typ);}
   if(ntyp_23>0){atmlst_not_found(ntyp_23,cbond_23,ifound_23,
-                                 natm_srch,typ);}
+      natm_srch,typ);}
   if(ntyp_33>0){atmlst_not_found(ntyp_33,cbond_33,ifound_33,
-                                 natm_srch,typ);}
+      natm_srch,typ);}
   if(ntyp_watt_33>0){atmlst_not_found(ntyp_watt_33,cbond_watt_33,
-                            ifound_watt_33,natm_srch,typ);}
+      ifound_watt_33,natm_srch,typ);}
   if(ntyp_43>0){atmlst_not_found(ntyp_43,cbond_43,ifound_43,
-                                 natm_srch,typ);}
+      natm_srch,typ);}
   if(ntyp_46>0){atmlst_not_found(ntyp_46,cbond_46,ifound_46,
-                                 natm_srch,typ);}
-/*=======================================================================*/
-/* IV) Free the memory. */
+      natm_srch,typ);}
+  /*=======================================================================*/
+  /* IV) Free the memory. */
   if(ntyp_pow>0){
     cfree(&ifound_pow[1],"set_bond_potent");
     cfree(&isearch_pow[1],"set_bond_potent");
@@ -702,7 +702,7 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
     cfree(&igood_43[1],"set_bond_potent");
     cfree(&cbond_43[1],"set_bond_potent");
   }/*endif*/
-/*-----------------------------------------------------------------------*/
+  /*-----------------------------------------------------------------------*/
 }  /*end routine*/
 /*==========================================================================*/
 
@@ -716,10 +716,10 @@ void set_bond_potent(MDBOND *bond,MDGRP_BOND_CON *grp_bond_con,
 /*==========================================================================*/
 
 void set_tors_potent(MDTORS *tors,BUILD_INTRA *build_intra,
-                     NAME def_intra_name, NAME user_intra_name,
-                     DICT_WORD fun_dict[],int num_fun_dict)
+    NAME def_intra_name, NAME user_intra_name,
+    DICT_WORD fun_dict[],int num_fun_dict)
 
-/*=======================================================================*/
+  /*=======================================================================*/
 { /*begin routine */ 
   /*=======================================================================*/
   /*           Local Variables                                             */
@@ -734,8 +734,8 @@ void set_tors_potent(MDTORS *tors,BUILD_INTRA *build_intra,
   int ntyp_pow,ntyp_con;
   char typ[5];
 
-/*=======================================================================*/
-/* 0) Search initialization. */
+  /*=======================================================================*/
+  /* 0) Search initialization. */
 
   natm_srch = 4;
   strcpy(typ,"tors");
@@ -745,7 +745,7 @@ void set_tors_potent(MDTORS *tors,BUILD_INTRA *build_intra,
     isearch_pow = (int *)cmalloc(ntyp_pow*sizeof(int),"set_tors_potent")-1;
     igood_pow = (int *)cmalloc(ntyp_pow*sizeof(int),"set_tors_potent")-1;
     ctors_pow = 
-         (CATM_LAB *)cmalloc(ntyp_pow*sizeof(CATM_LAB),"set_tors_potent")-1;
+      (CATM_LAB *)cmalloc(ntyp_pow*sizeof(CATM_LAB),"set_tors_potent")-1;
     for(i=1;i<=ntyp_pow;i++){
       strcpy(ctors_pow[i].atm1,build_intra->ctors_typ_pow[i].atm1);
       strcpy(ctors_pow[i].atm2,build_intra->ctors_typ_pow[i].atm2);
@@ -757,84 +757,84 @@ void set_tors_potent(MDTORS *tors,BUILD_INTRA *build_intra,
     for(i=1;i<=ntyp_pow;i++){igood_pow[i]=6;}
   }/*endif*/
 
-  
-/*=======================================================================*/
-/* I) Search the user base. */
+
+  /*=======================================================================*/
+  /* I) Search the user base. */
   if(strlen(user_intra_name) != 0){
     nsearch = 1;
-/*-----------------------------------------------------------------------*/
-/* A) Count the base, malloc and read the base.                          */
+    /*-----------------------------------------------------------------------*/
+    /* A) Count the base, malloc and read the base.                          */
     ibase_want = 4;
     count_data_base(user_intra_name,fun_dict,num_fun_dict,&nbase,ibase_want);
     if(nbase>0){
       nbase2 = 2*nbase;
       tors_base = (DATA_BASE_ENTRIES *)
-                 cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_tors_potent")-1;
+        cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_tors_potent")-1;
       ctors_base = 
         (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_tors_potent")-1;
       read_data_base(user_intra_name,fun_dict,num_fun_dict,tors_base,
-                   ctors_base,ibase_want,nbase);
+          ctors_base,ibase_want,nbase);
     }/*endif*/
-/*-----------------------------------------------------------------------*/
-/* B) Find the power series torss.                                       */
+    /*-----------------------------------------------------------------------*/
+    /* B) Find the power series torss.                                       */
     if(ntyp_pow > 0 && nbase > 0){
       search_base(nbase,nbase2,ctors_base,ntyp_pow,
-                       ctors_pow,igood_pow,ifound_pow,
-                       isearch_pow,nsearch,natm_srch,user_intra_name);
+          ctors_pow,igood_pow,ifound_pow,
+          isearch_pow,nsearch,natm_srch,user_intra_name);
       icon_flag = 0;
       assign_base_tors(tors_base,nbase,ifound_pow,tors,isearch_pow,
-                       nsearch,icon_flag);
+          nsearch,icon_flag);
     }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* D) Free the bases. */
+    /*-----------------------------------------------------------------------*/
+    /* D) Free the bases. */
     if(nbase>0){
       cfree(&tors_base[1],"set_tors_potent");
       cfree(&ctors_base[1],"set_tors_potent");
     }/*endif*/
   }/*endif*/
 
-/*=======================================================================*/
-/* II) Search the default base. */
+  /*=======================================================================*/
+  /* II) Search the default base. */
   nsearch = 2;
-/*-----------------------------------------------------------------------*/
-/* A) Count the base, malloc and read the base.                          */
+  /*-----------------------------------------------------------------------*/
+  /* A) Count the base, malloc and read the base.                          */
   ibase_want = 4;
   count_data_base(def_intra_name,fun_dict,num_fun_dict,&nbase,ibase_want);
   if(nbase>0){
     nbase2 = 2*nbase;
     tors_base = (DATA_BASE_ENTRIES *)
-                 cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_tors_potent")-1;
+      cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_tors_potent")-1;
     ctors_base = 
-         (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_tors_potent")-1;
+      (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_tors_potent")-1;
     read_data_base(def_intra_name,fun_dict,num_fun_dict,tors_base,
-                 ctors_base,ibase_want,nbase);
+        ctors_base,ibase_want,nbase);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B) Find the power series torss.                                       */
+  /*-----------------------------------------------------------------------*/
+  /* B) Find the power series torss.                                       */
   if(ntyp_pow > 0 && nbase > 0){
     search_base(nbase,nbase2,ctors_base,ntyp_pow,
-                     ctors_pow,igood_pow,ifound_pow,
-                     isearch_pow,nsearch,natm_srch,def_intra_name);
+        ctors_pow,igood_pow,ifound_pow,
+        isearch_pow,nsearch,natm_srch,def_intra_name);
     icon_flag = 0;
     assign_base_tors(tors_base,nbase,ifound_pow,tors,isearch_pow,
-                       nsearch,icon_flag);
+        nsearch,icon_flag);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* D) Free the bases. */
+  /*-----------------------------------------------------------------------*/
+  /* D) Free the bases. */
   if(nbase>0){
     cfree(&tors_base[1],"set_tors_potent");
     cfree(&ctors_base[1],"set_tors_potent");
   }/*endif*/
 
-/*=======================================================================*/
-/* III) Die if torss are missing. */
+  /*=======================================================================*/
+  /* III) Die if torss are missing. */
   if(ntyp_pow>0){atmlst_not_found(ntyp_pow,ctors_pow,ifound_pow,
-                 natm_srch,typ);}
-/*=======================================================================*/
-/* IV) Free the memory. */
+      natm_srch,typ);}
+  /*=======================================================================*/
+  /* IV) Free the memory. */
   if(ntyp_pow>0){
     cfree(&ifound_pow[1],"set_tors_potent");
     cfree(&isearch_pow[1],"set_tors_potent");
@@ -842,7 +842,7 @@ void set_tors_potent(MDTORS *tors,BUILD_INTRA *build_intra,
     cfree(&ctors_pow[1],"set_tors_potent");
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
+  /*-----------------------------------------------------------------------*/
 }  /*end routine*/
 /*==========================================================================*/
 
@@ -855,10 +855,10 @@ void set_tors_potent(MDTORS *tors,BUILD_INTRA *build_intra,
 /*==========================================================================*/
 
 void set_onfo_potent(MDONFO *onfo,BUILD_INTRA *build_intra,
-                     NAME def_intra_name, NAME user_intra_name,
-                     DICT_WORD fun_dict[],int num_fun_dict)
+    NAME def_intra_name, NAME user_intra_name,
+    DICT_WORD fun_dict[],int num_fun_dict)
 
-/*=======================================================================*/
+  /*=======================================================================*/
 { /*begin routine */ 
   /*=======================================================================*/
   /*           Local Variables                                             */
@@ -873,8 +873,8 @@ void set_onfo_potent(MDONFO *onfo,BUILD_INTRA *build_intra,
   int ntyp;
   char typ[5];
 
-/*=======================================================================*/
-/* 0) Search initialization. */
+  /*=======================================================================*/
+  /* 0) Search initialization. */
   natm_srch = 2;
   strcpy(typ,"onfo");
   ntyp= onfo->ntyp;
@@ -891,90 +891,90 @@ void set_onfo_potent(MDONFO *onfo,BUILD_INTRA *build_intra,
     for(i=1;i<=ntyp;i++){ifound[i]=0;}
     for(i=1;i<=ntyp;i++){igood[i]=6;}
   }/*endif*/
-  
-/*=======================================================================*/
-/* I) Search the user base. */
+
+  /*=======================================================================*/
+  /* I) Search the user base. */
   if(strlen(user_intra_name) != 0){
     nsearch = 1;
-/*-----------------------------------------------------------------------*/
-/* A) Count the base, malloc and read the base.                          */
+    /*-----------------------------------------------------------------------*/
+    /* A) Count the base, malloc and read the base.                          */
     ibase_want = 5;
     count_data_base(user_intra_name,fun_dict,num_fun_dict,&nbase,ibase_want);
     if(nbase>0){
       nbase2 = 2*nbase;
       onfo_base = (DATA_BASE_ENTRIES *)
-              cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_onfo_potent")-1;
+        cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_onfo_potent")-1;
       confo_base = 
         (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_onfo_potent")-1;
       read_data_base(user_intra_name,fun_dict,num_fun_dict,onfo_base,
-                   confo_base,ibase_want,nbase);
+          confo_base,ibase_want,nbase);
     }/*endif*/
-/*-----------------------------------------------------------------------*/
-/* B) Find the onfos.                                       */
+    /*-----------------------------------------------------------------------*/
+    /* B) Find the onfos.                                       */
     if(ntyp> 0 && nbase > 0){
       search_base(nbase,nbase2,confo_base,ntyp,
-                       confo,igood,ifound,
-                       isearch,nsearch,natm_srch,user_intra_name);
+          confo,igood,ifound,
+          isearch,nsearch,natm_srch,user_intra_name);
       icon_flag = 0;
       assign_base_onfo(onfo_base,nbase,ifound,onfo,isearch,
-                       nsearch,icon_flag);
+          nsearch,icon_flag);
     }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* D) Free the bases. */
+    /*-----------------------------------------------------------------------*/
+    /* D) Free the bases. */
     if(nbase>0){
       cfree(&onfo_base[1],"set_onfo_potent");
       cfree(&confo_base[1],"set_onfo_potent");
     }/*endif*/
   }/*endif*/
 
-/*=======================================================================*/
-/* II) Search the default base. */
+  /*=======================================================================*/
+  /* II) Search the default base. */
   nsearch = 2;
-/*-----------------------------------------------------------------------*/
-/* A) Count the base, malloc and read the base.                          */
+  /*-----------------------------------------------------------------------*/
+  /* A) Count the base, malloc and read the base.                          */
   ibase_want = 5;
   count_data_base(def_intra_name,fun_dict,num_fun_dict,&nbase,ibase_want);
   if(nbase>0){
     nbase2 = 2*nbase;
     onfo_base = (DATA_BASE_ENTRIES *)
-             cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_onfo_potent")-1;
+      cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_onfo_potent")-1;
     confo_base = 
-        (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_onfo_potent")-1;
+      (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_onfo_potent")-1;
     read_data_base(def_intra_name,fun_dict,num_fun_dict,onfo_base,
-                 confo_base,ibase_want,nbase);
+        confo_base,ibase_want,nbase);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B) Find the onfos.                                       */
+  /*-----------------------------------------------------------------------*/
+  /* B) Find the onfos.                                       */
   if(ntyp> 0 && nbase > 0){
     search_base(nbase,nbase2,confo_base,ntyp,
-                     confo,igood,ifound,
-                     isearch,nsearch,natm_srch,def_intra_name);
+        confo,igood,ifound,
+        isearch,nsearch,natm_srch,def_intra_name);
     icon_flag = 0;
     assign_base_onfo(onfo_base,nbase,ifound,onfo,isearch,
-                       nsearch,icon_flag);
+        nsearch,icon_flag);
   }/*endif*/
-/*-----------------------------------------------------------------------*/
-/* D) Free the bases. */
+  /*-----------------------------------------------------------------------*/
+  /* D) Free the bases. */
   if(nbase>0){
     cfree(&onfo_base[1],"set_onfo_potent");
     cfree(&confo_base[1],"set_onfo_potent");
   }/*endif*/
 
-/*=======================================================================*/
-/* III) Die if onfos are missing. */
+  /*=======================================================================*/
+  /* III) Die if onfos are missing. */
   if(ntyp>0){atmlst_not_found(ntyp,confo,ifound,
-                 natm_srch,typ);}
-/*=======================================================================*/
-/* IV) Free the memory. */
+      natm_srch,typ);}
+  /*=======================================================================*/
+  /* IV) Free the memory. */
   if(ntyp>0){
     cfree(&ifound[1],"set_onfo_potent");
     cfree(&isearch[1],"set_onfo_potent");
     cfree(&igood[1],"set_onfo_potent");
     cfree(&confo[1],"set_onfo_potent");
   }/*endif*/
-/*-----------------------------------------------------------------------*/
+  /*-----------------------------------------------------------------------*/
 }  /*end routine*/
 /*==========================================================================*/
 
@@ -987,10 +987,10 @@ void set_onfo_potent(MDONFO *onfo,BUILD_INTRA *build_intra,
 /*==========================================================================*/
 
 void set_bend_bnd_potent(MDBEND_BND *bend_bnd,BUILD_INTRA *build_intra,
-                         NAME def_intra_name, NAME user_intra_name,
-                         DICT_WORD fun_dict[],int num_fun_dict)
+    NAME def_intra_name, NAME user_intra_name,
+    DICT_WORD fun_dict[],int num_fun_dict)
 
-/*=======================================================================*/
+  /*=======================================================================*/
 { /*begin routine */ 
   /*=======================================================================*/
   /*           Local Variables                                             */
@@ -1005,8 +1005,8 @@ void set_bend_bnd_potent(MDBEND_BND *bend_bnd,BUILD_INTRA *build_intra,
   int ntyp;
   char typ[5];
 
-/*=======================================================================*/
-/* 0) Search initialization. */
+  /*=======================================================================*/
+  /* 0) Search initialization. */
   natm_srch = 3;
   strcpy(typ,"bend");
   ntyp= bend_bnd->ntyp;
@@ -1015,7 +1015,7 @@ void set_bend_bnd_potent(MDBEND_BND *bend_bnd,BUILD_INTRA *build_intra,
     isearch= (int *)cmalloc(ntyp*sizeof(int),"set_bend_bnd_potent")-1;
     igood= (int *)cmalloc(ntyp*sizeof(int),"set_bend_bnd_potent")-1;
     cbend_bnd = 
-       (CATM_LAB *)cmalloc(ntyp*sizeof(CATM_LAB),"set_bend_bnd_potent")-1;
+      (CATM_LAB *)cmalloc(ntyp*sizeof(CATM_LAB),"set_bend_bnd_potent")-1;
     for(i=1;i<=ntyp;i++){
       strcpy(cbend_bnd[i].atm1,build_intra->cbend_bnd_typ[i].atm1);
       strcpy(cbend_bnd[i].atm2,build_intra->cbend_bnd_typ[i].atm2);
@@ -1025,90 +1025,90 @@ void set_bend_bnd_potent(MDBEND_BND *bend_bnd,BUILD_INTRA *build_intra,
     for(i=1;i<=ntyp;i++){ifound[i]=0;}
     for(i=1;i<=ntyp;i++){igood[i]=6;}
   }/*endif*/
-  
-/*=======================================================================*/
-/* I) Search the user base. */
+
+  /*=======================================================================*/
+  /* I) Search the user base. */
   if(strlen(user_intra_name) != 0){
     nsearch = 1;
-/*-----------------------------------------------------------------------*/
-/* A) Count the base, malloc and read the base.                          */
+    /*-----------------------------------------------------------------------*/
+    /* A) Count the base, malloc and read the base.                          */
     ibase_want = 3;
     count_data_base(user_intra_name,fun_dict,num_fun_dict,&nbase,ibase_want);
     if(nbase>0){
       nbase2 = 2*nbase;
       bend_bnd_base=(DATA_BASE_ENTRIES *)
-             cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_bend_bnd_potent")-1;
+        cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_bend_bnd_potent")-1;
       cbend_bnd_base = 
         (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_bend_bnd_potent")-1;
       read_data_base(user_intra_name,fun_dict,num_fun_dict,bend_bnd_base,
-                   cbend_bnd_base,ibase_want,nbase);
+          cbend_bnd_base,ibase_want,nbase);
     }/*endif*/
-/*-----------------------------------------------------------------------*/
-/* B) Find the bend_bnds.                                       */
+    /*-----------------------------------------------------------------------*/
+    /* B) Find the bend_bnds.                                       */
     if(ntyp> 0 && nbase > 0){
       search_base(nbase,nbase2,cbend_bnd_base,ntyp,
-                       cbend_bnd,igood,ifound,
-                       isearch,nsearch,natm_srch,user_intra_name);
+          cbend_bnd,igood,ifound,
+          isearch,nsearch,natm_srch,user_intra_name);
       icon_flag = 0;
       assign_base_bend_bnd(bend_bnd_base,nbase,ifound,bend_bnd,isearch,
-                       nsearch,icon_flag,build_intra);
+          nsearch,icon_flag,build_intra);
     }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* D) Free the bases. */
+    /*-----------------------------------------------------------------------*/
+    /* D) Free the bases. */
     if(nbase>0){
       cfree(&bend_bnd_base[1],"set_intra_potent");
       cfree(&cbend_bnd_base[1],"set_intra_potent");
     }/*endif*/
   }/*endif*/
 
-/*=======================================================================*/
-/* II) Search the default base. */
+  /*=======================================================================*/
+  /* II) Search the default base. */
   nsearch = 2;
-/*-----------------------------------------------------------------------*/
-/* A) Count the base, malloc and read the base.                          */
+  /*-----------------------------------------------------------------------*/
+  /* A) Count the base, malloc and read the base.                          */
   ibase_want = 3;
   count_data_base(def_intra_name,fun_dict,num_fun_dict,&nbase,ibase_want);
   if(nbase>0){
     nbase2 = 2*nbase;
     bend_bnd_base = (DATA_BASE_ENTRIES *)
-            cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_bend_bnd_potent")-1;
+      cmalloc(nbase*sizeof(DATA_BASE_ENTRIES),"set_bend_bnd_potent")-1;
     cbend_bnd_base = 
       (CATM_LAB *)cmalloc(nbase2*sizeof(CATM_LAB),"set_bend_bnd_potent")-1;
     read_data_base(def_intra_name,fun_dict,num_fun_dict,bend_bnd_base,
-                 cbend_bnd_base,ibase_want,nbase);
+        cbend_bnd_base,ibase_want,nbase);
   }/*endif*/
 
-/*-----------------------------------------------------------------------*/
-/* B) Find the bend_bnds.                                       */
+  /*-----------------------------------------------------------------------*/
+  /* B) Find the bend_bnds.                                       */
   if(ntyp> 0 && nbase > 0){
     search_base(nbase,nbase2,cbend_bnd_base,ntyp,
-                     cbend_bnd,igood,ifound,
-                     isearch,nsearch,natm_srch,def_intra_name);
+        cbend_bnd,igood,ifound,
+        isearch,nsearch,natm_srch,def_intra_name);
     icon_flag = 0;
     assign_base_bend_bnd(bend_bnd_base,nbase,ifound,bend_bnd,isearch,
-                       nsearch,icon_flag,build_intra);
+        nsearch,icon_flag,build_intra);
   }/*endif*/
-/*-----------------------------------------------------------------------*/
-/* D) Free the bases. */
+  /*-----------------------------------------------------------------------*/
+  /* D) Free the bases. */
   if(nbase>0){
     cfree(&bend_bnd_base[1],"set_bend_bnd_potent");
     cfree(&cbend_bnd_base[1],"set_bend_bnd_potent");
   }/*endif*/
 
-/*=======================================================================*/
-/* III) Die if bend_bnds are missing. */
+  /*=======================================================================*/
+  /* III) Die if bend_bnds are missing. */
   if(ntyp>0){atmlst_not_found(ntyp,cbend_bnd,ifound,
-                 natm_srch,typ);}
-/*=======================================================================*/
-/* IV) Free the memory. */
+      natm_srch,typ);}
+  /*=======================================================================*/
+  /* IV) Free the memory. */
   if(ntyp>0){
     cfree(&ifound[1],"set_bend_bnd_potent");
     cfree(&isearch[1],"set_bend_bnd_potent");
     cfree(&igood[1],"set_bend_bnd_potent");
     cfree(&cbend_bnd[1],"set_bend_bnd_potent");
   }/*endif*/
-/*-----------------------------------------------------------------------*/
+  /*-----------------------------------------------------------------------*/
 }  /*end routine*/
 /*=======================================================================*/
 
@@ -1121,387 +1121,387 @@ void set_bend_bnd_potent(MDBEND_BND *bend_bnd,BUILD_INTRA *build_intra,
 /*==========================================================================*/
 
 void extract_pure_bends(MDBEND_BND *bend_bnd,MDBEND *bend,
-                        BUILD_INTRA *build_intra)
+    BUILD_INTRA *build_intra)
 
-/*=======================================================================*/
+  /*=======================================================================*/
 { /*begin routine */ 
-/*=======================================================================*/
-/*           Local Variables                                             */
-  
+  /*=======================================================================*/
+  /*           Local Variables                                             */
+
   int i,nbend,nbend_bnd,ityp,ntyp,ntyp_pure;
   int nbend_typ,nbend_bnd_typ,ipure;
 
-/*=======================================================================*/
-/* 0) Construct the type maps of bends and bend_bnds                     */
+  /*=======================================================================*/
+  /* 0) Construct the type maps of bends and bend_bnds                     */
 
-   ntyp_pure = 0;   ntyp  = 0;   
-   for(i=1;i<=bend_bnd->ntyp;i++){
-      ipure = build_intra->ibend_bnd_typ_pure[i];
-      if(ipure==0){ntyp++;build_intra->ibend_bnd_typ_map[i]=ntyp;}
-      if(ipure==1){ntyp_pure++;
-                   build_intra->ibend_bnd_typ_map[i]=ntyp_pure;}
-   }/*endfor*/
+  ntyp_pure = 0;   ntyp  = 0;   
+  for(i=1;i<=bend_bnd->ntyp;i++){
+    ipure = build_intra->ibend_bnd_typ_pure[i];
+    if(ipure==0){ntyp++;build_intra->ibend_bnd_typ_map[i]=ntyp;}
+    if(ipure==1){ntyp_pure++;
+      build_intra->ibend_bnd_typ_map[i]=ntyp_pure;}
+  }/*endfor*/
 
-/*=======================================================================*/
-/* I) Malloc the bend memory                                            */
+  /*=======================================================================*/
+  /* I) Malloc the bend memory                                            */
 
-   bend->j1_pow   = 
+  bend->j1_pow   = 
     (int *) cmalloc(bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
-   bend->j2_pow   = 
+  bend->j2_pow   = 
     (int *) cmalloc(bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
-   bend->j3_pow   = 
+  bend->j3_pow   = 
     (int *) cmalloc(bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
-   bend->jtyp_pow = 
+  bend->jtyp_pow = 
     (int *) cmalloc(bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
 
-/*=======================================================================*/
-/* II) Loop over the bend_bnds picking out the pure bends                 */
+  /*=======================================================================*/
+  /* II) Loop over the bend_bnds picking out the pure bends                 */
 
-   nbend = 0;   nbend_bnd = 0;
-   for(i=1;i<=bend_bnd->num;i++){
+  nbend = 0;   nbend_bnd = 0;
+  for(i=1;i<=bend_bnd->num;i++){
     ityp = bend_bnd->jtyp[i];
     if(build_intra->ibend_bnd_typ_pure[ityp]==1){
-     nbend++;
-     bend->j1_pow[nbend]   = bend_bnd->j1[i];
-     bend->j2_pow[nbend]   = bend_bnd->j2[i];
-     bend->j3_pow[nbend]   = bend_bnd->j3[i];
-     bend->jtyp_pow[nbend] = build_intra->ibend_bnd_typ_map[ityp];
+      nbend++;
+      bend->j1_pow[nbend]   = bend_bnd->j1[i];
+      bend->j2_pow[nbend]   = bend_bnd->j2[i];
+      bend->j3_pow[nbend]   = bend_bnd->j3[i];
+      bend->jtyp_pow[nbend] = build_intra->ibend_bnd_typ_map[ityp];
     }/*endif*/
     if(build_intra->ibend_bnd_typ_pure[ityp]==0){
-     nbend_bnd++;
-     bend_bnd->j1[nbend_bnd] = bend_bnd->j1[i];
-     bend_bnd->j2[nbend_bnd] = bend_bnd->j2[i];
-     bend_bnd->j3[nbend_bnd] = bend_bnd->j3[i];
-     bend_bnd->jtyp[nbend_bnd]   = build_intra->ibend_bnd_typ_map[ityp];
+      nbend_bnd++;
+      bend_bnd->j1[nbend_bnd] = bend_bnd->j1[i];
+      bend_bnd->j2[nbend_bnd] = bend_bnd->j2[i];
+      bend_bnd->j3[nbend_bnd] = bend_bnd->j3[i];
+      bend_bnd->jtyp[nbend_bnd]   = build_intra->ibend_bnd_typ_map[ityp];
     }/*endif*/
-   }/*endfor*/
-   bend_bnd->num = nbend_bnd;
-   bend->npow    = nbend;
+  }/*endfor*/
+  bend_bnd->num = nbend_bnd;
+  bend->npow    = nbend;
 
-/*=======================================================================*/
-/* II) Realloc the  memory                                               */
+  /*=======================================================================*/
+  /* II) Realloc the  memory                                               */
 
-   bend_bnd->j1  = (int *)   crealloc(&(bend_bnd->j1)[1],
-                     bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
-   bend_bnd->j2  = (int *)   crealloc(&(bend_bnd->j2)[1],
-                     bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
-   bend_bnd->j3  = (int *)   crealloc(&(bend_bnd->j3)[1],
-                     bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
-   bend_bnd->jtyp = (int *)  crealloc(&(bend_bnd->jtyp)[1],
-                     bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
-   bend->j1_pow  = (int *)   crealloc(&(bend->j1_pow)[1],
-                     bend->npow*sizeof(int),"extract_pure_bends")-1;
-   bend->j2_pow  = (int *)   crealloc(&(bend->j2_pow)[1],
-                     bend->npow*sizeof(int),"extract_pure_bends")-1;
-   bend->j3_pow  = (int *)   crealloc(&(bend->j3_pow)[1],
-                     bend->npow*sizeof(int),"extract_pure_bends")-1;
-   bend->jtyp_pow = (int *)  crealloc(&(bend->jtyp_pow)[1],
-                     bend->npow*sizeof(int),"extract_pure_bends")-1;
+  bend_bnd->j1  = (int *)   crealloc(&(bend_bnd->j1)[1],
+      bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
+  bend_bnd->j2  = (int *)   crealloc(&(bend_bnd->j2)[1],
+      bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
+  bend_bnd->j3  = (int *)   crealloc(&(bend_bnd->j3)[1],
+      bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
+  bend_bnd->jtyp = (int *)  crealloc(&(bend_bnd->jtyp)[1],
+      bend_bnd->num*sizeof(int),"extract_pure_bends")-1;
+  bend->j1_pow  = (int *)   crealloc(&(bend->j1_pow)[1],
+      bend->npow*sizeof(int),"extract_pure_bends")-1;
+  bend->j2_pow  = (int *)   crealloc(&(bend->j2_pow)[1],
+      bend->npow*sizeof(int),"extract_pure_bends")-1;
+  bend->j3_pow  = (int *)   crealloc(&(bend->j3_pow)[1],
+      bend->npow*sizeof(int),"extract_pure_bends")-1;
+  bend->jtyp_pow = (int *)  crealloc(&(bend->jtyp_pow)[1],
+      bend->npow*sizeof(int),"extract_pure_bends")-1;
 
-/*=======================================================================*/
-/* III) Malloc the bend typ memory                                      */
+  /*=======================================================================*/
+  /* III) Malloc the bend typ memory                                      */
 
-    bend->eq_pow = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->c_0    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->c_1    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->c_2    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->c_3    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->c_4    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->c_5    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->c_6    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->s_0    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->s_1    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->s_2    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->s_3    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->s_4    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->s_5    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->s_6    = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_0   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_1   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_2   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_3   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_4   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_5   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_6   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_0   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_1   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_2   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_3   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_4   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_5   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_6   = (double *)
-            cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->eq_pow = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->c_0    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->c_1    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->c_2    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->c_3    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->c_4    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->c_5    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->c_6    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->s_0    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->s_1    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->s_2    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->s_3    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->s_4    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->s_5    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->s_6    = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_0   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_1   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_2   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_3   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_4   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_5   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_6   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_0   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_1   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_2   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_3   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_4   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_5   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_6   = (double *)
+    cmalloc(bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
 
-/*=======================================================================*/
-/* III) Loop over the bend_bnds picking out the pure bend interactions    */
+  /*=======================================================================*/
+  /* III) Loop over the bend_bnds picking out the pure bend interactions    */
 
-   nbend_typ = 0;   nbend_bnd_typ = 0;
-   for(i=1;i<=bend_bnd->ntyp;i++){
+  nbend_typ = 0;   nbend_bnd_typ = 0;
+  for(i=1;i<=bend_bnd->ntyp;i++){
     if(build_intra->ibend_bnd_typ_pure[i]==1){
-     nbend_typ++;
-     bend->eq_pow[nbend_typ] = bend_bnd->eq_bend[i];
-     bend->c_0[nbend_typ]    = bend_bnd->cbend_0[i];
-     bend->c_1[nbend_typ]    = bend_bnd->cbend_1[i];
-     bend->c_2[nbend_typ]    = bend_bnd->cbend_2[i];
-     bend->c_3[nbend_typ]    = bend_bnd->cbend_3[i];
-     bend->c_4[nbend_typ]    = bend_bnd->cbend_4[i];
-     bend->c_5[nbend_typ]    = bend_bnd->cbend_5[i];
-     bend->c_6[nbend_typ]    = bend_bnd->cbend_6[i];
-     bend->s_0[nbend_typ]    = bend_bnd->sbend_0[i];
-     bend->s_1[nbend_typ]    = bend_bnd->sbend_1[i];
-     bend->s_2[nbend_typ]    = bend_bnd->sbend_2[i];
-     bend->s_3[nbend_typ]    = bend_bnd->sbend_3[i];
-     bend->s_4[nbend_typ]    = bend_bnd->sbend_4[i];
-     bend->s_5[nbend_typ]    = bend_bnd->sbend_5[i];
-     bend->s_6[nbend_typ]    = bend_bnd->sbend_6[i]; 
-     bend->dc_0[nbend_typ]   = bend_bnd->dcbend_0[i];
-     bend->dc_1[nbend_typ]   = bend_bnd->dcbend_1[i];
-     bend->dc_2[nbend_typ]   = bend_bnd->dcbend_2[i]; 
-     bend->dc_3[nbend_typ]   = bend_bnd->dcbend_3[i]; 
-     bend->dc_4[nbend_typ]   = bend_bnd->dcbend_4[i]; 
-     bend->dc_5[nbend_typ]   = bend_bnd->dcbend_5[i]; 
-     bend->dc_6[nbend_typ]   = bend_bnd->dcbend_6[i];
-     bend->ds_0[nbend_typ]   = bend_bnd->dsbend_0[i]; 
-     bend->ds_1[nbend_typ]   = bend_bnd->dsbend_1[i]; 
-     bend->ds_2[nbend_typ]   = bend_bnd->dsbend_2[i];  
-     bend->ds_3[nbend_typ]   = bend_bnd->dsbend_3[i];  
-     bend->ds_4[nbend_typ]   = bend_bnd->dsbend_4[i];  
-     bend->ds_5[nbend_typ]   = bend_bnd->dsbend_5[i];  
-     bend->ds_6[nbend_typ]   = bend_bnd->dsbend_6[i]; 
+      nbend_typ++;
+      bend->eq_pow[nbend_typ] = bend_bnd->eq_bend[i];
+      bend->c_0[nbend_typ]    = bend_bnd->cbend_0[i];
+      bend->c_1[nbend_typ]    = bend_bnd->cbend_1[i];
+      bend->c_2[nbend_typ]    = bend_bnd->cbend_2[i];
+      bend->c_3[nbend_typ]    = bend_bnd->cbend_3[i];
+      bend->c_4[nbend_typ]    = bend_bnd->cbend_4[i];
+      bend->c_5[nbend_typ]    = bend_bnd->cbend_5[i];
+      bend->c_6[nbend_typ]    = bend_bnd->cbend_6[i];
+      bend->s_0[nbend_typ]    = bend_bnd->sbend_0[i];
+      bend->s_1[nbend_typ]    = bend_bnd->sbend_1[i];
+      bend->s_2[nbend_typ]    = bend_bnd->sbend_2[i];
+      bend->s_3[nbend_typ]    = bend_bnd->sbend_3[i];
+      bend->s_4[nbend_typ]    = bend_bnd->sbend_4[i];
+      bend->s_5[nbend_typ]    = bend_bnd->sbend_5[i];
+      bend->s_6[nbend_typ]    = bend_bnd->sbend_6[i]; 
+      bend->dc_0[nbend_typ]   = bend_bnd->dcbend_0[i];
+      bend->dc_1[nbend_typ]   = bend_bnd->dcbend_1[i];
+      bend->dc_2[nbend_typ]   = bend_bnd->dcbend_2[i]; 
+      bend->dc_3[nbend_typ]   = bend_bnd->dcbend_3[i]; 
+      bend->dc_4[nbend_typ]   = bend_bnd->dcbend_4[i]; 
+      bend->dc_5[nbend_typ]   = bend_bnd->dcbend_5[i]; 
+      bend->dc_6[nbend_typ]   = bend_bnd->dcbend_6[i];
+      bend->ds_0[nbend_typ]   = bend_bnd->dsbend_0[i]; 
+      bend->ds_1[nbend_typ]   = bend_bnd->dsbend_1[i]; 
+      bend->ds_2[nbend_typ]   = bend_bnd->dsbend_2[i];  
+      bend->ds_3[nbend_typ]   = bend_bnd->dsbend_3[i];  
+      bend->ds_4[nbend_typ]   = bend_bnd->dsbend_4[i];  
+      bend->ds_5[nbend_typ]   = bend_bnd->dsbend_5[i];  
+      bend->ds_6[nbend_typ]   = bend_bnd->dsbend_6[i]; 
     }/*endif*/
     if(build_intra->ibend_bnd_typ_pure[i]==0){
-     nbend_bnd_typ++;
-     bend_bnd->eq_bend[nbend_bnd_typ]  = bend_bnd->eq_bend[i];
-     bend_bnd->cbend_0[nbend_bnd_typ]  = bend_bnd->cbend_0[i];
-     bend_bnd->cbend_1[nbend_bnd_typ]  = bend_bnd->cbend_1[i];
-     bend_bnd->cbend_2[nbend_bnd_typ]  = bend_bnd->cbend_2[i];
-     bend_bnd->cbend_3[nbend_bnd_typ]  = bend_bnd->cbend_3[i];
-     bend_bnd->cbend_4[nbend_bnd_typ]  = bend_bnd->cbend_4[i];
-     bend_bnd->cbend_5[nbend_bnd_typ]  = bend_bnd->cbend_5[i];
-     bend_bnd->cbend_6[nbend_bnd_typ]  = bend_bnd->cbend_6[i];
-     bend_bnd->sbend_0[nbend_bnd_typ]  = bend_bnd->sbend_0[i];
-     bend_bnd->sbend_1[nbend_bnd_typ]  = bend_bnd->sbend_1[i];
-     bend_bnd->sbend_2[nbend_bnd_typ]  = bend_bnd->sbend_2[i];
-     bend_bnd->sbend_3[nbend_bnd_typ]  = bend_bnd->sbend_3[i];
-     bend_bnd->sbend_4[nbend_bnd_typ]  = bend_bnd->sbend_4[i];
-     bend_bnd->sbend_5[nbend_bnd_typ]  = bend_bnd->sbend_5[i];
-     bend_bnd->sbend_6[nbend_bnd_typ]  = bend_bnd->sbend_6[i]; 
-     bend_bnd->dcbend_0[nbend_bnd_typ] = bend_bnd->dcbend_0[i];
-     bend_bnd->dcbend_1[nbend_bnd_typ] = bend_bnd->dcbend_1[i];
-     bend_bnd->dcbend_2[nbend_bnd_typ] = bend_bnd->dcbend_2[i]; 
-     bend_bnd->dcbend_3[nbend_bnd_typ] = bend_bnd->dcbend_3[i]; 
-     bend_bnd->dcbend_4[nbend_bnd_typ] = bend_bnd->dcbend_4[i]; 
-     bend_bnd->dcbend_5[nbend_bnd_typ] = bend_bnd->dcbend_5[i]; 
-     bend_bnd->dcbend_6[nbend_bnd_typ] = bend_bnd->dcbend_6[i];
-     bend_bnd->dsbend_0[nbend_bnd_typ] = bend_bnd->dsbend_0[i]; 
-     bend_bnd->dsbend_1[nbend_bnd_typ] = bend_bnd->dsbend_1[i]; 
-     bend_bnd->dsbend_2[nbend_bnd_typ] = bend_bnd->dsbend_2[i];  
-     bend_bnd->dsbend_3[nbend_bnd_typ] = bend_bnd->dsbend_3[i];  
-     bend_bnd->dsbend_4[nbend_bnd_typ] = bend_bnd->dsbend_4[i];  
-     bend_bnd->dsbend_5[nbend_bnd_typ] = bend_bnd->dsbend_5[i];  
-     bend_bnd->dsbend_6[nbend_bnd_typ] = bend_bnd->dsbend_6[i];
+      nbend_bnd_typ++;
+      bend_bnd->eq_bend[nbend_bnd_typ]  = bend_bnd->eq_bend[i];
+      bend_bnd->cbend_0[nbend_bnd_typ]  = bend_bnd->cbend_0[i];
+      bend_bnd->cbend_1[nbend_bnd_typ]  = bend_bnd->cbend_1[i];
+      bend_bnd->cbend_2[nbend_bnd_typ]  = bend_bnd->cbend_2[i];
+      bend_bnd->cbend_3[nbend_bnd_typ]  = bend_bnd->cbend_3[i];
+      bend_bnd->cbend_4[nbend_bnd_typ]  = bend_bnd->cbend_4[i];
+      bend_bnd->cbend_5[nbend_bnd_typ]  = bend_bnd->cbend_5[i];
+      bend_bnd->cbend_6[nbend_bnd_typ]  = bend_bnd->cbend_6[i];
+      bend_bnd->sbend_0[nbend_bnd_typ]  = bend_bnd->sbend_0[i];
+      bend_bnd->sbend_1[nbend_bnd_typ]  = bend_bnd->sbend_1[i];
+      bend_bnd->sbend_2[nbend_bnd_typ]  = bend_bnd->sbend_2[i];
+      bend_bnd->sbend_3[nbend_bnd_typ]  = bend_bnd->sbend_3[i];
+      bend_bnd->sbend_4[nbend_bnd_typ]  = bend_bnd->sbend_4[i];
+      bend_bnd->sbend_5[nbend_bnd_typ]  = bend_bnd->sbend_5[i];
+      bend_bnd->sbend_6[nbend_bnd_typ]  = bend_bnd->sbend_6[i]; 
+      bend_bnd->dcbend_0[nbend_bnd_typ] = bend_bnd->dcbend_0[i];
+      bend_bnd->dcbend_1[nbend_bnd_typ] = bend_bnd->dcbend_1[i];
+      bend_bnd->dcbend_2[nbend_bnd_typ] = bend_bnd->dcbend_2[i]; 
+      bend_bnd->dcbend_3[nbend_bnd_typ] = bend_bnd->dcbend_3[i]; 
+      bend_bnd->dcbend_4[nbend_bnd_typ] = bend_bnd->dcbend_4[i]; 
+      bend_bnd->dcbend_5[nbend_bnd_typ] = bend_bnd->dcbend_5[i]; 
+      bend_bnd->dcbend_6[nbend_bnd_typ] = bend_bnd->dcbend_6[i];
+      bend_bnd->dsbend_0[nbend_bnd_typ] = bend_bnd->dsbend_0[i]; 
+      bend_bnd->dsbend_1[nbend_bnd_typ] = bend_bnd->dsbend_1[i]; 
+      bend_bnd->dsbend_2[nbend_bnd_typ] = bend_bnd->dsbend_2[i];  
+      bend_bnd->dsbend_3[nbend_bnd_typ] = bend_bnd->dsbend_3[i];  
+      bend_bnd->dsbend_4[nbend_bnd_typ] = bend_bnd->dsbend_4[i];  
+      bend_bnd->dsbend_5[nbend_bnd_typ] = bend_bnd->dsbend_5[i];  
+      bend_bnd->dsbend_6[nbend_bnd_typ] = bend_bnd->dsbend_6[i];
 
-     bend_bnd->eq_bond[nbend_bnd_typ]  = bend_bnd->eq_bond[i];
-     bend_bnd->cbond_0[nbend_bnd_typ]  = bend_bnd->cbond_0[i];
-     bend_bnd->cbond_1[nbend_bnd_typ]  = bend_bnd->cbond_1[i];
-     bend_bnd->cbond_2[nbend_bnd_typ]  = bend_bnd->cbond_2[i];
-     bend_bnd->cbond_3[nbend_bnd_typ]  = bend_bnd->cbond_3[i];
-     bend_bnd->cbond_4[nbend_bnd_typ]  = bend_bnd->cbond_4[i];
-     bend_bnd->cbond_5[nbend_bnd_typ]  = bend_bnd->cbond_5[i];
-     bend_bnd->cbond_6[nbend_bnd_typ]  = bend_bnd->cbond_6[i];
-     bend_bnd->dcbond_0[nbend_bnd_typ] = bend_bnd->dcbond_0[i];
-     bend_bnd->dcbond_1[nbend_bnd_typ] = bend_bnd->dcbond_1[i];
-     bend_bnd->dcbond_2[nbend_bnd_typ] = bend_bnd->dcbond_2[i]; 
-     bend_bnd->dcbond_3[nbend_bnd_typ] = bend_bnd->dcbond_3[i]; 
-     bend_bnd->dcbond_4[nbend_bnd_typ] = bend_bnd->dcbond_4[i]; 
-     bend_bnd->dcbond_5[nbend_bnd_typ] = bend_bnd->dcbond_5[i]; 
-     bend_bnd->dcbond_6[nbend_bnd_typ] = bend_bnd->dcbond_6[i];
+      bend_bnd->eq_bond[nbend_bnd_typ]  = bend_bnd->eq_bond[i];
+      bend_bnd->cbond_0[nbend_bnd_typ]  = bend_bnd->cbond_0[i];
+      bend_bnd->cbond_1[nbend_bnd_typ]  = bend_bnd->cbond_1[i];
+      bend_bnd->cbond_2[nbend_bnd_typ]  = bend_bnd->cbond_2[i];
+      bend_bnd->cbond_3[nbend_bnd_typ]  = bend_bnd->cbond_3[i];
+      bend_bnd->cbond_4[nbend_bnd_typ]  = bend_bnd->cbond_4[i];
+      bend_bnd->cbond_5[nbend_bnd_typ]  = bend_bnd->cbond_5[i];
+      bend_bnd->cbond_6[nbend_bnd_typ]  = bend_bnd->cbond_6[i];
+      bend_bnd->dcbond_0[nbend_bnd_typ] = bend_bnd->dcbond_0[i];
+      bend_bnd->dcbond_1[nbend_bnd_typ] = bend_bnd->dcbond_1[i];
+      bend_bnd->dcbond_2[nbend_bnd_typ] = bend_bnd->dcbond_2[i]; 
+      bend_bnd->dcbond_3[nbend_bnd_typ] = bend_bnd->dcbond_3[i]; 
+      bend_bnd->dcbond_4[nbend_bnd_typ] = bend_bnd->dcbond_4[i]; 
+      bend_bnd->dcbond_5[nbend_bnd_typ] = bend_bnd->dcbond_5[i]; 
+      bend_bnd->dcbond_6[nbend_bnd_typ] = bend_bnd->dcbond_6[i];
     }/*endif*/
-   }/*endfor*/
-   bend_bnd->ntyp = nbend_bnd_typ;
-   bend->ntyp_pow = nbend_typ;
+  }/*endfor*/
+  bend_bnd->ntyp = nbend_bnd_typ;
+  bend->ntyp_pow = nbend_typ;
 
-/*=======================================================================*/
-/* III) Realloc the memory                                               */
+  /*=======================================================================*/
+  /* III) Realloc the memory                                               */
 
-    bend->eq_pow = (double *)crealloc(&(bend->eq_pow)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->c_0    = (double *)crealloc(&(bend->c_0)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->c_1    = (double *)crealloc(&(bend->c_1)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->c_2    = (double *)crealloc(&(bend->c_2)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->c_3    = (double *)crealloc(&(bend->c_3)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->c_4    = (double *)crealloc(&(bend->c_4)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->c_5    = (double *)crealloc(&(bend->c_5)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->c_6    = (double *)crealloc(&(bend->c_6)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->s_0    = (double *)crealloc(&(bend->s_0)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->s_1    = (double *)crealloc(&(bend->s_1)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->s_2    = (double *)crealloc(&(bend->s_2)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->s_3    = (double *)crealloc(&(bend->s_3)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->s_4    = (double *)crealloc(&(bend->s_4)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->s_5    = (double *)crealloc(&(bend->s_5)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->s_6    = (double *)crealloc(&(bend->s_6)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_0   = (double *)crealloc(&(bend->dc_0)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_1   = (double *)crealloc(&(bend->dc_1)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_2   = (double *)crealloc(&(bend->dc_2)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_3   = (double *)crealloc(&(bend->dc_3)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_4   = (double *)crealloc(&(bend->dc_4)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_5   = (double *)crealloc(&(bend->dc_5)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->dc_6   = (double *)crealloc(&(bend->dc_6)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_0   = (double *)crealloc(&(bend->ds_0)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_1   = (double *)crealloc(&(bend->ds_1)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_2   = (double *)crealloc(&(bend->ds_2)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_3   = (double *)crealloc(&(bend->ds_3)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_4   = (double *)crealloc(&(bend->ds_4)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_5   = (double *)crealloc(&(bend->ds_5)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-    bend->ds_6   = (double *)crealloc(&(bend->ds_6)[1],
-                    bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
-/*=======================================================================*/
-/* III) Realloc more memory                                               */
+  bend->eq_pow = (double *)crealloc(&(bend->eq_pow)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->c_0    = (double *)crealloc(&(bend->c_0)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->c_1    = (double *)crealloc(&(bend->c_1)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->c_2    = (double *)crealloc(&(bend->c_2)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->c_3    = (double *)crealloc(&(bend->c_3)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->c_4    = (double *)crealloc(&(bend->c_4)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->c_5    = (double *)crealloc(&(bend->c_5)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->c_6    = (double *)crealloc(&(bend->c_6)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->s_0    = (double *)crealloc(&(bend->s_0)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->s_1    = (double *)crealloc(&(bend->s_1)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->s_2    = (double *)crealloc(&(bend->s_2)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->s_3    = (double *)crealloc(&(bend->s_3)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->s_4    = (double *)crealloc(&(bend->s_4)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->s_5    = (double *)crealloc(&(bend->s_5)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->s_6    = (double *)crealloc(&(bend->s_6)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_0   = (double *)crealloc(&(bend->dc_0)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_1   = (double *)crealloc(&(bend->dc_1)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_2   = (double *)crealloc(&(bend->dc_2)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_3   = (double *)crealloc(&(bend->dc_3)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_4   = (double *)crealloc(&(bend->dc_4)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_5   = (double *)crealloc(&(bend->dc_5)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->dc_6   = (double *)crealloc(&(bend->dc_6)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_0   = (double *)crealloc(&(bend->ds_0)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_1   = (double *)crealloc(&(bend->ds_1)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_2   = (double *)crealloc(&(bend->ds_2)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_3   = (double *)crealloc(&(bend->ds_3)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_4   = (double *)crealloc(&(bend->ds_4)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_5   = (double *)crealloc(&(bend->ds_5)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  bend->ds_6   = (double *)crealloc(&(bend->ds_6)[1],
+      bend->ntyp_pow*sizeof(double),"extract_pure_bends")-1;
+  /*=======================================================================*/
+  /* III) Realloc more memory                                               */
 
-    bend_bnd->eq_bend = (double *)crealloc(&(bend_bnd->eq_bend)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbend_0    = (double *)crealloc(&(bend_bnd->cbend_0)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbend_1    = (double *)crealloc(&(bend_bnd->cbend_1)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbend_2    = (double *)crealloc(&(bend_bnd->cbend_2)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbend_3    = (double *)crealloc(&(bend_bnd->cbend_3)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbend_4    = (double *)crealloc(&(bend_bnd->cbend_4)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbend_5    = (double *)crealloc(&(bend_bnd->cbend_5)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbend_6    = (double *)crealloc(&(bend_bnd->cbend_6)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->sbend_0    = (double *)crealloc(&(bend_bnd->sbend_0)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->sbend_1    = (double *)crealloc(&(bend_bnd->sbend_1)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->sbend_2    = (double *)crealloc(&(bend_bnd->sbend_2)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->sbend_3    = (double *)crealloc(&(bend_bnd->sbend_3)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->sbend_4    = (double *)crealloc(&(bend_bnd->sbend_4)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->sbend_5    = (double *)crealloc(&(bend_bnd->sbend_5)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->sbend_6    = (double *)crealloc(&(bend_bnd->sbend_6)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbend_0   = (double *)crealloc(&(bend_bnd->dcbend_0)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbend_1   = (double *)crealloc(&(bend_bnd->dcbend_1)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbend_2   = (double *)crealloc(&(bend_bnd->dcbend_2)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbend_3   = (double *)crealloc(&(bend_bnd->dcbend_3)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbend_4   = (double *)crealloc(&(bend_bnd->dcbend_4)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbend_5   = (double *)crealloc(&(bend_bnd->dcbend_5)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbend_6   = (double *)crealloc(&(bend_bnd->dcbend_6)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dsbend_0   = (double *)crealloc(&(bend_bnd->dsbend_0)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dsbend_1   = (double *)crealloc(&(bend_bnd->dsbend_1)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dsbend_2   = (double *)crealloc(&(bend_bnd->dsbend_2)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dsbend_3   = (double *)crealloc(&(bend_bnd->dsbend_3)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dsbend_4   = (double *)crealloc(&(bend_bnd->dsbend_4)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dsbend_5   = (double *)crealloc(&(bend_bnd->dsbend_5)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dsbend_6   = (double *)crealloc(&(bend_bnd->dsbend_6)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->eq_bend = (double *)crealloc(&(bend_bnd->eq_bend)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbend_0    = (double *)crealloc(&(bend_bnd->cbend_0)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbend_1    = (double *)crealloc(&(bend_bnd->cbend_1)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbend_2    = (double *)crealloc(&(bend_bnd->cbend_2)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbend_3    = (double *)crealloc(&(bend_bnd->cbend_3)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbend_4    = (double *)crealloc(&(bend_bnd->cbend_4)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbend_5    = (double *)crealloc(&(bend_bnd->cbend_5)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbend_6    = (double *)crealloc(&(bend_bnd->cbend_6)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->sbend_0    = (double *)crealloc(&(bend_bnd->sbend_0)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->sbend_1    = (double *)crealloc(&(bend_bnd->sbend_1)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->sbend_2    = (double *)crealloc(&(bend_bnd->sbend_2)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->sbend_3    = (double *)crealloc(&(bend_bnd->sbend_3)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->sbend_4    = (double *)crealloc(&(bend_bnd->sbend_4)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->sbend_5    = (double *)crealloc(&(bend_bnd->sbend_5)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->sbend_6    = (double *)crealloc(&(bend_bnd->sbend_6)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbend_0   = (double *)crealloc(&(bend_bnd->dcbend_0)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbend_1   = (double *)crealloc(&(bend_bnd->dcbend_1)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbend_2   = (double *)crealloc(&(bend_bnd->dcbend_2)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbend_3   = (double *)crealloc(&(bend_bnd->dcbend_3)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbend_4   = (double *)crealloc(&(bend_bnd->dcbend_4)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbend_5   = (double *)crealloc(&(bend_bnd->dcbend_5)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbend_6   = (double *)crealloc(&(bend_bnd->dcbend_6)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dsbend_0   = (double *)crealloc(&(bend_bnd->dsbend_0)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dsbend_1   = (double *)crealloc(&(bend_bnd->dsbend_1)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dsbend_2   = (double *)crealloc(&(bend_bnd->dsbend_2)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dsbend_3   = (double *)crealloc(&(bend_bnd->dsbend_3)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dsbend_4   = (double *)crealloc(&(bend_bnd->dsbend_4)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dsbend_5   = (double *)crealloc(&(bend_bnd->dsbend_5)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dsbend_6   = (double *)crealloc(&(bend_bnd->dsbend_6)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
 
-    bend_bnd->eq_bond = (double *)crealloc(&(bend_bnd->eq_bond)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbond_0    = (double *)crealloc(&(bend_bnd->cbond_0)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbond_1    = (double *)crealloc(&(bend_bnd->cbond_1)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbond_2    = (double *)crealloc(&(bend_bnd->cbond_2)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbond_3    = (double *)crealloc(&(bend_bnd->cbond_3)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbond_4    = (double *)crealloc(&(bend_bnd->cbond_4)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbond_5    = (double *)crealloc(&(bend_bnd->cbond_5)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->cbond_6    = (double *)crealloc(&(bend_bnd->cbond_6)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbond_0   = (double *)crealloc(&(bend_bnd->dcbond_0)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbond_1   = (double *)crealloc(&(bend_bnd->dcbond_1)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbond_2   = (double *)crealloc(&(bend_bnd->dcbond_2)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbond_3   = (double *)crealloc(&(bend_bnd->dcbond_3)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbond_4   = (double *)crealloc(&(bend_bnd->dcbond_4)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbond_5   = (double *)crealloc(&(bend_bnd->dcbond_5)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-    bend_bnd->dcbond_6   = (double *)crealloc(&(bend_bnd->dcbond_6)[1],
-                    bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
-/*-----------------------------------------------------------------------*/
-  }  /*end routine*/
+  bend_bnd->eq_bond = (double *)crealloc(&(bend_bnd->eq_bond)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbond_0    = (double *)crealloc(&(bend_bnd->cbond_0)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbond_1    = (double *)crealloc(&(bend_bnd->cbond_1)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbond_2    = (double *)crealloc(&(bend_bnd->cbond_2)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbond_3    = (double *)crealloc(&(bend_bnd->cbond_3)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbond_4    = (double *)crealloc(&(bend_bnd->cbond_4)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbond_5    = (double *)crealloc(&(bend_bnd->cbond_5)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->cbond_6    = (double *)crealloc(&(bend_bnd->cbond_6)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbond_0   = (double *)crealloc(&(bend_bnd->dcbond_0)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbond_1   = (double *)crealloc(&(bend_bnd->dcbond_1)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbond_2   = (double *)crealloc(&(bend_bnd->dcbond_2)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbond_3   = (double *)crealloc(&(bend_bnd->dcbond_3)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbond_4   = (double *)crealloc(&(bend_bnd->dcbond_4)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbond_5   = (double *)crealloc(&(bend_bnd->dcbond_5)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  bend_bnd->dcbond_6   = (double *)crealloc(&(bend_bnd->dcbond_6)[1],
+      bend_bnd->ntyp*sizeof(double),"extract_pure_bends")-1;
+  /*-----------------------------------------------------------------------*/
+}  /*end routine*/
 /*==========================================================================*/

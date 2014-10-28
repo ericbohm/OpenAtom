@@ -1,7 +1,7 @@
 /** \file CP_State_GSpacePlane.C
-    @addtogroup GSpaceState
-    @{
-*/
+  @addtogroup GSpaceState
+  @{
+ */
 
 #ifdef _CP_DEBUG_PSI_OFF_
 #define _SDAG_DEBUG_PSI_OFF_ true
@@ -156,8 +156,8 @@ module gSpaceDriver
         // Contribute to a reduction to let the instance controller know
         // that the computation is complete.
         CkCallback cb(CkIndex_InstanceController::cleanExit(NULL),
-                CkArrayIndex1D(thisInstance.proxyOffset),
-                instControllerProxy);
+            CkArrayIndex1D(thisInstance.proxyOffset),
+            instControllerProxy);
         contribute(cb);
       }
     };
@@ -175,8 +175,8 @@ module gParticlePlane
   message EnlCookieMsg;
   message GSPPIFFTMsg {complex data[];};
 
-	message NLFFTMsg {complex data[];};
-	message CompAtmForcMsg {double zmat[];};
+  message NLFFTMsg {complex data[];};
+  message CompAtmForcMsg {double zmat[];};
 
   array [2D] CP_State_ParticlePlane
   {
@@ -206,7 +206,7 @@ module gParticlePlane
     entry void printEnlR(CkReductionMsg *);
     entry void printEnlRSimp(double ,int,int);
     entry void recvZMatEesSimp(int size, double _zmat[size],int state, 
-                               int index, int iterNL_in);
+        int index, int iterNL_in);
     entry [local] void FFTNLEesFwdR();
     entry void launchFFTControl(int );
     entry void enlSectDone(CkReductionMsg *m);
@@ -228,7 +228,7 @@ module gStatePlane
   message RSFFTMsg     { complex data[]; };
   message GSIFFTMsg    { complex data[]; };
   message GSRedPsiMsg  { complex data[]; };
-	message ProductMsg {double data[];};	
+  message ProductMsg {double data[];};	
   message GStateOutMsg
   {
     complex data[];
@@ -266,33 +266,33 @@ module gStatePlane
 #ifdef RSVKS_BARRIER
         // Performance diagnostic barrier
         serial {
-        contribute(CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),
-              UrealSpacePlaneProxy[thisInstance.proxyOffset]));
+          contribute(CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),
+                UrealSpacePlaneProxy[thisInstance.proxyOffset]));
         }
-		    when rdoneVks(CkReductionMsg *m) serial { delete m; }
+        when rdoneVks(CkReductionMsg *m) serial { delete m; }
 #endif
 
-		    serial {
+        serial {
           // Partially FFT VKS*Psi=Force
-		      thisProxy[thisIndex].doVksFFT();
+          thisProxy[thisIndex].doVksFFT();
           // Send the partially FFTd force to GSpacePlane
-		      sendFPsiToGSP();
-		    }
-		  }
-		};
+          sendFPsiToGSP();
+        }
+      }
+    };
 
-		entry [nokeep] void acceptFFT(RSFFTMsg *m);
-		entry [nokeep] void acceptProduct(ProductMsg *m);
-		entry [local] void doFFT();
-		entry [local] void doVksFFT();
-		entry void setNumPlanesToExpect(int num);
-		entry void printData();
-		entry [nokeep] void init(ProductMsg *m);
+    entry [nokeep] void acceptFFT(RSFFTMsg *m);
+    entry [nokeep] void acceptProduct(ProductMsg *m);
+    entry [local] void doFFT();
+    entry [local] void doVksFFT();
+    entry void setNumPlanesToExpect(int num);
+    entry void printData();
+    entry [nokeep] void init(ProductMsg *m);
 
 #ifdef RSVKS_BARRIER
-		entry void rdoneVks(CkReductionMsg *m);
+    entry void rdoneVks(CkReductionMsg *m);
 #endif
-	};
+  };
 
   array [2D]  CP_State_GSpacePlane
   {

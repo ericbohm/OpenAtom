@@ -90,12 +90,12 @@ void MapFile::dumpMapCoords(MapType2 *map, char c)
   fprintf(fp, "\n%d %d %d %d %d\n", numProcs, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT());
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
-      {
-	int proc=map->get(i, j);
-	int X, Y, Z, T;
-	topoMgr->rankToCoordinates(proc, X, Y, Z, T);
-	fprintf(fp, "%d %d %d %d %d %d %d\n", i, j, proc,X,Y,Z,T);
-      }
+    {
+      int proc=map->get(i, j);
+      int X, Y, Z, T;
+      topoMgr->rankToCoordinates(proc, X, Y, Z, T);
+      fprintf(fp, "%d %d %d %d %d %d %d\n", i, j, proc,X,Y,Z,T);
+    }
   fclose(fp);
 }
 
@@ -112,14 +112,14 @@ void MapFile::dumpMapCoords(MapType4 *map, char c)
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]*stride; j+=stride)
       for(int k=0; k<sizeDim[2]*stride; k+=stride)
-	for(int l=0; l<sizeDim[3]; l++)
-	  {
-	    int proc=map->get(i, j, k, l);
-	    int X, Y, Z, T;
-	    topoMgr->rankToCoordinates(proc, X, Y, Z, T);
+        for(int l=0; l<sizeDim[3]; l++)
+        {
+          int proc=map->get(i, j, k, l);
+          int X, Y, Z, T;
+          topoMgr->rankToCoordinates(proc, X, Y, Z, T);
 
-	    fprintf(fp, "%d %d %d %d %d %d %d %d %d\n", i, j, k, l, proc, X, Y, Z, T);
-	  }
+          fprintf(fp, "%d %d %d %d %d %d %d %d %d\n", i, j, k, l, proc, X, Y, Z, T);
+        }
   fclose(fp);
 }
 
@@ -136,13 +136,13 @@ void MapFile::dumpMapCoords(MapType3 *map, char c)
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
       for(int k=0; k<sizeDim[2]; k++)
-	{
-	  int proc=map->get(i, j, k);
-	  int X, Y, Z, T;
-	  topoMgr->rankToCoordinates(proc, X, Y, Z, T);
-	  
-	  fprintf(fp, "%d %d %d %d %d %d %d %d\n", i, j, k,  proc, X, Y ,Z, T);
-	}
+      {
+        int proc=map->get(i, j, k);
+        int X, Y, Z, T;
+        topoMgr->rankToCoordinates(proc, X, Y, Z, T);
+
+        fprintf(fp, "%d %d %d %d %d %d %d %d\n", i, j, k,  proc, X, Y ,Z, T);
+      }
   fclose(fp);
 }
 
@@ -158,7 +158,7 @@ void MapFile::dumpMap(MapType2 *map, char c)
   fprintf(fp, "\n%d %d %d %d %d\n", numProcs, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT());
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
-	fprintf(fp, "%d %d %d\n", i, j, map->get(i, j));
+      fprintf(fp, "%d %d %d\n", i, j, map->get(i, j));
   fclose(fp);
 }
 
@@ -175,8 +175,8 @@ void MapFile::dumpMap(MapType4 *map, char c)
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]*stride; j+=stride)
       for(int k=0; k<sizeDim[2]*stride; k+=stride)
-	for(int l=0; l<sizeDim[3]; l++)
-	    fprintf(fp, "%d %d %d %d %d\n", i, j, k, l, map->get(i, j, k, l));
+        for(int l=0; l<sizeDim[3]; l++)
+          fprintf(fp, "%d %d %d %d %d\n", i, j, k, l, map->get(i, j, k, l));
   fclose(fp);
 }
 
@@ -193,7 +193,7 @@ void MapFile::dumpMap(MapType3 *map, char c)
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
       for(int k=0; k<sizeDim[2]; k++)
-	fprintf(fp, "%d %d %d %d\n", i, j, k,  map->get(i, j, k));
+        fprintf(fp, "%d %d %d %d\n", i, j, k,  map->get(i, j, k));
   fclose(fp);
 }
 
@@ -226,10 +226,10 @@ int MapFile::loadMap(const char *filename, MapType3 *map)
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
       for(int k=0; k<sizeDim[2]; k++)
-	{	
-	  assert(fscanf(fp, "%d%d%d%d", &x, &y, &z, &pe));
-      map->set(x, y, z, pe);
-	}
+      {	
+        assert(fscanf(fp, "%d%d%d%d", &x, &y, &z, &pe));
+        map->set(x, y, z, pe);
+      }
   fclose(fp);
   CkPrintf("%s loaded from file ----\n", filename);
   return 1;
@@ -246,11 +246,11 @@ int MapFile::loadMap(const char *filename, MapType4 *map)
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]*stride; j+=stride)
       for(int k=0; k<sizeDim[2]*stride; k+=stride)
-	for(int l=0; l<sizeDim[3]; l++)
-	{	
-	  assert(fscanf(fp, "%d%d%d%d%d", &x, &y, &z, &w, &pe));
-      map->set(x, y, z, w, pe);
-	}
+        for(int l=0; l<sizeDim[3]; l++)
+        {	
+          assert(fscanf(fp, "%d%d%d%d%d", &x, &y, &z, &w, &pe));
+          map->set(x, y, z, w, pe);
+        }
   fclose(fp);
   CkPrintf("%s loaded from file ----\n", filename);
   return 1;

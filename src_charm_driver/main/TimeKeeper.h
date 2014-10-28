@@ -59,105 +59,105 @@ extern std::vector <std::string> TimeKeeperNames;
 static int keeperRegister(std::string name)
 {
   if(config.useTimeKeeper)
-    {
-      TimeKeeperNames.push_back(name);
-      return(TimeKeeperID++);
-    }
+  {
+    TimeKeeperNames.push_back(name);
+    return(TimeKeeperID++);
+  }
   else
-    { //disable all timers
-      return(-1);
-    }
+  { //disable all timers
+    return(-1);
+  }
 }
 
 class TimeKeeper : public Group
 {
- public:
-  double *beginTime;
-  int HPMCounter;
-  int HPMEndCounter;
-  int PRJCounter;
-  int local_rank;
-  TimeKeeper(){
+  public:
+    double *beginTime;
+    int HPMCounter;
+    int HPMEndCounter;
+    int PRJCounter;
+    int local_rank;
+    TimeKeeper(){
       HPMCounter=-1;
-    HPMEndCounter=0;
-    PRJCounter=0;
+      HPMEndCounter=0;
+      PRJCounter=0;
 #if USE_HPM
-    TopoManager *topoMgr = new TopoManager();
-    int x,y,z;
-    topoMgr->rankToCoordinates(CkMyPe(),x,y,z,local_rank);
-    delete topoMgr;
+      TopoManager *topoMgr = new TopoManager();
+      int x,y,z;
+      topoMgr->rankToCoordinates(CkMyPe(),x,y,z,local_rank);
+      delete topoMgr;
 #endif
-  }
+    }
 
-  void startTrace()
+    void startTrace()
     {
 #if CMK_TRACE_ENABLED
       if(PRJCounter++==0)
-	{
-	  traceBegin();
-	  //	  CkPrintf("[%d] trace begun \n",CkMyPe());
-	}
+      {
+        traceBegin();
+        //	  CkPrintf("[%d] trace begun \n",CkMyPe());
+      }
 #endif
     }
 
-  void stopTrace()
+    void stopTrace()
     {
 #if CMK_TRACE_ENABLED
       if(--PRJCounter==0)
-	{
-	  traceEnd();
-	  //	  CkPrintf("[%d] trace ended \n",CkMyPe());
-	}
+      {
+        traceEnd();
+        //	  CkPrintf("[%d] trace ended \n",CkMyPe());
+      }
 #endif
     }
 
 #if USE_HPM
-  void initHPM(){
-    if(HPMCounter==-1)
+    void initHPM(){
+      if(HPMCounter==-1)
       {
-	  if(CkMyPe()==0)
-	      CkPrintf("[%d] HPM_Init\n",CkMyPe());
-	  HPM_Init(local_rank);
-	  HPMCounter=0;
+        if(CkMyPe()==0)
+          CkPrintf("[%d] HPM_Init\n",CkMyPe());
+        HPM_Init(local_rank);
+        HPMCounter=0;
       }
-  }
-  void startHPM(char *string){
+    }
+    void startHPM(char *string){
       if(HPMCounter++==0)
       {
-	  if(CkMyPe()==0)
-	      CkPrintf("[%d] HPM_Start\n",CkMyPe());
-	  HPM_Start(string, local_rank);
+        if(CkMyPe()==0)
+          CkPrintf("[%d] HPM_Start\n",CkMyPe());
+        HPM_Start(string, local_rank);
       }
     }
-  void stopHPM(char *string)
+    void stopHPM(char *string)
     {
-    if(--HPMCounter==0)
+      if(--HPMCounter==0)
       {
-	  if(CkMyPe()==0)
-	      CkPrintf("[%d] HPM_Stop\n", CkMyPe());
-	  HPM_Stop(string, local_rank);
-	  HPMEndCounter=HPMCounter+1;
+        if(CkMyPe()==0)
+          CkPrintf("[%d] HPM_Stop\n", CkMyPe());
+        HPM_Stop(string, local_rank);
+        HPMEndCounter=HPMCounter+1;
       }
 
     }
 
-  void printHPM()
+    void printHPM()
     {
-    if(--HPMEndCounter==0)
+      if(--HPMEndCounter==0)
       {
-	  if(CkMyPe()==0)
-	      CkPrintf("[%d] HPM_Print\n",CkMyPe());
-	  HPM_Print(CkMyPe(), local_rank);
+        if(CkMyPe()==0)
+          CkPrintf("[%d] HPM_Print\n",CkMyPe());
+        HPM_Print(CkMyPe(), local_rank);
       }
 
     }
 #endif
-  // the timekeeper phase stuff is really only expected to work on pe 0
-  void init ()
+    // the timekeeper phase stuff is really only expected to work on pe 0
+    void init ()
     {
       beginTime=new double[TimeKeeperID+1];
     }
-  void collectStart(CkReductionMsg *msg)
+    void collectStart(CkReductionMsg *msg)
     {
       int phase= msg->getUserFlag();
       CkAssert(phase<TimeKeeperID);
@@ -167,8 +167,8 @@ class TimeKeeper : public Group
       delete msg;
     }
 
-  // we assume sanity and do our printing when each max arrives
-  void collectEnd(CkReductionMsg *msg)
+    // we assume sanity and do our printing when each max arrives
+    void collectEnd(CkReductionMsg *msg)
     {
       int phase = msg->getUserFlag();
       CkAssert(phase<TimeKeeperID);

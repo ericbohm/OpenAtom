@@ -31,24 +31,24 @@
 
 void set_molset_fun_dict(DICT_WORD *fun_dict[],int *num_fun_dict)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int i;
-/*=======================================================================*/
-/* 0) Malloc the dictionary */
+  /*=======================================================================*/
+  /* 0) Malloc the dictionary */
 
   *num_fun_dict   = 23;
   *fun_dict       = (DICT_WORD *)cmalloc(*num_fun_dict*sizeof(DICT_WORD),"set_molset_fun_dict")-1;  
 
-/*=======================================================================*/
-/* I) Assign the users set flags 0 */
+  /*=======================================================================*/
+  /* I) Assign the users set flags 0 */
 
   for(i=1;i<=*num_fun_dict;i++){(*fun_dict)[i].iuset = 0;}
   for(i=1;i<=*num_fun_dict;i++){(*fun_dict)[i].iflag = 0;}
   for(i=1;i<=*num_fun_dict;i++){(*fun_dict)[i].key_type = 1;}
 
-/*=======================================================================*/
-/* II) Fill the dictionary with words */
+  /*=======================================================================*/
+  /* II) Fill the dictionary with words */
   /*--------------------------------------------------------------------*/ 
   /*  1) ~molecule_def[] */
   strcpy((*fun_dict)[1].keyword,"molecule_def");
@@ -80,13 +80,13 @@ void set_molset_fun_dict(DICT_WORD *fun_dict[],int *num_fun_dict)
   strcpy((*fun_dict)[6].keyword,"data_base_def");
   strcpy((*fun_dict)[6].keyarg,"");  
   strcpy((*fun_dict)[6].error_mes,
-         "inter_file,vps_file,bond_file,bend_file,tors_file,onfo_file");
+      "inter_file,vps_file,bond_file,bend_file,tors_file,onfo_file");
   /*-----------------------------------------------------------------------*/ 
   /*  7) ~user_data_base_def[] */
   strcpy((*fun_dict)[7].keyword,"user_data_base_def");
   strcpy((*fun_dict)[7].keyarg,"");  
   strcpy((*fun_dict)[7].error_mes,
-    "inter_file,vps_file,bond_file,bend_file,tors_file,onfo_file,surf_file");
+      "inter_file,vps_file,bond_file,bend_file,tors_file,onfo_file,surf_file");
   /*-----------------------------------------------------------------------*/ 
   /*  8) ~rbar_sig_free_def[] */
   strcpy((*fun_dict)[8].keyword,"rbar_sig_free_def");
@@ -100,77 +100,77 @@ void set_molset_fun_dict(DICT_WORD *fun_dict[],int *num_fun_dict)
 
   /*-----------------------------------------------------------------------*/ 
   /*  10) ~sim_list_def[ ] */
-       strcpy((*fun_dict)[10].error_mes," ");
-       strcpy((*fun_dict)[10].keyword,"sim_list_def");
-       strcpy((*fun_dict)[10].keyarg," ");
+  strcpy((*fun_dict)[10].error_mes," ");
+  strcpy((*fun_dict)[10].keyword,"sim_list_def");
+  strcpy((*fun_dict)[10].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  11) ~sim_cp_def[] */
-       strcpy((*fun_dict)[11].error_mes," ");
-       strcpy((*fun_dict)[11].keyword,"sim_cp_def");
-       strcpy((*fun_dict)[11].keyarg," ");
+  strcpy((*fun_dict)[11].error_mes," ");
+  strcpy((*fun_dict)[11].keyword,"sim_cp_def");
+  strcpy((*fun_dict)[11].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  12) ~sim_gen_def[ ] */
-       strcpy((*fun_dict)[12].error_mes," ");
-       strcpy((*fun_dict)[12].keyword,"sim_gen_def");
-       strcpy((*fun_dict)[12].keyarg," ");
+  strcpy((*fun_dict)[12].error_mes," ");
+  strcpy((*fun_dict)[12].keyword,"sim_gen_def");
+  strcpy((*fun_dict)[12].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  13) ~sim_class_PE_def[ ] */
-       strcpy((*fun_dict)[13].error_mes," ");
-       strcpy((*fun_dict)[13].keyword,"sim_class_PE_def");
-       strcpy((*fun_dict)[13].keyarg," ");
+  strcpy((*fun_dict)[13].error_mes," ");
+  strcpy((*fun_dict)[13].keyword,"sim_class_PE_def");
+  strcpy((*fun_dict)[13].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  14) ~sim_run_def[] */
-       strcpy((*fun_dict)[14].error_mes," ");
-       strcpy((*fun_dict)[14].keyword,"sim_run_def");
-       strcpy((*fun_dict)[14].keyarg," ");
+  strcpy((*fun_dict)[14].error_mes," ");
+  strcpy((*fun_dict)[14].keyword,"sim_run_def");
+  strcpy((*fun_dict)[14].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  15) ~sim_nhc_def[ ] */
-       strcpy((*fun_dict)[15].error_mes," ");
-       strcpy((*fun_dict)[15].keyword,"sim_nhc_def");
-       strcpy((*fun_dict)[15].keyarg," ");
+  strcpy((*fun_dict)[15].error_mes," ");
+  strcpy((*fun_dict)[15].keyword,"sim_nhc_def");
+  strcpy((*fun_dict)[15].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  16) ~sim_vol_def[ ] */
-       strcpy((*fun_dict)[16].error_mes," ");
-       strcpy((*fun_dict)[16].keyword,"sim_vol_def");
-       strcpy((*fun_dict)[16].keyarg," ");
+  strcpy((*fun_dict)[16].error_mes," ");
+  strcpy((*fun_dict)[16].keyword,"sim_vol_def");
+  strcpy((*fun_dict)[16].keyarg," ");
   /*-----------------------------------------------------------------------*/
   /*  17) ~sim_write_def[] */
-       strcpy((*fun_dict)[17].error_mes," ");
-       strcpy((*fun_dict)[17].keyword,"sim_write_def");
-       strcpy((*fun_dict)[17].keyarg," ");
+  strcpy((*fun_dict)[17].error_mes," ");
+  strcpy((*fun_dict)[17].keyword,"sim_write_def");
+  strcpy((*fun_dict)[17].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  18) ~sim_pimd_def[ ] */
-       strcpy((*fun_dict)[18].error_mes," ");
-       strcpy((*fun_dict)[18].keyword,"sim_pimd_def");
-       strcpy((*fun_dict)[18].keyarg," ");
+  strcpy((*fun_dict)[18].error_mes," ");
+  strcpy((*fun_dict)[18].keyword,"sim_pimd_def");
+  strcpy((*fun_dict)[18].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  19) ~sim_velo_corel[ ] */
-       strcpy((*fun_dict)[19].error_mes," ");
-       strcpy((*fun_dict)[19].keyword,"sim_velo_corel");
-       strcpy((*fun_dict)[19].keyarg," ");
+  strcpy((*fun_dict)[19].error_mes," ");
+  strcpy((*fun_dict)[19].keyword,"sim_velo_corel");
+  strcpy((*fun_dict)[19].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  20) ~sim_msqd_corel[ ] */
-       strcpy((*fun_dict)[20].error_mes," ");
-       strcpy((*fun_dict)[20].keyword,"sim_msqd_corel");
-       strcpy((*fun_dict)[20].keyarg," ");
+  strcpy((*fun_dict)[20].error_mes," ");
+  strcpy((*fun_dict)[20].keyword,"sim_msqd_corel");
+  strcpy((*fun_dict)[20].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  21) ~sim_iikt_iso_corel[ ] */
-       strcpy((*fun_dict)[21].error_mes," ");
-       strcpy((*fun_dict)[21].keyword,"sim_iikt_iso_corel");
-       strcpy((*fun_dict)[21].keyarg," ");
+  strcpy((*fun_dict)[21].error_mes," ");
+  strcpy((*fun_dict)[21].keyword,"sim_iikt_iso_corel");
+  strcpy((*fun_dict)[21].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  22) ~sim_ickt_iso_corel[ ] */
-       strcpy((*fun_dict)[22].error_mes," ");
-       strcpy((*fun_dict)[22].keyword,"sim_ickt_iso_corel");
-       strcpy((*fun_dict)[22].keyarg," ");
+  strcpy((*fun_dict)[22].error_mes," ");
+  strcpy((*fun_dict)[22].keyword,"sim_ickt_iso_corel");
+  strcpy((*fun_dict)[22].keyarg," ");
   /*-----------------------------------------------------------------------*/ 
   /*  23) ~sim_rdf_corel[ ] */
-       strcpy((*fun_dict)[23].error_mes," ");
-       strcpy((*fun_dict)[23].keyword,"sim_rdf_corel");
-       strcpy((*fun_dict)[23].keyarg," ");
+  strcpy((*fun_dict)[23].error_mes," ");
+  strcpy((*fun_dict)[23].keyword,"sim_rdf_corel");
+  strcpy((*fun_dict)[23].keyarg," ");
   /*-----------------------------------------------------------------------*/
-/*-----------------------------------------------------------------------*/ 
-   }  /*end routine*/
+  /*-----------------------------------------------------------------------*/ 
+}  /*end routine*/
 /*==========================================================================*/
 
 
@@ -184,7 +184,7 @@ void set_molset_fun_dict(DICT_WORD *fun_dict[],int *num_fun_dict)
 
 void set_user_base_dict(DICT_WORD *user_base_dict[],int *num_user_base_dict)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int i;
   /*=======================================================================*/
@@ -253,7 +253,7 @@ void set_user_base_dict(DICT_WORD *user_base_dict[],int *num_user_base_dict)
 
 void set_def_base_dict(DICT_WORD *def_base_dict[],int *num_def_base_dict)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int i;
   /*========================================================================*/
@@ -320,9 +320,9 @@ void set_def_base_dict(DICT_WORD *def_base_dict[],int *num_def_base_dict)
 /*==========================================================================*/
 
 void set_wave_dict(DICT_WORD *wave_dict[],int *num_wave_dict,
-		   CP_PARSE *cp_parse)
+    CP_PARSE *cp_parse)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int i;
   /*=======================================================================*/
@@ -347,7 +347,7 @@ void set_wave_dict(DICT_WORD *wave_dict[],int *num_wave_dict,
   strcpy((*wave_dict)[2].keyarg,"0");
   (*wave_dict)[2].key_type=1; /* must spec */
   strcpy((*wave_dict)[2].error_mes,
-	 "a number > 0; under LDA nstate_dn=nstate_up");
+      "a number > 0; under LDA nstate_dn=nstate_up");
   /*-----------------------------------------------------------------------*/ 
   /* 3) /cp_nhc_opt{} */
   strcpy((*wave_dict)[3].keyword,"cp_nhc_opt");
@@ -412,12 +412,12 @@ void set_wave_dict(DICT_WORD *wave_dict[],int *num_wave_dict,
 /*==========================================================================*/
 
 void set_mol_dict(DICT_WORD *mol_dict[],int *num_mol_dict, int iextend,
-                  double tau_nhc_def,double t_ext,int ifirst)
+    double tau_nhc_def,double t_ext,int ifirst)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int i;
-/*==========================================================================*/
+  /*==========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
     *num_mol_dict = 13;
@@ -453,7 +453,7 @@ void set_mol_dict(DICT_WORD *mol_dict[],int *num_mol_dict, int iextend,
   if(iextend==0)strcpy((*mol_dict)[4].keyarg,"none");
   if(iextend==1)strcpy((*mol_dict)[4].keyarg,"global");
   strcpy((*mol_dict)[4].error_mes,
-	 "none,global,glob_mol,ind_mol,res_mol,atm_mol,mass_mol");
+      "none,global,glob_mol,ind_mol,res_mol,atm_mol,mass_mol");
   /*-----------------------------------------------------------------------*/ 
   /*  5)\mol_tau_nhc{} */
   strcpy((*mol_dict)[5].keyword,"mol_tau_nhc");
@@ -480,28 +480,28 @@ void set_mol_dict(DICT_WORD *mol_dict[],int *num_mol_dict, int iextend,
   strcpy((*mol_dict)[9].keyword,"onefour_opt");
   strcpy((*mol_dict)[9].keyarg,"off");
   strcpy((*mol_dict)[9].error_mes,"on,off");
-/*-----------------------------------------------------------------------*/ 
+  /*-----------------------------------------------------------------------*/ 
   /*  10)\res_bond_convention{} */
   strcpy((*mol_dict)[10].keyword,"res_bond_convention");
   strcpy((*mol_dict)[10].keyarg,"pi_md");
   strcpy((*mol_dict)[10].error_mes,"pi_md,charmm,sybyl");
-/*-----------------------------------------------------------------------*/ 
+  /*-----------------------------------------------------------------------*/ 
   /*  11)\mol_freeze_opt{} */
   strcpy((*mol_dict)[11].keyword,"mol_freeze_opt");
   strcpy((*mol_dict)[11].keyarg,"none");
   strcpy((*mol_dict)[11].error_mes,"none,all,heavy_atoms,backbone");
-/*-----------------------------------------------------------------------*/ 
+  /*-----------------------------------------------------------------------*/ 
   /*  12)\hydrog_mass_opt{} */
   strcpy((*mol_dict)[12].keyword,"hydrog_mass_opt");
   strcpy((*mol_dict)[12].keyarg,"off,1.008");
   strcpy((*mol_dict)[12].error_mes,
-                   "[off,all,backbone,sidechain],[number>0]");
-/*-----------------------------------------------------------------------*/
+      "[off,all,backbone,sidechain],[number>0]");
+  /*-----------------------------------------------------------------------*/
   /*  13)\hydrog_con_opt{} */
   strcpy((*mol_dict)[13].keyword,"hydrog_con_opt");
   strcpy((*mol_dict)[13].keyarg,"off");
   strcpy((*mol_dict)[13].error_mes,"off,all,polar (NH,OH,SH)");
-/*-----------------------------------------------------------------------*/
+  /*-----------------------------------------------------------------------*/
 }  /*end routine*/
 /*==========================================================================*/
 
@@ -626,7 +626,7 @@ void set_bond_free_dict(DICT_WORD *bond_free_dict[],int *num_bond_free_dict)
 
 void set_bend_free_dict(DICT_WORD *bend_free_dict[],int *num_bend_free_dict)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int i;
   /*========================================================================*/
@@ -751,7 +751,7 @@ void set_bend_free_dict(DICT_WORD *bend_free_dict[],int *num_bend_free_dict)
 
 void set_tors_free_dict(DICT_WORD *tors_free_dict[],int *num_tors_free_dict)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {/*begin routine*/
 
   int i,ind;
@@ -1010,104 +1010,104 @@ void set_tors_free_dict(DICT_WORD *tors_free_dict[],int *num_tors_free_dict)
 
 void set_rbar_free_dict(DICT_WORD *rbar_free_dict[],int *num_rbar_free_dict)
 
-/*==========================================================================*/
-   {  /*begin routine */
-/*==========================================================================*/
+  /*==========================================================================*/
+{  /*begin routine */
+  /*==========================================================================*/
   int i;
-/*========================================================================*/
-/* 0) Malloc the dictionary */
+  /*========================================================================*/
+  /* 0) Malloc the dictionary */
 
   *num_rbar_free_dict = 13;
   *rbar_free_dict=(DICT_WORD*)cmalloc(*num_rbar_free_dict*sizeof(DICT_WORD),"set_rbar_free_dict")-1;
 
-/*========================================================================*/
-/* I) Assign the users set flags 0 */
+  /*========================================================================*/
+  /* I) Assign the users set flags 0 */
 
   for(i=1;i<=*num_rbar_free_dict;i++){(*rbar_free_dict)[i].iuset = 0;}
   for(i=1;i<=*num_rbar_free_dict;i++){(*rbar_free_dict)[i].key_type = 0;}
 
-/*========================================================================*/
-/* II) Fill the dictionary with words */
+  /*========================================================================*/
+  /* II) Fill the dictionary with words */
   /*-----------------------------------------------------------------------*/ 
   /* 1)\num_bond{}     */
-   strcpy((*rbar_free_dict)[1].keyword,"num_bond");
-   strcpy((*rbar_free_dict)[1].keyarg,"0");
-   strcpy((*rbar_free_dict)[1].error_mes,"a number > 0");
-   (*rbar_free_dict)[1].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[1].keyword,"num_bond");
+  strcpy((*rbar_free_dict)[1].keyarg,"0");
+  strcpy((*rbar_free_dict)[1].error_mes,"a number > 0");
+  (*rbar_free_dict)[1].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 2)\index_file{}     */
-   strcpy((*rbar_free_dict)[2].keyword,"index_file");
-   strcpy((*rbar_free_dict)[2].keyarg,"");
-   strcpy((*rbar_free_dict)[2].error_mes,"none");
-   (*rbar_free_dict)[2].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[2].keyword,"index_file");
+  strcpy((*rbar_free_dict)[2].keyarg,"");
+  strcpy((*rbar_free_dict)[2].error_mes,"none");
+  (*rbar_free_dict)[2].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 3)\eq_rbar{}               */
-   strcpy((*rbar_free_dict)[3].keyword,"eq_rbar");
-   strcpy((*rbar_free_dict)[3].keyarg,"0");
-   strcpy((*rbar_free_dict)[3].error_mes,"a number >= 0");
-   (*rbar_free_dict)[3].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[3].keyword,"eq_rbar");
+  strcpy((*rbar_free_dict)[3].keyarg,"0");
+  strcpy((*rbar_free_dict)[3].error_mes,"a number >= 0");
+  (*rbar_free_dict)[3].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 4)\fk_rbar{}               */
-   strcpy((*rbar_free_dict)[4].keyword,"fk_rbar");
-   strcpy((*rbar_free_dict)[4].keyarg,"");
-   strcpy((*rbar_free_dict)[4].error_mes,"a number >= 0");
-   (*rbar_free_dict)[4].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[4].keyword,"fk_rbar");
+  strcpy((*rbar_free_dict)[4].keyarg,"");
+  strcpy((*rbar_free_dict)[4].error_mes,"a number >= 0");
+  (*rbar_free_dict)[4].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 5)\eq_sig{}               */
-   strcpy((*rbar_free_dict)[5].keyword,"eq_sig");
-   strcpy((*rbar_free_dict)[5].keyarg,"0");
-   strcpy((*rbar_free_dict)[5].error_mes,"a number >= 0");
-   (*rbar_free_dict)[5].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[5].keyword,"eq_sig");
+  strcpy((*rbar_free_dict)[5].keyarg,"0");
+  strcpy((*rbar_free_dict)[5].error_mes,"a number >= 0");
+  (*rbar_free_dict)[5].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 6)\fk_sig{}               */
-   strcpy((*rbar_free_dict)[6].keyword,"fk_sig");
-   strcpy((*rbar_free_dict)[6].keyarg,"");
-   strcpy((*rbar_free_dict)[6].error_mes,"a number >= 0");
-   (*rbar_free_dict)[6].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[6].keyword,"fk_sig");
+  strcpy((*rbar_free_dict)[6].keyarg,"");
+  strcpy((*rbar_free_dict)[6].error_mes,"a number >= 0");
+  (*rbar_free_dict)[6].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 7)\rmin_hist{}         */
-   strcpy((*rbar_free_dict)[7].keyword,"rmin_hist");
-   strcpy((*rbar_free_dict)[7].keyarg,"");
-   strcpy((*rbar_free_dict)[7].error_mes,"a number > 0");
-   (*rbar_free_dict)[7].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[7].keyword,"rmin_hist");
+  strcpy((*rbar_free_dict)[7].keyarg,"");
+  strcpy((*rbar_free_dict)[7].error_mes,"a number > 0");
+  (*rbar_free_dict)[7].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 8)\rmax_hist{}         */
-   strcpy((*rbar_free_dict)[8].keyword,"rmax_hist");
-   strcpy((*rbar_free_dict)[8].keyarg,"");
-   strcpy((*rbar_free_dict)[8].error_mes,"a number > 0");
-   (*rbar_free_dict)[8].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[8].keyword,"rmax_hist");
+  strcpy((*rbar_free_dict)[8].keyarg,"");
+  strcpy((*rbar_free_dict)[8].error_mes,"a number > 0");
+  (*rbar_free_dict)[8].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 9)\num_rbar_hist{}         */
-   strcpy((*rbar_free_dict)[9].keyword,"num_rbar_hist");
-   strcpy((*rbar_free_dict)[9].keyarg,"");
-   strcpy((*rbar_free_dict)[9].error_mes,"a number > 0");
-   (*rbar_free_dict)[9].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[9].keyword,"num_rbar_hist");
+  strcpy((*rbar_free_dict)[9].keyarg,"");
+  strcpy((*rbar_free_dict)[9].error_mes,"a number > 0");
+  (*rbar_free_dict)[9].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 10)\smin_hist{}         */
-   strcpy((*rbar_free_dict)[10].keyword,"smin_hist");
-   strcpy((*rbar_free_dict)[10].keyarg,"");
-   strcpy((*rbar_free_dict)[10].error_mes,"a number > 0");
-   (*rbar_free_dict)[10].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[10].keyword,"smin_hist");
+  strcpy((*rbar_free_dict)[10].keyarg,"");
+  strcpy((*rbar_free_dict)[10].error_mes,"a number > 0");
+  (*rbar_free_dict)[10].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 11)\smax_hist{}         */
-   strcpy((*rbar_free_dict)[11].keyword,"smax_hist");
-   strcpy((*rbar_free_dict)[11].keyarg,"");
-   strcpy((*rbar_free_dict)[11].error_mes,"a number > 0");
-   (*rbar_free_dict)[11].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[11].keyword,"smax_hist");
+  strcpy((*rbar_free_dict)[11].keyarg,"");
+  strcpy((*rbar_free_dict)[11].error_mes,"a number > 0");
+  (*rbar_free_dict)[11].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 12)\num_sig_hist{}         */
-   strcpy((*rbar_free_dict)[12].keyword,"num_sig_hist");
-   strcpy((*rbar_free_dict)[12].keyarg,"");
-   strcpy((*rbar_free_dict)[12].error_mes,"a number > 0");
-   (*rbar_free_dict)[12].key_type = 1;  /* must spec*/
+  strcpy((*rbar_free_dict)[12].keyword,"num_sig_hist");
+  strcpy((*rbar_free_dict)[12].keyarg,"");
+  strcpy((*rbar_free_dict)[12].error_mes,"a number > 0");
+  (*rbar_free_dict)[12].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /* 13)\hist_file{}        */
-   strcpy((*rbar_free_dict)[13].keyword,"hist_file");
-   strcpy((*rbar_free_dict)[13].keyarg,"rbar_sig_free_hist.out");
-   strcpy((*rbar_free_dict)[13].error_mes,"none");
+  strcpy((*rbar_free_dict)[13].keyword,"hist_file");
+  strcpy((*rbar_free_dict)[13].keyarg,"rbar_sig_free_hist.out");
+  strcpy((*rbar_free_dict)[13].error_mes,"none");
 
-/*-----------------------------------------------------------------------*/
-    }/*end routine*/
+  /*-----------------------------------------------------------------------*/
+}/*end routine*/
 /*==========================================================================*/
 
 
@@ -1123,46 +1123,46 @@ void set_rbar_free_dict(DICT_WORD *rbar_free_dict[],int *num_rbar_free_dict)
 
 void set_surf_dict(DICT_WORD *surface_dict[],int *num_surface_dict)
 
-/*==========================================================================*/
-   {  /*begin routine */
-/*==========================================================================*/
+  /*==========================================================================*/
+{  /*begin routine */
+  /*==========================================================================*/
   int i;
-/*==========================================================================*/
-/* 0) Malloc the dictionary                                                 */
+  /*==========================================================================*/
+  /* 0) Malloc the dictionary                                                 */
 
   *num_surface_dict = 4;
   *surface_dict=(DICT_WORD*)cmalloc(*num_surface_dict*sizeof(DICT_WORD),"set_surf_dict")-1;
 
-/*==========================================================================*/
-/* I) Assign the users set flags 0                                          */
+  /*==========================================================================*/
+  /* I) Assign the users set flags 0                                          */
 
   for(i=1;i<=*num_surface_dict;i++){(*surface_dict)[i].iuset = 0;}
   for(i=1;i<=*num_surface_dict;i++){(*surface_dict)[i].key_type = 0;}
 
-/*==========================================================================*/
-/* II) Fill the dictionary with words                                       */
+  /*==========================================================================*/
+  /* II) Fill the dictionary with words                                       */
 
   /* 1)\surface_type{}                                                      */
-   strcpy((*surface_dict)[1].keyword,"surface_type");
-   strcpy((*surface_dict)[1].keyarg,"");
-   strcpy((*surface_dict)[1].error_mes,"none");
-   (*surface_dict)[1].key_type = 1;                            /* must spec */
-/*--------------------------------------------------------------------------*/
+  strcpy((*surface_dict)[1].keyword,"surface_type");
+  strcpy((*surface_dict)[1].keyarg,"");
+  strcpy((*surface_dict)[1].error_mes,"none");
+  (*surface_dict)[1].key_type = 1;                            /* must spec */
+  /*--------------------------------------------------------------------------*/
   /* 2)\surface_height{}                                                    */
-   strcpy((*surface_dict)[2].keyword,"surface_height");
-   strcpy((*surface_dict)[2].keyarg,"0.0");
-   strcpy((*surface_dict)[2].error_mes,"none");
-/*--------------------------------------------------------------------------*/
+  strcpy((*surface_dict)[2].keyword,"surface_height");
+  strcpy((*surface_dict)[2].keyarg,"0.0");
+  strcpy((*surface_dict)[2].error_mes,"none");
+  /*--------------------------------------------------------------------------*/
   /* 3)\num_spline_pts{}                                                    */
-   strcpy((*surface_dict)[3].keyword,"num_spline_pts");
-   strcpy((*surface_dict)[3].keyarg,"5000");
-   strcpy((*surface_dict)[3].error_mes,"a number > 0");
-/*--------------------------------------------------------------------------*/
+  strcpy((*surface_dict)[3].keyword,"num_spline_pts");
+  strcpy((*surface_dict)[3].keyarg,"5000");
+  strcpy((*surface_dict)[3].error_mes,"a number > 0");
+  /*--------------------------------------------------------------------------*/
   /* 4)\num_spline_pts{}                                                    */
-   strcpy((*surface_dict)[4].keyword,"healing_length");
-   strcpy((*surface_dict)[4].keyarg,"1.0");
-   strcpy((*surface_dict)[4].error_mes,"a number > 0");
-/*--------------------------------------------------------------------------*/
-    }/*end routine*/
+  strcpy((*surface_dict)[4].keyword,"healing_length");
+  strcpy((*surface_dict)[4].keyarg,"1.0");
+  strcpy((*surface_dict)[4].error_mes,"a number > 0");
+  /*--------------------------------------------------------------------------*/
+}/*end routine*/
 /*==========================================================================*/
 

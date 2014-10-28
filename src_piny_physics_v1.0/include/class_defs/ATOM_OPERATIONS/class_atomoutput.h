@@ -9,28 +9,28 @@
 
 class ATOMOUTPUT{
 
- //---------------------------------------------------------------------------
- public:
+  //---------------------------------------------------------------------------
+  public:
 
- //---------------------------------------------------------------------------
- //con-destruct:
+    //---------------------------------------------------------------------------
+    //con-destruct:
 
-   ATOMOUTPUT(){};
-  ~ATOMOUTPUT(){};
+    ATOMOUTPUT(){};
+    ~ATOMOUTPUT(){};
 
- //---------------------------------------------------------------------------
- // Functions
+    //---------------------------------------------------------------------------
+    // Functions
 
-  static void initialize_piny_output();
-  static void write_gen_header(int ,int ,NAME ,char *);
-  static void write_gen_header_cp(int ,int ,NAME ,char *);
+    static void initialize_piny_output();
+    static void write_gen_header(int ,int ,NAME ,char *);
+    static void write_gen_header_cp(int ,int ,NAME ,char *);
 
-  static void ctrl_piny_output(int ,int ,int ,int, int , Atom *, AtomNHC *,int*,int,int,int);
-  static void write_atom_output_dump(int , int ,int , int,Atom *,AtomNHC *, char *);
-  static void write_atom_output_conf(int , int , int , Atom *,char *);
+    static void ctrl_piny_output(int ,int ,int ,int, int , Atom *, AtomNHC *,int*,int,int,int);
+    static void write_atom_output_dump(int , int ,int , int,Atom *,AtomNHC *, char *);
+    static void write_atom_output_conf(int , int , int , Atom *,char *);
 
-//---------------------------------------------------------------------------
-   }; //ATOMINTEGRATE
+    //---------------------------------------------------------------------------
+}; //ATOMINTEGRATE
 //==========================================================================
 
 #endif

@@ -7,7 +7,7 @@
 #ifndef _ReductionClients_
 #define _ReductionClients_
 
-	
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

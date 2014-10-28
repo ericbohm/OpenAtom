@@ -58,7 +58,7 @@ class CPcharmParaInfo; //forward decl
 //===================================================================================
 class size2d {
   int sz[2];
-public:
+  public:
   inline size2d() {sz[0]=sz[1]=0;}
   inline size2d(int ni,int nj) {sz[0]=ni; sz[1]=nj;}
   inline int ni(void) const {return sz[0];}
@@ -100,7 +100,7 @@ class array2d {
     //data=new T[size.getTotal()];
     data = (T*) malloc(size.getTotal() * sizeof(T)); 
   }
-  
+
   inline void destroy(void) {
     //delete[] data; 
 
@@ -111,8 +111,8 @@ class array2d {
 
   inline array2d(const array2d &a);
   inline void operator=(const array2d &a);
-  
-public:
+
+  public:
 
   T *data;  //probably not a good idea  JCHANGED
   inline array2d(void) {data=NULL;}
@@ -121,7 +121,7 @@ public:
     zero();
   }
   inline ~array2d() {destroy();}
-  
+
   inline void zero(void) {
     int l=size.getTotal();
     //for (int i=0;i<l;i++) data[i]=T(0);
@@ -137,11 +137,11 @@ public:
 
   inline T &operator()(int i,int j) {return data[size.getIndex(i,j)];}
   inline const T &operator()(int i,int j) const {return data[size.getIndex(i,j)];}
-  
+
   void pup(PUP::er &p) {
-	  p|size;
-	  if (p.isUnpacking()) allocate();
-	  p(data, size.getTotal());
+    p|size;
+    if (p.isUnpacking()) allocate();
+    p(data, size.getTotal());
   }
 
 };
@@ -159,8 +159,8 @@ public:
 void make_rho_runs(CPcharmParaInfo *sim);
 
 void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret, 
-                      int **kz_ret, int *nline_tot_ret, int *nPacked_ret,
-                      int ka_max, int kb_max, int kc_max);
+    int **kz_ret, int *nline_tot_ret, int *nPacked_ret,
+    int ka_max, int kb_max, int kc_max);
 //===================================================================================
 
 
@@ -174,22 +174,22 @@ void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret,
 void readStateInfo(int &, int &, int &, int &, int &, int &,const char *, int );
 
 void readStateIntoRuns(int , int,complex *, CkVec<RunDescriptor> &, 
-                       const char *,int ,int *,int *,int *,int *,int *,int *,
-                       int **, int **, int **,int **,int **,int,int,int,int,int);
+    const char *,int ,int *,int *,int *,int *,int *,int *,
+    int **, int **, int **,int **,int **,int,int,int,int,int);
 
 void readState(int nPacked, complex *arrCP, const char *fromFile,
-	       int ibinary_opt, int *nline_tot_ret,int *nplane_ret, int *kx, 
-	       int *ky, int *kz, int *nx_ret, int *ny_ret, int *nz_ret,
-               int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,int *nline_lgrp,
-               int iget_decomp,int iget_vstate);
+    int ibinary_opt, int *nline_tot_ret,int *nplane_ret, int *kx, 
+    int *ky, int *kz, int *nx_ret, int *ny_ret, int *nz_ret,
+    int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,int *nline_lgrp,
+    int iget_decomp,int iget_vstate);
 
 void create_line_decomp_descriptor(CPcharmParaInfo *sim);
 
 void sort_kxky(int ,int *,int *,int *,int *,int);
 
 void writeStateFile(int ,complex *,complex *,
-                    int *,int *,int *,int ,int,int,int,char *,char *,int,int,int,
-                    int , int , int , int );
+    int *,int *,int *,int ,int,int,int,char *,char *,int,int,int,
+    int , int , int , int );
 
 void sort_psi_output(int ,int *,int *,int *,int *,int *,int *);
 
@@ -200,7 +200,7 @@ void score_subPlane_decomp(int ,int , int *,int *, int *,int **, int *);
 void create_gx_decomp(int , int , int *, int *,int ,int *);
 
 void processState(int , int, complex *, const char *,int ,int *,int *, int *, int *, 
-  	          int *, int *,int *,int *,int *, int ,int ,int,int);
+    int *, int *,int *,int *,int *, int ,int ,int,int);
 
 FILE *openScreenfWrite(const char *dirnameBase, const char *fname, int temper, int bead, bool beadfile);
 //===================================================================================

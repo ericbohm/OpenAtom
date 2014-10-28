@@ -4,52 +4,52 @@
 
 module pcMessages {
 
-    include "paircalc/pcFwdDeclarations.h";
+  include "paircalc/pcFwdDeclarations.h";
 
-	readonly ComlibInstanceHandle mcastInstanceCP;
-	readonly ComlibInstanceHandle mcastInstanceACP;
+  readonly ComlibInstanceHandle mcastInstanceCP;
+  readonly ComlibInstanceHandle mcastInstanceACP;
 
-	initnode registersumMatrixDouble(void);
+  initnode registersumMatrixDouble(void);
 
-	message initResultMsg;
+  message initResultMsg;
 
-	message initGRedMsg;
+  message initGRedMsg;
 
-	message sendBWsignalMsg;
+  message sendBWsignalMsg;
 
-	message sendFWRDMAsignalMsg;
+  message sendFWRDMAsignalMsg;
 
-	message partialResultMsg  {
-	  complex result[];
-	};
+  message partialResultMsg  {
+    complex result[];
+  };
 
-	message priorSumMsg  {
-	  complex result[];
-	};
+  message priorSumMsg  {
+    complex result[];
+  };
 
-	message mySendMsg  {
-	  complex data[];
-	};
-	
-	message paircalcInputMsg {
-        inputType points[];
-	};
+  message mySendMsg  {
+    complex data[];
+  };
 
-	message multiplyResultMsg  {
-        internalType matrix1[];
-        internalType matrix2[];
-	};
+  message paircalcInputMsg {
+    inputType points[];
+  };
 
-	message entireResultMsg  {
-	  double matrix[];
-	};
+  message multiplyResultMsg  {
+    internalType matrix1[];
+    internalType matrix2[];
+  };
 
-	message entireResultMsg2  {
-	  double matrix1[];
-	  double matrix2[];
-	};
-	
-	message RDMAHandleMsg;
+  message entireResultMsg  {
+    double matrix[];
+  };
+
+  message entireResultMsg2  {
+    double matrix1[];
+    double matrix2[];
+  };
+
+  message RDMAHandleMsg;
 
 };
 
@@ -57,40 +57,40 @@ module pcMessages {
 
 module RDMAMessages 
 {
-	template<class tokenType> message RDMASetupRequestMsg;
-	template<class tokenType> message RDMASetupConfirmationMsg;
+  template<class tokenType> message RDMASetupRequestMsg;
+  template<class tokenType> message RDMASetupConfirmationMsg;
 };
 
 
 
 module pcMaps
 {
-    include "load_balance/IntMap.h";
-	group SCalcMap: CkArrayMap {
-		entry SCalcMap(const MapType4 _mtable);
-	};
+  include "load_balance/IntMap.h";
+  group SCalcMap: CkArrayMap {
+    entry SCalcMap(const MapType4 _mtable);
+  };
 };
 
 
 
 module inputDataHandler 
 {
-	extern module RDMAMessages;
-	// Forward declaration
-	class RDMApair_GSP_PC;
-	class CProxy_PairCalculator;
-	// Template Instantiation 
-	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
-	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
+  extern module RDMAMessages;
+  // Forward declaration
+  class RDMApair_GSP_PC;
+  class CProxy_PairCalculator;
+  // Template Instantiation 
+  message RDMASetupRequestMsg<RDMApair_GSP_PC>;
+  message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
 
-	template <class leftHandlerType, class rightHandlerType> array [4D] InputDataHandler
-	{
-		entry InputDataHandler(CProxy_PairCalculator pcProxy);
-		entry [nokeep] void acceptLeftData (paircalcInputMsg *msg);
-		entry [nokeep] void acceptRightData(paircalcInputMsg *msg);
-		entry [nokeep] void setupRDMALeft (RDMASetupRequestMsg<RDMApair_GSP_PC> *msg);
-		entry [nokeep] void setupRDMARight(RDMASetupRequestMsg<RDMApair_GSP_PC> *msg);
-	};
+  template <class leftHandlerType, class rightHandlerType> array [4D] InputDataHandler
+  {
+    entry InputDataHandler(CProxy_PairCalculator pcProxy);
+    entry [nokeep] void acceptLeftData (paircalcInputMsg *msg);
+    entry [nokeep] void acceptRightData(paircalcInputMsg *msg);
+    entry [nokeep] void setupRDMALeft (RDMASetupRequestMsg<RDMApair_GSP_PC> *msg);
+    entry [nokeep] void setupRDMARight(RDMASetupRequestMsg<RDMApair_GSP_PC> *msg);
+  };
 };
 
 
@@ -98,30 +98,30 @@ module inputDataHandler
 module ckPairCalculator 
 {
 
-	extern module pcMessages;
-	extern module inputDataHandler;
+  extern module pcMessages;
+  extern module inputDataHandler;
 
-    include "paircalc/pcFwdDeclarations.h";
-	array [4D] InputDataHandler <CollatorType,CollatorType>;
-	
-	array [4D] PairCalculator 
-	{
-		entry PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig cfg);
-   		entry void lbsync();
-   		entry void bwbarrier(CkReductionMsg *msg);
-		entry void sendBWResult(sendBWsignalMsg *msg);
-		entry void sendBWResultDirect(sendBWsignalMsg *msg);
-		entry [nokeep] void initGRed(initGRedMsg *msg);
-		entry [nokeep] void initResultSection(initResultMsg *msg);
-		entry void multiplyForwardRDMA();
-		entry [nokeep] void multiplyResult(multiplyResultMsg *msg);
-		entry [nokeep] void acceptOrthoT(multiplyResultMsg *msg);
-		entry [nokeep,inline] void multiplyResultI(multiplyResultMsg *msg);
-		entry [inline] void acceptLeftData (paircalcInputMsg *msg);
-		entry [inline] void acceptRightData(paircalcInputMsg *msg);
-		entry [local] void multiplyForward(bool);
-		entry [local] void bwMultiplyDynOrthoT();
-		entry [local] void multiplyPsiV();
-		entry void phantomDone();
-	};
+  include "paircalc/pcFwdDeclarations.h";
+  array [4D] InputDataHandler <CollatorType,CollatorType>;
+
+  array [4D] PairCalculator 
+  {
+    entry PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig cfg);
+    entry void lbsync();
+    entry void bwbarrier(CkReductionMsg *msg);
+    entry void sendBWResult(sendBWsignalMsg *msg);
+    entry void sendBWResultDirect(sendBWsignalMsg *msg);
+    entry [nokeep] void initGRed(initGRedMsg *msg);
+    entry [nokeep] void initResultSection(initResultMsg *msg);
+    entry void multiplyForwardRDMA();
+    entry [nokeep] void multiplyResult(multiplyResultMsg *msg);
+    entry [nokeep] void acceptOrthoT(multiplyResultMsg *msg);
+    entry [nokeep,inline] void multiplyResultI(multiplyResultMsg *msg);
+    entry [inline] void acceptLeftData (paircalcInputMsg *msg);
+    entry [inline] void acceptRightData(paircalcInputMsg *msg);
+    entry [local] void multiplyForward(bool);
+    entry [local] void bwMultiplyDynOrthoT();
+    entry [local] void multiplyPsiV();
+    entry void phantomDone();
+  };
 }

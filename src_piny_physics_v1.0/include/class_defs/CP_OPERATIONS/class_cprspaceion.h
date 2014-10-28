@@ -11,28 +11,28 @@
 
 class CPRSPACEION{
 
- //---------------------------------------------------------------------------
- public:
+  //---------------------------------------------------------------------------
+  public:
 
- //---------------------------------------------------------------------------
- //con-destruct:
+    //---------------------------------------------------------------------------
+    //con-destruct:
 
-   CPRSPACEION(){};
-  ~CPRSPACEION(){};
+    CPRSPACEION(){};
+    ~CPRSPACEION(){};
 
- //---------------------------------------------------------------------------
- // Functions
+    //---------------------------------------------------------------------------
+    // Functions
 
-  static void CP_getionforce(const int ,FastAtoms *,int ,int ,double *, double *, double *,double *, PSSCRATCH *);
+    static void CP_getionforce(const int ,FastAtoms *,int ,int ,double *, double *, double *,double *, PSSCRATCH *);
 
-static void atm_recip_corr(int ,double *, double *, double *,
-                           double *, double *, double *,double *,
-                           double, double *,double *,int ,
-  			   double *,int , int , PSSCRATCH *);
+    static void atm_recip_corr(int ,double *, double *, double *,
+        double *, double *, double *,double *,
+        double, double *,double *,int ,
+        double *,int , int , PSSCRATCH *);
 
 
-//---------------------------------------------------------------------------
-   }; //CPRSPACEION
+    //---------------------------------------------------------------------------
+}; //CPRSPACEION
 //==========================================================================
 
 #endif

@@ -19,7 +19,7 @@ ENL_EKE_Collector::ENL_EKE_Collector(int _numEnergyInputs, int _numInstance)
 }
 void ENL_EKE_Collector::printENL()
 {   
-  
+
   fprintf(temperScreenFile,"[%d] ENL         = %5.8lf\n", enlIteration++, ENL/(double) energyExpected);   // tell the world
   ENL=0;
   countENL=0;

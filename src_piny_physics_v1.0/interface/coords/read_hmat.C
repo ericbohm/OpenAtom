@@ -32,15 +32,15 @@
 /*==========================================================================*/
 
 void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter, 
-               GENERAL_DATA *general_data,FILENAME_PARSE *filename_parse,
-               int istart,int cp_dual_grid_opt_on, 
-               double *dbox_rat, int *box_rat)
+    GENERAL_DATA *general_data,FILENAME_PARSE *filename_parse,
+    int istart,int cp_dual_grid_opt_on, 
+    double *dbox_rat, int *box_rat)
 
-/*======================================================================*/
-/*                Begin Routine */
+  /*======================================================================*/
+  /*                Begin Routine */
 {   /*begin routine */
-/*======================================================================*/
-/*               Local variable declarations                            */
+  /*======================================================================*/
+  /*               Local variable declarations                            */
 
   int iii,upper;
   int i,ip;              /* Num: For loop counter                 */
@@ -54,13 +54,13 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   int itime_dump; 
 
   double vol,vol_cp,area;
- 
+
   char *fname;
   char *restart_type_now,*atm_typ_now,*res_typ_now,*mol_typ_now;
   char *restart_type_spec;
   char *line;
 
-/*  Local pointers */
+  /*  Local pointers */
   char *dnamei           = filename_parse->dnamei;
   char *atm_crd_dir_in   = general_data->genfilenames.atm_crd_dir_in;
   int natm_tot           = mdatoms->mdclatoms_info.natm_tot;
@@ -77,7 +77,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   double *cp_box_center_rel  = general_data->gencell.cp_box_center_rel;
 
   int iperd              = general_data->gencell.iperd;
- 
+
   NAME *atm_typ          = mdatoms->mdatom_maps.atm_typ;
   int *iatm_atm_typ      = mdatoms->mdatom_maps.iatm_atm_typ;
   NAME *res_typ          = mdatoms->mdatom_maps.res_typ;
@@ -88,12 +88,12 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
   int ensemble_flag;
   ensemble_flag          = general_data->genensopts.nve 
-                         + general_data->genensopts.nvt
-                         + general_data->genensopts.npt_i;
+    + general_data->genensopts.nvt
+    + general_data->genensopts.npt_i;
 
 
-/*========================================================================*/
-/*  I)Open particle dump file and malloc temps:                           */
+  /*========================================================================*/
+  /*  I)Open particle dump file and malloc temps:                           */
 
   line              = (char *)cmalloc(MAXLINE*sizeof(char),"read_hmat");
   restart_type_now  = (char *)cmalloc(MAXWORD*sizeof(char),"read_hmat");
@@ -105,9 +105,9 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
   sprintf (fname,"%s/Bead.0_Temper.0/%s",atm_crd_dir_in,dnamei);
   fp_dnamei = cfopen((const char *) fname,"r");
- 
-/*========================================================================*/
-/*  II)Write to screen:                                                   */
+
+  /*========================================================================*/
+  /*  II)Write to screen:                                                   */
 
   PRINT_LINE_STAR;
   PRINTF("Reading user specified atm coordinate file %s\n",fname);
@@ -116,24 +116,24 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   if(istart==3){PRINTF("using the `restart_posvel' restart option\n");}
   if(istart==4){PRINTF("using the `restart_all' restart option\n");}
   PRINT_LINE_DASH;PRINTF("\n");
-    
-/*========================================================================*/
-/*  III)Read class info                                                  */
 
-/* B) Type 1 start */
+  /*========================================================================*/
+  /*  III)Read class info                                                  */
+
+  /* B) Type 1 start */
   if(istart==1){
-   if(fscanf(fp_dnamei,"%d %d %d",&natm_tot_now,&istart_now,&pi_beads_now)!=3){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("Error reading start type and number of atoms \n");
-       PRINTF("in file %s\n",fname);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
-       EXIT(1);
+    if(fscanf(fp_dnamei,"%d %d %d",&natm_tot_now,&istart_now,&pi_beads_now)!=3){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Error reading start type and number of atoms \n");
+      PRINTF("in file %s\n",fname);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }/*endif*/
     readtoendofline(fp_dnamei);
   }/*endif*/
 
-/* C) Type 2,3,4 start */
+  /* C) Type 2,3,4 start */
   if(istart>1){
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -145,14 +145,14 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
     }/*endif*/
 
     if(fscanf(fp_dnamei,"%d %s %d %d",&natm_tot_now,restart_type_now,
-                                &itime_dump,&pi_beads_now)!=4){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("Error reading start type and number of atoms \n");
-       PRINTF("in file %s\n",fname);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+          &itime_dump,&pi_beads_now)!=4){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Error reading start type and number of atoms \n");
+      PRINTF("in file %s\n",fname);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     }/*endif*/
     readtoendofline(fp_dnamei);
-   
+
     istart_now = 0;
     if(strcasecmp(restart_type_now,"initial") == 0)        istart_now = 1;
     if(strcasecmp(restart_type_now,"restart_pos") == 0)    istart_now = 2;
@@ -175,15 +175,15 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
       EXIT(1);
     } /* endif */
   } /* endif */
-  
+
   if(istart_now < istart) {
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("Start up option, %s, in ",restart_type_now);
-      PRINTF("user specified coordinate file %s\n",fname);
-      PRINTF("Incompatible with class setup,%s\n",restart_type_spec);
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      FFLUSH(stdout);
-      EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Start up option, %s, in ",restart_type_now);
+    PRINTF("user specified coordinate file %s\n",fname);
+    PRINTF("Incompatible with class setup,%s\n",restart_type_spec);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   } /* endif */
 
   if(natm_tot_now != natm_tot) {
@@ -208,65 +208,65 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   } /* endif */
 
 
-/*========================================================================*/
-/* IV)istart = 1 (initial)                                             */ 
+  /*========================================================================*/
+  /* IV)istart = 1 (initial)                                             */ 
   if(istart_now == 1) {
 
-/*-----------------------------------------------------------------------*/
-/* A)Atm positions                                                  */
+    /*-----------------------------------------------------------------------*/
+    /* A)Atm positions                                                  */
     upper = pi_beads;
     if(initial_spread_opt == 1){upper = 1;}
     for(ip=1;ip<=upper;ip++){
-     for(i=1;i<=natm_tot;i++){
-      if(fscanf(fp_dnamei,"%lf %lf %lf",&x,&y,&z) != 3) {
+      for(i=1;i<=natm_tot;i++){
+        if(fscanf(fp_dnamei,"%lf %lf %lf",&x,&y,&z) != 3) {
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          PRINTF("Error while reading in the %d atom coordinate\n",i);
+          PRINTF("in file \"%s\"\n",fname);
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          FFLUSH(stdout);
+          EXIT(1);
+        }/*endif*/
+        readtoendofline(fp_dnamei);
+      }/*endfor:atoms*/
+    }/*endfor:pi_beads*/
+
+    /*---------------------------------------------------------------------*/
+    /* B)Cell shape                                                   */
+    PRINTF("Reading cell shape information (iperd>0)\n"); 
+    if( cp_dual_grid_opt_on >= 1){
+      PRINTF("AM I IN DUAL GRID ? \n");
+      for(i=0;i<3;i++){
+        if(fscanf(fp_dnamei,"%lf %lf %lf",
+              &(hmat_cp[(1+i)]),
+              &(hmat_cp[(4+i)]),
+              &(hmat_cp[(7+i)])) != 3){
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          PRINTF("Error while reading in the %d cp  cell vector \n",i+1);
+          PRINTF("in file \"%s\"\n",fname);
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          FFLUSH(stdout);
+          EXIT(1);
+        }/*endif*/
+        readtoendofline(fp_dnamei);
+      }/*endfor*/
+
+      if(fscanf(fp_dnamei,"%lf %lf %lf",
+            &(cp_box_center[(1)]),
+            &(cp_box_center[(2)]),
+            &(cp_box_center[(3)])) != 3){
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Error while reading in the %d atom coordinate\n",i);
+        PRINTF("Error while reading in the center of the cp cell vector \n");
         PRINTF("in file \"%s\"\n",fname);
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         FFLUSH(stdout);
         EXIT(1);
       }/*endif*/
       readtoendofline(fp_dnamei);
-     }/*endfor:atoms*/
-    }/*endfor:pi_beads*/
-
-/*---------------------------------------------------------------------*/
-/* B)Cell shape                                                   */
-      PRINTF("Reading cell shape information (iperd>0)\n"); 
-   if( cp_dual_grid_opt_on >= 1){
-     PRINTF("AM I IN DUAL GRID ? \n");
       for(i=0;i<3;i++){
         if(fscanf(fp_dnamei,"%lf %lf %lf",
-                  &(hmat_cp[(1+i)]),
-                  &(hmat_cp[(4+i)]),
-                  &(hmat_cp[(7+i)])) != 3){
-          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-          PRINTF("Error while reading in the %d cp  cell vector \n",i+1);
-          PRINTF("in file \"%s\"\n",fname);
-          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-          FFLUSH(stdout);
-          EXIT(1);
-        }/*endif*/
-        readtoendofline(fp_dnamei);
-      }/*endfor*/
-
-        if(fscanf(fp_dnamei,"%lf %lf %lf",
-                  &(cp_box_center[(1)]),
-                  &(cp_box_center[(2)]),
-                  &(cp_box_center[(3)])) != 3){
-          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-          PRINTF("Error while reading in the center of the cp cell vector \n");
-          PRINTF("in file \"%s\"\n",fname);
-          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-          FFLUSH(stdout);
-          EXIT(1);
-        }/*endif*/
-        readtoendofline(fp_dnamei);
-      for(i=0;i<3;i++){
-        if(fscanf(fp_dnamei,"%lf %lf %lf",
-                  &(hmat[(1+i)]),
-                  &(hmat[(4+i)]),
-                  &(hmat[(7+i)])) != 3){
+              &(hmat[(1+i)]),
+              &(hmat[(4+i)]),
+              &(hmat[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error while reading in the %d cp  cell vector \n",i+1);
           PRINTF("in file \"%s\"\n",fname);
@@ -278,12 +278,12 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
       }/*endfor*/
 
 
-   }else{
+    }else{
       for(i=0;i<3;i++){
         if(fscanf(fp_dnamei,"%lf %lf %lf",
-                  &(hmat[(1+i)]),
-                  &(hmat[(4+i)]),
-                  &(hmat[(7+i)])) != 3){
+              &(hmat[(1+i)]),
+              &(hmat[(4+i)]),
+              &(hmat[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error while reading in the %d cell vector \n",i+1);
           PRINTF("in file \"%s\"\n",fname);
@@ -293,116 +293,116 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
         }/*endif*/
         readtoendofline(fp_dnamei);
       }/*endfor*/
- 
+
       for(i=1; i<=9; i++) { hmat_cp[i] = hmat[i]; }
 
       cp_box_center[1] = 0.5;
       cp_box_center[2] = 0.5;
       cp_box_center[3] = 0.5;
 
-   }/*endif cp_dual */
+    }/*endif cp_dual */
 
-   for(i=1;i<=9;i++) {hmat[i]    /= BOHR;}
-   for(i=1;i<=9;i++) {hmat_cp[i] /= BOHR;}
+    for(i=1;i<=9;i++) {hmat[i]    /= BOHR;}
+    for(i=1;i<=9;i++) {hmat_cp[i] /= BOHR;}
 
   } /* endif : istart_now == 1*/
 
-/*========================================================================*/
-/* V)istart = 2 (restart_pos)                                            */ 
+  /*========================================================================*/
+  /* V)istart = 2 (restart_pos)                                            */ 
 
   if(istart_now >= 2) {
 
-/*----------------------------------------------------------------------*/
-/*     A)Atm positions                                                  */
+    /*----------------------------------------------------------------------*/
+    /*     A)Atm positions                                                  */
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("EOF before particle coordinates \n");
-       PRINTF("in file \"%s\"\n",fname);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
-       EXIT(1);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("EOF before particle coordinates \n");
+      PRINTF("in file \"%s\"\n",fname);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }/*endif*/
     upper = pi_beads;
     if(initial_spread_opt == 1){upper = 1;}
     for(ip=1;ip<=upper;ip++){
-     for(i=1;i<=natm_tot;i++){
-      if(fscanf(fp_dnamei,"%lf %lf %lf %s %s %s %d",&x,&y,&z,
-         atm_typ_now,res_typ_now,mol_typ_now,&imol_num_now) != 7) {
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Error while reading in the %d atom coordinate\n",i);
-        PRINTF("in file \"%s\"\n",fname);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
-      }/*endif*/
-      readtoendofline(fp_dnamei);
-      if(strcasecmp(atm_typ_now,atm_typ[iatm_atm_typ[i]]) != 0){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Atom type mismatch for particle %d\n",i);
-        PRINTF("in user specified coordinate file %s \n",
-                                             fname);
-        PRINTF("File says %s program expects %s \n",atm_typ_now,
-                                                  atm_typ[iatm_atm_typ[i]]);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
-      } /* endif */
-      if(strcasecmp(res_typ_now,res_typ[iatm_res_typ[i]]) != 0){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Residue type mismatch for particle %d\n",i);
-        PRINTF("in user specified coordinate file %s \n",
-                                             fname);
-        PRINTF("File says %s program expects %s \n",res_typ_now,
-                                                   res_typ[iatm_res_typ[i]]);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
-      } /* endif */
-      if(strcasecmp(mol_typ_now,mol_typ[iatm_mol_typ[i]]) != 0){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Molecule type mismatch for particle %d\n",i);
-        PRINTF("in user specified coordinate file %s \n",
-                                             fname);
-        PRINTF("File says %s program expects %s \n",mol_typ_now,
-                                                   mol_typ[iatm_mol_typ[i]]);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
-      } /* endif */
-      if(imol_num_now != iatm_mol_num[i]) {
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Molecule number mismatch for particle %d\n",i);
-        PRINTF("in user specified coordinate file %s \n",
-                                             fname);
-        PRINTF("File says %d program expects %d \n",imol_num_now,
-                                                  iatm_mol_num[i]);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
-      } /* endif */
-     }/*endfor:atoms*/
+      for(i=1;i<=natm_tot;i++){
+        if(fscanf(fp_dnamei,"%lf %lf %lf %s %s %s %d",&x,&y,&z,
+              atm_typ_now,res_typ_now,mol_typ_now,&imol_num_now) != 7) {
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          PRINTF("Error while reading in the %d atom coordinate\n",i);
+          PRINTF("in file \"%s\"\n",fname);
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          FFLUSH(stdout);
+          EXIT(1);
+        }/*endif*/
+        readtoendofline(fp_dnamei);
+        if(strcasecmp(atm_typ_now,atm_typ[iatm_atm_typ[i]]) != 0){
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          PRINTF("Atom type mismatch for particle %d\n",i);
+          PRINTF("in user specified coordinate file %s \n",
+              fname);
+          PRINTF("File says %s program expects %s \n",atm_typ_now,
+              atm_typ[iatm_atm_typ[i]]);
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          FFLUSH(stdout);
+          EXIT(1);
+        } /* endif */
+        if(strcasecmp(res_typ_now,res_typ[iatm_res_typ[i]]) != 0){
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          PRINTF("Residue type mismatch for particle %d\n",i);
+          PRINTF("in user specified coordinate file %s \n",
+              fname);
+          PRINTF("File says %s program expects %s \n",res_typ_now,
+              res_typ[iatm_res_typ[i]]);
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          FFLUSH(stdout);
+          EXIT(1);
+        } /* endif */
+        if(strcasecmp(mol_typ_now,mol_typ[iatm_mol_typ[i]]) != 0){
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          PRINTF("Molecule type mismatch for particle %d\n",i);
+          PRINTF("in user specified coordinate file %s \n",
+              fname);
+          PRINTF("File says %s program expects %s \n",mol_typ_now,
+              mol_typ[iatm_mol_typ[i]]);
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          FFLUSH(stdout);
+          EXIT(1);
+        } /* endif */
+        if(imol_num_now != iatm_mol_num[i]) {
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          PRINTF("Molecule number mismatch for particle %d\n",i);
+          PRINTF("in user specified coordinate file %s \n",
+              fname);
+          PRINTF("File says %d program expects %d \n",imol_num_now,
+              iatm_mol_num[i]);
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          FFLUSH(stdout);
+          EXIT(1);
+        } /* endif */
+      }/*endfor:atoms*/
     }/*endfor:pi_beads*/
 
-/*---------------------------------------------------------------------*/
-/* B)Cell shape                                                        */
+    /*---------------------------------------------------------------------*/
+    /* B)Cell shape                                                        */
 
     PRINTF("Reading in cell shape information\n");
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("EOF before cell vectors \n");
-       PRINTF("in file \"%s\"\n",fname);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
-       EXIT(1);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("EOF before cell vectors \n");
+      PRINTF("in file \"%s\"\n",fname);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }/*endif*/
 
     if( cp_dual_grid_opt_on >= 1){
 
       for(i=0;i<3;i++){
         if(fscanf(fp_dnamei,"%lf %lf %lf",
-                  &(hmat_cp[(1+i)]),
-                  &(hmat_cp[(4+i)]),
-                  &(hmat_cp[(7+i)])) != 3){
+              &(hmat_cp[(1+i)]),
+              &(hmat_cp[(4+i)]),
+              &(hmat_cp[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error reading in cp cell vector %d\n",i);
           PRINTF("in file \"%s\"\n",fname);
@@ -415,15 +415,15 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
       readtoendofline(fp_dnamei);
 
       if(fscanf(fp_dnamei,"%lf %lf %lf",
-                  &(cp_box_center[(1)]),
-                  &(cp_box_center[(2)]),
-                  &(cp_box_center[(3)])) != 3){
-          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-          PRINTF("Error while reading in the center of the cp cell vector \n");
-          PRINTF("in file \"%s\"\n",fname);
-          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-          FFLUSH(stdout);
-          EXIT(1);
+            &(cp_box_center[(1)]),
+            &(cp_box_center[(2)]),
+            &(cp_box_center[(3)])) != 3){
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("Error while reading in the center of the cp cell vector \n");
+        PRINTF("in file \"%s\"\n",fname);
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        FFLUSH(stdout);
+        EXIT(1);
       }/*endif*/
 
       readtoendofline(fp_dnamei); 
@@ -431,9 +431,9 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
       for(i=0;i<3;i++){
         if(fscanf(fp_dnamei,"%lf %lf %lf",
-                  &(hmat[(1+i)]),
-                  &(hmat[(4+i)]),
-                  &(hmat[(7+i)])) != 3){
+              &(hmat[(1+i)]),
+              &(hmat[(4+i)]),
+              &(hmat[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error reading in cell vector %d\n",i);
           PRINTF("in file \"%s\"\n",fname);
@@ -448,9 +448,9 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
       for(i=0;i<3;i++){
         if(fscanf(fp_dnamei,"%lf %lf %lf",
-                  &(hmat[(1+i)]),
-                  &(hmat[(4+i)]),
-                  &(hmat[(7+i)])) != 3){
+              &(hmat[(1+i)]),
+              &(hmat[(4+i)]),
+              &(hmat[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error reading in cell vector %d\n",i);
           PRINTF("in file \"%s\"\n",fname);
@@ -470,8 +470,8 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
   } /* endif : istart_now >=2*/
 
-/*========================================================================*/
-/*  VI) Assign Volumes */
+  /*========================================================================*/
+  /*  VI) Assign Volumes */
 
 
   gethinv(hmat,hmati,&(vol),iperd);
@@ -487,8 +487,8 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   mdintegrate->mdpar_rahman.vol    = vol;
   mdintegrate->mdbaro.x_lnv        = log(vol)/3.0;
 
-   for(i=1;i<=9;i++){hmat_ewd_cp[i] = hmat_cp[i];}
-   for(i=1;i<=9;i++){hmat_ewd[i] = hmat[i];}
+  for(i=1;i<=9;i++){hmat_ewd_cp[i] = hmat_cp[i];}
+  for(i=1;i<=9;i++){hmat_ewd[i] = hmat[i];}
 
   area = hmat[1]*hmat[5] - hmat[2]*hmat[4];
   general_data->gencell.area       = area;
@@ -498,8 +498,8 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   *dbox_rat = hmat[1]/hmat_cp[1];
   *box_rat  = (int)(*dbox_rat);
 
-/*========================================================================*/
-/*  VII) Determine if Box is Cubic for Fast Imaging in Period.c */
+  /*========================================================================*/
+  /*  VII) Determine if Box is Cubic for Fast Imaging in Period.c */
 
   if( (hmat[4] == 0.0) && (hmat[7] == 0.0) &&
       (hmat[2] == 0.0) && (hmat[8] == 0.0) &&
@@ -510,13 +510,13 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
     general_data->gencell.cubic_box_flag = 0;
   }/*endif*/
 
-/*========================================================================*/
-/*  VIII) Check cell                                                      */
+  /*========================================================================*/
+  /*  VIII) Check cell                                                      */
 
   check_cell(&(general_data->gencell),cp_dual_grid_opt_on,*dbox_rat,fname);
 
-/*========================================================================*/
-/* convert cp_box_center from xtal coordinates to cartesian coordinates   */
+  /*========================================================================*/
+  /* convert cp_box_center from xtal coordinates to cartesian coordinates   */
 
   sx = cp_box_center[1];
   sy = cp_box_center[2];
@@ -534,9 +534,9 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   cp_box_center_rel[2] =sx*hmat_cp[2]+sy*hmat_cp[5]+sz*hmat_cp[8];
   cp_box_center_rel[3] =sx*hmat_cp[3]+sy*hmat_cp[6]+sz*hmat_cp[9];
 
-/*========================================================================*/
-/*  X) Close file, free character arrays                                  */ 
-  
+  /*========================================================================*/
+  /*  X) Close file, free character arrays                                  */ 
+
   fclose(fp_dnamei); 
 
   cfree(line,"read_hmat");
@@ -546,8 +546,8 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   cfree(mol_typ_now,"read_hmat");
   cfree(restart_type_spec,"read_hmat");
 
-/*========================================================================*/
-/* XI) Done */
+  /*========================================================================*/
+  /* XI) Done */
 
   for(i=0;i<3;i++){
     PRINTF("%g %g %g\n",hmat[(1+i)],hmat[(4+i)],hmat[(7+i)]);
@@ -560,8 +560,8 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
   cfree(fname,"read_hmat");
 
-/*========================================================================*/
-   }/* end routine */
+  /*========================================================================*/
+}/* end routine */
 /*==========================================================================*/
 
 
@@ -570,33 +570,33 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 void check_box_center(GENCELL *gencell,int myid)
-/*======================================================================*/
-/*                Begin Routine */
+  /*======================================================================*/
+  /*                Begin Routine */
 {   /*begin routine */
-/*======================================================================*/
-/*               Local variable declarations                            */
+  /*======================================================================*/
+  /*               Local variable declarations                            */
 
 #ifdef NEEDS_TO_BE_CALCULATED_SOMEWHERE
- int nkf1 = para_fft_pkg3d_lg->nkf1;
- int nkf2 = para_fft_pkg3d_lg->nkf2;
- int nkf3 = para_fft_pkg3d_lg->nkf3;
+  int nkf1 = para_fft_pkg3d_lg->nkf1;
+  int nkf2 = para_fft_pkg3d_lg->nkf2;
+  int nkf3 = para_fft_pkg3d_lg->nkf3;
 #endif
 #define NUKE_ME_LATER
 #ifdef NUKE_ME_LATER
- int nkf1 = 100;
- int nkf2 = 100;
- int nkf3 = 100;
+  int nkf1 = 100;
+  int nkf2 = 100;
+  int nkf3 = 100;
 #endif
 
- double *hmati = gencell->hmati;
- double *cp_box_center = gencell->cp_box_center;
- double sx,sy,sz;
- double x,y,z;
- double ax,ay,az;
- double eps = 1.0e-7;
- double M_EPS = 1.0e-10;
+  double *hmati = gencell->hmati;
+  double *cp_box_center = gencell->cp_box_center;
+  double sx,sy,sz;
+  double x,y,z;
+  double ax,ay,az;
+  double eps = 1.0e-7;
+  double M_EPS = 1.0e-10;
 
-/*========================================================================*/
+  /*========================================================================*/
 
   x =  cp_box_center[1];
   y =  cp_box_center[2];
@@ -614,20 +614,20 @@ void check_box_center(GENCELL *gencell,int myid)
   ay -= (int)ay;
   az -= (int)az;
 
- if( (fabs(ax) > eps) || (fabs(ay) > eps) || (fabs(az) > eps)){
-   if(myid == 0){
+  if( (fabs(ax) > eps) || (fabs(ay) > eps) || (fabs(az) > eps)){
+    if(myid == 0){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("The cp box center must be located on a grid point \n");
       PRINTF("Acceptable error %lg  error is %lg %lg %lg \n",eps,
-              fabs(ax),fabs(ay),fabs(az));
+          fabs(ax),fabs(ay),fabs(az));
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       FFLUSH(stdout);
       EXIT(1);
-   }/*endif myid*/
- }
+    }/*endif myid*/
+  }
 
-/*========================================================================*/
-   }/* end routine */
+  /*========================================================================*/
+}/* end routine */
 /*==========================================================================*/
 
 
@@ -635,12 +635,12 @@ void check_box_center(GENCELL *gencell,int myid)
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 void check_cell(GENCELL *gencell,int cp_dual_grid_opt_on,double dbox_rat, char *dnamei)
-/*======================================================================*/
-/*                Begin Routine */
+  /*======================================================================*/
+  /*                Begin Routine */
 {   /*begin routine */
-/*======================================================================*/
-/*               Local variable declarations                            */
-/*----------------------------------------------------------------------*/
+  /*======================================================================*/
+  /*               Local variable declarations                            */
+  /*----------------------------------------------------------------------*/
   int ii;
 
   double eps = 1.0e-8;
@@ -652,8 +652,8 @@ void check_cell(GENCELL *gencell,int cp_dual_grid_opt_on,double dbox_rat, char *
   double rat_a,rat_b,rat_c;
   double eps_a,eps_b,eps_c;
 
-/*----------------------------------------------------------------------*/
-/*  Local pointers */
+  /*----------------------------------------------------------------------*/
+  /*  Local pointers */
 
   int hmat_int_typ           = gencell->hmat_int_typ;
   int hmat_cons_typ          = gencell->hmat_cons_typ;
@@ -663,18 +663,18 @@ void check_cell(GENCELL *gencell,int cp_dual_grid_opt_on,double dbox_rat, char *
   double *hmat_cp            = gencell->hmat_cp;
   double *cp_box_center      = gencell->cp_box_center;
 
-/*----------------------------------------------------------------------*/
-/*I) Check cell symmetry                                                */
+  /*----------------------------------------------------------------------*/
+  /*I) Check cell symmetry                                                */
 
   if(hmat_int_typ==1){
-     if(  (hmat[2] != 0.0) || (hmat[3] != 0.0) || (hmat[6] != 0.0) ){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("The Cell matrix must be upper triangular\n");
-       PRINTF("in file \"%s\"\n",dnamei);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
-       EXIT(1);
-     }/*end if*/
+    if(  (hmat[2] != 0.0) || (hmat[3] != 0.0) || (hmat[6] != 0.0) ){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("The Cell matrix must be upper triangular\n");
+      PRINTF("in file \"%s\"\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
+    }/*end if*/
   }/*endif*/
 
 
@@ -732,26 +732,26 @@ void check_cell(GENCELL *gencell,int cp_dual_grid_opt_on,double dbox_rat, char *
     }/* endif */ 
   }/* endif */ 
 
-/*-------------------------------------------------------------------*/
-/* Check dual box                                                    */
+  /*-------------------------------------------------------------------*/
+  /* Check dual box                                                    */
 
-/* Check to see that the cp box center is input in crystal coordinates  */
- if(cp_dual_grid_opt_on >= 1){
-      if(  ((cp_box_center[1] <  0.0 ) || (cp_box_center[1] >= 1.0 ))
-         ||((cp_box_center[2] <  0.0 ) || (cp_box_center[2] >= 1.0 ))         
-         ||((cp_box_center[3] <  0.0 ) || (cp_box_center[3] >= 1.0 )) ){
+  /* Check to see that the cp box center is input in crystal coordinates  */
+  if(cp_dual_grid_opt_on >= 1){
+    if(  ((cp_box_center[1] <  0.0 ) || (cp_box_center[1] >= 1.0 ))
+        ||((cp_box_center[2] <  0.0 ) || (cp_box_center[2] >= 1.0 ))         
+        ||((cp_box_center[3] <  0.0 ) || (cp_box_center[3] >= 1.0 )) ){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("The cp_box_center must be input in crystal     \n");
       PRINTF("coordinates for dualed systems in file \"%s\"\n",dnamei);
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       FFLUSH(stdout);
       EXIT(1);
-      }/*endif*/
- }
+    }/*endif*/
+  }
 
 
- if(cp_dual_grid_opt_on >= 1){
- /* Check to see that both hmat_cp and hmat are ORTHORHOMIBIC */
+  if(cp_dual_grid_opt_on >= 1){
+    /* Check to see that both hmat_cp and hmat are ORTHORHOMIBIC */
     if( (hmat_cp[4] != 0.0) || (hmat_cp[7] != 0.0) ||
         (hmat_cp[2] != 0.0) || (hmat_cp[8] != 0.0) ||
         (hmat_cp[3] != 0.0) || (hmat_cp[6] != 0.0) ||
@@ -763,7 +763,7 @@ void check_cell(GENCELL *gencell,int cp_dual_grid_opt_on,double dbox_rat, char *
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       FFLUSH(stdout);
       EXIT(1);
-     }/*end if*/
+    }/*end if*/
 
     if( (hmat[4] != 0.0) || (hmat[7] != 0.0) ||
         (hmat[2] != 0.0) || (hmat[8] != 0.0) ||
@@ -777,10 +777,10 @@ void check_cell(GENCELL *gencell,int cp_dual_grid_opt_on,double dbox_rat, char *
       FFLUSH(stdout);
       EXIT(1);
     }/*end if*/
- }
+  }
 
-/* Integer multiple check for proportional grid option */
- if(cp_dual_grid_opt_on == 1){
+  /* Integer multiple check for proportional grid option */
+  if(cp_dual_grid_opt_on == 1){
     eps = 1.0e-4;
     for(ii=1; ii<=9; ii+= 4){
       if(fabs(hmat_cp[ii]*1.0 - hmat[ii]) > eps){
@@ -797,7 +797,7 @@ void check_cell(GENCELL *gencell,int cp_dual_grid_opt_on,double dbox_rat, char *
       }
     }/*endfor ii*/
     if( (icheck_dual_flag1 + icheck_dual_flag2
-       + icheck_dual_flag4 + icheck_dual_flag8) == 4){
+          + icheck_dual_flag4 + icheck_dual_flag8) == 4){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("The box matrix must be 2 4 or 8 times the size of the cp box\n");
       PRINTF("in file \"%s\"\n",dnamei);
@@ -809,18 +809,18 @@ void check_cell(GENCELL *gencell,int cp_dual_grid_opt_on,double dbox_rat, char *
   }/*cp_dual_grid_opt_on*/
 
   if(cp_dual_grid_opt_on == 2){
-   if( (hmat_cp[1] > hmat[1]) || (hmat_cp[5] > hmat[5]) ||
-       (hmat_cp[9] > hmat[9])){
+    if( (hmat_cp[1] > hmat[1]) || (hmat_cp[5] > hmat[5]) ||
+        (hmat_cp[9] > hmat[9])){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("The cp box matrix must be smaller than the \n");
       PRINTF("classical box in file \"%s\"\n",dnamei);
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       FFLUSH(stdout);
       EXIT(1);
-   }/*endif*/
+    }/*endif*/
   }/*endif cp_dual_grid_opt*/
 
-/* check that all sides for PME dual opt have the same proportionality */
+  /* check that all sides for PME dual opt have the same proportionality */
   if(cp_dual_grid_opt_on == 2){
 
     rat_a = hmat[1]/hmat_cp[1];  
@@ -832,27 +832,27 @@ void check_cell(GENCELL *gencell,int cp_dual_grid_opt_on,double dbox_rat, char *
     eps_c  = fabs(rat_c - dbox_rat);
 
     if(eps_a > eps || eps_b > eps || eps_c > eps){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("You are performing a dual_grid mixed simulation using \n");
-       PRINTF("the incommensuerate option for the grids  \n");
-       PRINTF("the ratio of the a,b,c edges must be the same \n");
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("You are performing a dual_grid mixed simulation using \n");
+      PRINTF("the incommensuerate option for the grids  \n");
+      PRINTF("the ratio of the a,b,c edges must be the same \n");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
       EXIT(1);
-     }
+    }
   }
 
   if(cp_dual_grid_opt_on == 2){
     if(dbox_rat <= 2.0 ){
-       PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
-       PRINTF("You are performing a dual_grid mixed simulation using \n");
-       PRINTF("the incommensuerate option for the grids with a  \n");
-       PRINTF("box ratio of %lg \n",dbox_rat);
-       PRINTF("Are you certain this is what you would like to do?   \n");
-       PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+      PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+      PRINTF("You are performing a dual_grid mixed simulation using \n");
+      PRINTF("the incommensuerate option for the grids with a  \n");
+      PRINTF("box ratio of %lg \n",dbox_rat);
+      PRINTF("Are you certain this is what you would like to do?   \n");
+      PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
     }
   }
 
-/*========================================================================*/
-   }/* end routine */
+  /*========================================================================*/
+}/* end routine */
 /*==========================================================================*/

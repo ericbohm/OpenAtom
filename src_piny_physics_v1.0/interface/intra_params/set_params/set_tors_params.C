@@ -21,12 +21,12 @@
 /*==========================================================================*/
 
 void set_tors_params(DICT_WORD intra_dict[],int num_intra_dict,
-                     char *fun_key,char *file_name,int jmol_typ,
-                     MDCLATOMS_INFO *clatoms_info,MDATOM_MAPS *atommaps,
-                     MDTORS *tors,NULL_INTER_PARSE *null_inter_parse,
-                     BUILD_INTRA *build_intra, int iresidue, int ires_off)
+    char *fun_key,char *file_name,int jmol_typ,
+    MDCLATOMS_INFO *clatoms_info,MDATOM_MAPS *atommaps,
+    MDTORS *tors,NULL_INTER_PARSE *null_inter_parse,
+    BUILD_INTRA *build_intra, int iresidue, int ires_off)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int num,index,ifound,igo;
   int itype1,itype2,itype3,itype4;
@@ -49,7 +49,7 @@ void set_tors_params(DICT_WORD intra_dict[],int num_intra_dict,
   sscanf(intra_dict[1].keyarg,"%d",&num);
   iatm_ind1 = num;
   if(iatm_ind1>build_intra->natmind_1res_now||iatm_ind1<0){
-            keyarg_barf(intra_dict,file_name,fun_key,index);}
+    keyarg_barf(intra_dict,file_name,fun_key,index);}
   imask1 = build_intra->mask_atm[iatm_ind1];  
   if(imask1>0)iatm_ind1 = build_intra->index_atm[iatm_ind1];
 
@@ -59,7 +59,7 @@ void set_tors_params(DICT_WORD intra_dict[],int num_intra_dict,
   sscanf(intra_dict[2].keyarg,"%d",&num);
   iatm_ind2 = num;
   if(iatm_ind2>build_intra->natmind_1res_now||iatm_ind2<0){
-            keyarg_barf(intra_dict,file_name,fun_key,index);}
+    keyarg_barf(intra_dict,file_name,fun_key,index);}
   imask2 = build_intra->mask_atm[iatm_ind2];  
   if(imask2>0)iatm_ind2 = build_intra->index_atm[iatm_ind2];
   /*------------------------------------------------------------------------*/
@@ -68,7 +68,7 @@ void set_tors_params(DICT_WORD intra_dict[],int num_intra_dict,
   sscanf(intra_dict[3].keyarg,"%d",&num);
   iatm_ind3 = num;
   if(iatm_ind3>build_intra->natmind_1res_now||iatm_ind3<0){
-            keyarg_barf(intra_dict,file_name,fun_key,index);}
+    keyarg_barf(intra_dict,file_name,fun_key,index);}
   imask3 = build_intra->mask_atm[iatm_ind3];  
   if(imask3>0)iatm_ind3 = build_intra->index_atm[iatm_ind3];
 
@@ -78,7 +78,7 @@ void set_tors_params(DICT_WORD intra_dict[],int num_intra_dict,
   sscanf(intra_dict[4].keyarg,"%d",&num);
   iatm_ind4 = num;
   if(iatm_ind4>build_intra->natmind_1res_now||iatm_ind4<0){
-            keyarg_barf(intra_dict,file_name,fun_key,index);}
+    keyarg_barf(intra_dict,file_name,fun_key,index);}
   imask4 = build_intra->mask_atm[iatm_ind4];  
   if(imask4>0)iatm_ind4 = build_intra->index_atm[iatm_ind4];
 
@@ -125,43 +125,43 @@ void set_tors_params(DICT_WORD intra_dict[],int num_intra_dict,
     if((tors->npow)+1 > build_intra->ntors_pow_max){
       build_intra->ntors_pow_max += NMEM_MIN;
       tors->j1_pow =(int*)crealloc(&(tors->j1_pow)[1],
-               build_intra->ntors_pow_max*sizeof(int),"set_tors_params")-1;
+          build_intra->ntors_pow_max*sizeof(int),"set_tors_params")-1;
       tors->j2_pow =(int*)crealloc(&(tors->j2_pow)[1],
-               build_intra->ntors_pow_max*sizeof(int),"set_tors_params")-1;
+          build_intra->ntors_pow_max*sizeof(int),"set_tors_params")-1;
       tors->j3_pow =(int*)crealloc(&(tors->j3_pow)[1],
-               build_intra->ntors_pow_max*sizeof(int),"set_tors_params")-1;
+          build_intra->ntors_pow_max*sizeof(int),"set_tors_params")-1;
       tors->j4_pow =(int*)crealloc(&(tors->j4_pow)[1],
-               build_intra->ntors_pow_max*sizeof(int),"set_tors_params")-1;
+          build_intra->ntors_pow_max*sizeof(int),"set_tors_params")-1;
       tors->jtyp_pow=(int*)crealloc(&(tors->jtyp_pow)[1],
-               build_intra->ntors_pow_max*sizeof(int),"set_tors_params")-1;
+          build_intra->ntors_pow_max*sizeof(int),"set_tors_params")-1;
     }/*endif*/
-    
+
     /*----------------------------------------------------------------------*/
     /* C) Check type */
-    
+
     itype = tors->ntyp_pow+1;
     for(i=1;i<=tors->ntyp_pow;i++){
       if((strcasecmp(build_intra->ctors_typ_pow[i].atm1,
-                     build_intra->ctors_typ_now->atm1)==0)
-         &&(strcasecmp(build_intra->ctors_typ_pow[i].atm2,
-                       build_intra->ctors_typ_now->atm2)==0)
-         &&(strcasecmp(build_intra->ctors_typ_pow[i].atm3,
-                       build_intra->ctors_typ_now->atm3)==0)
-         &&(strcasecmp(build_intra->ctors_typ_pow[i].atm4,
-                       build_intra->ctors_typ_now->atm4)==0)
-         &&(strcasecmp(build_intra->ctors_typ_pow[i].label,
-                       build_intra->ctors_typ_now->label)==0)) {itype=i;}
-      
+              build_intra->ctors_typ_now->atm1)==0)
+          &&(strcasecmp(build_intra->ctors_typ_pow[i].atm2,
+              build_intra->ctors_typ_now->atm2)==0)
+          &&(strcasecmp(build_intra->ctors_typ_pow[i].atm3,
+              build_intra->ctors_typ_now->atm3)==0)
+          &&(strcasecmp(build_intra->ctors_typ_pow[i].atm4,
+              build_intra->ctors_typ_now->atm4)==0)
+          &&(strcasecmp(build_intra->ctors_typ_pow[i].label,
+              build_intra->ctors_typ_now->label)==0)) {itype=i;}
+
       if((strcasecmp(build_intra->ctors_typ_pow[i].atm1,
-                     build_intra->ctors_typ_now->atm4)==0)
-         &&(strcasecmp(build_intra->ctors_typ_pow[i].atm2,
-                       build_intra->ctors_typ_now->atm3)==0)
-         &&(strcasecmp(build_intra->ctors_typ_pow[i].atm3,
-                       build_intra->ctors_typ_now->atm2)==0)
-         &&(strcasecmp(build_intra->ctors_typ_pow[i].atm4,
-                       build_intra->ctors_typ_now->atm1)==0)
-         &&(strcasecmp(build_intra->ctors_typ_pow[i].label,
-                       build_intra->ctors_typ_now->label)==0)) {itype=i;}
+              build_intra->ctors_typ_now->atm4)==0)
+          &&(strcasecmp(build_intra->ctors_typ_pow[i].atm2,
+              build_intra->ctors_typ_now->atm3)==0)
+          &&(strcasecmp(build_intra->ctors_typ_pow[i].atm3,
+              build_intra->ctors_typ_now->atm2)==0)
+          &&(strcasecmp(build_intra->ctors_typ_pow[i].atm4,
+              build_intra->ctors_typ_now->atm1)==0)
+          &&(strcasecmp(build_intra->ctors_typ_pow[i].label,
+              build_intra->ctors_typ_now->label)==0)) {itype=i;}
     }     /*endfor*/
     /*--------------------------------------------------------------------*/
     /* D) Add space */
@@ -176,15 +176,15 @@ void set_tors_params(DICT_WORD intra_dict[],int num_intra_dict,
     if(itype==tors->ntyp_pow+1){
       tors->ntyp_pow++;
       strcpy(build_intra->ctors_typ_pow[itype].atm1,
-             build_intra->ctors_typ_now->atm1);
-       strcpy(build_intra->ctors_typ_pow[itype].atm2,
-              build_intra->ctors_typ_now->atm2);
-       strcpy(build_intra->ctors_typ_pow[itype].atm3,
-              build_intra->ctors_typ_now->atm3);
-       strcpy(build_intra->ctors_typ_pow[itype].atm4,
-              build_intra->ctors_typ_now->atm4);
-       strcpy(build_intra->ctors_typ_pow[itype].label,
-              build_intra->ctors_typ_now->label);
+          build_intra->ctors_typ_now->atm1);
+      strcpy(build_intra->ctors_typ_pow[itype].atm2,
+          build_intra->ctors_typ_now->atm2);
+      strcpy(build_intra->ctors_typ_pow[itype].atm3,
+          build_intra->ctors_typ_now->atm3);
+      strcpy(build_intra->ctors_typ_pow[itype].atm4,
+          build_intra->ctors_typ_now->atm4);
+      strcpy(build_intra->ctors_typ_pow[itype].label,
+          build_intra->ctors_typ_now->label);
     }/*endif*/
     /*---------------------------------------------------------------------*/
     /* B) Spread */
@@ -205,16 +205,16 @@ void set_tors_params(DICT_WORD intra_dict[],int num_intra_dict,
       build_intra->ntors_nul_max += NMEM_MIN;
       null_inter_parse->jtors1_nul     = 
         (int *) crealloc(&(null_inter_parse->jtors1_nul[1]),
-                build_intra->ntors_nul_max*sizeof(int),"set_tors_params")-1;
+            build_intra->ntors_nul_max*sizeof(int),"set_tors_params")-1;
       null_inter_parse->jtors2_nul     = 
         (int *) crealloc(&(null_inter_parse->jtors2_nul[1]),
-                build_intra->ntors_nul_max*sizeof(int),"set_tors_params")-1;
+            build_intra->ntors_nul_max*sizeof(int),"set_tors_params")-1;
       null_inter_parse->jtors3_nul     = 
         (int *) crealloc(&(null_inter_parse->jtors3_nul[1]),
-                build_intra->ntors_nul_max*sizeof(int),"set_tors_params")-1;
+            build_intra->ntors_nul_max*sizeof(int),"set_tors_params")-1;
       null_inter_parse->jtors4_nul     = 
         (int *) crealloc(&(null_inter_parse->jtors4_nul[1]),
-                build_intra->ntors_nul_max*sizeof(int),"set_tors_params")-1;
+            build_intra->ntors_nul_max*sizeof(int),"set_tors_params")-1;
     }      /*endif*/
 
     /*---------------------------------------------------------------------*/
@@ -222,13 +222,13 @@ void set_tors_params(DICT_WORD intra_dict[],int num_intra_dict,
     null_inter_parse->ntors_nul += 1;
 
     null_inter_parse->jtors1_nul[null_inter_parse->ntors_nul] = 
-                                      iatm_ind1 + clatoms_info->natm_tot ;
+      iatm_ind1 + clatoms_info->natm_tot ;
     null_inter_parse->jtors2_nul[null_inter_parse->ntors_nul] = 
-                                        iatm_ind2 + clatoms_info->natm_tot;
+      iatm_ind2 + clatoms_info->natm_tot;
     null_inter_parse->jtors3_nul[null_inter_parse->ntors_nul] = 
-                                        iatm_ind3 + clatoms_info->natm_tot;
+      iatm_ind3 + clatoms_info->natm_tot;
     null_inter_parse->jtors4_nul[null_inter_parse->ntors_nul] = 
-                                        iatm_ind4 + clatoms_info->natm_tot;
+      iatm_ind4 + clatoms_info->natm_tot;
   }/*endif*/
   /*----------------------------------------------------------------------*/
 }/*end routine*/

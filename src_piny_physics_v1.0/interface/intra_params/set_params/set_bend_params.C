@@ -23,12 +23,12 @@
 /*==========================================================================*/
 
 void set_bend_params(DICT_WORD intra_dict[],int num_intra_dict,
-                     char *fun_key,char *file_name,int jmol_typ,
-                     MDCLATOMS_INFO *clatoms_info,MDATOM_MAPS *atommaps,
-                     MDBEND *bend,NULL_INTER_PARSE *null_inter_parse,
-                     BUILD_INTRA *build_intra, int iresidue, int ires_off)
+    char *fun_key,char *file_name,int jmol_typ,
+    MDCLATOMS_INFO *clatoms_info,MDATOM_MAPS *atommaps,
+    MDBEND *bend,NULL_INTER_PARSE *null_inter_parse,
+    BUILD_INTRA *build_intra, int iresidue, int ires_off)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int num,index,ifound,igo;
   int itype1,itype2,itype3;
@@ -36,8 +36,8 @@ void set_bend_params(DICT_WORD intra_dict[],int num_intra_dict,
   int imask1,imask2,imask3;
   int i,itype;
 
- /*========================================================================*/
- /* I) Check for missing key words*/
+  /*========================================================================*/
+  /* I) Check for missing key words*/
   for(i=1;i<=3;i++){
     if(intra_dict[i].iuset==0 && intra_dict[i].key_type==1){
       keyword_miss(intra_dict,file_name,fun_key,i);
@@ -75,7 +75,7 @@ void set_bend_params(DICT_WORD intra_dict[],int num_intra_dict,
   sscanf(intra_dict[3].keyarg,"%d",&num);
   iatm_ind3 = num;
   if(iatm_ind3>build_intra->natmind_1res_now||iatm_ind3<0){
-            keyarg_barf(intra_dict,file_name,fun_key,index);}
+    keyarg_barf(intra_dict,file_name,fun_key,index);}
   imask3 = build_intra->mask_atm[iatm_ind3];  
   if(imask3>0)iatm_ind3 = build_intra->index_atm[iatm_ind3];
   /*-----------------------------------------------------------------------*/
@@ -89,11 +89,11 @@ void set_bend_params(DICT_WORD intra_dict[],int num_intra_dict,
     keyarg_barf(intra_dict,file_name,fun_key,index);
   }
   if(ifound == 2){ 
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("Constrained bends are history  \n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     FFLUSH(stdout);
-     EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Constrained bends are history  \n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
 
   /*-----------------------------------------------------------------------*/
@@ -116,13 +116,13 @@ void set_bend_params(DICT_WORD intra_dict[],int num_intra_dict,
     if(bend->npow > build_intra->nbend_pow_max){
       build_intra->nbend_pow_max += NMEM_MIN;
       bend->j1_pow =(int*)crealloc(&(bend->j1_pow)[1], 
-             build_intra->nbend_pow_max*sizeof(int),"set_bend_params")-1;
+          build_intra->nbend_pow_max*sizeof(int),"set_bend_params")-1;
       bend->j2_pow =(int*)crealloc(&(bend->j2_pow)[1],
-               build_intra->nbend_pow_max*sizeof(int),"set_bend_params")-1;
+          build_intra->nbend_pow_max*sizeof(int),"set_bend_params")-1;
       bend->j3_pow =(int*)crealloc(&(bend->j3_pow)[1],
-               build_intra->nbend_pow_max*sizeof(int),"set_bend_params")-1;
+          build_intra->nbend_pow_max*sizeof(int),"set_bend_params")-1;
       bend->jtyp_pow=(int*)crealloc(&(bend->jtyp_pow)[1],
-             build_intra->nbend_pow_max*sizeof(int),"set_bend_params")-1;
+          build_intra->nbend_pow_max*sizeof(int),"set_bend_params")-1;
     }/*endif*/
     /*--------------------------------------------------------------------*/
     /* C) Check type */
@@ -130,22 +130,22 @@ void set_bend_params(DICT_WORD intra_dict[],int num_intra_dict,
     for(i=1;i<=bend->ntyp_pow;i++){
 
       if((strcasecmp(build_intra->cbend_typ_pow[i].atm1,
-                     build_intra->cbend_typ_now->atm1)==0)
-         &&(strcasecmp(build_intra->cbend_typ_pow[i].atm2,
-                       build_intra->cbend_typ_now->atm2)==0)
-         &&(strcasecmp(build_intra->cbend_typ_pow[i].atm3,
-                       build_intra->cbend_typ_now->atm3)==0)
-         &&(strcasecmp(build_intra->cbend_typ_pow[i].label,
-                       build_intra->cbend_typ_now->label)==0)) {itype=i;}
+              build_intra->cbend_typ_now->atm1)==0)
+          &&(strcasecmp(build_intra->cbend_typ_pow[i].atm2,
+              build_intra->cbend_typ_now->atm2)==0)
+          &&(strcasecmp(build_intra->cbend_typ_pow[i].atm3,
+              build_intra->cbend_typ_now->atm3)==0)
+          &&(strcasecmp(build_intra->cbend_typ_pow[i].label,
+              build_intra->cbend_typ_now->label)==0)) {itype=i;}
 
       if((strcasecmp(build_intra->cbend_typ_pow[i].atm1,
-                     build_intra->cbend_typ_now->atm3)==0)
-         &&(strcasecmp(build_intra->cbend_typ_pow[i].atm2,
-                       build_intra->cbend_typ_now->atm2)==0)
-         &&(strcasecmp(build_intra->cbend_typ_pow[i].atm3,
-                       build_intra->cbend_typ_now->atm1)==0)
-         &&(strcasecmp(build_intra->cbend_typ_pow[i].label,
-                       build_intra->cbend_typ_now->label)==0)) {itype=i;}
+              build_intra->cbend_typ_now->atm3)==0)
+          &&(strcasecmp(build_intra->cbend_typ_pow[i].atm2,
+              build_intra->cbend_typ_now->atm2)==0)
+          &&(strcasecmp(build_intra->cbend_typ_pow[i].atm3,
+              build_intra->cbend_typ_now->atm1)==0)
+          &&(strcasecmp(build_intra->cbend_typ_pow[i].label,
+              build_intra->cbend_typ_now->label)==0)) {itype=i;}
     }      /*endfor*/
 
     /*---------------------------------------------------------------------*/
@@ -154,7 +154,7 @@ void set_bend_params(DICT_WORD intra_dict[],int num_intra_dict,
       build_intra->nbend_typ_pow_max += NMEM_MIN;
       build_intra->cbend_typ_pow      = 
         (CBEND *) crealloc(&build_intra->cbend_typ_pow[1],
-           build_intra->nbend_typ_pow_max*sizeof(CBEND),"set_bend_params")-1;
+            build_intra->nbend_typ_pow_max*sizeof(CBEND),"set_bend_params")-1;
     }/*endif*/
 
     /*----------------------------------------------------------------------*/
@@ -162,13 +162,13 @@ void set_bend_params(DICT_WORD intra_dict[],int num_intra_dict,
     if(itype==bend->ntyp_pow+1){
       bend->ntyp_pow++;
       strcpy(build_intra->cbend_typ_pow[itype].atm1,
-             build_intra->cbend_typ_now->atm1);
+          build_intra->cbend_typ_now->atm1);
       strcpy(build_intra->cbend_typ_pow[itype].atm2,
-             build_intra->cbend_typ_now->atm2);
+          build_intra->cbend_typ_now->atm2);
       strcpy(build_intra->cbend_typ_pow[itype].atm3,
-             build_intra->cbend_typ_now->atm3);
+          build_intra->cbend_typ_now->atm3);
       strcpy(build_intra->cbend_typ_pow[itype].label,
-             build_intra->cbend_typ_now->label);
+          build_intra->cbend_typ_now->label);
     }/*endif*/
 
     /*---------------------------------------------------------------------*/
@@ -187,27 +187,27 @@ void set_bend_params(DICT_WORD intra_dict[],int num_intra_dict,
     /*---------------------------------------------------------------------*/
     /* A) Add more space */
     if(null_inter_parse->nbend_nul+1 > build_intra->nbend_nul_max){
-      
+
       build_intra->nbend_nul_max += NMEM_MIN;
       null_inter_parse->jbend1_nul     = 
         (int *) crealloc(&(null_inter_parse->jbend1_nul)[1],
-         build_intra->nbend_nul_max*sizeof(int),"set_bend_params")-1;
+            build_intra->nbend_nul_max*sizeof(int),"set_bend_params")-1;
       null_inter_parse->jbend2_nul     = 
         (int *) crealloc(&(null_inter_parse->jbend2_nul)[1],
-         build_intra->nbend_nul_max*sizeof(int),"set_bend_params")-1;
+            build_intra->nbend_nul_max*sizeof(int),"set_bend_params")-1;
       null_inter_parse->jbend3_nul     = 
         (int *) crealloc(&(null_inter_parse->jbend3_nul)[1],
-         build_intra->nbend_nul_max*sizeof(int),"set_bend_params")-1;
+            build_intra->nbend_nul_max*sizeof(int),"set_bend_params")-1;
     }     /*endif*/
     /*---------------------------------------------------------------------*/
     /* B) Spread */
     null_inter_parse->nbend_nul += 1;
     (null_inter_parse->jbend1_nul)[(null_inter_parse->nbend_nul)] = 
-                              iatm_ind1 + clatoms_info->natm_tot;
+      iatm_ind1 + clatoms_info->natm_tot;
     (null_inter_parse->jbend2_nul)[(null_inter_parse->nbend_nul)] = 
-                              iatm_ind2 + clatoms_info->natm_tot;
+      iatm_ind2 + clatoms_info->natm_tot;
     (null_inter_parse->jbend3_nul)[(null_inter_parse->nbend_nul)] = 
-                              iatm_ind3 + clatoms_info->natm_tot;
+      iatm_ind3 + clatoms_info->natm_tot;
   }/*endif*/
   /*----------------------------------------------------------------------*/
 }/*end routine*/

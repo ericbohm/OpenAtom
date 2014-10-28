@@ -18,10 +18,10 @@
 
 void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 
-//========================================================================
-  {//begin routine
-//========================================================================
-// Local variables 
+  //========================================================================
+{//begin routine
+  //========================================================================
+  // Local variables 
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP *cp                     = CP::get();
@@ -64,7 +64,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int doublepack      = cpewald->doublepack;
   int ncoef           = ( (doublepack==1) ? (cpewald->nktot_sm+1) : (cpewald->nktot_sm)); 
   int nkpoint         = cpcoeffs_info->nkpoint;
-  
+
   double vol          = gencell->vol;
   double dt           = gentimeinfo->dt;
   double tol_norb     = cpconstrnt->c_tolnorb;
@@ -86,104 +86,104 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int *nmem_zmat      = cppseudo->nonlocal.n_zmat;
   int *ioff_zmat      = cppseudo->nonlocal.ioff_zmat;
 
-//========================================================================
+  //========================================================================
 
-   if(cp_opt==0 && cp_min_opt==0){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The present code only does cp applications\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
-   }//endif
+  if(cp_opt==0 && cp_min_opt==0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The present code only does cp applications\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
 
-   if(cp_opt==1 && istart_typ_cp ==0){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("No gen-wave restarts for cp-dynamics\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
-   }//endif
+  if(cp_opt==1 && istart_typ_cp ==0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("No gen-wave restarts for cp-dynamics\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
 
-   if(cp_lda+cp_lsda!=1 || cp_lda<0 || cp_lsda<0 || cp_lda > 1 || cp_lsda>1){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("Messed up cp_lda or cp_lsda definitions %d %d\n",cp_lda,cp_lsda);
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
-   }//endif
+  if(cp_lda+cp_lsda!=1 || cp_lda<0 || cp_lsda<0 || cp_lda > 1 || cp_lsda>1){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Messed up cp_lda or cp_lsda definitions %d %d\n",cp_lda,cp_lsda);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
 
-   int gen_wave=0;
-   if(istart_typ_cp ==0){gen_wave=1;}
+  int gen_wave=0;
+  if(istart_typ_cp ==0){gen_wave=1;}
 
-//========================================================================
+  //========================================================================
 
-   sim->ntemper        = ntemper;
-   sim->pi_beads       = pi_beads;
-   sim->nstates        = nstates;
-   sim->nkpoint        = nkpoint;
-   sim->nspin          = (cp_lsda==1 ? 2 : 1); // up/dn independent or up/dn constrained
+  sim->ntemper        = ntemper;
+  sim->pi_beads       = pi_beads;
+  sim->nstates        = nstates;
+  sim->nkpoint        = nkpoint;
+  sim->nspin          = (cp_lsda==1 ? 2 : 1); // up/dn independent or up/dn constrained
 
-   sim->natm_typ       = natm_typ;
-   sim->natm_tot       = natm_tot;
-   sim->natm_nl        = natm_nl;
-   sim->nlIters        = nlIters;
-   sim->dt             = dt;
-   sim->vol            = vol;
+  sim->natm_typ       = natm_typ;
+  sim->natm_tot       = natm_tot;
+  sim->natm_nl        = natm_nl;
+  sim->nlIters        = nlIters;
+  sim->dt             = dt;
+  sim->vol            = vol;
 
-   sim->iperd          = iperd;
-   sim->doublepack     = doublepack;
-   sim->fftopt         = fftopt;
-   sim->ncoef          = ncoef;
+  sim->iperd          = iperd;
+  sim->doublepack     = doublepack;
+  sim->fftopt         = fftopt;
+  sim->ncoef          = ncoef;
 
-   sim->cp_min_update  = cp_min_update;
-   sim->cp_min_opt     = cp_min_opt;
-   sim->cp_min_cg      = cp_min_cg;
-   sim->cp_min_std     = cp_min_std;
-   sim->cp_opt         = cp_opt;
-   sim->cp_std         = cp_std;
-   sim->cp_wave        = cp_wave;
-   sim->cp_grad_corr_on= cp_grad_corr_on;
-   sim->cp_force_complex_psi = cp_force_complex_psi;
+  sim->cp_min_update  = cp_min_update;
+  sim->cp_min_opt     = cp_min_opt;
+  sim->cp_min_cg      = cp_min_cg;
+  sim->cp_min_std     = cp_min_std;
+  sim->cp_opt         = cp_opt;
+  sim->cp_std         = cp_std;
+  sim->cp_wave        = cp_wave;
+  sim->cp_grad_corr_on= cp_grad_corr_on;
+  sim->cp_force_complex_psi = cp_force_complex_psi;
 
-   if(cp_min_opt==0){
-     sim->ntime          = ntime+1;
-   }else{
-     sim->ntime          = ntime;
-   }//endif
+  if(cp_min_opt==0){
+    sim->ntime          = ntime+1;
+  }else{
+    sim->ntime          = ntime;
+  }//endif
 
-   sim->gen_wave=gen_wave; 
+  sim->gen_wave=gen_wave; 
 
-   sim->cp_norb_rot_kescal = cp_norb_rot_kescal;
-   sim->tol_norb       = tol_norb;
-   sim->tol_cp_min     = tol_cp_min;
-   sim->tol_cp_dyn     = tol_cp_dyn;
+  sim->cp_norb_rot_kescal = cp_norb_rot_kescal;
+  sim->tol_norb       = tol_norb;
+  sim->tol_cp_min     = tol_cp_min;
+  sim->tol_cp_dyn     = tol_cp_dyn;
 
-   sim->ndump_frq      = ndump_frq;
-   sim->istart_typ_cp  = istart_typ_cp;
-   sim->ibinary_opt    = ibinary_opt;
-   sim->ibinary_write_opt= ibinary_write_opt;
+  sim->ndump_frq      = ndump_frq;
+  sim->istart_typ_cp  = istart_typ_cp;
+  sim->ibinary_opt    = ibinary_opt;
+  sim->ibinary_write_opt= ibinary_write_opt;
 
-   sim->sizeX          = nkf1;
-   sim->sizeY          = nkf2;
-   sim->sizeZ          = nkf3;
+  sim->sizeX          = nkf1;
+  sim->sizeY          = nkf2;
+  sim->sizeZ          = nkf3;
 
-   sim->ees_eext_on    = ees_eext_on;
-   sim->ees_nloc_on    = ees_nloc_on;
-   sim->ngrid_nloc_a   = ngrid_nloc_a; 
-   sim->ngrid_nloc_b   = ngrid_nloc_b; 
-   sim->ngrid_nloc_c   = ngrid_nloc_c; 
-   sim->ngrid_eext_a   = ngrid_eext_a; 
-   sim->ngrid_eext_b   = ngrid_eext_b; 
-   sim->ngrid_eext_c   = ngrid_eext_c; 
+  sim->ees_eext_on    = ees_eext_on;
+  sim->ees_nloc_on    = ees_nloc_on;
+  sim->ngrid_nloc_a   = ngrid_nloc_a; 
+  sim->ngrid_nloc_b   = ngrid_nloc_b; 
+  sim->ngrid_nloc_c   = ngrid_nloc_c; 
+  sim->ngrid_eext_a   = ngrid_eext_a; 
+  sim->ngrid_eext_b   = ngrid_eext_b; 
+  sim->ngrid_eext_c   = ngrid_eext_c; 
 
-   sim->nmem_zmat_tot  = nmem_zmat_tot;
-   sim->nmem_zmat_max  = nmem_zmat_max;
-   sim->ioff_zmat      = new int [nlIters];
-   sim->nmem_zmat      = new int [nlIters];
-   for(int i=0;i<nlIters;i++){
-     sim->ioff_zmat[i] = ioff_zmat[(i+1)];
-     sim->nmem_zmat[i] = nmem_zmat[(i+1)];
-   }//endfor
+  sim->nmem_zmat_tot  = nmem_zmat_tot;
+  sim->nmem_zmat_max  = nmem_zmat_max;
+  sim->ioff_zmat      = new int [nlIters];
+  sim->nmem_zmat      = new int [nlIters];
+  for(int i=0;i<nlIters;i++){
+    sim->ioff_zmat[i] = ioff_zmat[(i+1)];
+    sim->nmem_zmat[i] = nmem_zmat[(i+1)];
+  }//endfor
 
-//-----------------------------------------------------------------------
-  }//end routine
+  //-----------------------------------------------------------------------
+}//end routine
 //========================================================================
 
 
@@ -192,12 +192,12 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 //========================================================================
 
 void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
-                                                    int mydoublePack)
+    int mydoublePack)
 
-//========================================================================
-  {//begin routine
-//========================================================================
-// Local variables 
+  //========================================================================
+{//begin routine
+  //========================================================================
+  // Local variables 
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP *cp                     = CP::get();
@@ -233,32 +233,32 @@ void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
   double *pts_per_plane;
   lines_per_plane = new double[nkf1];
   pts_per_plane   = new double[nkf1];
-  
-//========================================================================
 
-   PRINTF("\n");PRINT_LINE_STAR;
-   PRINTF("Creating G-space mapping functions\n");
-   PRINT_LINE_DASH;PRINTF("\n");
+  //========================================================================
 
-   if(mydoublePack==0){
+  PRINTF("\n");PRINT_LINE_STAR;
+  PRINTF("Creating G-space mapping functions\n");
+  PRINT_LINE_DASH;PRINTF("\n");
 
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The present code only compute doublePack maps for CP\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+  if(mydoublePack==0){
 
-   }//endif
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The present code only compute doublePack maps for CP\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
 
-//========================================================================
-   
+  }//endif
+
+  //========================================================================
+
   if(mydoublePack==1){
 
     if(cp_para_typ==1){
       compute_lines_per_plane_half_plane(nkf1,nkf2,nkf3,nktot,lines_per_plane,
-                                         pts_per_plane,ka,kb,kc);
+          pts_per_plane,ka,kb,kc);
     }else{
       compute_lines_per_plane_half_sphere(nkf1,nkf2,nkf3,nktot,lines_per_plane,
-                                        pts_per_plane,ka,kb,kc);
+          pts_per_plane,ka,kb,kc);
     }//endif
 
   }//endif
@@ -271,14 +271,14 @@ void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
   cfree(&kb[1],"parainfo");
   cfree(&kc[1],"parainfo");
 
-//========================================================================
+  //========================================================================
 
   PRINTF("\n");PRINT_LINE_DASH;
   PRINTF("Completed g-space map set up\n");
   PRINT_LINE_STAR;PRINTF("\n");
 
-//========================================================================
-  }//end routine
+  //========================================================================
+}//end routine
 //========================================================================
 
 
@@ -287,38 +287,38 @@ void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
 //========================================================================
 
 void PhysicsParamTransfer::compute_lines_per_plane_half_plane(
-            int nkf1, int nkf2, int nkf3,int nktot, 
-            double *lines, double *pts, int *ka, int *kb, int *kc
-           )
+    int nkf1, int nkf2, int nkf3,int nktot, 
+    double *lines, double *pts, int *ka, int *kb, int *kc
+    )
 
-//========================================================================
-   {//begin routine
-//========================================================================
-//                 Cubic box salute
-// Note Piny g-space isn't set up to match driver g-space
-// but who cares because driver is a cubic box code. 04/15/2005
-//      For PINY
-// ka is the half space variable
-// kc varies on full range.
-// compute pts on kc-planes
-//========================================================================
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The present load balance function is not this one\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+  //========================================================================
+{//begin routine
+  //========================================================================
+  //                 Cubic box salute
+  // Note Piny g-space isn't set up to match driver g-space
+  // but who cares because driver is a cubic box code. 04/15/2005
+  //      For PINY
+  // ka is the half space variable
+  // kc varies on full range.
+  // compute pts on kc-planes
+  //========================================================================
+  PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+  PRINTF("The present load balance function is not this one\n");
+  PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+  EXIT(1);
 
   if(nkf1!=nkf2 || nkf2!=nkf3){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The present load balance function is for cubic boxes\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The present load balance function is for cubic boxes\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
   }//endif
 
   PRINTF("Computing mapping function for dble packed g-space planes.\n");
   PRINTF("The full number of planes are 1/2 filled.\n");
 
-//========================================================================
-// compute points on each kc plane
+  //========================================================================
+  // compute points on each kc plane
 
   for(int i=0;i<nkf3;i++){pts[i]=0.0;}
   for(int i=1;i<=nktot;i++){
@@ -329,10 +329,10 @@ void PhysicsParamTransfer::compute_lines_per_plane_half_plane(
 
   double rnorm_p = 1.0/((double)(nktot+1));
   for(int i=0;i<nkf3;i++){pts[i] *= rnorm_p;}
-   
-//========================================================================
-// On each kc plane, compute the number of FFTs along kb direction.
-// The number kb ffts is equal to the number of ka values in the plane.
+
+  //========================================================================
+  // On each kc plane, compute the number of FFTs along kb direction.
+  // The number kb ffts is equal to the number of ka values in the plane.
 
   int *ka_on = (int *)cmalloc(nkf1*sizeof(int),"compute_lines_per_plane");
   int n2      = nkf3/2;
@@ -359,25 +359,25 @@ void PhysicsParamTransfer::compute_lines_per_plane_half_plane(
 
   cfree(ka_on,"compute_lines_per_plane");
 
-//========================================================================
-// Just a little debug, early in the morning.
+  //========================================================================
+  // Just a little debug, early in the morning.
 
 #ifdef _CP_DEBUG_LINES_PER_PLANE_
   FILE *fp = fopen("map_gjm_half_plane.out","w");
-    double sum_p = 0.0;
-    double sum_l = 0.0;
-    for(int i=0;i<nkf3;i++){
-      fprintf(fp,"line %d : pts %g %g: lines %g %g\n",
-                 i,pts[i],pts[i]/rnorm_p,lines[i],lines[i]/rnorm_l);
-      sum_p += pts[i];
-      sum_l += lines[i];
-    }//endfor
-    fprintf(fp,"total : %g %g\n",sum_p,sum_l);
+  double sum_p = 0.0;
+  double sum_l = 0.0;
+  for(int i=0;i<nkf3;i++){
+    fprintf(fp,"line %d : pts %g %g: lines %g %g\n",
+        i,pts[i],pts[i]/rnorm_p,lines[i],lines[i]/rnorm_l);
+    sum_p += pts[i];
+    sum_l += lines[i];
+  }//endfor
+  fprintf(fp,"total : %g %g\n",sum_p,sum_l);
   fclose(fp);
 #endif
 
-//-----------------------------------------------------------------------
-  }//end routine
+  //-----------------------------------------------------------------------
+}//end routine
 //========================================================================
 
 
@@ -386,38 +386,38 @@ void PhysicsParamTransfer::compute_lines_per_plane_half_plane(
 //========================================================================
 
 void PhysicsParamTransfer::compute_lines_per_plane_half_sphere(
-            int nkf1, int nkf2, int nkf3,int nktot, 
-            double *lines, double *pts, int *ka, int *kb, int *kc
-           )
+    int nkf1, int nkf2, int nkf3,int nktot, 
+    double *lines, double *pts, int *ka, int *kb, int *kc
+    )
 
-//========================================================================
-   {//begin routine
-//========================================================================
-//                 Cubic box salute
-// Note Piny g-space isn't set up to match driver g-space
-// but who cares because driver is a cubic box code. 04/15/2005
-//      For PINY
-// ka is the half space variable
-// kc varies on full range.
-// compute pts on kc-planes
-//========================================================================
+  //========================================================================
+{//begin routine
+  //========================================================================
+  //                 Cubic box salute
+  // Note Piny g-space isn't set up to match driver g-space
+  // but who cares because driver is a cubic box code. 04/15/2005
+  //      For PINY
+  // ka is the half space variable
+  // kc varies on full range.
+  // compute pts on kc-planes
+  //========================================================================
 
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The present load balance function is not this one\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+  PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+  PRINTF("The present load balance function is not this one\n");
+  PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+  EXIT(1);
   if(nkf1!=nkf2 || nkf2!=nkf3){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The present load balance function is for cubic boxes\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The present load balance function is for cubic boxes\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
   }//endif
 
   PRINTF("Computing mapping function for dble packed g-space planes.\n");
   PRINTF("Half the number of planes are filled.\n");
-   
-//========================================================================
-// compute points on each ka plane : cpaimd keeps a little too much data
+
+  //========================================================================
+  // compute points on each ka plane : cpaimd keeps a little too much data
 
   double psum = 0.0;
   for(int i=0;i<nkf1;i++){pts[i]=0.0;}
@@ -436,11 +436,11 @@ void PhysicsParamTransfer::compute_lines_per_plane_half_sphere(
 
   double rnorm_p = 1.0/psum;
   for(int i=0;i<nkf1;i++){pts[i] *= rnorm_p;}
-   
-//========================================================================
-// On each ka plane, compute the number of FFTs along kb direction.
-// The number of kb ffts is equal to the number of kc values in the plane.
-// Maximum number is nkf3 ffts of size nkf2
+
+  //========================================================================
+  // On each ka plane, compute the number of FFTs along kb direction.
+  // The number of kb ffts is equal to the number of kc values in the plane.
+  // Maximum number is nkf3 ffts of size nkf2
 
   int *kb_on = (int *)cmalloc(nkf3*sizeof(int),"compute_lines_per_plane");
   int n2      = nkf1/2;
@@ -467,25 +467,25 @@ void PhysicsParamTransfer::compute_lines_per_plane_half_sphere(
 
   cfree(kb_on,"compute_lines_per_plane");
 
-//========================================================================
-// Just a little debug, early in the morning.
+  //========================================================================
+  // Just a little debug, early in the morning.
 
 #ifdef _CP_DEBUG_LINES_PER_PLANE_
   FILE *fp = fopen("map_gjm_half_sphere.out","w");
-    double sum_p = 0.0;
-    double sum_l = 0.0;
-    for(int i=0;i<nkf3;i++){
-      fprintf(fp,"line %d : pts %g %g: lines %g %g\n",
-                 i,pts[i],pts[i]/rnorm_p,lines[i],lines[i]/rnorm_l);
-      sum_p += pts[i];
-      sum_l += lines[i];
-    }//endfor
-    fprintf(fp,"total : %g %g\n",sum_p,sum_l);
+  double sum_p = 0.0;
+  double sum_l = 0.0;
+  for(int i=0;i<nkf3;i++){
+    fprintf(fp,"line %d : pts %g %g: lines %g %g\n",
+        i,pts[i],pts[i]/rnorm_p,lines[i],lines[i]/rnorm_l);
+    sum_p += pts[i];
+    sum_l += lines[i];
+  }//endfor
+  fprintf(fp,"total : %g %g\n",sum_p,sum_l);
   fclose(fp);
 #endif
 
-//-----------------------------------------------------------------------
-  }//end routine
+  //-----------------------------------------------------------------------
+}//end routine
 //========================================================================
 
 
@@ -495,20 +495,20 @@ void PhysicsParamTransfer::compute_lines_per_plane_half_sphere(
 //========================================================================
 
 void PhysicsParamTransfer::get_Sfgrp_params(int natm_nl, int numSfGrps, 
-       int indexSfGrp,int *n_ret, int *istrt_ret, int *iend_ret)
+    int indexSfGrp,int *n_ret, int *istrt_ret, int *iend_ret)
 {
-   int n     = (natm_nl/numSfGrps);
-   int m     = (natm_nl % numSfGrps);
+  int n     = (natm_nl/numSfGrps);
+  int m     = (natm_nl % numSfGrps);
 
-   int istrt = n*indexSfGrp + 1;
-   if(indexSfGrp>=m){istrt += m;}
-   if(indexSfGrp<m) {istrt += indexSfGrp;}
-   if(indexSfGrp<m) {n++;}
-   int iend  = n+istrt-1;
+  int istrt = n*indexSfGrp + 1;
+  if(indexSfGrp>=m){istrt += m;}
+  if(indexSfGrp<m) {istrt += indexSfGrp;}
+  if(indexSfGrp<m) {n++;}
+  int iend  = n+istrt-1;
 
-   (*n_ret)     = n;
-   (*istrt_ret) = istrt;
-   (*iend_ret)  = iend;
+  (*n_ret)     = n;
+  (*istrt_ret) = istrt;
+  (*iend_ret)  = iend;
 }
 //========================================================================
 
@@ -519,20 +519,20 @@ void PhysicsParamTransfer::get_Sfgrp_params(int natm_nl, int numSfGrps,
 //========================================================================
 
 void PhysicsParamTransfer::get_Sfgrp_max(int natm_nl, int numSfGrps, 
-                                         int *natm_nl_grp_max)
+    int *natm_nl_grp_max)
 {
-    if(numSfGrps==0){
+  if(numSfGrps==0){
 
-     (*natm_nl_grp_max) = 0;
+    (*natm_nl_grp_max) = 0;
 
-    }else{
+  }else{
 
-     int n = (natm_nl / numSfGrps);
-     int m = (natm_nl % numSfGrps);
-     if(m!=0){n++;}
-     (*natm_nl_grp_max) = n;
+    int n = (natm_nl / numSfGrps);
+    int m = (natm_nl % numSfGrps);
+    if(m!=0){n++;}
+    (*natm_nl_grp_max) = n;
 
-    }//enddif
+  }//enddif
 }
 //========================================================================
 
@@ -542,46 +542,46 @@ void PhysicsParamTransfer::get_Sfgrp_max(int natm_nl, int numSfGrps,
 //========================================================================
 
 void PhysicsParamTransfer::control_new_mapping_function(CPcharmParaInfo *sim,
-                                                    int mydoublePack)
+    int mydoublePack)
 
-//========================================================================
-  {//begin routine
-//========================================================================
-// Local variables 
+  //========================================================================
+{//begin routine
+  //========================================================================
+  // Local variables 
 
-   int *nlines_per_chareG = sim->nlines_per_chareG;
-   int *npts_per_chareG   = sim->npts_per_chareG;
-   int nchareG            = sim->nchareG;
-   int sizeX              = sim->sizeX;
-   int nlines_tot         = sim->nlines_tot;
-   int npts_tot           = sim->npts_tot;
+  int *nlines_per_chareG = sim->nlines_per_chareG;
+  int *npts_per_chareG   = sim->npts_per_chareG;
+  int nchareG            = sim->nchareG;
+  int sizeX              = sim->sizeX;
+  int nlines_tot         = sim->nlines_tot;
+  int npts_tot           = sim->npts_tot;
 
-   int nsize = nchareG;
-   double *pts_per_chareG   = new double [nsize];
-   double *lines_per_chareG = new double [nsize];
+  int nsize = nchareG;
+  double *pts_per_chareG   = new double [nsize];
+  double *lines_per_chareG = new double [nsize];
 
-   int npts   = 0;
-   int nlines = 0;
-   for(int i=0;i<nchareG;i++){
-     pts_per_chareG[i]= ((double)npts_per_chareG[i])/((double)npts_tot);
-     npts += npts_per_chareG[i];
-     lines_per_chareG[i]= ((double)nlines_per_chareG[i])/((double)nlines_tot);
-     nlines += nlines_per_chareG[i];
-   }//endfor
+  int npts   = 0;
+  int nlines = 0;
+  for(int i=0;i<nchareG;i++){
+    pts_per_chareG[i]= ((double)npts_per_chareG[i])/((double)npts_tot);
+    npts += npts_per_chareG[i];
+    lines_per_chareG[i]= ((double)nlines_per_chareG[i])/((double)nlines_tot);
+    nlines += nlines_per_chareG[i];
+  }//endfor
 
-   if(npts!=npts_tot || nlines != nlines_tot){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("Inconsistency between nlines and pts per plane and totals\n");
-     PRINTF("%d %d : %d %d \n",npts,npts_tot,nlines,nlines_tot);
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
-   }//endif
+  if(npts!=npts_tot || nlines != nlines_tot){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Inconsistency between nlines and pts per plane and totals\n");
+    PRINTF("%d %d : %d %d \n",npts,npts_tot,nlines,nlines_tot);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
 
-   sim->pts_per_chareG   = pts_per_chareG;
-   sim->lines_per_chareG = lines_per_chareG;
+  sim->pts_per_chareG   = pts_per_chareG;
+  sim->lines_per_chareG = lines_per_chareG;
 
-//========================================================================
-  }//end routine
+  //========================================================================
+}//end routine
 //========================================================================
 
 
@@ -591,12 +591,12 @@ void PhysicsParamTransfer::control_new_mapping_function(CPcharmParaInfo *sim,
 //========================================================================
 
 void PhysicsParamTransfer::fetch_state_kvecs(int *ka, int *kb, int *kc,
-                                             int ncoef,int doublePack)
+    int ncoef,int doublePack)
 
-//========================================================================
-  {//begin routine
-//========================================================================
-// Local variables 
+  //========================================================================
+{//begin routine
+  //========================================================================
+  // Local variables 
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP *cp                     = CP::get();
@@ -612,7 +612,7 @@ void PhysicsParamTransfer::fetch_state_kvecs(int *ka, int *kb, int *kc,
   double *hmati = gencell->hmati;
   double gmin,gmax;
 
-//========================================================================
+  //========================================================================
 
   if(doublePack==0){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
@@ -641,6 +641,6 @@ void PhysicsParamTransfer::fetch_state_kvecs(int *ka, int *kb, int *kc,
     setkvec3d_sm_kpt(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
   }//endif
 
-//========================================================================
-  }//end routine
+  //========================================================================
+}//end routine
 //========================================================================

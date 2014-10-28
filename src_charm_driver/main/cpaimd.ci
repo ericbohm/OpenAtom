@@ -4,106 +4,106 @@
 
 module CPcharmParaInfo
 {
-        class CPcharmParaInfo;
-	// The physics configuration, both input, and derived, is kept here.
-	// This data is effectively readonly.
-	group CPcharmParaInfoGrp 
-	{
-		entry CPcharmParaInfoGrp(CPcharmParaInfo &s);
-	};
+  class CPcharmParaInfo;
+  // The physics configuration, both input, and derived, is kept here.
+  // This data is effectively readonly.
+  group CPcharmParaInfoGrp 
+  {
+    entry CPcharmParaInfoGrp(CPcharmParaInfo &s);
+  };
 };
 
 module PhysScratchCache
 {
-	class PSNONLOCAL;
-	// The physics configuration, both input, and derived, is kept here.
-	// This data is effectively readonly.
-	group PhysScratchCache
-	{
-		entry PhysScratchCache();
-	};
+  class PSNONLOCAL;
+  // The physics configuration, both input, and derived, is kept here.
+  // This data is effectively readonly.
+  group PhysScratchCache
+  {
+    entry PhysScratchCache();
+  };
 };
 
 
 module Atoms
 {
-	// Forward declarations
-	class Atom;
-	class AtomNHC;
-    include "uber/Uber.h";
+  // Forward declarations
+  class Atom;
+  class AtomNHC;
+  include "uber/Uber.h";
 
-	message AtomMsg 
-	{
-		double data[];
-	};
+  message AtomMsg 
+  {
+    double data[];
+  };
 
 
-	message AtomXYZMsg 
-	{
-		double x[];
-		double y[];
-		double z[];
-	};
+  message AtomXYZMsg 
+  {
+    double x[];
+    double y[];
+    double z[];
+  };
 
-	group AtomsCache {
-		entry AtomsCache(int natm, int natm_nl, Atom atoms[natm], 
-      		                 UberCollection);
-                entry void acceptAtoms(AtomMsg *);
-		entry void contributeforces();
-                entry void atomsDone();
-                entry void atomsDone(CkReductionMsg *);
+  group AtomsCache {
+    entry AtomsCache(int natm, int natm_nl, Atom atoms[natm], 
+        UberCollection);
+    entry void acceptAtoms(AtomMsg *);
+    entry void contributeforces();
+    entry void atomsDone();
+    entry void atomsDone(CkReductionMsg *);
 
-	};
+  };
 
-	array [1D] AtomsCompute {
-		entry AtomsCompute(int natm, int natm_nl, int len_nhc, int iextended_on,
-			       int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
-			       Atom atoms[natm],AtomNHC atomsNHC[natm], int nChareAtoms, UberCollection);
-		entry void init();
-                entry void acceptAtoms(AtomMsg *);
-                entry void startRealSpaceForces();  	
-                entry void acceptNewTemperature(double temp);
-                entry void recvContribute(CkReductionMsg *);
-                entry void recvContributeForces(CkReductionMsg *);
-                entry void atomsDone(CkReductionMsg *);
-		entry void accept_PIMD_x(double _x, double _y, double _z, int atomI);
-		entry void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);
-		entry void accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu, 
-                                                double _xu, double _yu, double _zu, int atomI);
-		entry void accept_PIMD_CM(AtomXYZMsg *msg);
-		entry void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
+  array [1D] AtomsCompute {
+    entry AtomsCompute(int natm, int natm_nl, int len_nhc, int iextended_on,
+        int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
+        Atom atoms[natm],AtomNHC atomsNHC[natm], int nChareAtoms, UberCollection);
+    entry void init();
+    entry void acceptAtoms(AtomMsg *);
+    entry void startRealSpaceForces();  	
+    entry void acceptNewTemperature(double temp);
+    entry void recvContribute(CkReductionMsg *);
+    entry void recvContributeForces(CkReductionMsg *);
+    entry void atomsDone(CkReductionMsg *);
+    entry void accept_PIMD_x(double _x, double _y, double _z, int atomI);
+    entry void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);
+    entry void accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu, 
+        double _xu, double _yu, double _zu, int atomI);
+    entry void accept_PIMD_CM(AtomXYZMsg *msg);
+    entry void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
 
-	};
+  };
 
 };
 
 module EnergyGroup
 {
-    include "main/energy.h";
-	// The global energies are stored here.
-	group EnergyGroup {
-		entry EnergyGroup(UberCollection);
-		entry void updateEnergiesFromGS(EnergyStruct es, UberCollection);
-		entry void energyDone(CkReductionMsg *);
-		entry void resumeFromTemper();
-		entry void sendToTemper(CkReductionMsg *m);
+  include "main/energy.h";
+  // The global energies are stored here.
+  group EnergyGroup {
+    entry EnergyGroup(UberCollection);
+    entry void updateEnergiesFromGS(EnergyStruct es, UberCollection);
+    entry void energyDone(CkReductionMsg *);
+    entry void resumeFromTemper();
+    entry void sendToTemper(CkReductionMsg *m);
 
-	};
+  };
 };
 
 module PIBeadAtoms
 {
-	// Forward declarations
-	class UberCollection; 
-	class Atom;
-	class AtomNHC;
-	array [1D] PIBeadAtoms {
-		entry PIBeadAtoms(UberCollection, int,int);
-		entry void accept_PIMD_x(double x,double y, double z, int index );
-		entry void accept_PIMD_Fx(AtomXYZMsg *msg);
-		entry void accept_PIMD_Fx_and_x(AtomXYZMsg *msg);
-		entry void accept_PIMD_u(double xu,double yu, double zu, int index);
-	};
+  // Forward declarations
+  class UberCollection; 
+  class Atom;
+  class AtomNHC;
+  array [1D] PIBeadAtoms {
+    entry PIBeadAtoms(UberCollection, int,int);
+    entry void accept_PIMD_x(double x,double y, double z, int index );
+    entry void accept_PIMD_Fx(AtomXYZMsg *msg);
+    entry void accept_PIMD_Fx_and_x(AtomXYZMsg *msg);
+    entry void accept_PIMD_u(double xu,double yu, double zu, int index);
+  };
 
 
 };
@@ -112,364 +112,364 @@ module PIBeadAtoms
 
 module timeKeeper
 {
-	group TimeKeeper {
-		entry TimeKeeper();
-		entry void init();
-	        entry void collectStart(CkReductionMsg *m);
-	        entry void collectEnd(CkReductionMsg *m);
-	};
+  group TimeKeeper {
+    entry TimeKeeper();
+    entry void init();
+    entry void collectStart(CkReductionMsg *m);
+    entry void collectEnd(CkReductionMsg *m);
+  };
 };
 
 
 module ENL_EKE_Collector 
 {
 
-// across all beads and k-points and spin, not across tempers
-	array [1D] ENL_EKE_Collector {
-		entry ENL_EKE_Collector(int clients, int outputs);
-		entry void acceptENL(double enl);
-		entry void acceptEKE(double eke);
-	};
+  // across all beads and k-points and spin, not across tempers
+  array [1D] ENL_EKE_Collector {
+    entry ENL_EKE_Collector(int clients, int outputs);
+    entry void acceptENL(double enl);
+    entry void acceptEKE(double eke);
+  };
 
 };
 
 
 module instanceController
 {
-	message ICCookieMsg;
-	array [1D] InstanceController {
-        entry InstanceController();
-	entry void acceptNewTemperature(double t);
-	entry void useNewTemperature(double t);
-        entry void printEnergyEexc(CkReductionMsg *msg);
-        entry void printEnergyHart(CkReductionMsg *msg);
-        entry void printFictEke(CkReductionMsg *msg);
-        entry void allDoneCPForces(CkReductionMsg *m);
-        entry void printEnergyEke(CkReductionMsg *m);
-	entry void allDoneCPForcesAllKPoint(CkReductionMsg *m);
-        entry [nokeep] void initCookie(ICCookieMsg *msg);
-        entry void doneInit(CkReductionMsg *msg);
-        entry void cleanExit(CkReductionMsg *m);
-        entry void cleanExitAll(CkReductionMsg *m);
-	entry void gspDoneNewTemp(CkReductionMsg *m);
-	entry void atomsDoneNewTemp(CkReductionMsg *m);
-	entry void fmagMinTest(CkReductionMsg *m);
-    };
+  message ICCookieMsg;
+  array [1D] InstanceController {
+    entry InstanceController();
+    entry void acceptNewTemperature(double t);
+    entry void useNewTemperature(double t);
+    entry void printEnergyEexc(CkReductionMsg *msg);
+    entry void printEnergyHart(CkReductionMsg *msg);
+    entry void printFictEke(CkReductionMsg *msg);
+    entry void allDoneCPForces(CkReductionMsg *m);
+    entry void printEnergyEke(CkReductionMsg *m);
+    entry void allDoneCPForcesAllKPoint(CkReductionMsg *m);
+    entry [nokeep] void initCookie(ICCookieMsg *msg);
+    entry void doneInit(CkReductionMsg *msg);
+    entry void cleanExit(CkReductionMsg *m);
+    entry void cleanExitAll(CkReductionMsg *m);
+    entry void gspDoneNewTemp(CkReductionMsg *m);
+    entry void atomsDoneNewTemp(CkReductionMsg *m);
+    entry void fmagMinTest(CkReductionMsg *m);
+  };
 };
 
 module temperController
 {
-	array [1D] TemperController {
-	      entry void TemperController();
-	      entry void acceptData(int temper, EnergyStruct);
-	};
+  array [1D] TemperController {
+    entry void TemperController();
+    entry void acceptData(int temper, EnergyStruct);
+  };
 };
 
 
 
 mainmodule cpaimd {	
-        initnode void initFFTLock(void);
+  initnode void initFFTLock(void);
 
-	readonly double Timer;
-	readonly int nstates;
-	readonly int sizeX;
-	readonly int nchareG;
-	readonly int Ortho_UE_step2;
-	readonly int Ortho_UE_step3;
-	readonly int Ortho_UE_error;
-	readonly bool Ortho_use_local_cb;
-	readonly int done_init;
-	readonly int TimeKeeperID;
-	readonly int numPes;
-	readonly int planes_per_pe;
-	readonly bool fakeTorus;
-	readonly CProxy_TimeKeeper TimeKeeperProxy;
-	initnode registersumFastDouble(void);
-	
-	extern module CPcharmParaInfo;
-	extern module PhysScratchCache;
-	extern module gSpaceDriver;
-	extern module gParticlePlane;
-	extern module gStatePlane;
-	extern module ckPairCalculator;
-	extern module CLA_Matrix; 
-	extern module ortho;
-	extern module structureFactor;
-	extern module structureFactorCache;
-	extern module Atoms;
-	extern module EnergyGroup;
-	extern module PIBeadAtoms;		
-	extern module timeKeeper;
-	extern module startupMessages;
-	extern module ENL_EKE_Collector;
-	extern module instanceController;
-	extern module temperController;
+  readonly double Timer;
+  readonly int nstates;
+  readonly int sizeX;
+  readonly int nchareG;
+  readonly int Ortho_UE_step2;
+  readonly int Ortho_UE_step3;
+  readonly int Ortho_UE_error;
+  readonly bool Ortho_use_local_cb;
+  readonly int done_init;
+  readonly int TimeKeeperID;
+  readonly int numPes;
+  readonly int planes_per_pe;
+  readonly bool fakeTorus;
+  readonly CProxy_TimeKeeper TimeKeeperProxy;
+  initnode registersumFastDouble(void);
 
-
-    readonly CPcharmParaInfo simReadOnly;
-	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
-	readonly CkHashtableT<intdual, int> GSmaptable;
-	readonly CkHashtableT<intdual, int> RSmaptable;
-	readonly CkHashtableT<intdual, int> RPPmaptable;
-	readonly CkHashtableT<intdual, int> RhoGSmaptable;
-	readonly CkHashtableT<intdual, int> RhoRSmaptable;
-	readonly CkHashtableT<intdual, int> RhoGHartmaptable;
-	readonly CkHashtableT<inttriple, int> RhoRHartmaptable;
-	readonly CkHashtableT<intdual, int> Orthomaptable;
-	readonly CkHashtableT<intdual, int> OrthoHelpermaptable;
-	readonly CkHashtableT<intdual, int> AsymScalcmaptable;
-	readonly CkHashtableT<intdual, int> SymScalcmaptable;
-	readonly CkVec <MapType1> AtomImaptable;
-	readonly CkVec <int> PIBImaptable;
-	readonly CkVec <MapType2> GSImaptable;
-	readonly CkVec <MapType2> RSImaptable;
-	readonly CkVec <MapType2> RPPImaptable;
-	readonly CkVec <MapType2> RhoGSImaptable;
-	readonly CkVec <MapType2> RhoRSImaptable;
-	readonly CkVec <MapType2> RhoGHartImaptable;
-	readonly CkVec <MapType3> RhoRHartImaptable;
+  extern module CPcharmParaInfo;
+  extern module PhysScratchCache;
+  extern module gSpaceDriver;
+  extern module gParticlePlane;
+  extern module gStatePlane;
+  extern module ckPairCalculator;
+  extern module CLA_Matrix; 
+  extern module ortho;
+  extern module structureFactor;
+  extern module structureFactorCache;
+  extern module Atoms;
+  extern module EnergyGroup;
+  extern module PIBeadAtoms;		
+  extern module timeKeeper;
+  extern module startupMessages;
+  extern module ENL_EKE_Collector;
+  extern module instanceController;
+  extern module temperController;
 
 
-	readonly Config config;
-
-	readonly CProxy_PhysScratchCache pScratchProxy;
-	readonly CProxy_InstanceController instControllerProxy;
-
-	readonly CProxy_TemperController temperControllerProxy;
-
-	readonly CProxy_ENL_EKE_Collector ENLEKECollectorProxy;
-
-	readonly CkVec <CProxy_PIBeadAtoms> UPIBeadAtomsProxy;
-
-	readonly CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
-	readonly CkVec <CProxy_GSpaceDriver> UgSpaceDriverProxy;
-	readonly CkVec <CProxy_CP_State_ParticlePlane> UparticlePlaneProxy;
-	readonly CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
-	readonly CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
-	readonly CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
-	readonly CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
-	readonly CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
-	readonly CkVec <CProxy_CP_Rho_RHartExt> UrhoRHartExtProxy;
-	readonly CkVec <CProxy_AtomsCache> UatomsCacheProxy;
-	readonly CkVec <CProxy_AtomsCompute> UatomsComputeProxy;
-	readonly CkVec <CProxy_EnergyGroup> UegroupProxy;
-	readonly CkVec <CProxy_FFTcache> UfftCacheProxy;
-	readonly CkVec <CProxy_StructFactCache> UsfCacheProxy;
-	readonly CkVec <CProxy_StructureFactor> UsfCompProxy;
-	readonly CkVec <CProxy_eesCache>  UeesCacheProxy;
-
-	readonly CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
-	readonly CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
-
-	readonly CkVec <UberCollection> UberAlles;
-	
-	readonly CkGroupID mCastGrpId;
-
-//#ifdef USE_COMLIB
-        // exc, hart, eext communication
-  	readonly ComlibInstanceHandle commGHartInstance;
-  	readonly ComlibInstanceHandle commGInstance0;
-  	readonly ComlibInstanceHandle commGInstance1;
-  	readonly ComlibInstanceHandle commGInstance2;
-  	readonly ComlibInstanceHandle commGInstance3;	
-  	readonly ComlibInstanceHandle commGByrdInstance;
-  	readonly ComlibInstanceHandle commRealInstance;
-  	readonly ComlibInstanceHandle commRealIGXInstance;
-  	readonly ComlibInstanceHandle commRealIGYInstance;
-  	readonly ComlibInstanceHandle commRealIGZInstance;
-
-    //ortho to itself
-  	readonly ComlibInstanceHandle orthoInstance;
-
-        // pc communication
-  	readonly ComlibInstanceHandle gAsymInstance;
-  	readonly ComlibInstanceHandle gSymInstance;
-
-        // multicast for vks to states and other things
-  	readonly CkVec <ComlibInstanceHandle> mcastInstance;
-  	readonly ComlibInstanceHandle mcastInstancePP;
-  	readonly ComlibInstanceHandle mcastInstanceRPP;
-  	readonly ComlibInstanceHandle mcastInstancemRPP;
-
-        // density from psi : g->r and r->g
-  	readonly ComlibInstanceHandle mssInstance;
-  	readonly ComlibInstanceHandle gssInstance;
-
-        // Nonlocal Ees method : g->r and r->g
-  	readonly ComlibInstanceHandle gssPInstance;
-  	readonly ComlibInstanceHandle mssPInstance;
-
-        // Eext method : g->r and r->g
-  	readonly ComlibInstanceHandle commRHartGHartIns;
-  	readonly ComlibInstanceHandle commGHartRHartIns0;
-  	readonly ComlibInstanceHandle commGHartRHartIns1;
-//#endif
-        // PINY Physics readonly data structures
-        readonly MDINTEGRATE  readonly_mdintegrate;
-        readonly MDATOMS      readonly_mdatoms;
-        readonly MDINTER      readonly_mdinter;
-        readonly MDINTRA      readonly_mdintra;
-        readonly GENERAL_DATA readonly_general_data;
-        readonly CP           readonly_cp; 
+  readonly CPcharmParaInfo simReadOnly;
+  readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
+  readonly CkHashtableT<intdual, int> GSmaptable;
+  readonly CkHashtableT<intdual, int> RSmaptable;
+  readonly CkHashtableT<intdual, int> RPPmaptable;
+  readonly CkHashtableT<intdual, int> RhoGSmaptable;
+  readonly CkHashtableT<intdual, int> RhoRSmaptable;
+  readonly CkHashtableT<intdual, int> RhoGHartmaptable;
+  readonly CkHashtableT<inttriple, int> RhoRHartmaptable;
+  readonly CkHashtableT<intdual, int> Orthomaptable;
+  readonly CkHashtableT<intdual, int> OrthoHelpermaptable;
+  readonly CkHashtableT<intdual, int> AsymScalcmaptable;
+  readonly CkHashtableT<intdual, int> SymScalcmaptable;
+  readonly CkVec <MapType1> AtomImaptable;
+  readonly CkVec <int> PIBImaptable;
+  readonly CkVec <MapType2> GSImaptable;
+  readonly CkVec <MapType2> RSImaptable;
+  readonly CkVec <MapType2> RPPImaptable;
+  readonly CkVec <MapType2> RhoGSImaptable;
+  readonly CkVec <MapType2> RhoRSImaptable;
+  readonly CkVec <MapType2> RhoGHartImaptable;
+  readonly CkVec <MapType3> RhoRHartImaptable;
 
 
+  readonly Config config;
 
-	message RSDummyResume;
-	
-	message GHartDummyMsg;
+  readonly CProxy_PhysScratchCache pScratchProxy;
+  readonly CProxy_InstanceController instControllerProxy;
 
-	message TMsg {complex data[];};
+  readonly CProxy_TemperController temperControllerProxy;
 
-	message RPPPFFTMsg {complex data[];};
+  readonly CProxy_ENL_EKE_Collector ENLEKECollectorProxy;
 
-	message RhoGSFFTMsg {complex data[];};
+  readonly CkVec <CProxy_PIBeadAtoms> UPIBeadAtomsProxy;
 
-	message RhoGHartMsg {complex data[];};
+  readonly CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
+  readonly CkVec <CProxy_GSpaceDriver> UgSpaceDriverProxy;
+  readonly CkVec <CProxy_CP_State_ParticlePlane> UparticlePlaneProxy;
+  readonly CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
+  readonly CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
+  readonly CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
+  readonly CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
+  readonly CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
+  readonly CkVec <CProxy_CP_Rho_RHartExt> UrhoRHartExtProxy;
+  readonly CkVec <CProxy_AtomsCache> UatomsCacheProxy;
+  readonly CkVec <CProxy_AtomsCompute> UatomsComputeProxy;
+  readonly CkVec <CProxy_EnergyGroup> UegroupProxy;
+  readonly CkVec <CProxy_FFTcache> UfftCacheProxy;
+  readonly CkVec <CProxy_StructFactCache> UsfCacheProxy;
+  readonly CkVec <CProxy_StructureFactor> UsfCompProxy;
+  readonly CkVec <CProxy_eesCache>  UeesCacheProxy;
 
-	message RhoRHartMsg {complex data[];};
+  readonly CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
+  readonly CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
 
-	message RhoRSFFTMsg {complex data[];};
+  readonly CkVec <UberCollection> UberAlles;
 
-	message RhoHartRSFFTMsg {complex data[];};
+  readonly CkGroupID mCastGrpId;
 
-	mainchare main {
-		entry main(CkArgMsg *);
-	};
+  //#ifdef USE_COMLIB
+  // exc, hart, eext communication
+  readonly ComlibInstanceHandle commGHartInstance;
+  readonly ComlibInstanceHandle commGInstance0;
+  readonly ComlibInstanceHandle commGInstance1;
+  readonly ComlibInstanceHandle commGInstance2;
+  readonly ComlibInstanceHandle commGInstance3;	
+  readonly ComlibInstanceHandle commGByrdInstance;
+  readonly ComlibInstanceHandle commRealInstance;
+  readonly ComlibInstanceHandle commRealIGXInstance;
+  readonly ComlibInstanceHandle commRealIGYInstance;
+  readonly ComlibInstanceHandle commRealIGZInstance;
 
-	array [2D] CP_Rho_RealSpacePlane {	
-		entry CP_Rho_RealSpacePlane(int, bool,int,int, int, UberCollection);
-		entry void init();
-                entry void exitForDebugging();
-		entry void acceptDensity(CkReductionMsg *m);
-		entry void acceptGradRhoVks(RhoRSFFTMsg *msg);
-                entry void acceptGradRhoVksAll(RhoRSFFTMsg *msg);
-		entry void acceptWhiteByrd(RhoRSFFTMsg *msg);
-		entry void acceptHartVks(RhoHartRSFFTMsg *msg);
-	        entry void RHartReport();
-		entry void isAtSync(int);
-                entry void acceptRhoGradVksRyToGy(RhoGSFFTMsg *msg);
-                entry void acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg);
-	};
+  //ortho to itself
+  readonly ComlibInstanceHandle orthoInstance;
 
-       array [3D] CP_Rho_RHartExt {
-                entry CP_Rho_RHartExt(int, int, int,int,int, UberCollection);
-		entry void init();
-                entry void startEextIter();
-                entry void recvAtmForcFromRhoGHart(RhoRHartMsg *msg);
-                entry void registrationDone(CkReductionMsg *msg);
-                entry void recvAtmSfRyToGy(RhoGHartMsg *msg);
-                entry void recvAtmForcGxToRx(RhoGHartMsg *msg);
-                entry void exitForDebugging();
-        }
+  // pc communication
+  readonly ComlibInstanceHandle gAsymInstance;
+  readonly ComlibInstanceHandle gSymInstance;
 
-	array [2D] CP_Rho_GSpacePlane {
-		entry CP_Rho_GSpacePlane(int, int, int, bool, UberCollection);
-		entry void init();
-		entry void acceptRhoData(RhoGSFFTMsg *msg);
-		entry void acceptWhiteByrd(RhoGSFFTMsg *msg);
-                entry void acceptWhiteByrdAll(RhoGSFFTMsg *msg);
-		entry void isAtSync(int);
-		entry [local] void doRhoFFT();
-                entry void exitForDebugging();
-	};
+  // multicast for vks to states and other things
+  readonly CkVec <ComlibInstanceHandle> mcastInstance;
+  readonly ComlibInstanceHandle mcastInstancePP;
+  readonly ComlibInstanceHandle mcastInstanceRPP;
+  readonly ComlibInstanceHandle mcastInstancemRPP;
 
-	array [2D] CP_Rho_GHartExt {
-		entry CP_Rho_GHartExt(int,int,int,int,int, UberCollection);
-		entry void acceptData(RhoGHartMsg *msg);
-		entry void init();
-		entry void isAtSync(int);
-		entry void recvAtmSFFromRhoRHart(RhoGHartMsg *msg);
-		entry [local] void FFTEesBck();
-                entry void registrationDone(CkReductionMsg *msg);
-                entry void exitForDebugging();
-                entry void acceptVks(int size, complex inVks[size]);
-                entry void acceptAtmSFTot(int size, complex inSF[size]);
-	};
-       array [1D] CP_LargeSP_RhoGSpacePlane {
-		entry CP_LargeSP_RhoGSpacePlane(UberCollection);
-		entry [nokeep] void init();
-		entry void acceptMDSg();
-		entry void acceptLSPRhoR();
-	};	
+  // density from psi : g->r and r->g
+  readonly ComlibInstanceHandle mssInstance;
+  readonly ComlibInstanceHandle gssInstance;
 
-       array [2D] CP_LargeSP_RhoRealSpacePlane {
-		entry CP_LargeSP_RhoRealSpacePlane(UberCollection);
-		entry [nokeep] void init();
-		entry void acceptLSPRhoG();
-		entry void acceptRhoR();
-	};	
+  // Nonlocal Ees method : g->r and r->g
+  readonly ComlibInstanceHandle gssPInstance;
+  readonly ComlibInstanceHandle mssPInstance;
 
-	group AtomComputeMap : CkArrayMap {
-		entry AtomComputeMap(UberCollection);
-	};
-
-	group RhoGSMap : CkArrayMap {
-		entry RhoGSMap(UberCollection);
-	};
-
-	group RhoRSMap : CkArrayMap {
-		entry RhoRSMap(UberCollection);
-	};
-
-	group RhoGHartMap : CkArrayMap {
-		entry RhoGHartMap(UberCollection);
-	};
-
-	group RhoRHartMap : CkArrayMap {
-		entry RhoRHartMap(UberCollection);
-	};
-        
-	group GSMap : CkArrayMap {
-		entry GSMap(UberCollection);
-	};
-	
-	group RPPMap : CkArrayMap {
-		entry RPPMap(UberCollection);
-	};
-
-
-	group RSMap : CkArrayMap {
-		entry RSMap(UberCollection);
-	};
-
-    extern module pcMaps; // Just so that this module gets registered
-	
-	/** 
-	  * A place to hold the fftw plans or sizes for essl.
-	  * Preallocated space for ffts some of which retain their data  
-	  * across entry method calls.  Does no messaging.
-	  */	
-	group FFTcache {
-		entry FFTcache( int , int , int , int , int , int , 
-                   int , int , int , int , int , int , int ,
-                   int nchareGState, int nchareRState,
-                   int nchareGNL,    int nchareRNL, 
-                   int nchareGRho,   int nchareRRho,  int nchareRRhoTot,
-                   int nchareGEext,  int nchareREext, int nchareREextTot,
-                   int numGState[nchareGState],   
-                   int numRXState[nchareRState], 
-                   int numRYState[nchareRState],
-                   int numRYStateLower[nchareRState],
-                   int numGNL[nchareGNL],      
-                   int numRXNL[nchareRNL],
-                   int numRYNL[nchareRNL],
-                   int numRYNLLower[nchareRNL],
-                   int numGRho[nchareGRho],    
-                   int numRXRho[nchareRRhoTot],  
-                   int numRYRho[nchareRRhoTot],
-                   int numGEext[nchareGEext],    
-                   int numRXEext[nchareREextTot],  
-                   int numRYEext[nchareREextTot],
-                   int ,  int ,  int , int, UberCollection );
-	};
+  // Eext method : g->r and r->g
+  readonly ComlibInstanceHandle commRHartGHartIns;
+  readonly ComlibInstanceHandle commGHartRHartIns0;
+  readonly ComlibInstanceHandle commGHartRHartIns1;
+  //#endif
+  // PINY Physics readonly data structures
+  readonly MDINTEGRATE  readonly_mdintegrate;
+  readonly MDATOMS      readonly_mdatoms;
+  readonly MDINTER      readonly_mdinter;
+  readonly MDINTRA      readonly_mdintra;
+  readonly GENERAL_DATA readonly_general_data;
+  readonly CP           readonly_cp; 
 
 
 
-	/** 
-	  * A place to hold the computed ees planewise data on each proc
-	  */	
-	group eesCache {
-		entry eesCache(int,int,int,int,int,int,int, UberCollection);
-	};
+  message RSDummyResume;
+
+  message GHartDummyMsg;
+
+  message TMsg {complex data[];};
+
+  message RPPPFFTMsg {complex data[];};
+
+  message RhoGSFFTMsg {complex data[];};
+
+  message RhoGHartMsg {complex data[];};
+
+  message RhoRHartMsg {complex data[];};
+
+  message RhoRSFFTMsg {complex data[];};
+
+  message RhoHartRSFFTMsg {complex data[];};
+
+  mainchare main {
+    entry main(CkArgMsg *);
+  };
+
+  array [2D] CP_Rho_RealSpacePlane {	
+    entry CP_Rho_RealSpacePlane(int, bool,int,int, int, UberCollection);
+    entry void init();
+    entry void exitForDebugging();
+    entry void acceptDensity(CkReductionMsg *m);
+    entry void acceptGradRhoVks(RhoRSFFTMsg *msg);
+    entry void acceptGradRhoVksAll(RhoRSFFTMsg *msg);
+    entry void acceptWhiteByrd(RhoRSFFTMsg *msg);
+    entry void acceptHartVks(RhoHartRSFFTMsg *msg);
+    entry void RHartReport();
+    entry void isAtSync(int);
+    entry void acceptRhoGradVksRyToGy(RhoGSFFTMsg *msg);
+    entry void acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg);
+  };
+
+  array [3D] CP_Rho_RHartExt {
+    entry CP_Rho_RHartExt(int, int, int,int,int, UberCollection);
+    entry void init();
+    entry void startEextIter();
+    entry void recvAtmForcFromRhoGHart(RhoRHartMsg *msg);
+    entry void registrationDone(CkReductionMsg *msg);
+    entry void recvAtmSfRyToGy(RhoGHartMsg *msg);
+    entry void recvAtmForcGxToRx(RhoGHartMsg *msg);
+    entry void exitForDebugging();
+  }
+
+  array [2D] CP_Rho_GSpacePlane {
+    entry CP_Rho_GSpacePlane(int, int, int, bool, UberCollection);
+    entry void init();
+    entry void acceptRhoData(RhoGSFFTMsg *msg);
+    entry void acceptWhiteByrd(RhoGSFFTMsg *msg);
+    entry void acceptWhiteByrdAll(RhoGSFFTMsg *msg);
+    entry void isAtSync(int);
+    entry [local] void doRhoFFT();
+    entry void exitForDebugging();
+  };
+
+  array [2D] CP_Rho_GHartExt {
+    entry CP_Rho_GHartExt(int,int,int,int,int, UberCollection);
+    entry void acceptData(RhoGHartMsg *msg);
+    entry void init();
+    entry void isAtSync(int);
+    entry void recvAtmSFFromRhoRHart(RhoGHartMsg *msg);
+    entry [local] void FFTEesBck();
+    entry void registrationDone(CkReductionMsg *msg);
+    entry void exitForDebugging();
+    entry void acceptVks(int size, complex inVks[size]);
+    entry void acceptAtmSFTot(int size, complex inSF[size]);
+  };
+  array [1D] CP_LargeSP_RhoGSpacePlane {
+    entry CP_LargeSP_RhoGSpacePlane(UberCollection);
+    entry [nokeep] void init();
+    entry void acceptMDSg();
+    entry void acceptLSPRhoR();
+  };	
+
+  array [2D] CP_LargeSP_RhoRealSpacePlane {
+    entry CP_LargeSP_RhoRealSpacePlane(UberCollection);
+    entry [nokeep] void init();
+    entry void acceptLSPRhoG();
+    entry void acceptRhoR();
+  };	
+
+  group AtomComputeMap : CkArrayMap {
+    entry AtomComputeMap(UberCollection);
+  };
+
+  group RhoGSMap : CkArrayMap {
+    entry RhoGSMap(UberCollection);
+  };
+
+  group RhoRSMap : CkArrayMap {
+    entry RhoRSMap(UberCollection);
+  };
+
+  group RhoGHartMap : CkArrayMap {
+    entry RhoGHartMap(UberCollection);
+  };
+
+  group RhoRHartMap : CkArrayMap {
+    entry RhoRHartMap(UberCollection);
+  };
+
+  group GSMap : CkArrayMap {
+    entry GSMap(UberCollection);
+  };
+
+  group RPPMap : CkArrayMap {
+    entry RPPMap(UberCollection);
+  };
+
+
+  group RSMap : CkArrayMap {
+    entry RSMap(UberCollection);
+  };
+
+  extern module pcMaps; // Just so that this module gets registered
+
+  /** 
+   * A place to hold the fftw plans or sizes for essl.
+   * Preallocated space for ffts some of which retain their data  
+   * across entry method calls.  Does no messaging.
+   */	
+  group FFTcache {
+    entry FFTcache( int , int , int , int , int , int , 
+        int , int , int , int , int , int , int ,
+        int nchareGState, int nchareRState,
+        int nchareGNL,    int nchareRNL, 
+        int nchareGRho,   int nchareRRho,  int nchareRRhoTot,
+        int nchareGEext,  int nchareREext, int nchareREextTot,
+        int numGState[nchareGState],   
+        int numRXState[nchareRState], 
+        int numRYState[nchareRState],
+        int numRYStateLower[nchareRState],
+        int numGNL[nchareGNL],      
+        int numRXNL[nchareRNL],
+        int numRYNL[nchareRNL],
+        int numRYNLLower[nchareRNL],
+        int numGRho[nchareGRho],    
+        int numRXRho[nchareRRhoTot],  
+        int numRYRho[nchareRRhoTot],
+        int numGEext[nchareGEext],    
+        int numRXEext[nchareREextTot],  
+        int numRYEext[nchareREextTot],
+        int ,  int ,  int , int, UberCollection );
+  };
+
+
+
+  /** 
+   * A place to hold the computed ees planewise data on each proc
+   */	
+  group eesCache {
+    entry eesCache(int,int,int,int,int,int,int, UberCollection);
+  };
 };
 

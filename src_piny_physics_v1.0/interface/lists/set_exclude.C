@@ -30,15 +30,15 @@
 /*==========================================================================*/
 
 void set_exclude(MDCLATOMS_INFO *clatoms_info,MDGHOST_ATOMS *ghost_atoms,
-               MDINTRA *bonded,MDEXCL *excl,NULL_INTER_PARSE *null_inter_parse,
-               int *cp_atm_flag,
-               int iperd,double *tot_memory, double alp_ewd)
+    MDINTRA *bonded,MDEXCL *excl,NULL_INTER_PARSE *null_inter_parse,
+    int *cp_atm_flag,
+    int iperd,double *tot_memory, double alp_ewd)
 
-/*========================================================================*/
-/*             Begin subprogram:                                          */
-   {/*begin routine*/
-/*========================================================================*/
-/*             Local variable declarations                                */
+  /*========================================================================*/
+  /*             Begin subprogram:                                          */
+{/*begin routine*/
+  /*========================================================================*/
+  /*             Local variable declarations                                */
 
   int num_excl_now;
   int *jtmp1,*jtmp2;
@@ -49,43 +49,43 @@ void set_exclude(MDCLATOMS_INFO *clatoms_info,MDGHOST_ATOMS *ghost_atoms,
   int bond_npow  = bonded->mdbond.npow;
   int bend_npow  = bonded->mdbend.npow;
 
-/*========================================================================*/
-/* 0) Output */
+  /*========================================================================*/
+  /* 0) Output */
 
   PRINT_LINE_STAR;
   PRINTF("Finding the excluded interactions\n");
   PRINT_LINE_DASH;PRINTF("\n");
 
-/*========================================================================*/
-/*  I) Allocate temporary memory */
-  
+  /*========================================================================*/
+  /*  I) Allocate temporary memory */
+
   nghost_exl = 0;
   for(i=1;i<=ghost_atoms->nghost_tot;i++){
     nghost_exl +=   ghost_atoms->natm_comp[i];
   }/*endfor*/
   num_excl_now  =  (bond_npow + bonded->mdbond.ncon
-		    + null_inter_parse->nbond_nul
-		    + bend_npow
-		    + null_inter_parse->nbend_nul
-		    + bonded->mdtors.npow
-		    + null_inter_parse->ntors_nul
-		    + bonded->mdonfo.num+null_inter_parse->nonfo_nul
-		    + bonded->mdbend_bnd.num
-                    + 1*bonded->mdgrp_bond_con.num_21
-                    + 2*bonded->mdgrp_bond_con.num_23
-                    + 3*bonded->mdgrp_bond_con.num_33
-                    + 3*bonded->mdgrp_bond_watts.num_33
-                    + 3*bonded->mdgrp_bond_con.num_43
-                    + 6*bonded->mdgrp_bond_con.num_46
-                    + nghost_exl);
+      + null_inter_parse->nbond_nul
+      + bend_npow
+      + null_inter_parse->nbend_nul
+      + bonded->mdtors.npow
+      + null_inter_parse->ntors_nul
+      + bonded->mdonfo.num+null_inter_parse->nonfo_nul
+      + bonded->mdbend_bnd.num
+      + 1*bonded->mdgrp_bond_con.num_21
+      + 2*bonded->mdgrp_bond_con.num_23
+      + 3*bonded->mdgrp_bond_con.num_33
+      + 3*bonded->mdgrp_bond_watts.num_33
+      + 3*bonded->mdgrp_bond_con.num_43
+      + 6*bonded->mdgrp_bond_con.num_46
+      + nghost_exl);
 
   jtmp1      = (int *)cmalloc(num_excl_now*sizeof(int),"set_exclude")-1;
   jtmp2      = (int *)cmalloc(num_excl_now*sizeof(int),"set_exclude")-1;
 
-/*========================================================================*/
-/* II) Set up exclusion list                                              */
-/*------------------------------------------------------------------------*/
-/*    1)Exclude Bonds */
+  /*========================================================================*/
+  /* II) Set up exclusion list                                              */
+  /*------------------------------------------------------------------------*/
+  /*    1)Exclude Bonds */
 
   ioff = 0;
 
@@ -103,14 +103,14 @@ void set_exclude(MDCLATOMS_INFO *clatoms_info,MDGHOST_ATOMS *ghost_atoms,
   ioff += bonded->mdbond.ncon;
   for(i=1;i<=null_inter_parse->nbond_nul;i++){
     jtmp1[(i+ioff)] =  MAX(null_inter_parse->jbond1_nul[i],
-			 null_inter_parse->jbond2_nul[i]);
+        null_inter_parse->jbond2_nul[i]);
     jtmp2[(i+ioff)] =  MIN(null_inter_parse->jbond1_nul[i],
-			 null_inter_parse->jbond2_nul[i]);
+        null_inter_parse->jbond2_nul[i]);
   }/*endfor*/
   ioff +=null_inter_parse->nbond_nul;
 
-/*----------------------------------------------------------------------*/
-/*    2)Exclude Bends */
+  /*----------------------------------------------------------------------*/
+  /*    2)Exclude Bends */
 
   for(i=1;i<= bend_npow;i++){
     jtmp1[(i+ioff)] =  MAX(bonded->mdbend.j1_pow[i],bonded->mdbend.j3_pow[i]);
@@ -120,14 +120,14 @@ void set_exclude(MDCLATOMS_INFO *clatoms_info,MDGHOST_ATOMS *ghost_atoms,
 
   for(i=1;i<=null_inter_parse->nbend_nul;i++){
     jtmp1[(i+ioff)] =  MAX(null_inter_parse->jbend1_nul[i],
-			 null_inter_parse->jbend3_nul[i]);
+        null_inter_parse->jbend3_nul[i]);
     jtmp2[(i+ioff)] =  MIN(null_inter_parse->jbend1_nul[i],
-			 null_inter_parse->jbend3_nul[i]);
+        null_inter_parse->jbend3_nul[i]);
   }/*endfor*/
   ioff += null_inter_parse->nbend_nul;
 
- /*----------------------------------------------------------------------*/
- /*    3)Exclude Torsions */
+  /*----------------------------------------------------------------------*/
+  /*    3)Exclude Torsions */
 
   for(i=1;i<=bonded->mdtors.npow;i++){
     jtmp1[(i+ioff)] =  MAX(bonded->mdtors.j1_pow[i],bonded->mdtors.j4_pow[i]);
@@ -137,14 +137,14 @@ void set_exclude(MDCLATOMS_INFO *clatoms_info,MDGHOST_ATOMS *ghost_atoms,
 
   for(i=1;i<=null_inter_parse->ntors_nul;i++){
     jtmp1[(i+ioff)] =  MAX(null_inter_parse->jtors1_nul[i],
-			 null_inter_parse->jtors4_nul[i]);
+        null_inter_parse->jtors4_nul[i]);
     jtmp2[(i+ioff)] =  MIN(null_inter_parse->jtors1_nul[i],
-			 null_inter_parse->jtors4_nul[i]);
+        null_inter_parse->jtors4_nul[i]);
   }/*endfor*/
   ioff += null_inter_parse->ntors_nul;
 
-/*---------------------------------------------------------------------*/
-/*    4)Exclude Onefours */
+  /*---------------------------------------------------------------------*/
+  /*    4)Exclude Onefours */
 
   for(i=1;i<=bonded->mdonfo.num;i++){
     jtmp1[(i+ioff)] =  MAX(bonded->mdonfo.j1[i],bonded->mdonfo.j2[i]);
@@ -153,202 +153,202 @@ void set_exclude(MDCLATOMS_INFO *clatoms_info,MDGHOST_ATOMS *ghost_atoms,
   ioff += bonded->mdonfo.num;
   for(i=1;i<=null_inter_parse->nonfo_nul;i++){
     jtmp1[(i+ioff)] =  MAX(null_inter_parse->jonfo1_nul[i],
-			 null_inter_parse->jonfo2_nul[i]);
+        null_inter_parse->jonfo2_nul[i]);
     jtmp2[(i+ioff)] =  MIN(null_inter_parse->jonfo1_nul[i],
-			 null_inter_parse->jonfo2_nul[i]);
+        null_inter_parse->jonfo2_nul[i]);
   }/*endfor*/
   ioff += null_inter_parse->nonfo_nul;
 
-/*---------------------------------------------------------------------*/
-/*    5)Exclude bend_bonds */
+  /*---------------------------------------------------------------------*/
+  /*    5)Exclude bend_bonds */
   for(i=1;i<=bonded->mdbend_bnd.num;i++){
     jtmp1[(i+ioff)] =  MAX(bonded->mdbend_bnd.j1[i],bonded->mdbend_bnd.j3[i]);
     jtmp2[(i+ioff)] =  MIN(bonded->mdbend_bnd.j1[i],bonded->mdbend_bnd.j3[i]);
   }/*endfor*/
   ioff += bonded->mdbend_bnd.num;
 
-/*---------------------------------------------------------------------*/
-/*    6)Exclude ghost-ghost composition atoms */
+  /*---------------------------------------------------------------------*/
+  /*    6)Exclude ghost-ghost composition atoms */
   for(i=1;i<=ghost_atoms->nghost_tot;i++){
     for(k=1;k<=ghost_atoms->natm_comp[i];k++){
       jtmp1[(k+ioff)] =  
-          MAX(ghost_atoms->ighost_map[i],ghost_atoms->iatm_comp[k][i]);
+        MAX(ghost_atoms->ighost_map[i],ghost_atoms->iatm_comp[k][i]);
       jtmp2[(k+ioff)] =  
-          MIN(ghost_atoms->ighost_map[i],ghost_atoms->iatm_comp[k][i]);
+        MIN(ghost_atoms->ighost_map[i],ghost_atoms->iatm_comp[k][i]);
     }/*endfor*/
     ioff += ghost_atoms->natm_comp[i];
   }/*endfor*/
 
-/*---------------------------------------------------------------------*/
-/*  7)Exclude group constraints */
+  /*---------------------------------------------------------------------*/
+  /*  7)Exclude group constraints */
 
-/*   i) 21 [1-2]                */
+  /*   i) 21 [1-2]                */
 #ifdef DEBUG
   PRINTF("number of group constrains %8d \n",bonded->mdgrp_bond_con.num_21);
 #endif
   for(i=1;i<=bonded->mdgrp_bond_con.num_21;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_21[i],bonded->mdgrp_bond_con.j2_21[i]);
+      MAX(bonded->mdgrp_bond_con.j1_21[i],bonded->mdgrp_bond_con.j2_21[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j1_21[i],bonded->mdgrp_bond_con.j2_21[i]);
+      MIN(bonded->mdgrp_bond_con.j1_21[i],bonded->mdgrp_bond_con.j2_21[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_21;
 
-/*   i) 23 [1-2,1-3]                */
+  /*   i) 23 [1-2,1-3]                */
   for(i=1;i<=bonded->mdgrp_bond_con.num_23;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_23[i],bonded->mdgrp_bond_con.j2_23[i]);
+      MAX(bonded->mdgrp_bond_con.j1_23[i],bonded->mdgrp_bond_con.j2_23[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j1_23[i],bonded->mdgrp_bond_con.j2_23[i]);
+      MIN(bonded->mdgrp_bond_con.j1_23[i],bonded->mdgrp_bond_con.j2_23[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_23;
   for(i=1;i<=bonded->mdgrp_bond_con.num_23;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_23[i],bonded->mdgrp_bond_con.j3_23[i]);
+      MAX(bonded->mdgrp_bond_con.j1_23[i],bonded->mdgrp_bond_con.j3_23[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j1_23[i],bonded->mdgrp_bond_con.j3_23[i]);
+      MIN(bonded->mdgrp_bond_con.j1_23[i],bonded->mdgrp_bond_con.j3_23[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_23;
 
-/*   i) 33 [1-2,1-3,2-3]            */
+  /*   i) 33 [1-2,1-3,2-3]            */
 #ifdef DEBUG
   PRINTF("number of group constrains %8d \n",bonded->mdgrp_bond_con.num_33);
 #endif
   for(i=1;i<=bonded->mdgrp_bond_con.num_33;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_33[i],bonded->mdgrp_bond_con.j2_33[i]);
+      MAX(bonded->mdgrp_bond_con.j1_33[i],bonded->mdgrp_bond_con.j2_33[i]);
     jtmp2[(i+ioff)] =  
 
-         MIN(bonded->mdgrp_bond_con.j1_33[i],bonded->mdgrp_bond_con.j2_33[i]);
+      MIN(bonded->mdgrp_bond_con.j1_33[i],bonded->mdgrp_bond_con.j2_33[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_33;
   for(i=1;i<=bonded->mdgrp_bond_con.num_33;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_33[i],bonded->mdgrp_bond_con.j3_33[i]);
+      MAX(bonded->mdgrp_bond_con.j1_33[i],bonded->mdgrp_bond_con.j3_33[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j1_33[i],bonded->mdgrp_bond_con.j3_33[i]);
+      MIN(bonded->mdgrp_bond_con.j1_33[i],bonded->mdgrp_bond_con.j3_33[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_33;
   for(i=1;i<=bonded->mdgrp_bond_con.num_33;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j2_33[i],bonded->mdgrp_bond_con.j3_33[i]);
+      MAX(bonded->mdgrp_bond_con.j2_33[i],bonded->mdgrp_bond_con.j3_33[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j2_33[i],bonded->mdgrp_bond_con.j3_33[i]);
+      MIN(bonded->mdgrp_bond_con.j2_33[i],bonded->mdgrp_bond_con.j3_33[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_33;
 
-/*   i) 33 Watts [1-2,1-3,2-3]            */
+  /*   i) 33 Watts [1-2,1-3,2-3]            */
 #ifdef DEBUG
   PRINTF("number of group constrains %8d \n",bonded->mdgrp_bond_con.num_33);
 #endif
   for(i=1;i<=bonded->mdgrp_bond_watts.num_33;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_watts.j1_33[i],bonded->mdgrp_bond_watts.j2_33[i]);
+      MAX(bonded->mdgrp_bond_watts.j1_33[i],bonded->mdgrp_bond_watts.j2_33[i]);
     jtmp2[(i+ioff)] =  
 
-         MIN(bonded->mdgrp_bond_watts.j1_33[i],bonded->mdgrp_bond_watts.j2_33[i]);
+      MIN(bonded->mdgrp_bond_watts.j1_33[i],bonded->mdgrp_bond_watts.j2_33[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_watts.num_33;
   for(i=1;i<=bonded->mdgrp_bond_watts.num_33;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_watts.j1_33[i],bonded->mdgrp_bond_watts.j3_33[i]);
+      MAX(bonded->mdgrp_bond_watts.j1_33[i],bonded->mdgrp_bond_watts.j3_33[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_watts.j1_33[i],bonded->mdgrp_bond_watts.j3_33[i]);
+      MIN(bonded->mdgrp_bond_watts.j1_33[i],bonded->mdgrp_bond_watts.j3_33[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_watts.num_33;
   for(i=1;i<=bonded->mdgrp_bond_watts.num_33;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_watts.j2_33[i],bonded->mdgrp_bond_watts.j3_33[i]);
+      MAX(bonded->mdgrp_bond_watts.j2_33[i],bonded->mdgrp_bond_watts.j3_33[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_watts.j2_33[i],bonded->mdgrp_bond_watts.j3_33[i]);
+      MIN(bonded->mdgrp_bond_watts.j2_33[i],bonded->mdgrp_bond_watts.j3_33[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_watts.num_33;
 
-/*   i) 43 [1-2,1-3,1-4]*/
+  /*   i) 43 [1-2,1-3,1-4]*/
   for(i=1;i<=bonded->mdgrp_bond_con.num_43;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j2_43[i]);
+      MAX(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j2_43[i]);
 
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j2_43[i]);
+      MIN(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j2_43[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_43;
   for(i=1;i<=bonded->mdgrp_bond_con.num_43;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j3_43[i]);
+      MAX(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j3_43[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j3_43[i]);
+      MIN(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j3_43[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_43;
   for(i=1;i<=bonded->mdgrp_bond_con.num_43;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j4_43[i]);
+      MAX(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j4_43[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j4_43[i]);
+      MIN(bonded->mdgrp_bond_con.j1_43[i],bonded->mdgrp_bond_con.j4_43[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_43;
 
-/*   i) 46 [1-2,1-3,1-4,2-3,2-4,3-4]*/
+  /*   i) 46 [1-2,1-3,1-4,2-3,2-4,3-4]*/
   for(i=1;i<=bonded->mdgrp_bond_con.num_46;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j2_46[i]);
+      MAX(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j2_46[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j2_46[i]);
+      MIN(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j2_46[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_46;
   for(i=1;i<=bonded->mdgrp_bond_con.num_46;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j3_46[i]);
+      MAX(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j3_46[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j3_46[i]);
+      MIN(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j3_46[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_46;
   for(i=1;i<=bonded->mdgrp_bond_con.num_46;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j4_46[i]);
+      MAX(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j4_46[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j4_46[i]);
+      MIN(bonded->mdgrp_bond_con.j1_46[i],bonded->mdgrp_bond_con.j4_46[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_46;
   for(i=1;i<=bonded->mdgrp_bond_con.num_46;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j2_46[i],bonded->mdgrp_bond_con.j3_46[i]);
+      MAX(bonded->mdgrp_bond_con.j2_46[i],bonded->mdgrp_bond_con.j3_46[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j2_46[i],bonded->mdgrp_bond_con.j3_46[i]);
+      MIN(bonded->mdgrp_bond_con.j2_46[i],bonded->mdgrp_bond_con.j3_46[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_46;
   for(i=1;i<=bonded->mdgrp_bond_con.num_46;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j2_46[i],bonded->mdgrp_bond_con.j4_46[i]);
+      MAX(bonded->mdgrp_bond_con.j2_46[i],bonded->mdgrp_bond_con.j4_46[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j2_46[i],bonded->mdgrp_bond_con.j4_46[i]);
+      MIN(bonded->mdgrp_bond_con.j2_46[i],bonded->mdgrp_bond_con.j4_46[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_46;
   for(i=1;i<=bonded->mdgrp_bond_con.num_46;i++){
     jtmp1[(i+ioff)] =  
-         MAX(bonded->mdgrp_bond_con.j3_46[i],bonded->mdgrp_bond_con.j4_46[i]);
+      MAX(bonded->mdgrp_bond_con.j3_46[i],bonded->mdgrp_bond_con.j4_46[i]);
     jtmp2[(i+ioff)] =  
-         MIN(bonded->mdgrp_bond_con.j3_46[i],bonded->mdgrp_bond_con.j4_46[i]);
+      MIN(bonded->mdgrp_bond_con.j3_46[i],bonded->mdgrp_bond_con.j4_46[i]);
   }/*endfor*/
   ioff += bonded->mdgrp_bond_con.num_46;
 
-/*======================================================================*/
-/* III) Sort the list                                                   */
+  /*======================================================================*/
+  /* III) Sort the list                                                   */
 
   if(num_excl_now>1){
     exl_sort(&num_excl_now,jtmp1,jtmp2,clatoms_info->natm_tot);
   }/*endif*/ 
 
-/*======================================================================*/
-/* IV) Form exclusion list                                              */
+  /*======================================================================*/
+  /* IV) Form exclusion list                                              */
 
   now_memory = (
-                (num_excl_now)*(sizeof(double)*0 + sizeof(int)*1 )
-               +(clatoms_info->natm_tot)*(sizeof(double)*0 + sizeof(int)*2 )
-               )*1.e-06;
+      (num_excl_now)*(sizeof(double)*0 + sizeof(int)*1 )
+      +(clatoms_info->natm_tot)*(sizeof(double)*0 + sizeof(int)*2 )
+      )*1.e-06;
   *tot_memory += now_memory;
   PRINTF("Exclusion allocation: %g Mbytes; Total memory %g Mbytes\n",
-           now_memory,*tot_memory);
+      now_memory,*tot_memory);
 
   excl->nlst = num_excl_now;
   excl->j    = (int *)cmalloc(excl->nlst*sizeof(int),"set_exclude")-1;
@@ -368,9 +368,9 @@ void set_exclude(MDCLATOMS_INFO *clatoms_info,MDGHOST_ATOMS *ghost_atoms,
   }/*endfor*/
 
 
-/*========================================================================*/
-/* VI) Sort the exclusions of each particle into ascending order */
-/*     using a stupid sort because technical support got lazy     */
+  /*========================================================================*/
+  /* VI) Sort the exclusions of each particle into ascending order */
+  /*     using a stupid sort because technical support got lazy     */
 
   for(i=2;i<=clatoms_info->natm_tot;i++){
     kstart = excl->j_off[i]+1;
@@ -378,67 +378,67 @@ void set_exclude(MDCLATOMS_INFO *clatoms_info,MDGHOST_ATOMS *ghost_atoms,
     for(k=kstart;k<=kend;k++){
       for(j=k+1;j<=kend;j++){
         if(excl->j[j]<excl->j[k] ){
-         itemp = excl->j[k];
-         excl->j[k] =  excl->j[j];
-         excl->j[j] =  itemp;
+          itemp = excl->j[k];
+          excl->j[k] =  excl->j[j];
+          excl->j[j] =  itemp;
         }/*endif*/
       }/*endfor*/
     }/*endfor*/
   }/*endfor*/
 
-/*========================================================================*/
-/* V) Output */
+  /*========================================================================*/
+  /* V) Output */
 
   PRINTF("Total number of exclusions, %d\n\n",num_excl_now);
   PRINT_LINE_DASH;
   PRINTF("Completed exclusion generation\n"); 
   PRINT_LINE_STAR;PRINTF("\n");
 
-/*======================================================================*/
-/*  VI) Form ewald corrections                                           */
+  /*======================================================================*/
+  /*  VI) Form ewald corrections                                           */
 
   bonded->mdecor.num = 0;
 
   if(iperd>0){
 
-      PRINT_LINE_STAR;
-      PRINTF("Determining ewald corrections \n");
-      PRINT_LINE_DASH;PRINTF("\n");
+    PRINT_LINE_STAR;
+    PRINTF("Determining ewald corrections \n");
+    PRINT_LINE_DASH;PRINTF("\n");
 
     bonded->mdecor.alp_ewd = alp_ewd;
     for(i=1;i<=num_excl_now;i++){
       if((clatoms_info->q[(jtmp1[i])]!= 0.0)
-       &&(clatoms_info->q[(jtmp2[i])]!= 0.0)
-	  &&(
-	 ((cp_atm_flag[(jtmp1[i])] == 0)
-          &&(cp_atm_flag[(jtmp2[i])] == 0)))
-       )
+          &&(clatoms_info->q[(jtmp2[i])]!= 0.0)
+          &&(
+            ((cp_atm_flag[(jtmp1[i])] == 0)
+             &&(cp_atm_flag[(jtmp2[i])] == 0)))
+        )
       {	bonded->mdecor.num++; }
     }/*endfor*/
 
     now_memory      = (
-                          (bonded->mdecor.num)*
-			  (sizeof(double)*0 + sizeof(int)*2 )
-                                                            )*1.e-06;
+        (bonded->mdecor.num)*
+        (sizeof(double)*0 + sizeof(int)*2 )
+        )*1.e-06;
     *tot_memory += now_memory;
 
-       PRINTF("Ecorr allocation: %g Mbytes; Total memory %g Mbytes\n",
-               now_memory,*tot_memory);
+    PRINTF("Ecorr allocation: %g Mbytes; Total memory %g Mbytes\n",
+        now_memory,*tot_memory);
 
     bonded->mdecor.j1 =(int *)cmalloc(bonded->mdecor.num*sizeof(int),"set_exclude")-1;
     bonded->mdecor.j2 =(int *)cmalloc(bonded->mdecor.num*sizeof(int),"set_exclude")-1;
     bonded->mdecor.num = 0;
     for(i=1;i<=num_excl_now;i++){
       if( (clatoms_info->q[(jtmp1[i])]!=0.0)
-        &&(clatoms_info->q[(jtmp2[i])]!=0.0)
-        &&(
-	  ( (cp_atm_flag[(jtmp1[i])] == 0)
-           &&(cp_atm_flag[(jtmp2[i])] == 0))) 
-       )
-     {
-	bonded->mdecor.num++;
-	bonded->mdecor.j1[(bonded->mdecor.num)] = jtmp1[i];
-	bonded->mdecor.j2[(bonded->mdecor.num)] = jtmp2[i]; 
+          &&(clatoms_info->q[(jtmp2[i])]!=0.0)
+          &&(
+            ( (cp_atm_flag[(jtmp1[i])] == 0)
+              &&(cp_atm_flag[(jtmp2[i])] == 0))) 
+        )
+      {
+        bonded->mdecor.num++;
+        bonded->mdecor.j1[(bonded->mdecor.num)] = jtmp1[i];
+        bonded->mdecor.j2[(bonded->mdecor.num)] = jtmp2[i]; 
       }/*endif*/
     }/*endfor*/
 
@@ -450,8 +450,8 @@ void set_exclude(MDCLATOMS_INFO *clatoms_info,MDGHOST_ATOMS *ghost_atoms,
 
   }/*endif*/
 
-/*========================================================================*/
-  } /*end routine*/ 
+  /*========================================================================*/
+} /*end routine*/ 
 /*==========================================================================*/
 
 
@@ -462,10 +462,10 @@ void set_exclude(MDCLATOMS_INFO *clatoms_info,MDGHOST_ATOMS *ghost_atoms,
 
 void splin_ecor(MDECOR *ecor,GENEWALD *ewald,int pi_beads, double *tot_memory)
 
-/*==========================================================================*/ 
+  /*==========================================================================*/ 
 { /*begin routine*/
-/*==========================================================================*/
-/*           Local Variables                                                */
+  /*==========================================================================*/
+  /*           Local Variables                                                */
   int i,iii,k;
   double rmin = 0.1; 
   double rmax,dr,dri,r12,r12i;
@@ -489,7 +489,7 @@ void splin_ecor(MDECOR *ecor,GENEWALD *ewald,int pi_beads, double *tot_memory)
   double de7,de8,de9;
   double ten;
 
-/*           Local Pointers                                   */
+  /*           Local Pointers                                   */
 
   int nsplin      = ecor->nsplin;
   int nsplin_mal  = ecor->nsplin;
@@ -505,15 +505,15 @@ void splin_ecor(MDECOR *ecor,GENEWALD *ewald,int pi_beads, double *tot_memory)
   de4 = 4.0*e4; de5 = 5.0*e5; de6 = 6.0*e6;
   de7 = 7.0*e7; de8 = 8.0*e8; de9 = 9.0*e9;
 
-/*==========================================================================*/ 
-/* 0) Output */
+  /*==========================================================================*/ 
+  /* 0) Output */
 
-    PRINT_LINE_STAR;
-    PRINTF("Setup the finite k-space ewald corrections \n");
-    PRINT_LINE_DASH;PRINTF("\n");
+  PRINT_LINE_STAR;
+  PRINTF("Setup the finite k-space ewald corrections \n");
+  PRINT_LINE_DASH;PRINTF("\n");
 
-/*==========================================================================*/ 
-/* I) Set the real space range and malloc the ecorr memory                  */
+  /*==========================================================================*/ 
+  /* I) Set the real space range and malloc the ecorr memory                  */
 
   rmax  = ten;
   dr    = (rmax-rmin) /(double)(nsplin - 5);
@@ -536,8 +536,8 @@ void splin_ecor(MDECOR *ecor,GENEWALD *ewald,int pi_beads, double *tot_memory)
     num_mem        = 3*nsplin_mal;
   }/*endif*/
 
-/*==========================================================================*/ 
-/* II) Get the infinte accuracy k-space ecorr */
+  /*==========================================================================*/ 
+  /* II) Get the infinte accuracy k-space ecorr */
 
   alp_ewd2 = alp_ewd*alp_ewd;
   talp2    = 2.0*(alp_ewd)*(alp_ewd);
@@ -550,11 +550,11 @@ void splin_ecor(MDECOR *ecor,GENEWALD *ewald,int pi_beads, double *tot_memory)
     eee     = exp(-ralp*ralp);
     tt      = 1.0/(1.0+p*ralp);
     temp    = ((((((((e9*tt+e8)*tt+e7)*tt+e6)*tt+e5)*tt
-                           +e4)*tt+e3)*tt+e2)*tt+e1)*tt*eee;
+              +e4)*tt+e3)*tt+e2)*tt+e1)*tt*eee;
     gerf    = 1.0-temp;
     dgerf   = ((((((((de9*tt+de8)*tt+de7)*tt+de6)*tt+de5)*tt
-                            +de4)*tt+de3)*tt+de2)*tt+de1)*tt*tt*eee*palp
-                            +talp2*temp*r12;
+              +de4)*tt+de3)*tt+de2)*tt+de1)*tt*tt*eee*palp
+      +talp2*temp*r12;
     cv0[i]  = -gerf*r12i;
     dvecor  = -(dgerf*r12i-gerf/(r12*r12));
     cdv0[i] = -dvecor*r12i;
@@ -566,11 +566,11 @@ void splin_ecor(MDECOR *ecor,GENEWALD *ewald,int pi_beads, double *tot_memory)
     }/*endfor*/
   }/*endif*/
 
-/*==========================================================================*/ 
-/* III) Add in the k-space cutoff dependent corrections                     */
+  /*==========================================================================*/ 
+  /* III) Add in the k-space cutoff dependent corrections                     */
 
- /*-------------------------------------------------------------*/
- /* i) Malloc the memory and get the gaussian quadrature points */
+  /*-------------------------------------------------------------*/
+  /* i) Malloc the memory and get the gaussian quadrature points */
   nk_use = 128;
   know   = (double *) cmalloc(nk_use*sizeof(double),"splin_ecor")-1;
   fknow  = (double *) cmalloc(nk_use*sizeof(double),"splin_ecor")-1;
@@ -578,18 +578,18 @@ void splin_ecor(MDECOR *ecor,GENEWALD *ewald,int pi_beads, double *tot_memory)
   weight = (double *) cmalloc(nk_use*sizeof(double),"splin_ecor")-1;
 #include "../proto_defs/weights_nodes_128.h"
 
- /*-----------------------------------------------------------*/
- /* ii) Compute the self term  correction                     */
+  /*-----------------------------------------------------------*/
+  /* ii) Compute the self term  correction                     */
   kcut = sqrt(2.0*ecut);
   arg  = kcut/(2.0*alp_ewd);
   eee  = exp(-arg*arg);
   tt   = 1.0/(1.0+p*arg);
   self_erfc = ((((((((e9*tt+e8)*tt+e7)*tt+e6)*tt+e5)*tt
-                             +e4)*tt+e3)*tt+e2)*tt+e1)*tt*eee;
+            +e4)*tt+e3)*tt+e2)*tt+e1)*tt*eee;
   ewald->self_erf  = 1.0-self_erfc;
 
- /*-----------------------------------------------------------*/
- /* iii) Compute the real space correction for standard ewald */
+  /*-----------------------------------------------------------*/
+  /* iii) Compute the real space correction for standard ewald */
   kmax = 15.0*alp_ewd;
   if(kmax>kcut){
     dk   = (kmax-kcut);
@@ -614,8 +614,8 @@ void splin_ecor(MDECOR *ecor,GENEWALD *ewald,int pi_beads, double *tot_memory)
     }/*endfor:real space points*/
   }/*endif:kcut<kmax*/
 
- /*-----------------------------------------------------------*/
- /* iv) Compute the Real space correction for respa ewald    */
+  /*-----------------------------------------------------------*/
+  /* iv) Compute the Real space correction for respa ewald    */
   if(nktot_res>0){
     kcut_res = sqrt(2.0*ecut_res);
     if(kmax>kcut_res){
@@ -624,7 +624,7 @@ void splin_ecor(MDECOR *ecor,GENEWALD *ewald,int pi_beads, double *tot_memory)
       for(k=1;k<=nk_use;k++){
         know[k]  = 0.5*(anode[k]*dk + pk);
         fknow[k] = (dk/M_PI)*exp(-0.25*know[k]*know[k]/alp_ewd2)
-                   *weight[k];
+          *weight[k];
       }/*endfor*/
       for (i = 1; i <= nsplin; ++i) {
         r12     = dr *(double)(i-3) + rmin;
@@ -639,31 +639,31 @@ void splin_ecor(MDECOR *ecor,GENEWALD *ewald,int pi_beads, double *tot_memory)
     }/*endif:kcut_res<kmax*/
   }/*endif:irespa_on*/
 
- /*-----------------------------------------------------------*/
- /* v) Free the memory                                       */
+  /*-----------------------------------------------------------*/
+  /* v) Free the memory                                       */
   cfree(&know[1],"splin_ecor");
   cfree(&fknow[1],"splin_ecor");
   cfree(&anode[1],"splin_ecor");
   cfree(&weight[1],"splin_ecor");
 
-/*==========================================================================*/ 
-/* IV) Memory summary and Output */
+  /*==========================================================================*/ 
+  /* IV) Memory summary and Output */
 
   now_memory   = ( sizeof(double)*num_mem )*1.e-06;
   *tot_memory += now_memory;
 
 
-    PRINTF("The Ewald sum convergence factor, erfc(k_cut/2alp_ewd), is : %g\n",
-            self_erfc);
-    PRINTF("Ecorr-spline allocation: %g Mbytes; Total memory %g Mbytes\n",
-            now_memory,*tot_memory);
+  PRINTF("The Ewald sum convergence factor, erfc(k_cut/2alp_ewd), is : %g\n",
+      self_erfc);
+  PRINTF("Ecorr-spline allocation: %g Mbytes; Total memory %g Mbytes\n",
+      now_memory,*tot_memory);
 
-    PRINTF("\n");PRINT_LINE_DASH;
-    PRINTF("Completed finite k-space ewald correction setup\n");
-    PRINT_LINE_STAR;
+  PRINTF("\n");PRINT_LINE_DASH;
+  PRINTF("Completed finite k-space ewald correction setup\n");
+  PRINT_LINE_STAR;
 
-/*--------------------------------------------------------------------------*/
-  }/*end routine */
+  /*--------------------------------------------------------------------------*/
+}/*end routine */
 /*==========================================================================*/
 
 

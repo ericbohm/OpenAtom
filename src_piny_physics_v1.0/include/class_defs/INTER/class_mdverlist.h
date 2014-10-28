@@ -14,13 +14,13 @@
 #define _MDVERLIST_
 
 class MDVERLIST {
- public:
+  public:
     int iver;                    /* Opt: Verlet on option */
     int natm_tot;                /* Num: number of atoms */
     int iver_init;               /* Opt: 1st verlist fill               */
     int iver_fill,iver_count;    /* Opt: Fill and count options         */
     int nolst_ver_update,lnk_ver_update; 
-                                 /* Opt: Update using nolst or lnk list */
+    /* Opt: Update using nolst or lnk list */
     int jver_pad;                /* Num: Padding used in lnk_ver_update */
     int nmem_min_lst;            /* Num: */
     int nver_lst;                /* Num: # of atms in Verlet list       */
@@ -28,26 +28,26 @@ class MDVERLIST {
     int nver_lst_now;         /* Num: actual # of atms in Verlet list       */
     int nver_lst_now_res;     /* Num: actual # of atms in RESPA Verlet list */ 
     int *nter;                   /* Lst: # of neighbors of each atm: 
-                                  Lth: natm_tot                         
-                                  Can be eliminated using joff        */
+Lth: natm_tot                         
+Can be eliminated using joff        */
     int *jter;           /* Lst: Indices of neighboring atms.  
-                                  Lth: nver_lst                       */
+Lth: nver_lst                       */
     int *jver_off;               /* Lst: Starting pts of nghbors in jter 
-                                  Lth: natm_tot                       */
+Lth: natm_tot                       */
     int *nter_res;               /* Lst: RESPA nter                        
-                                  Lth: natm_tot                          
-                                  Can be eliminated using joff_res    */
+Lth: natm_tot                          
+Can be eliminated using joff_res    */
     int *jter_res;       /* Lst: RESPA jter
-                                  Lth: nver_lst_res                   */
+Lth: nver_lst_res                   */
     int *jver_off_res;           /* Lst: RESPA jver      
-                                  Lth: natm_tot                       */
+Lth: natm_tot                       */
     double mem_safe;                /* Num: */
 
 
-//=====================================================================================
-// Default constructor/destructor
+    //=====================================================================================
+    // Default constructor/destructor
 
-     MDVERLIST(){
+    MDVERLIST(){
       iver       = 0;
       natm_tot   = 0;              
       iver_init  = 0;             
@@ -61,11 +61,11 @@ class MDVERLIST {
       nver_lst_res = 0;          
       nver_lst_now = 0;        
       nver_lst_now_res = 0;    
-     }
+    }
     ~MDVERLIST(){}
 
-//=====================================================================================
-// Pack/Unpack
+    //=====================================================================================
+    // Pack/Unpack
 
 #ifdef PUP_ON
     void pup(PUP::er &p){
@@ -79,7 +79,7 @@ class MDVERLIST {
       p | iver_count;  
       p | nolst_ver_update;
       p | lnk_ver_update; 
-                               
+
       p | jver_pad;              
       p | nmem_min_lst;          
       p | nver_lst;              
@@ -104,20 +104,20 @@ class MDVERLIST {
       }/* endif */
 #endif
 #ifdef _PARALLEL_DEBUG_        
-    if (p.isUnpacking())
-     state_class_out ();
+      if (p.isUnpacking())
+        state_class_out ();
 #endif  
     } /* end pack unpack */
 #endif
 
-//=====================================================================================
-// Print out state of class
+    //=====================================================================================
+    // Print out state of class
 
-  void state_class_out(){
-    
-     char fileName [255];
-     sprintf (fileName, "%d_mdverlist.state", CkMyPe());
-     FILE *fp;  fp = fopen(fileName,"w");
+    void state_class_out(){
+
+      char fileName [255];
+      sprintf (fileName, "%d_mdverlist.state", CkMyPe());
+      FILE *fp;  fp = fopen(fileName,"w");
 
       // Print ints
 
@@ -127,7 +127,7 @@ class MDVERLIST {
       fprintf(fp,"mdverlist:   iver_count %d\n",iver_count);  
       fprintf(fp,"mdverlist:   nolst_ver_update %d\n",nolst_ver_update);
       fprintf(fp,"mdverlist:   lnk_ver_update %d\n",lnk_ver_update); 
-                               
+
       fprintf(fp,"mdverlist:   jver_pad %d\n",jver_pad);              
       fprintf(fp,"mdverlist:   nmem_min_lst %d\n",nmem_min_lst);          
       fprintf(fp,"mdverlist:   nver_lst %d\n",nver_lst);              
@@ -140,7 +140,7 @@ class MDVERLIST {
       fprintf(fp,"mdverlist:   mem_safe %.12g\n",mem_safe);
 
       fclose(fp);
-  }/* end member function */
+    }/* end member function */
 
 
 

@@ -14,7 +14,7 @@
 
 
 void parse(MDINTEGRATE *, MDATOMS *, MDINTER *, MDINTRA *, 
-           GENERAL_DATA *,CP *, char *);
+    GENERAL_DATA *,CP *, char *);
 
 
 /*==========================================================================*/

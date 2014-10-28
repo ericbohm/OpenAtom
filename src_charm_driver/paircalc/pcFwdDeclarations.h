@@ -16,11 +16,11 @@ typedef complex inputType;
 /// Compile time decision on whether paircalc crunches complex numbers or real
 //#define CP_PAIRCALC_USES_COMPLEX_MATH
 #ifdef CP_PAIRCALC_USES_COMPLEX_MATH
-    /// The representation of the input data internal to the paircalc world
-    typedef complex internalType;
+/// The representation of the input data internal to the paircalc world
+typedef complex internalType;
 #else
-    /// The representation of the input data internal to the paircalc world
-    typedef double internalType;
+/// The representation of the input data internal to the paircalc world
+typedef double internalType;
 #endif
 // The ratio between the input and internal data type sizes
 #define pcDataSizeFactor ( sizeof(inputType) / sizeof(internalType) )

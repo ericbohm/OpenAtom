@@ -3,7 +3,7 @@
 //==========================================================================
 /** \file name cp_isokin.C
  ** \brief The physics routines that do the isokin NHC integration
-    for CPAIMD
+ for CPAIMD
  */
 //==========================================================================
 #include "standard_include.h"
@@ -43,14 +43,14 @@ void CPINTEGRATE::fetchNHCsize(int *len_nhc,int *num_nhc, int *nck_nhc){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPINTEGRATE::initCPNHC(int ncoef_true,int ncoef_zero,
-                        int maxLen,int maxNum, int maxNck,
-                        double *kTCP_ret,double *tau_ret,double *degfree_ret,
-                        double *degfreeNHC_ret,
-                        double *mNHC,double *v0,double *a2, double *a4, double *degFreeSplt,
-                        int *istrNHC, int *iendNHC)
-//============================================================================
-  {// Begin Function 
-//============================================================================
+    int maxLen,int maxNum, int maxNck,
+    double *kTCP_ret,double *tau_ret,double *degfree_ret,
+    double *degfreeNHC_ret,
+    double *mNHC,double *v0,double *a2, double *a4, double *degFreeSplt,
+    int *istrNHC, int *iendNHC)
+  //============================================================================
+{// Begin Function 
+  //============================================================================
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP *cp = CP::get();
@@ -68,43 +68,43 @@ void CPINTEGRATE::initCPNHC(int ncoef_true,int ncoef_zero,
   double kT     = Text/BOLTZ;
   double tau    = tau_in/TIME_CONV;
 
-//============================================================================
+  //============================================================================
 
   if(len_nhc!=maxLen){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Length is %d not %d. Race condition? Bad pup?\n",maxLen,len_nhc);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Length is %d not %d. Race condition? Bad pup?\n",maxLen,len_nhc);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
   }//endif
   if(num_nhc!=maxNum){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("number of NHC is %d not %d. Race condition? Bad pup?\n",maxNum,num_nhc);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("number of NHC is %d not %d. Race condition? Bad pup?\n",maxNum,num_nhc);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
   }//endif
 
   if(nck_nhc!=maxNck){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("number of NHC is %d not %d. Race condition? Bad pup?\n",maxNum,num_nhc);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("number of NHC is %d not %d. Race condition? Bad pup?\n",maxNum,num_nhc);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
   }//endif
 
   if(len_nhc!=2){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Method requires len_nhc == 2 : len_nhc=%d\n",len_nhc);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Method requires len_nhc == 2 : len_nhc=%d\n",len_nhc);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
   }//endif
 
   double degfree    = (double)(2*ncoef_true-ncoef_zero);
   double degfreeNHC = (double)(num_nhc*nck_nhc);     // 1 constraint for each NHC of length 2
 
-//============================================================================
+  //============================================================================
 
   (*kTCP_ret)       = kT;
   (*tau_ret)        = tau;
-  
+
   double pre        = tau*tau*kT;
   mNHC[0]           = pre*degfree/((double)nck_nhc);  // NHC mass : close enough
   mNHC[1]           = 2.5*pre;      // Double well mass : pos is dimensionless
@@ -124,21 +124,21 @@ void CPINTEGRATE::initCPNHC(int ncoef_true,int ncoef_zero,
   int div = ncoef_true/nck_nhc;
   int rem = (ncoef_true % nck_nhc);
   for(int k=0;k<nck_nhc;k++){
-   int nStr   = div*k;
-   int nNow   = div;
-   if(k>=rem){nStr += rem;}
-   if(k< rem){nStr += k;}
-   if(k< rem){nNow++;}
-   int nEnd   = nNow+nStr;
-   istrNHC[k] = nStr;
-   iendNHC[k] = nEnd;
-   degFreeSplt[k] = (double)2*nNow;
+    int nStr   = div*k;
+    int nNow   = div;
+    if(k>=rem){nStr += rem;}
+    if(k< rem){nStr += k;}
+    if(k< rem){nNow++;}
+    int nEnd   = nNow+nStr;
+    istrNHC[k] = nStr;
+    iendNHC[k] = nEnd;
+    degFreeSplt[k] = (double)2*nNow;
   }//endfor
 
   degFreeSplt[0] -= (double)ncoef_zero;
 
-//============================================================================
-  }// End function
+  //============================================================================
+}// End function
 //============================================================================
 
 
@@ -149,15 +149,15 @@ void CPINTEGRATE::initCPNHC(int ncoef_true,int ncoef_zero,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
-                  double *m,int len_nhc,int num_nhc,int nck_nhc,
-                  double ***xNHC,double ***xNHCP,double ***vNHC,double ***fNHC,
-                  double *mNHC,double *v0,double *a2,double *a4, 
-                  double kT, double degfree, double degfreeNHC, 
-                  double *degFreeSplt, int *istrNHC, int *iendNHC,int fwdFlag)
-//============================================================================
-  {//begin routine
-//============================================================================
-// Get the yoshida stuff out
+    double *m,int len_nhc,int num_nhc,int nck_nhc,
+    double ***xNHC,double ***xNHCP,double ***vNHC,double ***fNHC,
+    double *mNHC,double *v0,double *a2,double *a4, 
+    double kT, double degfree, double degfreeNHC, 
+    double *degFreeSplt, int *istrNHC, int *iendNHC,int fwdFlag)
+  //============================================================================
+{//begin routine
+  //============================================================================
+  // Get the yoshida stuff out
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP *cp = CP::get();
@@ -175,146 +175,146 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
   double wdti[20],wdti2[20],wdti4[20],wdti8[20];
   set_yosh(nyosh,dti,wdti,wdti2,wdti4,wdti8);
 
-//============================================================================
-// Loop over chunks
+  //============================================================================
+  // Loop over chunks
 
   for(int k=0;k<nck_nhc;k++){
-   int istr   = istrNHC[k];
-   int iend   = iendNHC[k];
-   double gkt = degFreeSplt[k]*kT;
+    int istr   = istrNHC[k];
+    int iend   = iendNHC[k];
+    double gkt = degFreeSplt[k]*kT;
 
-//============================================================================
-// Precompute the kinetic energy and get initial forces
+    //============================================================================
+    // Precompute the kinetic energy and get initial forces
 
-   double ekin = 0.0;
-   for(int i=istr;i<iend;i++){
-     ekin += m[i]*(v[i].re*v[i].re+v[i].im*v[i].im);
-   }//endfor
-
-   for(int i=0;i<num_nhc;i++){
-     double ekinNHC = mNHC[0]*vNHC[k][i][0]*vNHC[k][i][0]
-                    + mNHC[1]*vNHC[k][i][1]*vNHC[k][i][1];
-   }//endfor
-
-   for(int i=0;i<num_nhc;i++){xNHCP[k][i][0] = 0.0;}
-
-   for(int i=0;i<num_nhc;i++){
-     fNHC[k][i][0] = (ekin - gkt)/mNHC[0];
-     fNHC[k][i][1] = -( 4.0*v0[i]/(a4[i]*mNHC[1]) )
-                  *(xNHCP[k][i][1]*(xNHCP[k][i][1]*xNHCP[k][i][1]-a2[i]));
-   }//endfor
-
-//============================================================================
-// (II) Yoshida-Suzuki step yourself to heaven
-
-  double scale = 1.0;
-  for(int iresn=1;iresn<=nresp;iresn++){
-  for(int iyosh=1;iyosh<=nyosh;iyosh++){
-   //-----------------------------------------------------------------------
-   // Evolve extended system velocities
-    double vsum = 0.0;
-    for(int i=0;i<num_nhc;i++){
-      double ffdot = (fNHC[k][i][0]*fNHC[k][i][0]*mNHC[0]
-	             +fNHC[k][i][1]*fNHC[k][i][1]*mNHC[1])/kT;
-      double pfdot = (fNHC[k][i][0]*vNHC[k][i][0]*mNHC[0]
-		     +fNHC[k][i][1]*vNHC[k][i][1]*mNHC[1])/kT;
-      double arg2  = ffdot*wdti4[iyosh]*wdti4[iyosh];
-      double h, hdot;
-      if(arg2 > 1.0e-10){
-        double ffdot_r = sqrt(ffdot);
-        double arg     = ffdot_r*wdti4[iyosh];
-        double cosha   = cosh(arg);
-        double sinha   = sinh(arg);
-        h    = (pfdot/ffdot)*(cosha-1.0) + (1.0/ffdot_r)*sinha;
-        hdot = (pfdot/ffdot_r)*sinha + cosha;
-      }else{
-        h    = (((ffdot*pfdot/24.0*wdti4[iyosh]+ffdot/6.0)*wdti4[iyosh]
-                      +0.50*pfdot)*wdti4[iyosh]+1.0)*wdti4[iyosh];
-        hdot = ((ffdot*pfdot/6.0*wdti4[iyosh]  +ffdot/2.0)*wdti4[iyosh]
-  		            +pfdot)*wdti4[iyosh]+1.0;
-      }//endif
-      vNHC[k][i][0] = (vNHC[k][i][0]+fNHC[k][i][0]*h)/hdot;
-      vNHC[k][i][1] = (vNHC[k][i][1]+fNHC[k][i][1]*h)/hdot;
-      vsum += vNHC[k][i][0];
+    double ekin = 0.0;
+    for(int i=istr;i<iend;i++){
+      ekin += m[i]*(v[i].re*v[i].re+v[i].im*v[i].im);
     }//endfor
-   //-----------------------------------------------------------------------
-   // Evolve coef velocities
-    double arg  = -wdti4[iyosh]*vsum;
-    double aa   = exp(arg);
-    scale       *= aa;
-    ekin        *= (aa*aa);
-   //-----------------------------------------------------------------------
-   // Evolve extended system positions
+
     for(int i=0;i<num_nhc;i++){
-      xNHC[k][i][0]  += kT*vNHC[k][i][0]*wdti2[iyosh];
-      xNHC[k][i][1]  += vNHC[k][i][0]*(ekin-gkt)*wdti2[iyosh];
-      xNHCP[k][i][1] += vNHC[k][i][1]*wdti2[iyosh];
+      double ekinNHC = mNHC[0]*vNHC[k][i][0]*vNHC[k][i][0]
+        + mNHC[1]*vNHC[k][i][1]*vNHC[k][i][1];
     }//endfor
-   //-----------------------------------------------------------------------
-   // Evolve coef velocities
-    scale       *= aa;
-    ekin        *= (aa*aa);
-   //-----------------------------------------------------------------------
-   // Compute new forces
+
+    for(int i=0;i<num_nhc;i++){xNHCP[k][i][0] = 0.0;}
+
     for(int i=0;i<num_nhc;i++){
       fNHC[k][i][0] = (ekin - gkt)/mNHC[0];
       fNHC[k][i][1] = -( 4.0*v0[i]/(a4[i]*mNHC[1]) )
-                   *( xNHCP[k][i][1]*(xNHCP[k][i][1]*xNHCP[k][i][1]-a2[i] ));
+        *(xNHCP[k][i][1]*(xNHCP[k][i][1]*xNHCP[k][i][1]-a2[i]));
     }//endfor
-   //-----------------------------------------------------------------------
-   // Evolve extended system velocities
+
+    //============================================================================
+    // (II) Yoshida-Suzuki step yourself to heaven
+
+    double scale = 1.0;
+    for(int iresn=1;iresn<=nresp;iresn++){
+      for(int iyosh=1;iyosh<=nyosh;iyosh++){
+        //-----------------------------------------------------------------------
+        // Evolve extended system velocities
+        double vsum = 0.0;
+        for(int i=0;i<num_nhc;i++){
+          double ffdot = (fNHC[k][i][0]*fNHC[k][i][0]*mNHC[0]
+              +fNHC[k][i][1]*fNHC[k][i][1]*mNHC[1])/kT;
+          double pfdot = (fNHC[k][i][0]*vNHC[k][i][0]*mNHC[0]
+              +fNHC[k][i][1]*vNHC[k][i][1]*mNHC[1])/kT;
+          double arg2  = ffdot*wdti4[iyosh]*wdti4[iyosh];
+          double h, hdot;
+          if(arg2 > 1.0e-10){
+            double ffdot_r = sqrt(ffdot);
+            double arg     = ffdot_r*wdti4[iyosh];
+            double cosha   = cosh(arg);
+            double sinha   = sinh(arg);
+            h    = (pfdot/ffdot)*(cosha-1.0) + (1.0/ffdot_r)*sinha;
+            hdot = (pfdot/ffdot_r)*sinha + cosha;
+          }else{
+            h    = (((ffdot*pfdot/24.0*wdti4[iyosh]+ffdot/6.0)*wdti4[iyosh]
+                  +0.50*pfdot)*wdti4[iyosh]+1.0)*wdti4[iyosh];
+            hdot = ((ffdot*pfdot/6.0*wdti4[iyosh]  +ffdot/2.0)*wdti4[iyosh]
+                +pfdot)*wdti4[iyosh]+1.0;
+          }//endif
+          vNHC[k][i][0] = (vNHC[k][i][0]+fNHC[k][i][0]*h)/hdot;
+          vNHC[k][i][1] = (vNHC[k][i][1]+fNHC[k][i][1]*h)/hdot;
+          vsum += vNHC[k][i][0];
+        }//endfor
+        //-----------------------------------------------------------------------
+        // Evolve coef velocities
+        double arg  = -wdti4[iyosh]*vsum;
+        double aa   = exp(arg);
+        scale       *= aa;
+        ekin        *= (aa*aa);
+        //-----------------------------------------------------------------------
+        // Evolve extended system positions
+        for(int i=0;i<num_nhc;i++){
+          xNHC[k][i][0]  += kT*vNHC[k][i][0]*wdti2[iyosh];
+          xNHC[k][i][1]  += vNHC[k][i][0]*(ekin-gkt)*wdti2[iyosh];
+          xNHCP[k][i][1] += vNHC[k][i][1]*wdti2[iyosh];
+        }//endfor
+        //-----------------------------------------------------------------------
+        // Evolve coef velocities
+        scale       *= aa;
+        ekin        *= (aa*aa);
+        //-----------------------------------------------------------------------
+        // Compute new forces
+        for(int i=0;i<num_nhc;i++){
+          fNHC[k][i][0] = (ekin - gkt)/mNHC[0];
+          fNHC[k][i][1] = -( 4.0*v0[i]/(a4[i]*mNHC[1]) )
+            *( xNHCP[k][i][1]*(xNHCP[k][i][1]*xNHCP[k][i][1]-a2[i] ));
+        }//endfor
+        //-----------------------------------------------------------------------
+        // Evolve extended system velocities
+        for(int i=0;i<num_nhc;i++){
+          double ffdot = (fNHC[k][i][0]*fNHC[k][i][0]*mNHC[0]
+              +fNHC[k][i][1]*fNHC[k][i][1]*mNHC[1])/kT;
+          double pfdot = (fNHC[k][i][0]*vNHC[k][i][0]*mNHC[0]
+              +fNHC[k][i][1]*vNHC[k][i][1]*mNHC[1])/kT;
+          double arg2  = ffdot*wdti4[iyosh]*wdti4[iyosh];
+          double h, hdot;
+          if(arg2 > 1.0e-10){
+            double ffdot_r = sqrt(ffdot);
+            double arg     = ffdot_r*wdti4[iyosh];
+            double cosha   = cosh(arg);
+            double sinha   = sinh(arg);
+            h    = (pfdot/ffdot)*(cosha-1.0) + (1.0/ffdot_r)*sinha;
+            hdot = (pfdot/ffdot_r)*sinha + cosha;
+          }else{
+            h    = (((ffdot*pfdot/24.0*wdti4[iyosh]+ffdot/6.0)*wdti4[iyosh]
+                  +0.50*pfdot)*wdti4[iyosh]+1.0)*wdti4[iyosh];
+            hdot = ((ffdot*pfdot/6.0*wdti4[iyosh]  +ffdot/2.0)*wdti4[iyosh]
+                +pfdot)*wdti4[iyosh]+1.0;
+          }//endif
+          vNHC[k][i][0] = (vNHC[k][i][0]+fNHC[k][i][0]*h)/hdot;
+          vNHC[k][i][1] = (vNHC[k][i][1]+fNHC[k][i][1]*h)/hdot;
+        }//endfor
+      }}//endfor :: yoshida, respa loops
+
+    //==========================================================================
+    // Apply the scaling factor to the coef velocities 
+
+    for(int i=istr;i<iend;i++){
+      v[i].re *=scale; v[i].im *=scale;
+    }//endfor
+
+    //==========================================================================
+    // Avoid roundoff error : Apply constraint exactly
+
     for(int i=0;i<num_nhc;i++){
-      double ffdot = (fNHC[k][i][0]*fNHC[k][i][0]*mNHC[0]
-	             +fNHC[k][i][1]*fNHC[k][i][1]*mNHC[1])/kT;
-      double pfdot = (fNHC[k][i][0]*vNHC[k][i][0]*mNHC[0]
-		     +fNHC[k][i][1]*vNHC[k][i][1]*mNHC[1])/kT;
-      double arg2  = ffdot*wdti4[iyosh]*wdti4[iyosh];
-      double h, hdot;
-      if(arg2 > 1.0e-10){
-        double ffdot_r = sqrt(ffdot);
-        double arg     = ffdot_r*wdti4[iyosh];
-        double cosha   = cosh(arg);
-        double sinha   = sinh(arg);
-        h    = (pfdot/ffdot)*(cosha-1.0) + (1.0/ffdot_r)*sinha;
-        hdot = (pfdot/ffdot_r)*sinha + cosha;
-      }else{
-        h    = (((ffdot*pfdot/24.0*wdti4[iyosh]+ffdot/6.0)*wdti4[iyosh]
-                      +0.50*pfdot)*wdti4[iyosh]+1.0)*wdti4[iyosh];
-        hdot = ((ffdot*pfdot/6.0*wdti4[iyosh]  +ffdot/2.0)*wdti4[iyosh]
-  		            +pfdot)*wdti4[iyosh]+1.0;
-      }//endif
-      vNHC[k][i][0] = (vNHC[k][i][0]+fNHC[k][i][0]*h)/hdot;
-      vNHC[k][i][1] = (vNHC[k][i][1]+fNHC[k][i][1]*h)/hdot;
-    }//endfor
-  }}//endfor :: yoshida, respa loops
-
-//==========================================================================
-// Apply the scaling factor to the coef velocities 
-
-   for(int i=istr;i<iend;i++){
-     v[i].re *=scale; v[i].im *=scale;
-   }//endfor
-
-//==========================================================================
-// Avoid roundoff error : Apply constraint exactly
-
-   for(int i=0;i<num_nhc;i++){
-     double ekinNHC = mNHC[0]*vNHC[k][i][0]*vNHC[k][i][0]
-                    + mNHC[1]*vNHC[k][i][1]*vNHC[k][i][1];
+      double ekinNHC = mNHC[0]*vNHC[k][i][0]*vNHC[k][i][0]
+        + mNHC[1]*vNHC[k][i][1]*vNHC[k][i][1];
 #ifdef _CHECKME_CPDYN_
-     PRINTF("bot: ekinNHC %g %g %g\n",ekinNHC,kT,ekin);
+      PRINTF("bot: ekinNHC %g %g %g\n",ekinNHC,kT,ekin);
 #endif
-     double scNHC   = sqrt(kT/ekinNHC);
-     vNHC[k][i][0]    *= scNHC;
-     vNHC[k][i][1]    *= scNHC;
-   }//endfor
+      double scNHC   = sqrt(kT/ekinNHC);
+      vNHC[k][i][0]    *= scNHC;
+      vNHC[k][i][1]    *= scNHC;
+    }//endfor
 
-//==========================================================================
+    //==========================================================================
 
- }//endfor : kth splt of coefs
+  }//endfor : kth splt of coefs
 
-//============================================================================
-  }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 //============================================================================
@@ -324,58 +324,58 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPINTEGRATE::set_yosh(int nyosh,double dt,double *wdt,double *wdt2,
-                             double *wdt4,double *wdt8)
-//========================================================================
-  {//begin routine
-//========================================================================
-// Find the yoshida steps you want
+    double *wdt4,double *wdt8)
+  //========================================================================
+{//begin routine
+  //========================================================================
+  // Find the yoshida steps you want
 
   double temp,p2,onethird;
   switch(nyosh){
     case 1: 
-          wdt[1] = 1.0;
-         break;
+      wdt[1] = 1.0;
+      break;
     case 3:
-          onethird = 1.0/3.0;
-          temp    = pow(2.0,onethird);
-          wdt[1] =  1.0/(2.0-temp);
-          wdt[2] = -temp/(2.0-temp);
-          wdt[3] =  1.0/(2.0-temp);
-         break;
+      onethird = 1.0/3.0;
+      temp    = pow(2.0,onethird);
+      wdt[1] =  1.0/(2.0-temp);
+      wdt[2] = -temp/(2.0-temp);
+      wdt[3] =  1.0/(2.0-temp);
+      break;
     case 5:
-          onethird = 1.0/3.0;
-          temp = pow(4.0,onethird);
-          p2    = 1.0/(4.0-temp);
-          wdt[1]  = p2;
-          wdt[2]  = p2;
-          wdt[3]  = 1.0-4.0*p2;
-          wdt[4]  = p2;
-          wdt[5]  = p2;
-         break;
+      onethird = 1.0/3.0;
+      temp = pow(4.0,onethird);
+      p2    = 1.0/(4.0-temp);
+      wdt[1]  = p2;
+      wdt[2]  = p2;
+      wdt[3]  = 1.0-4.0*p2;
+      wdt[4]  = p2;
+      wdt[5]  = p2;
+      break;
     case 7:
-          wdt[1] =  0.784513610477560;
-          wdt[2] =  0.235573213359357;
-          wdt[3] = -1.17767998417887;
-          wdt[4] =  1.0 - 2.0*(wdt[1]+wdt[2]+wdt[3]);
-          wdt[5] = -1.17767998417887;
-          wdt[6] =  0.235573213359357;
-          wdt[7] =  0.784513610477560;
-         break;
+      wdt[1] =  0.784513610477560;
+      wdt[2] =  0.235573213359357;
+      wdt[3] = -1.17767998417887;
+      wdt[4] =  1.0 - 2.0*(wdt[1]+wdt[2]+wdt[3]);
+      wdt[5] = -1.17767998417887;
+      wdt[6] =  0.235573213359357;
+      wdt[7] =  0.784513610477560;
+      break;
     case 9:
-          wdt[1] =  0.192;
-          wdt[2] =  0.554910818409783619692725006662999;
-          wdt[3] =  0.124659619941888644216504240951585;
-          wdt[4] = -0.843182063596933505315033808282941;
-          wdt[5] =  1.0 - 2.0*(wdt[1]+wdt[2]+wdt[3]+wdt[4]);
-          wdt[6] = -0.843182063596933505315033808282941;
-          wdt[7] =  0.124659619941888644216504240951585;
-          wdt[8] =  0.554910818409783619692725006662999;
-          wdt[9] =  0.192;
-         break;
+      wdt[1] =  0.192;
+      wdt[2] =  0.554910818409783619692725006662999;
+      wdt[3] =  0.124659619941888644216504240951585;
+      wdt[4] = -0.843182063596933505315033808282941;
+      wdt[5] =  1.0 - 2.0*(wdt[1]+wdt[2]+wdt[3]+wdt[4]);
+      wdt[6] = -0.843182063596933505315033808282941;
+      wdt[7] =  0.124659619941888644216504240951585;
+      wdt[8] =  0.554910818409783619692725006662999;
+      wdt[9] =  0.192;
+      break;
   }//switch
 
-//========================================================================
-// Scale the yosida steps by the time step
+  //========================================================================
+  // Scale the yosida steps by the time step
 
   for(int i=1;i<=nyosh;i++){
     wdt[i]  = wdt[i]*dt;
@@ -384,6 +384,6 @@ void CPINTEGRATE::set_yosh(int nyosh,double dt,double *wdt,double *wdt2,
     wdt8[i] = wdt[i]*0.125;
   }//endfor
 
-//-------------------------------------------------------------------------
-   }// end routine
+  //-------------------------------------------------------------------------
+}// end routine
 //==========================================================================

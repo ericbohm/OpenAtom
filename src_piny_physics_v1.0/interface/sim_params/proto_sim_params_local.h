@@ -8,38 +8,38 @@ void write_simfile(FILE *,DICT_WORD *, int, char *);
 /* set_sim_params.c */
 
 void set_sim_params_list(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                         GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                         CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
 void set_sim_params_cp(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                       GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                       CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
 void set_sim_params_gen(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                        GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                        CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
 void set_sim_params_vpot(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                        GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                        CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
 void set_sim_params_run(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                        GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                        CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
 void set_sim_params_nhc(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                        GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                        CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
 void set_sim_params_vol(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                        GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                        CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
 void set_sim_params_write(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                        GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                        CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
 void set_sim_params_pimd(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                        GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                        CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
 void set_sim_params_fun(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                        GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                        CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *,DICT_WORD *,char *);
 void set_sim_params_finale(MDINTEGRATE *, MDATOMS *, MDINTER *,
-                           GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
-                           CP_PARSE *,FILENAME_PARSE *);
+    GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
+    CP_PARSE *,FILENAME_PARSE *);
 void set_sim_params_temper(GENTEMPERING_CTRL *,GENSIMOPTS *,DICT_WORD *dict,char *,char *);
 
 /*----------------------------------------------------------------------*/

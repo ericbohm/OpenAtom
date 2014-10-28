@@ -28,12 +28,12 @@
 // May have to copy out some variables to objects to 
 // avoid memory conflicts but that can be handled on a
 // case by case basis in the contructor of each object.
-  MDINTEGRATE  readonly_mdintegrate;
-  MDATOMS      readonly_mdatoms;
-  MDINTER      readonly_mdinter;
-  MDINTRA      readonly_mdintra;
-  GENERAL_DATA readonly_general_data;
-  CP           readonly_cp; 
+MDINTEGRATE  readonly_mdintegrate;
+MDATOMS      readonly_mdatoms;
+MDINTER      readonly_mdinter;
+MDINTRA      readonly_mdintra;
+GENERAL_DATA readonly_general_data;
+CP           readonly_cp; 
 
 
 //==========================================================================
@@ -44,16 +44,16 @@
 
 Interface_ctrl::Interface_ctrl (char* fname, CkCallback c)
 
-//==========================================================================
- {// begin routine  
-//==========================================================================
-//   Local Variables 
+  //==========================================================================
+{// begin routine  
+  //==========================================================================
+  //   Local Variables 
 
   int iii;
 
-//-------------------------------------------------------------------------
-// Nifty way to unglobally access the global variables.
-// Easy to implement unglobalize versions later if necessary.
+  //-------------------------------------------------------------------------
+  // Nifty way to unglobally access the global variables.
+  // Easy to implement unglobalize versions later if necessary.
 
   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
   MDATOMS      *mdatoms      = MDATOMS::get();
@@ -62,19 +62,19 @@ Interface_ctrl::Interface_ctrl (char* fname, CkCallback c)
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP           *cp           = CP::get();
 
-//=======================================================================
-// I)            Invoke User Interface on 1 processor
+  //=======================================================================
+  // I)            Invoke User Interface on 1 processor
 
   PRINTF("\n"); 
   PRINT_LINE_STAR
-  PRINTF("Invoking PINY Interface\n");
+    PRINTF("Invoking PINY Interface\n");
   PRINT_LINE_DASH
-  PRINTF("\n"); 
+    PRINTF("\n"); 
 
   parse(mdintegrate,mdatoms,mdinter,mdintra,general_data,cp,fname);
 
-//=======================================================================
-// II) output state of classes on 1 processor
+  //=======================================================================
+  // II) output state of classes on 1 processor
 
 #ifdef DEBUG_PARSE
   mdintegrate->state_class_out(); 
@@ -85,8 +85,8 @@ Interface_ctrl::Interface_ctrl (char* fname, CkCallback c)
   cp->state_class_out(); 
 #endif
 
-//=======================================================================
-// IV)  Exit, stage left 
+  //=======================================================================
+  // IV)  Exit, stage left 
 
   // inform caller that initialization is done
   c.send ();
@@ -95,11 +95,11 @@ Interface_ctrl::Interface_ctrl (char* fname, CkCallback c)
 
   PRINTF("\n"); 
   PRINT_LINE_DASH
-  PRINTF("Completed Piny Parameter setup\n");
+    PRINTF("Completed Piny Parameter setup\n");
   PRINT_LINE_STAR 
-  PRINTF("\n");
+    PRINTF("\n");
 
-//----------------------------------------------------------------------
-   }//end main
+  //----------------------------------------------------------------------
+}//end main
 //==========================================================================
 

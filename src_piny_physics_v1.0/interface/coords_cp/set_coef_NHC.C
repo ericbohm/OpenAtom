@@ -30,14 +30,14 @@
 /*==========================================================================*/
 
 void set_coef_NHC(CPCOEFFS_INFO *cpcoeffs_info,CPOPTS *cpopts,
-                  CPTHERM_INFO *cptherm_info,CP_PARSE *cp_parse,
-                  double *tot_memory)
+    CPTHERM_INFO *cptherm_info,CP_PARSE *cp_parse,
+    double *tot_memory)
 
-/*==========================================================================*/
-/*               Begin subprogram:                                          */
-      {/*begin routine*/
-/*==========================================================================*/
-/*               Local variables                                            */
+  /*==========================================================================*/
+  /*               Begin subprogram:                                          */
+{/*begin routine*/
+  /*==========================================================================*/
+  /*               Local variables                                            */
 
   int iii;
   int i,j;                   /* Num: For indicies            */
@@ -49,7 +49,7 @@ void set_coef_NHC(CPCOEFFS_INFO *cpcoeffs_info,CPOPTS *cpopts,
   double cons_stdn; 
   double cp_tau_nhc;
 
-/* Local pointers */
+  /* Local pointers */
   int cp_norb                  = cpopts->cp_norb;
   int cp_lda                   = cpopts->cp_lda;
   int cp_lsda                  = cpopts->cp_lsda;
@@ -65,22 +65,22 @@ void set_coef_NHC(CPCOEFFS_INFO *cpcoeffs_info,CPOPTS *cpopts,
   int *icmapup_nhc;
   int *icmapdn_nhc;
 
-/*==========================================================================*/
-/* 0) Output to screen */
+  /*==========================================================================*/
+  /* 0) Output to screen */
 
-   PRINTF("\n");PRINT_LINE_STAR;
-   PRINTF("Set up plane wave coeff NHC\'s\n");
-   PRINT_LINE_DASH;PRINTF("\n");
+  PRINTF("\n");PRINT_LINE_STAR;
+  PRINTF("Set up plane wave coeff NHC\'s\n");
+  PRINT_LINE_DASH;PRINTF("\n");
 
-/*==========================================================================*/
-/* Set up some useful constants                                             */
+  /*==========================================================================*/
+  /* Set up some useful constants                                             */
 
-   cptherm_info->massiv_flag    = 0;
-   if(istate_nhc_opt==4){cptherm_info->massiv_flag = 1;}
-   cptherm_info->istate_nhc_opt = istate_nhc_opt;
+  cptherm_info->massiv_flag    = 0;
+  if(istate_nhc_opt==4){cptherm_info->massiv_flag = 1;}
+  cptherm_info->istate_nhc_opt = istate_nhc_opt;
 
-/*==========================================================================*/
-/* I) Find the number of NHCs                           */
+  /*==========================================================================*/
+  /* I) Find the number of NHCs                           */
 
   if(cp_lda==1){
     switch(istate_nhc_opt){
@@ -99,20 +99,20 @@ void set_coef_NHC(CPCOEFFS_INFO *cpcoeffs_info,CPOPTS *cpopts,
       case 2: num_c_nhc=2;break;
       case 3: num_c_nhc=nstate_up+nstate_dn;break;
       case 4: num_c_nhc=2*(nstate_up+nstate_dn)*ncoef; break;
-     }/*end switch*/
+    }/*end switch*/
   }/*endif*/
   cptherm_info->num_c_nhc      = num_c_nhc;
 
   PRINTF("you have implemented %d nose-hoover chains ",num_c_nhc);
   PRINTF("each of length %d\n",len_c_nhc);
 
-/*==========================================================================*/
-/* II) Malloc up the memory                                                 */
+  /*==========================================================================*/
+  /* II) Malloc up the memory                                                 */
 
   if(istate_nhc_opt!=4){
     now_memory      = (  (num_c_nhc)*(len_c_nhc)*5*(sizeof(double))
-                       + (nstate_up)*(sizeof(int))+(nstate_dn)*(sizeof(int))
-                      )*1.0e-6;
+        + (nstate_up)*(sizeof(int))+(nstate_dn)*(sizeof(int))
+        )*1.0e-6;
   }else{
     now_memory      = ( (num_c_nhc)*(len_c_nhc)*(sizeof(double)) )*1.0e-6;
   }/*endif*/
@@ -135,39 +135,39 @@ void set_coef_NHC(CPCOEFFS_INFO *cpcoeffs_info,CPOPTS *cpopts,
   cptherm_info->wdti16      = (double *)cmalloc((size_t)25*sizeof(double),"set_coef_NHC")-1;
 
   PRINTF("CP NHC allocation: %g Mbytes; Total memory: %g Mbytes\n",
-          now_memory,*tot_memory);
+      now_memory,*tot_memory);
 
-/*==========================================================================*/
-/*  IV) Calculate degrees of freedom                                        */
+  /*==========================================================================*/
+  /*  IV) Calculate degrees of freedom                                        */
 
   if(cp_norb==0 || cp_norb==1){
-     cons_totup  = (double)(nstate_up*(nstate_up+1))/2.0;
-     cons_stup   = (double)(nstate_up+1)/2.0;
-     cons_totdn  = (double)(nstate_dn*(nstate_dn+1))/2.0;
-     cons_stdn   = (double)(nstate_dn+1)/2.0;
+    cons_totup  = (double)(nstate_up*(nstate_up+1))/2.0;
+    cons_stup   = (double)(nstate_up+1)/2.0;
+    cons_totdn  = (double)(nstate_dn*(nstate_dn+1))/2.0;
+    cons_stdn   = (double)(nstate_dn+1)/2.0;
   }/*endif*/
 
   if(cp_norb==2){
-     cons_totup  = (double)(nstate_up);
-     cons_stup   = 1.0;
-     cons_totdn  = (double)(nstate_dn);
-     cons_stdn   = 1.0;
+    cons_totup  = (double)(nstate_up);
+    cons_stup   = 1.0;
+    cons_totdn  = (double)(nstate_dn);
+    cons_stdn   = 1.0;
   }/*endif*/
 
   if(cp_norb==3){
-     cons_totup  = 0.0;
-     cons_stup   = 0.0;
-     cons_totdn  = 0.0;
-     cons_stdn   = 0.0;
+    cons_totup  = 0.0;
+    cons_stup   = 0.0;
+    cons_totdn  = 0.0;
+    cons_stdn   = 0.0;
   }/*endif*/
 
-/*==========================================================================*/
-/* V) Set up the NHCs                                                      */
+  /*==========================================================================*/
+  /* V) Set up the NHCs                                                      */
 
   switch(istate_nhc_opt){
 
-/*--------------------------------------------------------------------------*/
-/*  1)No NHC                                                                */
+    /*--------------------------------------------------------------------------*/
+    /*  1)No NHC                                                                */
 
     case 0:
       for(j=1;j<=nstate_up;j++){
@@ -178,10 +178,10 @@ void set_coef_NHC(CPCOEFFS_INFO *cpcoeffs_info,CPOPTS *cpopts,
           icmapdn_nhc[j] = 1;
         }/*endfor*/
       }/*endif*/
-    break;
-   
-/*--------------------------------------------------------------------------*/
-/*  2)1 NHC                                                                 */
+      break;
+
+      /*--------------------------------------------------------------------------*/
+      /*  2)1 NHC                                                                 */
 
     case 1:
       for(j=1;j<=nstate_up;j++){
@@ -195,10 +195,10 @@ void set_coef_NHC(CPCOEFFS_INFO *cpcoeffs_info,CPOPTS *cpopts,
         }/*endfor*/
         c_gkt[1][1]+=((double)(ncoef*nstate_dn*2)-cons_totdn)*te_ext/BOLTZ;
       }/*endif*/
-    break;
+      break;
 
-/*--------------------------------------------------------------------------*/
-/*  2)2 NHC                                                                 */
+      /*--------------------------------------------------------------------------*/
+      /*  2)2 NHC                                                                 */
 
     case 2:
       for(j=1;j<=nstate_up;j++){
@@ -211,10 +211,10 @@ void set_coef_NHC(CPCOEFFS_INFO *cpcoeffs_info,CPOPTS *cpopts,
         }/*endfor*/
         c_gkt[1][2] = ((double)(ncoef*nstate_dn*2)-cons_totdn)*te_ext/BOLTZ;
       }/*endif*/
-    break;
+      break;
 
-/*--------------------------------------------------------------------------*/
-/*  3)nstate NHCs                                                           */
+      /*--------------------------------------------------------------------------*/
+      /*  3)nstate NHCs                                                           */
 
     case 3:
       for(j=1;j<=nstate_up;j++){
@@ -227,24 +227,24 @@ void set_coef_NHC(CPCOEFFS_INFO *cpcoeffs_info,CPOPTS *cpopts,
           c_gkt[1][(j+nstate_up)] = ((double)(ncoef*2)-cons_stdn)*te_ext/BOLTZ;
         }/*endfor*/
       }/*endif*/
-     break;
+      break;
 
-/*--------------------------------------------------------------------------*/
-/*  4)Massive NHCs                                                          */
+      /*--------------------------------------------------------------------------*/
+      /*  4)Massive NHCs                                                          */
 
     case 4:
       cptherm_info->c_gkt_massiv = te_ext/BOLTZ;
-    break;
+      break;
 
   }/*end switch*/
 
-/*==========================================================================*/
-/* V) Finish up the gkts and the masses                                   */
+  /*==========================================================================*/
+  /* V) Finish up the gkts and the masses                                   */
 
   cp_parse->cp_tau_nhc     /= TIME_CONV;
   cp_parse->cp_tau_nhc_def /= TIME_CONV;
   cp_tau_nhc                = cp_parse->cp_tau_nhc;
- 
+
   if(istate_nhc_opt<4){
 
     for(j=2;j<=len_c_nhc;j++){
@@ -269,19 +269,19 @@ void set_coef_NHC(CPCOEFFS_INFO *cpcoeffs_info,CPOPTS *cpopts,
   }else{
 
     cptherm_info->cmass_nhc_massiv = (cptherm_info->c_gkt_massiv)*
-                                     (cp_tau_nhc)*(cp_tau_nhc);
+      (cp_tau_nhc)*(cp_tau_nhc);
 
   }/*endif*/
 
-/*==========================================================================*/
-/* VI) Output */
+  /*==========================================================================*/
+  /* VI) Output */
 
-   PRINTF("\n");PRINT_LINE_DASH
-   PRINTF("Completed set up of plane wave coeff NHC\'s\n");
-   PRINT_LINE_STAR;PRINTF("\n");
+  PRINTF("\n");PRINT_LINE_DASH
+    PRINTF("Completed set up of plane wave coeff NHC\'s\n");
+  PRINT_LINE_STAR;PRINTF("\n");
 
-/*========================================================================*/
-    }/* end routine */
+  /*========================================================================*/
+}/* end routine */
 /*========================================================================*/
 
 

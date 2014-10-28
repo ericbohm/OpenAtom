@@ -2,56 +2,56 @@ The documentation in doc/ is obsolete!
 
 Please read through this file (up-to-date as of 9/17/03)
 
-This code has been developed to provide a framework for quantum mechanical
-computation involving 3-D FFTs. 
+  This code has been developed to provide a framework for quantum mechanical
+  computation involving 3-D FFTs. 
 
-A look at the file cpaimd.ci might be helpful to get a high level idea of 
-the objects.
+  A look at the file cpaimd.ci might be helpful to get a high level idea of 
+  the objects.
 
-*******************************************************************************
+  *******************************************************************************
 
-Status of the code now:
-	One iteration of program execution does the following:
+  Status of the code now:
+  One iteration of program execution does the following:
 
-* FFT the states from G-Space into Real-Space
-* Sum the squared densities over states.
-* Compute the Hartree energy and Energy correlation and sum them
-* Multiply the sum with the Real-Space wave function
-* Compute the inverse FFTs from Real-Space to G-Space
-* Compute forces using particle computation
-* Compute total forces and move electrons
-* Perform orthonormalization.
-* repeat the loop.
+  * FFT the states from G-Space into Real-Space
+  * Sum the squared densities over states.
+  * Compute the Hartree energy and Energy correlation and sum them
+  * Multiply the sum with the Real-Space wave function
+  * Compute the inverse FFTs from Real-Space to G-Space
+  * Compute forces using particle computation
+  * Compute total forces and move electrons
+  * Perform orthonormalization.
+  * repeat the loop.
 
-*******************************************************************************
+  *******************************************************************************
 
-To compile and link the program 
-1) Edit Makefile.config to point to your Charm++ installation and FFTW installation.
-2) After that do a make in this directory
-3) The execuabtle is src/cpaimd
+  To compile and link the program 
+  1) Edit Makefile.config to point to your Charm++ installation and FFTW installation.
+  2) After that do a make in this directory
+  3) The execuabtle is src/cpaimd
 
 
-*******************************************************************************
-Running the program:
+  *******************************************************************************
+  Running the program:
 
-The only command-line argument to the program executable is the name of 
-a configuration file. A default configuration file is included in the src/
-directory, "cpaimd_config". This has to be modified to indicated the
-directory in which the state files can be found. The other parameters need
-not be necessarily changed.
+  The only command-line argument to the program executable is the name of 
+  a configuration file. A default configuration file is included in the src/
+  directory, "cpaimd_config". This has to be modified to indicated the
+  directory in which the state files can be found. The other parameters need
+  not be necessarily changed.
 
-Running:
-% charmrun +p8 ./cpaimd cpaimd_config
-*******************************************************************************
+  Running:
+  % charmrun +p8 ./cpaimd cpaimd_config
+  *******************************************************************************
 
-Reading the code:
+  Reading the code:
 
-The current code is not extensively documented. However, there are comments
-describing the basic purpose of functions, and a title comment 
-describing the life-cycle of each chare. The important files are GSpacePlane.C,
-ParticlePlane.C, RealSpacePlane.C, RealSpaceDensity.C, RhoGDensity.C,
-S_Calculator.C and ortho.C.
+  The current code is not extensively documented. However, there are comments
+  describing the basic purpose of functions, and a title comment 
+  describing the life-cycle of each chare. The important files are GSpacePlane.C,
+  ParticlePlane.C, RealSpacePlane.C, RealSpaceDensity.C, RhoGDensity.C,
+  S_Calculator.C and ortho.C.
 
-As a basic guideline, start reading code from GSpacePlane::doFFT(),
-and try to follow the flow of control/data through Charm++ messages.
+  As a basic guideline, start reading code from GSpacePlane::doFFT(),
+  and try to follow the flow of control/data through Charm++ messages.
 

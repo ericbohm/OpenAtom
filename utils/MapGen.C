@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
       map[state][plane][2] = y;
       map[state][plane][3] = z;
       map[state][plane][4] = t;
-  
+
       // cout << state << " " << plane << " " << pe << " " << map[state][plane][1] << " " << map[state][plane][2] << " " << map[state][plane][3] << " " << map[state][plane][4] << "\n";  
     }
 
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
   float ox, oy, oz;
   float fx, fy, fz;
   int numPoints;
-  
+
   // points
   numPoints = numStates * numPlanes; 
   wr << "\nPOINTS " << numPoints << " float\n";
@@ -83,21 +83,21 @@ int main(int argc, char *argv[]) {
       pe = map[i][j][1] + map[i][j][2]*dimX + map[i][j][3]*dimX*dimY;
 
       if(opt == 1) {
-	ox = map[i][j][1] * DISTANCE;
-	oy = map[i][j][2] * DISTANCE + DIST_OBJS;
-	oz = map[i][j][3] * DISTANCE + DIST_OBJS;
+        ox = map[i][j][1] * DISTANCE;
+        oy = map[i][j][2] * DISTANCE + DIST_OBJS;
+        oz = map[i][j][3] * DISTANCE + DIST_OBJS;
 
-	fx = ox;
-	fy = oy + ((int)(objsPerPe[pe] / OBJS_PER_ROW) * DIST_OBJS);
-	fz = oz + ((int)(objsPerPe[pe] % OBJS_PER_ROW) * DIST_OBJS);
+        fx = ox;
+        fy = oy + ((int)(objsPerPe[pe] / OBJS_PER_ROW) * DIST_OBJS);
+        fz = oz + ((int)(objsPerPe[pe] % OBJS_PER_ROW) * DIST_OBJS);
       } else {
-	ox = map[i][j][1] * DISTANCE + DIST_OBJS;
-	oy = map[i][j][2] * DISTANCE + DIST_OBJS;
-	oz = map[i][j][3] * DISTANCE;
+        ox = map[i][j][1] * DISTANCE + DIST_OBJS;
+        oy = map[i][j][2] * DISTANCE + DIST_OBJS;
+        oz = map[i][j][3] * DISTANCE;
 
-	fx = ox + ((int)(objsPerPe[pe] % OBJS_PER_ROW) * DIST_OBJS);
-	fy = oy + ((int)(objsPerPe[pe] / OBJS_PER_ROW) * DIST_OBJS);
-	fz = oz;
+        fx = ox + ((int)(objsPerPe[pe] % OBJS_PER_ROW) * DIST_OBJS);
+        fy = oy + ((int)(objsPerPe[pe] / OBJS_PER_ROW) * DIST_OBJS);
+        fz = oz;
       }
 
       objsPerPe[pe]++;

@@ -55,17 +55,17 @@ void loadMatrix(const char *infilename, double *matrix, int xdim, int ydim,int w
   sprintf(filename,fmt, w, x, y, z, symmetric);
   FILE *loutfile = fopen(filename, "r");
   if(loutfile!=NULL)
-    {
-      int junk1,junk2;
-      for(int i=0;i<xdim;i++)
-	for(int j=0;j<ydim;j++)
-	  assert(fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(matrix[i*ydim+j])));
-      fclose(loutfile);
-    }
+  {
+    int junk1,junk2;
+    for(int i=0;i<xdim;i++)
+      for(int j=0;j<ydim;j++)
+        assert(fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(matrix[i*ydim+j])));
+    fclose(loutfile);
+  }
   else
-    {
-      CkAbort(filename);
-    }
+  {
+    CkAbort(filename);
+  }
 }
 
 
@@ -81,17 +81,17 @@ void loadMatrix(const char *infilename, complex *matrix, int xdim, int ydim,int 
   sprintf(filename,fmt, w, x, y, z, symmetric);
   FILE *loutfile = fopen(filename, "r");
   if(loutfile!=NULL)
-    {
-      int junk1,junk2;
-      for(int i=0;i<xdim;i++)
-	for(int j=0;j<ydim;j++)
-	  assert(fscanf(loutfile,"%d %d %lf %lf\n",&junk1,&junk2,&(matrix[i*ydim+j].re),&(matrix[i*ydim+j].im)));
-      fclose(loutfile);
-    }
+  {
+    int junk1,junk2;
+    for(int i=0;i<xdim;i++)
+      for(int j=0;j<ydim;j++)
+        assert(fscanf(loutfile,"%d %d %lf %lf\n",&junk1,&junk2,&(matrix[i*ydim+j].re),&(matrix[i*ydim+j].im)));
+    fclose(loutfile);
+  }
   else
-    {
-      CkAbort(filename);
-    }
+  {
+    CkAbort(filename);
+  }
 }
 
 //! NOTE: this uses the evil piny convention
@@ -121,17 +121,17 @@ void loadMatrix2DDouble(const char *infilename, double **matrix, int xdim, int y
   sprintf(filename,fmt, w, x, y, z, symmetric);
   FILE *loutfile = fopen(filename, "r");
   if(loutfile!=NULL)
-    {
-      int junk1,junk2;
-      for(int i=0;i<xdim;i++)
-	for(int j=1;j<=ydim;j++)
-	  assert(fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(matrix[i][j])));
-      fclose(loutfile);
-    }
+  {
+    int junk1,junk2;
+    for(int i=0;i<xdim;i++)
+      for(int j=1;j<=ydim;j++)
+        assert(fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(matrix[i][j])));
+    fclose(loutfile);
+  }
   else
-    {
-      CkAbort(filename);
-    }
+  {
+    CkAbort(filename);
+  }
 }
 
 
@@ -162,16 +162,16 @@ void loadMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,in
   sprintf(filename,fmt, w, x, y, z, symmetric);
   FILE *loutfile = fopen(filename, "r");
   if(loutfile!=NULL)
-    {
-      int junk1,junk2;
-      for(int i=0;i<xdim;i++)
-	for(int j=1;j<=ydim;j++)
-	  assert(fscanf(loutfile,"%d %d %d\n",&junk1,&junk2,&(matrix[i][j])));
-      fclose(loutfile);
-    }
+  {
+    int junk1,junk2;
+    for(int i=0;i<xdim;i++)
+      for(int j=1;j<=ydim;j++)
+        assert(fscanf(loutfile,"%d %d %d\n",&junk1,&junk2,&(matrix[i][j])));
+    fclose(loutfile);
+  }
   else
-    {
-      CkAbort(filename);
-    }
+  {
+    CkAbort(filename);
+  }
 }
 

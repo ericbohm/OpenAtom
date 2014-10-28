@@ -36,14 +36,14 @@
 //==========================================================================
 
 void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
-                 MDINTRA *mdintra,GENERAL_DATA *general_data, CP *cp,
-                 MDCLATOMS_POS *clatoms_pos,MDTHERM_POS *therm_class,
-                 MDTHERM_POS *therm_bead, int ibead, int itemper)
+    MDINTRA *mdintra,GENERAL_DATA *general_data, CP *cp,
+    MDCLATOMS_POS *clatoms_pos,MDTHERM_POS *therm_class,
+    MDTHERM_POS *therm_bead, int ibead, int itemper)
 
-//======================================================================
-  {   //begin routine 
-//======================================================================
-//               Local variable declarations                            
+  //======================================================================
+{   //begin routine 
+  //======================================================================
+  //               Local variable declarations                            
 
   int iii,upper,lower,igloc,ighost,igo;
   int i,j,ip,nmall,ip_now;       
@@ -69,8 +69,8 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 
- //---------------------------------------------------------------------
- // Local Pointers 
+  //---------------------------------------------------------------------
+  // Local Pointers 
 
   double *x,*y,*z;        // assigned below
   double *vx,*vy,*vz;
@@ -128,29 +128,29 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
   int istart          = gensimopts->istart;
 
   int pimd_on         =  (gensimopts->pimd + gensimopts->cp_pimd 
-                        + gensimopts->cp_wave_pimd 
-                        + gensimopts->cp_wave_min_pimd  
-                        + gensimopts->debug_pimd 
-                        + gensimopts->debug_cp_pimd);
+      + gensimopts->cp_wave_pimd 
+      + gensimopts->cp_wave_min_pimd  
+      + gensimopts->debug_pimd 
+      + gensimopts->debug_cp_pimd);
   char dnamei[1000];
   char *dnamei_file   = genfilenames->dnamei;
   char *dnamei_dir    = genfilenames->atm_crd_dir_in;
 
-//========================================================================
-// I)Write to screen:                                                   
+  //========================================================================
+  // I)Write to screen:                                                   
 
   sprintf (dnamei,"%s/Bead.%d_Temper.%d/%s",dnamei_dir,ibead,itemper,dnamei_file);
 
   PRINT_LINE_STAR;
   PRINTF("Reading user specified atm coordinate file %s\n",dnamei);
-   if(istart==1){printf("using the `initial' restart option\n");}
-   if(istart==2){printf("using the `restart_pos' restart option\n");}
-   if(istart==3){printf("using the `restart_posvel' restart option\n");}
-   if(istart==4){printf("using the `restart_all' restart option\n");}
+  if(istart==1){printf("using the `initial' restart option\n");}
+  if(istart==2){printf("using the `restart_pos' restart option\n");}
+  if(istart==3){printf("using the `restart_posvel' restart option\n");}
+  if(istart==4){printf("using the `restart_all' restart option\n");}
   PRINT_LINE_DASH;printf("\n");
 
-//========================================================================
-// II) Open the file and malloc:                                          
+  //========================================================================
+  // II) Open the file and malloc:                                          
 
   fp_dnamei = cfopen((const char *)dnamei,"r");
 
@@ -165,132 +165,132 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
   nmall     = MAX(class_len_nhc,1);
   v_vol_nhc = (double *)cmalloc(nmall*sizeof(double),"read_coord")-1;
 
-//========================================================================
-//  III)Read in header                                                    
+  //========================================================================
+  //  III)Read in header                                                    
 
 
-//-------------------
-// A) Type 1 start : 
-    if(istart==1){
-      if(fscanf(fp_dnamei,"%d %d %d",&natm_tot_now,&istart_now,
-                                   &pi_beads_now)!=3){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Error reading start type and number of atoms \n");
-        PRINTF("in file %s\n",dnamei);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
-      }//endif
-      readtoendofline(fp_dnamei);
+  //-------------------
+  // A) Type 1 start : 
+  if(istart==1){
+    if(fscanf(fp_dnamei,"%d %d %d",&natm_tot_now,&istart_now,
+          &pi_beads_now)!=3){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Error reading start type and number of atoms \n");
+      PRINTF("in file %s\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }//endif
+    readtoendofline(fp_dnamei);
+  }//endif
 
-//---------------------
-// B) Type 2,3,4 start 
-    if(istart>1){
-      if(fgetc(fp_dnamei)==EOF){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Error reading header information \n");
-        PRINTF("in file %s\n",dnamei);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
-      }//endif
-      readtoendofline(fp_dnamei);
-      if(fscanf(fp_dnamei,"%d %s %d %d",&natm_tot_now,restart_type_now,
-                                        &itime_dump,&pi_beads_now)!=4){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Error reading start type and number of atoms \n");
-        PRINTF("in file %s\n",dnamei);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      }//endif
-      readtoendofline(fp_dnamei);
+  //---------------------
+  // B) Type 2,3,4 start 
+  if(istart>1){
+    if(fgetc(fp_dnamei)==EOF){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Error reading header information \n");
+      PRINTF("in file %s\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
+    }//endif
+    readtoendofline(fp_dnamei);
+    if(fscanf(fp_dnamei,"%d %s %d %d",&natm_tot_now,restart_type_now,
+          &itime_dump,&pi_beads_now)!=4){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Error reading start type and number of atoms \n");
+      PRINTF("in file %s\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    }//endif
+    readtoendofline(fp_dnamei);
 
-      istart_now = 0;
-      if(strcasecmp(restart_type_now,"initial") == 0){        istart_now = 1;}
-      if(strcasecmp(restart_type_now,"restart_pos") == 0){    istart_now = 2;}
-      if(strcasecmp(restart_type_now,"restart_posvel") == 0){ istart_now = 3;}
-      if(strcasecmp(restart_type_now,"restart_all") == 0){    istart_now = 4;}
+    istart_now = 0;
+    if(strcasecmp(restart_type_now,"initial") == 0){        istart_now = 1;}
+    if(strcasecmp(restart_type_now,"restart_pos") == 0){    istart_now = 2;}
+    if(strcasecmp(restart_type_now,"restart_posvel") == 0){ istart_now = 3;}
+    if(strcasecmp(restart_type_now,"restart_all") == 0){    istart_now = 4;}
 
-      if(istart==1){strcpy(restart_type_spec,"initial");}
-      if(istart==2){strcpy(restart_type_spec,"restart_pos");}
-      if(istart==3){strcpy(restart_type_spec,"restart_posvel");}
-      if(istart==4){strcpy(restart_type_spec,"restart_all");}
+    if(istart==1){strcpy(restart_type_spec,"initial");}
+    if(istart==2){strcpy(restart_type_spec,"restart_pos");}
+    if(istart==3){strcpy(restart_type_spec,"restart_posvel");}
+    if(istart==4){strcpy(restart_type_spec,"restart_all");}
 
-      if(istart_now==0){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Start up %s option in ",restart_type_now);
-        PRINTF("user specified coordinate file %s\n",dnamei);
-        PRINTF("not supported. Supported genre: \n");
-        PRINTF("initial, restart_pos, restart_posvel, restart_all-> \n");     
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
-      } // endif 
-    } // endif: istart 
-  
-//--------------------- 
-// C) General checks   
-    if(istart_now < istart ) {
+    if(istart_now==0){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("Start up option, %s, in ",restart_type_now);
+      PRINTF("Start up %s option in ",restart_type_now);
       PRINTF("user specified coordinate file %s\n",dnamei);
-      PRINTF("Incompatible with class setup,%s\n",restart_type_spec);
+      PRINTF("not supported. Supported genre: \n");
+      PRINTF("initial, restart_pos, restart_posvel, restart_all-> \n");     
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       FFLUSH(stdout);
       EXIT(1);
     } // endif 
- 
-    if(natm_tot_now != natm_tot) {
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("Number of particles in\n");
-      PRINTF("user specified coordinate file %s \n",dnamei);
-      PRINTF("incompatible with class setup\n");
-      PRINTF("%d vs %d\n",natm_tot_now,natm_tot);
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      FFLUSH(stdout);
-      EXIT(1);
-    } // endif 
-    if(pi_beads_now != pi_beads_true) {
-      PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");    
-      PRINTF("Number of path integral beads in\n");
-      PRINTF("user specified coordinate file %s \n",dnamei);
-      PRINTF("incompatible with class setup\n");
-      PRINTF("%d vs %d\n",pi_beads_now,pi_beads);
-      PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");    
-      FFLUSH(stdout);
-    } // endif 
-    if(istart>2 && pi_beads > 1 && initial_spread_opt == 1){
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("The spread option is to be used only with \n");
-      PRINTF("the options : restart_pos or initial  \n");
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      FFLUSH(stdout);
-      EXIT(1);
-    }//endif
+  } // endif: istart 
 
-//========================================================================
-// IV)istart = 1 (initial)                                              
+  //--------------------- 
+  // C) General checks   
+  if(istart_now < istart ) {
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Start up option, %s, in ",restart_type_now);
+    PRINTF("user specified coordinate file %s\n",dnamei);
+    PRINTF("Incompatible with class setup,%s\n",restart_type_spec);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
+  } // endif 
+
+  if(natm_tot_now != natm_tot) {
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Number of particles in\n");
+    PRINTF("user specified coordinate file %s \n",dnamei);
+    PRINTF("incompatible with class setup\n");
+    PRINTF("%d vs %d\n",natm_tot_now,natm_tot);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
+  } // endif 
+  if(pi_beads_now != pi_beads_true) {
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");    
+    PRINTF("Number of path integral beads in\n");
+    PRINTF("user specified coordinate file %s \n",dnamei);
+    PRINTF("incompatible with class setup\n");
+    PRINTF("%d vs %d\n",pi_beads_now,pi_beads);
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");    
+    FFLUSH(stdout);
+  } // endif 
+  if(istart>2 && pi_beads > 1 && initial_spread_opt == 1){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("The spread option is to be used only with \n");
+    PRINTF("the options : restart_pos or initial  \n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
+  }//endif
+
+  //========================================================================
+  // IV)istart = 1 (initial)                                              
 
 
   if(istart == 1) {
 
-//-----------------------------------------------------------------------
-// A)Atm positions                                                  
+    //-----------------------------------------------------------------------
+    // A)Atm positions                                                  
     PRINTF("Reading in coordinates\n");
     upper = pi_beads;
     if(initial_spread_opt == 1){upper = 1;}
     for(ip=1;ip<=upper;ip++){
       for(i=1;i<=natm_tot;i++){
         if(fscanf(fp_dnamei,"%lf %lf %lf",
-                        &(x_tmp[i]),
-                        &(y_tmp[i]),
-                        &(z_tmp[i])) != 3) {
-            PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-            PRINTF("Error while reading in the %d atom coordinate\n",i);
-            PRINTF("in file \"%s\"\n",dnamei);
-            PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-            FFLUSH(stdout);
-            EXIT(1);
+              &(x_tmp[i]),
+              &(y_tmp[i]),
+              &(z_tmp[i])) != 3) {
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          PRINTF("Error while reading in the %d atom coordinate\n",i);
+          PRINTF("in file \"%s\"\n",dnamei);
+          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+          FFLUSH(stdout);
+          EXIT(1);
         }//endif
         readtoendofline(fp_dnamei);
         x_tmp[i] /= BOHR;
@@ -298,21 +298,21 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
         z_tmp[i] /= BOHR;
       }//endfor:atoms
       if( (ip>=ip_start) && (ip <=ip_end) ){
-         ip_now = ip-ip_start + 1;
-         x = clatoms_pos[ip_now].x;
-         y = clatoms_pos[ip_now].y;
-         z = clatoms_pos[ip_now].z;
-         for(i=1;i<=natm_tot;i++){
-           x[i] = x_tmp[i];          
-           y[i] = y_tmp[i];          
-           z[i] = z_tmp[i];          
-         }//endfor
+        ip_now = ip-ip_start + 1;
+        x = clatoms_pos[ip_now].x;
+        y = clatoms_pos[ip_now].y;
+        z = clatoms_pos[ip_now].z;
+        for(i=1;i<=natm_tot;i++){
+          x[i] = x_tmp[i];          
+          y[i] = y_tmp[i];          
+          z[i] = z_tmp[i];          
+        }//endfor
       }//endif
     }//endfor : beads
 
     if(initial_spread_opt == 1 && pi_beads_true>1){
-//      spread_coord(mdclatoms_info,clatoms_pos,x_tmp,y_tmp,z_tmp,
-//                   &iseed,&iseed2,&qseed,mdatommaps);
+      //      spread_coord(mdclatoms_info,clatoms_pos,x_tmp,y_tmp,z_tmp,
+      //                   &iseed,&iseed2,&qseed,mdatommaps);
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("Initial spread option to be performed off line now\n");
       PRINTF("Error while reading in the %d atom coordinate\n",i);
@@ -321,9 +321,9 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
       FFLUSH(stdout);
       EXIT(1);
     }//endif
- 
-//------------------------------------------------------------------
-//skip over the box
+
+    //------------------------------------------------------------------
+    //skip over the box
     for(i=0;i<3;i++){
       if(fscanf(fp_dnamei,"%lf %lf %lf",&h1,&h2,&h3) != 3){
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -338,33 +338,33 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
 
   }//endif: start=1 
 
-//========================================================================
-// V)istart = 2 (restart_pos)                                             
+  //========================================================================
+  // V)istart = 2 (restart_pos)                                             
 
 
   if(istart >= 2) {
 
-//----------------------------------------------------------------------
-//     A)Atm positions                                                  
+    //----------------------------------------------------------------------
+    //     A)Atm positions                                                  
     PRINTF("Reading in coordinates\n");
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("EOF before particle coordinates \n");
-        PRINTF("in file \"%s\"\n",dnamei);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("EOF before particle coordinates \n");
+      PRINTF("in file \"%s\"\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }//endif
     upper = pi_beads;
     if(initial_spread_opt == 1){upper = 1;}
     for(ip=1;ip<=upper;ip++){
       for(i=1;i<=natm_tot;i++){
         if(fscanf(fp_dnamei,"%lf %lf %lf %s %s %s %d",
-                            &(x_tmp[i]),
-                            &(y_tmp[i]),
-                            &(z_tmp[i]),
-                            atm_typ_now,res_typ_now,mol_typ_now,
-                            &imol_num_now) != 7) {
+              &(x_tmp[i]),
+              &(y_tmp[i]),
+              &(z_tmp[i]),
+              atm_typ_now,res_typ_now,mol_typ_now,
+              &imol_num_now) != 7) {
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error while reading in the %d atom coordinate\n",i);
           PRINTF("in file \"%s\"\n",dnamei);
@@ -378,7 +378,7 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
           PRINTF("Atom type mismatch for particle %d\n",i);
           PRINTF("in user specified coordinate file %s \n",dnamei);
           PRINTF("File says %s program expects %s\n",atm_typ_now,
-                  atm_typ[iatm_atm_typ[i]]);
+              atm_typ[iatm_atm_typ[i]]);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -388,7 +388,7 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
           PRINTF("Residue type mismatch for particle %d\n",i);
           PRINTF("in user specified coordinate file %s \n",dnamei);
           PRINTF("File says %s program expects %s \n",res_typ_now,
-                  res_typ[iatm_res_typ[i]]);
+              res_typ[iatm_res_typ[i]]);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -398,7 +398,7 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
           PRINTF("Molecule type mismatch for particle %d\n",i);
           PRINTF("in user specified coordinate file %s \n",dnamei);
           PRINTF("File says %s program expects %s \n",mol_typ_now,
-                  mol_typ[iatm_mol_typ[i]]);
+              mol_typ[iatm_mol_typ[i]]);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -408,7 +408,7 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
           PRINTF("Molecule number mismatch for particle %d\n",i);
           PRINTF("in user specified coordinate file %s \n",dnamei);
           PRINTF("File says %d program expects %d \n",imol_num_now,
-                  iatm_mol_num[i]);
+              iatm_mol_num[i]);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -428,8 +428,8 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
     }//endfor:pi_beads
 
     if(initial_spread_opt == 1&&pi_beads>1){
-//      spread_coord(mdclatoms_info,clatoms_pos,x_tmp,y_tmp,z_tmp,
-//                   &iseed,&iseed2,&qseed,mdatommaps);
+      //      spread_coord(mdclatoms_info,clatoms_pos,x_tmp,y_tmp,z_tmp,
+      //                   &iseed,&iseed2,&qseed,mdatommaps);
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("Initial spread option to be performed off line now\n");
       PRINTF("Error while reading in the %d atom coordinate\n",i);
@@ -439,25 +439,25 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
       EXIT(1);
     }//endif
 
-//------------------------------------------------------------------
-// Skip over the box
+    //------------------------------------------------------------------
+    // Skip over the box
     PRINTF("Reading in cell shape information\n");
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("EOF before cell vectors \n");
+      PRINTF("in file \"%s\"\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
+    }//endif
+    for(i=0;i<3;i++){
+      if(fscanf(fp_dnamei,"%lf %lf %lf",&h1,&h2,&h3) != 3){
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("EOF before cell vectors \n");
+        PRINTF("Error reading in cell vector %d\n",i);
         PRINTF("in file \"%s\"\n",dnamei);
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         FFLUSH(stdout);
         EXIT(1);
-    }//endif
-    for(i=0;i<3;i++){
-      if(fscanf(fp_dnamei,"%lf %lf %lf",&h1,&h2,&h3) != 3){
-          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-          PRINTF("Error reading in cell vector %d\n",i);
-          PRINTF("in file \"%s\"\n",dnamei);
-          PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-          FFLUSH(stdout);
-          EXIT(1);
       }// endif
       readtoendofline(fp_dnamei);
     }// endfor
@@ -478,14 +478,14 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
 
   }//endif: start>=2
 
-//========================================================================
-// VI)Istart = 3 (restart_posvel)                                         
+  //========================================================================
+  // VI)Istart = 3 (restart_posvel)                                         
 
 
   if(istart >= 3) {
 
-//----------------------------------------------------------------------
-// A)Atm Velocities                                                 
+    //----------------------------------------------------------------------
+    // A)Atm Velocities                                                 
     PRINTF("Reading in atom velocities\n");
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -498,9 +498,9 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
     for(ip=1;ip<=pi_beads;ip++){
       for(i=1;i<=natm_tot;i++){
         if(fscanf(fp_dnamei,"%lf %lf %lf",
-                               &(x_tmp[i]),
-                               &(y_tmp[i]),
-                               &(z_tmp[i]) )!=3){
+              &(x_tmp[i]),
+              &(y_tmp[i]),
+              &(z_tmp[i]) )!=3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error while reading in the %d atom velocities\n",i);
           PRINTF("in file \"%s\"\n",dnamei);
@@ -511,20 +511,20 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
         readtoendofline(fp_dnamei);
       }//endfor:atoms
       if( (ip>=ip_start) && (ip <=ip_end)){
-         ip_now = ip-ip_start + 1;
-         vx = clatoms_pos[ip_now].vx;
-         vy = clatoms_pos[ip_now].vy;
-         vz = clatoms_pos[ip_now].vz;
-         for(i=1;i<=natm_tot;i++){
-           vx[i] = x_tmp[i];          
-           vy[i] = y_tmp[i];          
-           vz[i] = z_tmp[i];          
-         }//endfor
+        ip_now = ip-ip_start + 1;
+        vx = clatoms_pos[ip_now].vx;
+        vy = clatoms_pos[ip_now].vy;
+        vz = clatoms_pos[ip_now].vz;
+        for(i=1;i<=natm_tot;i++){
+          vx[i] = x_tmp[i];          
+          vy[i] = y_tmp[i];          
+          vz[i] = z_tmp[i];          
+        }//endfor
       }//endif
     }//endfor : pi_beads 
 
-//----------------------------------------------------------------------
-// B) Zero velocities of ghost atoms if any                            
+    //----------------------------------------------------------------------
+    // B) Zero velocities of ghost atoms if any                            
 
     if(nghost_tot > 0) {
       for(ip=1;ip<=pi_beads;ip++){
@@ -540,8 +540,8 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
       }//endfor : pi_beads
     }//endif
 
-//----------------------------------------------------------------------
-// C) Zero velocities of freeze atoms if any                         
+    //----------------------------------------------------------------------
+    // C) Zero velocities of freeze atoms if any                         
 
     if(nfreeze > 0) {
       igo = 0;
@@ -549,29 +549,29 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
       if(pimd_freez_typ == 2){upper=pi_beads;igo=1;}
       if(igo == 1){
         for(ip=1;ip<=upper;ip++){
-        vx = clatoms_pos[ip].vx;
-        vy = clatoms_pos[ip].vy;
-        vz = clatoms_pos[ip].vz;
-        for(i=1;i <= nfreeze;i++){
-          igloc = freeze_map[i];
-          vx[igloc] = 0.0;
-          vy[igloc] = 0.0;
-          vz[igloc] = 0.0;
-        }//endfor
+          vx = clatoms_pos[ip].vx;
+          vy = clatoms_pos[ip].vy;
+          vz = clatoms_pos[ip].vz;
+          for(i=1;i <= nfreeze;i++){
+            igloc = freeze_map[i];
+            vx[igloc] = 0.0;
+            vy[igloc] = 0.0;
+            vz[igloc] = 0.0;
+          }//endfor
         }//endfor
       }//endif
     }//endif
 
   }// endif : istart >=3
 
-//========================================================================
-//   VII)Istart = 4 (restart_all)                                         
+  //========================================================================
+  //   VII)Istart = 4 (restart_all)                                         
 
 
   if(istart == 4) {
 
-//------------------------------------------------------------------
-//  A)Atm NHC Velocities                                         
+    //------------------------------------------------------------------
+    //  A)Atm NHC Velocities                                         
 
     PRINTF("Reading Nose-Hoover chain (NHC) velocities\n");
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
@@ -611,12 +611,12 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
       EXIT(1);
     } // endif 
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("EOF before NHC velocities \n");
-       PRINTF("in file \"%s\"\n",dnamei);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
-       EXIT(1);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("EOF before NHC velocities \n");
+      PRINTF("in file \"%s\"\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }//endif
 
     v_nhc = therm_class->v_nhc;
@@ -639,8 +639,8 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
       }//endfor
     }//endfor : length of nhc 
 
-//------------------------------------------------------------------
-//  B)Bead NHC Velocities                                         
+    //------------------------------------------------------------------
+    //  B)Bead NHC Velocities                                         
 
     if(pi_beads>1){
       PRINTF("Reading Nose-Hoover bead (NHC) velocities\n");
@@ -720,52 +720,52 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
 
     }//endif:pi_beads > 1
 
-//------------------------------------------------------------------
-//  C)Vol and Vol NHC Velocities                                    
+    //------------------------------------------------------------------
+    //  C)Vol and Vol NHC Velocities                                    
 
     PRINTF("Reading Cell velocities\n");
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("EOF before Cell velocities \n");
-       PRINTF("in file \"%s\"\n",dnamei);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
-       EXIT(1);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("EOF before Cell velocities \n");
+      PRINTF("in file \"%s\"\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }//endif
     for(i=0;i<3;i++){
       if(fscanf(fp_dnamei,"%lf %lf %lf",
-         &(vgmat[(1+i)]),&(vgmat[(4+i)]),&(vgmat[(7+i)])) != 3){
-         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         PRINTF("EOF reading in cell vector velocity %d\n",i);
-         PRINTF("in file \"%s\"\n",dnamei);
-         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         FFLUSH(stdout);
-         EXIT(1);
+            &(vgmat[(1+i)]),&(vgmat[(4+i)]),&(vgmat[(7+i)])) != 3){
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("EOF reading in cell vector velocity %d\n",i);
+        PRINTF("in file \"%s\"\n",dnamei);
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        FFLUSH(stdout);
+        EXIT(1);
       }//endif
       readtoendofline(fp_dnamei);
     }//endfor
     if(hmat_int_typ==0){
       if((vgmat[2]!=vgmat[4])&&
-         (vgmat[3]!=vgmat[7])&&
-         (vgmat[6]!=vgmat[8])){
-         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         PRINTF("The Cell velocity matrix must be symmetric\n");
-         PRINTF("in file \"%s\"\n",dnamei);
-         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         FFLUSH(stdout);
-         EXIT(1);
+          (vgmat[3]!=vgmat[7])&&
+          (vgmat[6]!=vgmat[8])){
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("The Cell velocity matrix must be symmetric\n");
+        PRINTF("in file \"%s\"\n",dnamei);
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        FFLUSH(stdout);
+        EXIT(1);
       }//endif
     }//endif
     if(hmat_int_typ==1){
       if((vgmat[2]!=0.0)&&
-         (vgmat[3]!=0.0)&&
-         (vgmat[6]!=0.0)){
-         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         PRINTF("The Cell velocity matrix must be upper triangular\n");
-         PRINTF("in file \"%s\"\n",dnamei);
-         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         FFLUSH(stdout);
-         EXIT(1);
+          (vgmat[3]!=0.0)&&
+          (vgmat[6]!=0.0)){
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("The Cell velocity matrix must be upper triangular\n");
+        PRINTF("in file \"%s\"\n",dnamei);
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        FFLUSH(stdout);
+        EXIT(1);
       }//endif
     }//endif
     if(hmat_cons_typ==1){
@@ -794,69 +794,69 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
     }// endif  
     if(iperd==2){
       if((vgmat[7]!=0.0)&&
-         (vgmat[8]!=0.0)&&
-         (vgmat[3]!=0.0)&&
-         (vgmat[6]!=0.0)){
-         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         PRINTF("The Cell velocity matrix must not contain c-coupling\n");
-         PRINTF("in file \"%s\"\n",dnamei);
-         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         FFLUSH(stdout);
-         EXIT(1);
+          (vgmat[8]!=0.0)&&
+          (vgmat[3]!=0.0)&&
+          (vgmat[6]!=0.0)){
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("The Cell velocity matrix must not contain c-coupling\n");
+        PRINTF("in file \"%s\"\n",dnamei);
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        FFLUSH(stdout);
+        EXIT(1);
       }//endif
     }//endif
     PRINTF("Reading Volume velocity\n");
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("EOF before Volume velocity\n");
-       PRINTF("in file \"%s\"\n",dnamei);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
-       EXIT(1);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("EOF before Volume velocity\n");
+      PRINTF("in file \"%s\"\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }//endif
     if(fscanf(fp_dnamei,"%lf",&(mdbaro->v_lnv)) != 1){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("Error reading in volume velocity\n");
-       PRINTF("in file \"%s\"\n",dnamei);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
-       EXIT(1);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Error reading in volume velocity\n");
+      PRINTF("in file \"%s\"\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }//endif
     readtoendofline(fp_dnamei);
     PRINTF("Reading Volume NHC velocities\n");
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("EOF before Vol. NHC velocities \n");
-       PRINTF("in file \"%s\"\n",dnamei);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
-       EXIT(1);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("EOF before Vol. NHC velocities \n");
+      PRINTF("in file \"%s\"\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }//endif
     for(i=1;i<=class_len_nhc;i++){
       if(fscanf(fp_dnamei,"%lf",&(v_vol_nhc[i])) != 1){
-         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         PRINTF("Error reading in volume NHC velocity %d\n",i);
-         PRINTF("in file \"%s\"\n",dnamei);
-         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         FFLUSH(stdout);
-         EXIT(1);
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("Error reading in volume NHC velocity %d\n",i);
+        PRINTF("in file \"%s\"\n",dnamei);
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        FFLUSH(stdout);
+        EXIT(1);
       }//endif
       readtoendofline(fp_dnamei);
     }//endfor
 
   }//endif : start==4 
 
-//========================================================================
-//  VIII) Assign NHC positions                       
+  //========================================================================
+  //  VIII) Assign NHC positions                       
 
 
   if( ((nvt+npt_i+npt_f)==1)  && (ip_start ==1) ){
-     x_nhc = therm_class->x_nhc;
-     for(j=1;j<=class_len_nhc;j++){
-       for(i=1;i<=class_num_nhc;i++){
-          x_nhc[j][i] = 0.0;
-       }//endfor
-     }//endfor
+    x_nhc = therm_class->x_nhc;
+    for(j=1;j<=class_len_nhc;j++){
+      for(i=1;i<=class_num_nhc;i++){
+        x_nhc[j][i] = 0.0;
+      }//endfor
+    }//endfor
   }//endif : bead and ensemble 
 
   if( pi_beads>1 ){
@@ -877,19 +877,19 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
     }//endfor
   }//endif
 
-//========================================================================
-//  IX) Calculate the spread : done elsewhere
+  //========================================================================
+  //  IX) Calculate the spread : done elsewhere
 
-//  mdinteract->spread     = 0.0;
-//  mdinteract->spread_now = 0.0;
-//  if( (pi_beads>1) || (pimd_on==1) ){
-//    get_pimd_spread(mdclatoms_info,clatoms_pos,&(mdinteract->spread_now));
-//    mdinteract->spread = mdinteract->spread_now;
-//  }//endif
+  //  mdinteract->spread     = 0.0;
+  //  mdinteract->spread_now = 0.0;
+  //  if( (pi_beads>1) || (pimd_on==1) ){
+  //    get_pimd_spread(mdclatoms_info,clatoms_pos,&(mdinteract->spread_now));
+  //    mdinteract->spread = mdinteract->spread_now;
+  //  }//endif
 
-//========================================================================
-//  X) Close file, free arrays                                             
-  
+  //========================================================================
+  //  X) Close file, free arrays                                             
+
   fclose(fp_dnamei); 
 
   cfree(&x_tmp[1],"read_coord");
@@ -899,8 +899,8 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
   cfree(&v_vol_nhc[1],"read_coord");
   cfree(line,"read_coord");
 
-//========================================================================
-//  XI) Output to the screen                                               
+  //========================================================================
+  //  XI) Output to the screen                                               
 
 
   PRINTF("\n");
@@ -908,8 +908,8 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
   PRINTF("Done reading user specified atm coordinate file %s\n",dnamei);
   PRINT_LINE_STAR;PRINTF("\n");
 
-//--------------------------------------------------------------------------
-    }// end routine 
+  //--------------------------------------------------------------------------
+}// end routine 
 //==========================================================================
 
 

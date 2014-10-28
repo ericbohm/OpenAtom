@@ -2,9 +2,9 @@
 arglen=${#1};
 if [ $arglen -gt 0 ]
 then
-  SYSNAME=$1;
+SYSNAME=$1;
 else
-  SYSNAME=water;
+SYSNAME=water;
 fi
 echo "$SYSNAME";
 if [ -e $SYSNAME ]
@@ -13,24 +13,24 @@ rm $SYSNAME
 fi
 if [ -e cpaimd_config*.out ]
 then
-    rm cpaimd_config*.out
+rm cpaimd_config*.out
 fi
 
 for bd in ATOM_COORDS_OUT/Bead*
 do
-    if [ -e $bd/$SYSNAME.confp ]
-    then
-	rm $bd/$SYSNAME.confp
-    fi
-    if [ -e $bd/$SYSNAME.coords_out ] 
-    then
-	rm $bd/$SYSNAME.coords_out
-    fi
+if [ -e $bd/$SYSNAME.confp ]
+then
+rm $bd/$SYSNAME.confp
+fi
+if [ -e $bd/$SYSNAME.coords_out ] 
+then
+rm $bd/$SYSNAME.coords_out
+fi
 done
 for bd in TEMPER_OUT/screen*
 do
-    if [ -e TEMPER_OUT/screen* ]
-    then
-	rm $bd/TEMPER_OUT/screen*
-    fi
+if [ -e TEMPER_OUT/screen* ]
+then
+rm $bd/TEMPER_OUT/screen*
+fi
 done

@@ -4,19 +4,19 @@
 #ifndef ORTHO_CONFIG_H
 #define ORTHO_CONFIG_H
 /** @addtogroup Ortho
-    @{
-*/
+  @{
+ */
 
 namespace cp {
-    namespace ortho {
+  namespace ortho {
 
-/**
- * Configuration settings for the ortho world. Most of these are invariant
- * post-instantiation.
- */
-class orthoConfig
-{
-    public:
+    /**
+     * Configuration settings for the ortho world. Most of these are invariant
+     * post-instantiation.
+     */
+    class orthoConfig
+    {
+      public:
         /// Is this a minimization or dynamics run
         bool isDynamics; ///< @note: This could turn into an enum as more run modes are introduced
         /// If, this is a minimization run, is it for generating the system wave functions?
@@ -46,20 +46,20 @@ class orthoConfig
 
         void pup(PUP::er &p)
         {
-            p|isDynamics;
-            p|isGenWave;
-            p|useComplexMath;
-            p|numStates;
-            p|grainSize;
-            p|instanceIndex;
-            p|maxTolerance;
-            p|uponToleranceFailure;
-            p|isStep2HelperOn;
-            p|gemmSplit;
+          p|isDynamics;
+          p|isGenWave;
+          p|useComplexMath;
+          p|numStates;
+          p|grainSize;
+          p|instanceIndex;
+          p|maxTolerance;
+          p|uponToleranceFailure;
+          p|isStep2HelperOn;
+          p|gemmSplit;
         }
-};
+    };
 
-    } // end ortho
+  } // end ortho
 } // end namespace cp
 /*@}*/
 #endif // ORTHO_CONFIG_H

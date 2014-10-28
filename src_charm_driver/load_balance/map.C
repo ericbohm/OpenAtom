@@ -52,20 +52,20 @@ void GSpacePlaneLoad(int , double *, double *);
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void GSMap::GSpacePlaneLoad(int idx, double *line_load, double *pt_load){
-//============================================================================
+  //============================================================================
 
   if( (idx < 0) || (idx >= nchareG) ){
-   CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-   CkPrintf("GSpace plane index %d out of range: 0 < idx > %d\n",idx,nchareG);
-   CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-   CkExit();
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("GSpace plane index %d out of range: 0 < idx > %d\n",idx,nchareG);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
   }//endif
 
   line_load[0] = lines_per_chareG[idx];
   pt_load[0]   =   pts_per_chareG[idx];
 
-//============================================================================
-  }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 
@@ -73,21 +73,21 @@ void GSMap::GSpacePlaneLoad(int idx, double *line_load, double *pt_load){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void SCalcMap::GSpacePlaneLoad(int idx, double *line_load, double *pt_load){
-//============================================================================
+  //============================================================================
 
 
   if( (idx < 0) || (idx >= nchareG) ){
-   CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-   CkPrintf("GSpace plane index %d out of range: 0 < idx > %d\n",idx,nchareG);
-   CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-   CkExit();
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("GSpace plane index %d out of range: 0 < idx > %d\n",idx,nchareG);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
   }//endif
 
   line_load[0] = lines_per_chareG[idx];
   pt_load[0]   =   pts_per_chareG[idx];
 
-//============================================================================
-  }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 
@@ -100,25 +100,25 @@ void SCalcMap::GSpacePlaneLoad(int idx, double *line_load, double *pt_load){
  */
 //============================================================================
 int basicMap(CkArrayIndex2D &idx2d, int numPlanes) {
-//============================================================================
+  //============================================================================
   int pes_per_state = config.RpesPerState;
   int np = CkNumPes()/pes_per_state;
- 
+
   if(np < 1)
     np = 1;
 
   int partition_nstates = config.nstates / np;
   if(config.nstates % np != 0)
     partition_nstates ++;
-  
+
   double total_planes = config.nstates * numPlanes;
   double numPerProc = total_planes / CkNumPes();
-    
+
   //My state in the current partition
   int s = idx2d.index[0]%partition_nstates; 
 
   int pe = (int) floor((idx2d.index[1]*partition_nstates + s)/numPerProc); 
-    
+
   pe = pe % pes_per_state;
   pe +=  pes_per_state *  (idx2d.index[0]/partition_nstates);
 
@@ -126,8 +126,8 @@ int basicMap(CkArrayIndex2D &idx2d, int numPlanes) {
     pe = pe % CkNumPes();
 
   return pe; 
-//============================================================================
-   }// end routine
+  //============================================================================
+}// end routine
 //============================================================================
 
 
@@ -140,18 +140,18 @@ int basicMap(CkArrayIndex2D &idx2d, int numPlanes) {
  */
 //============================================================================
 void GSMap::makemap(){
-//============================================================================
-    int numChareG=0;
-    if(config.doublePack) 
-	numChareG = nchareG;
-    else
-	CkAbort("not doublepack broken!");
+  //============================================================================
+  int numChareG=0;
+  if(config.doublePack) 
+    numChareG = nchareG;
+  else
+    CkAbort("not doublepack broken!");
 
-    for(int state = 0; state < config.nstates; state++){
-      for (int plane = 0; plane < numChareG; plane++) {
-	    CkArrayIndex2D idx2d(state,plane);
-      }
+  for(int state = 0; state < config.nstates; state++){
+    for (int plane = 0; plane < numChareG; plane++) {
+      CkArrayIndex2D idx2d(state,plane);
     }
+  }
 }
 //============================================================================
 
@@ -162,41 +162,41 @@ void GSMap::makemap(){
 //int GSMap::slowprocNum(int arrayHdl, const CkArrayIndex2D &idx2d)
 //============================================================================
 int GSMap::procNum(int arrayHdl, const CkArrayIndex &idx){
-//============================================================================
+  //============================================================================
 
   CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
 
   int pe        = 0;
   int numChareG = 0;
-  
+
   if(config.doublePack) {
-     numChareG = nchareG;
+    numChareG = nchareG;
   }else{
-     CkAbort("not doublepack broken\n");
+    CkAbort("not doublepack broken\n");
   }//endif
-  
+
   if(state_load <= 0.0 ) {
     for(int x = 0; x  < numChareG; x++) {
       double curload = 0.0;
       double sload = 0.0;
-      
+
       GSpacePlaneLoad(x, &curload, &sload);
-      
+
       state_load += curload;
     }//endfor
   }//endif
 
   int pes_per_state = config.GpesPerState;
   int np = CkNumPes()/pes_per_state;
-  
+
   if(np < 1){np = 1;}
-  
+
   int partition_nstates = config.nstates / np;
   if(config.nstates % np != 0){partition_nstates ++;}
-  
+
   int start_pe = (idx2d.index[0]/partition_nstates) * pes_per_state;
   int start_state = (idx2d.index[0]/partition_nstates) * partition_nstates;
-  
+
   double cum_load = 0.0;
   double average_load = state_load * config.nstates / CkNumPes();
 
@@ -204,27 +204,27 @@ int GSMap::procNum(int arrayHdl, const CkArrayIndex &idx){
     for(int s = 0; s < partition_nstates; s++) {
       double curload = 0.0;
       double sload = 0.0;
-      
+
       GSpacePlaneLoad(x, &curload, &sload);
 
       cum_load += curload;
 
       if((idx2d.index[0] == s + start_state) && idx2d.index[1] == x) {
-	double dpe = 0.0;
-	dpe = cum_load / average_load;
+        double dpe = 0.0;
+        dpe = cum_load / average_load;
 
-	pe = (int)dpe;
-	pe = pe % pes_per_state;
-	pe += start_pe;
+        pe = (int)dpe;
+        pe = pe % pes_per_state;
+        pe += start_pe;
 
-	return (pe % CkNumPes());
+        return (pe % CkNumPes());
       }//endif
     }//endfor
   }//endfor
   return (idx2d.index[0]*1037+idx2d.index[1])%CkNumPes();
 
-//============================================================================
-   }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 
@@ -232,18 +232,18 @@ int GSMap::procNum(int arrayHdl, const CkArrayIndex &idx){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 int RSMap::procNum(int arrayHdl, const CkArrayIndex &idx){
-    CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+  CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
 
-    int numPlanes = 0;
-    numPlanes = sizeX;
-    
-    int pe  = 0;
-    
-    double total_planes = config.nstates * numPlanes;
-    double planes_per_proc = total_planes / CkNumPes();
-    
-    pe = basicMap(idx2d, numPlanes);
-    return pe;
+  int numPlanes = 0;
+  numPlanes = sizeX;
+
+  int pe  = 0;
+
+  double total_planes = config.nstates * numPlanes;
+  double planes_per_proc = total_planes / CkNumPes();
+
+  pe = basicMap(idx2d, numPlanes);
+  return pe;
 }
 //============================================================================
 
@@ -266,16 +266,16 @@ inline double scalc_load(int x, int numplanes, double *load) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 int SCalcMap::procNum(int hdl, const CkArrayIndex &idx){
-    CkArrayIndex4D &idx4d = *(CkArrayIndex4D *)&idx;
-    int intidx[2];
-    CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
-    if(maptable==NULL){
-	int calcchunks=max_states/gs;
-	maptable= new CkHashtableT<intdual,int> (nchareG*calcchunks*calcchunks); 
-                  // times blkSize, but its always 1
-	makemap();
-    }//endif
-    return maptable->get(intdual(intidx[0], intidx[1]));
+  CkArrayIndex4D &idx4d = *(CkArrayIndex4D *)&idx;
+  int intidx[2];
+  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+  if(maptable==NULL){
+    int calcchunks=max_states/gs;
+    maptable= new CkHashtableT<intdual,int> (nchareG*calcchunks*calcchunks); 
+    // times blkSize, but its always 1
+    makemap();
+  }//endif
+  return maptable->get(intdual(intidx[0], intidx[1]));
 }
 //============================================================================
 
@@ -288,32 +288,32 @@ void SCalcMap::makemap(){
 
     for(int numX = 0; numX < nchareG; numX++){
       for (int s1 = 0; s1 < max_states; s1 += gs) {
-	for (int s2 = s1; s2 < max_states; s2 += gs) {
-	    CkArrayIndex4D idx4d(numX,s1,s2,0);
-	    int intidx[2];
-	    CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
-	    maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
-	}//endfor
+        for (int s2 = s1; s2 < max_states; s2 += gs) {
+          CkArrayIndex4D idx4d(numX,s1,s2,0);
+          int intidx[2];
+          CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+          maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
+        }//endfor
       }//endfor
     }//endfor
 
   }else{
 
-      for(int numX = 0; numX < nchareG; numX++){
-	  for (int s1 = 0; s1 < max_states; s1 += gs) {
-	      for (int s2 = 0; s2 < max_states; s2 += gs) {
-		  CkArrayIndex4D idx4d(numX,s1,s2,0);
-		  int intidx[2];
-		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts now 2 ints
-		  maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
-	      }//endfor
-	  }//endfor
+    for(int numX = 0; numX < nchareG; numX++){
+      for (int s1 = 0; s1 < max_states; s1 += gs) {
+        for (int s2 = 0; s2 < max_states; s2 += gs) {
+          CkArrayIndex4D idx4d(numX,s1,s2,0);
+          int intidx[2];
+          CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts now 2 ints
+          maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
+        }//endfor
       }//endfor
+    }//endfor
 
   }//endif
 
-//============================================================================
-   }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 int SCalcMap::slowprocNum2(int hdl, const CkArrayIndex4D &idx4d){
@@ -333,178 +333,178 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
 //       idx4d.index[0],idx4d.index[1],idx4d.index[2],idx4d.index[3],CkMyPe());
 //============================================================================
 #if CMK_TRACE_ENABLED
-      double StartTime=CmiWallTimer();
+double StartTime=CmiWallTimer();
 #endif
-    //Here maxY is the max number of planes;
-    int planeid = idx4d.index[0];
-    int numChareG = 0;
+//Here maxY is the max number of planes;
+int planeid = idx4d.index[0];
+int numChareG = 0;
 
-    if(config.doublePack){
-        numChareG = config.nchareG;
-    }else{
-        numChareG = max_planes/2;
-    }//endif
+if(config.doublePack){
+numChareG = config.nchareG;
+}else{
+numChareG = max_planes/2;
+}//endif
 
-    //for asymetric
-    double *load = new double[CkNumPes()];
-    memset(load, 0, CkNumPes() * sizeof(double));
+//for asymetric
+double *load = new double[CkNumPes()];
+memset(load, 0, CkNumPes() * sizeof(double));
 
-    int w=0, x=0, y = 0; 
+int w=0, x=0, y = 0; 
 
-    if(totalload <= 0.0) { 
-      for(w = 0; w < numChareG; w ++) 
-	for(x = 0; x < max_states; x += gs) {
-	  if (symmetric){
-	    y = x;
-	  }else{
-	    y = 0;
-	  }//endif
-	  
-	  for(; y < max_states; y += gs) {
-	    
-	    double curload = 0.0;
-	    double gload = 0.0;
-	    
-	    //scalc_load(w, numChareG, &curload);
-	    GSpacePlaneLoad(w, &gload, &curload);
-	    
-	    totalload += curload;
-	  }//endfor
-	}//endfor
-    }//endif
-    
-    int pe = 0;
-    
-    for(w = 0; w < numChareG; w ++) {
-      for(x = 0; x < max_states; x += gs){
-	if (symmetric){
-	  y = x;
-	}else{
-	  y = 0;
-	}//endif
+if(totalload <= 0.0) { 
+for(w = 0; w < numChareG; w ++) 
+for(x = 0; x < max_states; x += gs) {
+if (symmetric){
+y = x;
+}else{
+y = 0;
+}//endif
 
-	for(; y < max_states; y += gs) {
-	  double curload = 0.0;
-	  double gload = 0.0;
-	  
-	  //scalc_load(w, numChareG, &curload);
-	  GSpacePlaneLoad(w, &gload, &curload);
-	  
-	  curload /=  totalload;
-          
-          if(load[pe] + curload > 0.3/CkNumPes()){pe ++;}
-	  
-	  if(pe >= CkNumPes()){pe = 0;}
-          
-	  load[pe] += curload;
-	  
-	  if((w == idx4d.index[0]) && (x == idx4d.index[1]) &&
-	     (y == idx4d.index[2])) {
+for(; y < max_states; y += gs) {
+
+double curload = 0.0;
+double gload = 0.0;
+
+//scalc_load(w, numChareG, &curload);
+GSpacePlaneLoad(w, &gload, &curload);
+
+totalload += curload;
+}//endfor
+}//endfor
+}//endif
+
+int pe = 0;
+
+for(w = 0; w < numChareG; w ++) {
+for(x = 0; x < max_states; x += gs){
+if (symmetric){
+y = x;
+}else{
+y = 0;
+}//endif
+
+for(; y < max_states; y += gs) {
+double curload = 0.0;
+double gload = 0.0;
+
+//scalc_load(w, numChareG, &curload);
+GSpacePlaneLoad(w, &gload, &curload);
+
+curload /=  totalload;
+
+if(load[pe] + curload > 0.3/CkNumPes()){pe ++;}
+
+if(pe >= CkNumPes()){pe = 0;}
+
+load[pe] += curload;
+
+if((w == idx4d.index[0]) && (x == idx4d.index[1]) &&
+    (y == idx4d.index[2])) {
 #if CMK_TRACE_ENABLED
-             traceUserBracketEvent(Scalcmap_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(Scalcmap_, StartTime, CmiWallTimer());    
 #endif
-             delete [] load;
-             return pe;
-	  }//endif
-        }//endfor
-      }//endfor
-    }//endfor : w
+  delete [] load;
+  return pe;
+}//endif
+}//endfor
+}//endfor
+}//endfor : w
 
-    delete [] load;
+delete [] load;
 #if CMK_TRACE_ENABLED
-    traceUserBracketEvent(Scalcmap_, StartTime, CmiWallTimer());    
+traceUserBracketEvent(Scalcmap_, StartTime, CmiWallTimer());    
 #endif
 
 //============================================================================
-    return (idx4d.index[0]*197+idx4d.index[1]*23+idx4d.index[2]*7
-            +idx4d.index[3])%CkNumPes();    
+return (idx4d.index[0]*197+idx4d.index[1]*23+idx4d.index[2]*7
+    +idx4d.index[3])%CkNumPes();    
 //============================================================================
-   }//end routine
+}//end routine
 //============================================================================
 */
 
 
 int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
 {
-    short *idx = reinterpret_cast<short*> ( idx4d.data() );
+  short *idx = reinterpret_cast<short*> ( idx4d.data() );
 
-    //Here maxY is the max number of planes;
-    int planeid = idx[0];
-    int numChareG = 0;
+  //Here maxY is the max number of planes;
+  int planeid = idx[0];
+  int numChareG = 0;
 
 
-    if(config.doublePack){
-        numChareG = config.nchareG;
-    }else{
-        numChareG = max_planes/2;
-    }//endif
+  if(config.doublePack){
+    numChareG = config.nchareG;
+  }else{
+    numChareG = max_planes/2;
+  }//endif
 
-    //for asymetric
-    double *load = new double[CkNumPes()];
-    memset(load, 0, CkNumPes() * sizeof(double));
+  //for asymetric
+  double *load = new double[CkNumPes()];
+  memset(load, 0, CkNumPes() * sizeof(double));
 
-    int w=0, x=0, y = 0; 
+  int w=0, x=0, y = 0; 
 
-    if(totalload <= 0.0) { 
-      for(w = 0; w < numChareG; w ++) 
-	for(x = 0; x < max_states; x += gs) {
-	  if (symmetric)
-	    y = x;
-	  else
-	    y = 0;
-	  
-	  for(; y < max_states; y += gs) {
-	    
-	    double curload = 0.0;
-	    double gload = 0.0;
-	    
-	    //scalc_load(w, numChareG, &curload);
-	    GSpacePlaneLoad(w, &gload, &curload);
-	    
-	    totalload += curload;
-	  }
-	}
-    }
-    
-    int pe = 0;
-    
-    for(w = 0; w < numChareG; w ++)  
+  if(totalload <= 0.0) { 
+    for(w = 0; w < numChareG; w ++) 
       for(x = 0; x < max_states; x += gs) {
-	if (symmetric)
-	  y = x;
-	else
-	  y = 0;
-	
-	for(; y < max_states; y += gs) {
-	  double curload = 0.0;
-	  double gload = 0.0;
-	  
-	  //scalc_load(w, numChareG, &curload);
-	  GSpacePlaneLoad(w, &gload, &curload);
-	  
-	  curload /=  totalload;
-          
-          if(load[pe] + curload > 0.3/CkNumPes()) 
-              pe ++;
-	  
-	  if(pe >= CkNumPes())
-              pe = 0;
-          
-	  load[pe] += curload;
-	  
-	  if((w == idx[0]) && (x == idx[1]) && (y == idx[2])) {
+        if (symmetric)
+          y = x;
+        else
+          y = 0;
 
-              //if(CkMyPe() == 0)
-              //  CkPrintf ("scalc %d %d %d %d assigned to pe %d and curload = %f, load = %f\n", w, x ,y, symmetric, pe, curload, load[pe]);
-              
-              delete [] load;
-	    return pe;
-	  }
+        for(; y < max_states; y += gs) {
+
+          double curload = 0.0;
+          double gload = 0.0;
+
+          //scalc_load(w, numChareG, &curload);
+          GSpacePlaneLoad(w, &gload, &curload);
+
+          totalload += curload;
         }
       }
-    
-    delete [] load;
-    return (idx[0]*197+idx[1]*23+idx[2]*7+idx[3])%CkNumPes();    
+  }
+
+  int pe = 0;
+
+  for(w = 0; w < numChareG; w ++)  
+    for(x = 0; x < max_states; x += gs) {
+      if (symmetric)
+        y = x;
+      else
+        y = 0;
+
+      for(; y < max_states; y += gs) {
+        double curload = 0.0;
+        double gload = 0.0;
+
+        //scalc_load(w, numChareG, &curload);
+        GSpacePlaneLoad(w, &gload, &curload);
+
+        curload /=  totalload;
+
+        if(load[pe] + curload > 0.3/CkNumPes()) 
+          pe ++;
+
+        if(pe >= CkNumPes())
+          pe = 0;
+
+        load[pe] += curload;
+
+        if((w == idx[0]) && (x == idx[1]) && (y == idx[2])) {
+
+          //if(CkMyPe() == 0)
+          //  CkPrintf ("scalc %d %d %d %d assigned to pe %d and curload = %f, load = %f\n", w, x ,y, symmetric, pe, curload, load[pe]);
+
+          delete [] load;
+          return pe;
+        }
+      }
+    }
+
+  delete [] load;
+  return (idx[0]*197+idx[1]*23+idx[2]*7+idx[3])%CkNumPes();    
 
 }
 

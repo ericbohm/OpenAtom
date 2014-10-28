@@ -53,14 +53,14 @@
 // May have to copy out some variables to objects to 
 // avoid memory conflicts but that can be handled on a
 // case by case basis in the constructor of each object.
-  MDINTEGRATE  readonly_mdintegrate;
-  MDATOMS      readonly_mdatoms;
-  MDINTER      readonly_mdinter;
-  MDINTRA      readonly_mdintra;
-  GENERAL_DATA readonly_general_data;
-  CP           readonly_cp; 
+MDINTEGRATE  readonly_mdintegrate;
+MDATOMS      readonly_mdatoms;
+MDINTER      readonly_mdinter;
+MDINTRA      readonly_mdintra;
+GENERAL_DATA readonly_general_data;
+CP           readonly_cp; 
 
-  int nElements;
+int nElements;
 
 
 //==========================================================================
@@ -74,17 +74,17 @@
 
 OATOM_MAINCHARE::OATOM_MAINCHARE (CkArgMsg *m)
 
-//==========================================================================
-    {// begin routine  
-//==========================================================================
-//   Local Variables 
+  //==========================================================================
+{// begin routine  
+  //==========================================================================
+  //   Local Variables 
 
   int pi_beads,ip,natm_tot;
   int iextended_on,num_nhc,len_nhc;
 
-//-------------------------------------------------------------------------
-// Nifty way to unglobally access the global variables.
-// Easy to implement unglobalize versions later if necessary.
+  //-------------------------------------------------------------------------
+  // Nifty way to unglobally access the global variables.
+  // Easy to implement unglobalize versions later if necessary.
 
   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
   MDATOMS      *mdatoms      = MDATOMS::get();
@@ -93,15 +93,15 @@ OATOM_MAINCHARE::OATOM_MAINCHARE (CkArgMsg *m)
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP           *cp           = CP::get();
 
-//-------------------------------------------------------------------------
-// local classes to read in the data for leanMD
+  //-------------------------------------------------------------------------
+  // local classes to read in the data for leanMD
 
   MDCLATOMS_POS *mdclatoms_pos;
   MDTHERM_POS    therm_class;
   MDTHERM_POS   *therm_bead;
 
-//=======================================================================
-//  I)             Check for input file 
+  //=======================================================================
+  //  I)             Check for input file 
 
   if(m->argc < 2) {
     printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -111,86 +111,86 @@ OATOM_MAINCHARE::OATOM_MAINCHARE (CkArgMsg *m)
     exit(1);
   }//endif
 
-//=======================================================================
-// II)            Invoke User Interface on 1 processor
+  //=======================================================================
+  // II)            Invoke User Interface on 1 processor
 
   parse(mdintegrate,mdatoms,mdinter,mdintra,general_data,cp,m->argv[1]);
 
-//=======================================================================
-// III) output state of classes on 1 processor
+  //=======================================================================
+  // III) output state of classes on 1 processor
 
 
-//#define DEBUG_PARSE
-//#ifdef DEBUG_PARSE
+  //#define DEBUG_PARSE
+  //#ifdef DEBUG_PARSE
   mdintegrate->state_class_out(); 
   mdatoms->state_class_out(); 
   mdinter->state_class_out();
   mdintra->state_class_out(); 
   general_data->state_class_out();
   cp->state_class_out(); 
-//#endif
+  //#endif
 
-//=======================================================================
-// IV) Allocate classes, read the coordinates for leanMD
-/*
+  //=======================================================================
+  // IV) Allocate classes, read the coordinates for leanMD
+  /*
 
-  pi_beads      = (mdatoms->mdclatoms_info.pi_beads);
-  natm_tot      = (mdatoms->mdclatoms_info.natm_tot);
-  iextended_on  = (mdintegrate->mdtherm_info.iextended_on);
+     pi_beads      = (mdatoms->mdclatoms_info.pi_beads);
+     natm_tot      = (mdatoms->mdclatoms_info.natm_tot);
+     iextended_on  = (mdintegrate->mdtherm_info.iextended_on);
 
-  mdclatoms_pos = (MDCLATOMS_POS *)
-                   cmalloc(pi_beads*sizeof(MDCLATOMS_POS),"main.C")-1;
+     mdclatoms_pos = (MDCLATOMS_POS *)
+     cmalloc(pi_beads*sizeof(MDCLATOMS_POS),"main.C")-1;
 
-  for(ip=1;ip<=pi_beads;ip++){
-   mdclatoms_pos[ip].natm_tot = natm_tot;
-   mdclatoms_pos[ip].x = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-   mdclatoms_pos[ip].y = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-   mdclatoms_pos[ip].z = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-   mdclatoms_pos[ip].vx =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-   mdclatoms_pos[ip].vy =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-   mdclatoms_pos[ip].vz =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
-  }// endfor
+     for(ip=1;ip<=pi_beads;ip++){
+     mdclatoms_pos[ip].natm_tot = natm_tot;
+     mdclatoms_pos[ip].x = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+     mdclatoms_pos[ip].y = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+     mdclatoms_pos[ip].z = (double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+     mdclatoms_pos[ip].vx =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+     mdclatoms_pos[ip].vy =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+     mdclatoms_pos[ip].vz =(double *)cmalloc(natm_tot*sizeof(double),"main.C")-1;
+     }// endfor
 
-  therm_bead    = (MDTHERM_POS *)
-                   cmalloc(pi_beads*sizeof(MDTHERM_POS),"main.C")-1;
+     therm_bead    = (MDTHERM_POS *)
+     cmalloc(pi_beads*sizeof(MDTHERM_POS),"main.C")-1;
 
-  if(iextended_on==1){
-    num_nhc = (mdintegrate->mdtherm_info.num_nhc);
-    len_nhc = (mdintegrate->mdtherm_info.len_nhc);
-    therm_class.num_nhc = num_nhc;
-    therm_class.len_nhc = len_nhc;
-    therm_class.x_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"main.C");
-    therm_class.v_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"main.C");
-  }// endif
+     if(iextended_on==1){
+     num_nhc = (mdintegrate->mdtherm_info.num_nhc);
+     len_nhc = (mdintegrate->mdtherm_info.len_nhc);
+     therm_class.num_nhc = num_nhc;
+     therm_class.len_nhc = len_nhc;
+     therm_class.x_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"main.C");
+     therm_class.v_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"main.C");
+     }// endif
 
-  read_coord(mdintegrate,mdatoms,mdinter,mdintra,general_data,cp,
-             mdclatoms_pos,&therm_class,therm_bead);
-*/
-//  AtomPosInit atomPosInit;
-//=======================================================================
-// V) Test pups  : invokes function that fires up a chare array
-//              and looks at variables on different procs to check
-//              the pupping. Define TEST_MY_PUPS above so function 
-//              prototype is included along with function.
+     read_coord(mdintegrate,mdatoms,mdinter,mdintra,general_data,cp,
+     mdclatoms_pos,&therm_class,therm_bead);
+   */
+  //  AtomPosInit atomPosInit;
+  //=======================================================================
+  // V) Test pups  : invokes function that fires up a chare array
+  //              and looks at variables on different procs to check
+  //              the pupping. Define TEST_MY_PUPS above so function 
+  //              prototype is included along with function.
 
 #ifdef TEST_MY_PUPS
-   test_parse_invoke();
+  test_parse_invoke();
 #endif
 
-//=======================================================================
-// VI) Control the simulations : Parallelism invoked within calls below.
-//                               readonly classes automatically communicated
-//                               to all NODES by pup magic.
+  //=======================================================================
+  // VI) Control the simulations : Parallelism invoked within calls below.
+  //                               readonly classes automatically communicated
+  //                               to all NODES by pup magic.
 
 #define CP_OFF
 #ifdef CP_ON
   control_cp(mdintegrate,mdatoms,mdinter,mdintra,general_data,cp);
 #endif
 
-//=======================================================================
-// VI)  Exit, stage left  : Actually you hang because well
-//                          charm++ doesn't have a soft-exit.
-//                          If you call CkExit, the pups don't pup.
+  //=======================================================================
+  // VI)  Exit, stage left  : Actually you hang because well
+  //                          charm++ doesn't have a soft-exit.
+  //                          If you call CkExit, the pups don't pup.
 
   fflush(stdout);
   fflush(stderr);
@@ -198,46 +198,46 @@ OATOM_MAINCHARE::OATOM_MAINCHARE (CkArgMsg *m)
   nElements=15;
 
   CkPrintf("Running Hello on %d processors for %d elements\n",
-             CkNumPes(),nElements);
-                                                                                
+      CkNumPes(),nElements);
+
   CProxy_Hello arr = CProxy_Hello::ckNew(nElements);
-                                                                                
+
   arr[0].SayHi(17);
 
-//----------------------------------------------------------------------
-   }//end main
+  //----------------------------------------------------------------------
+}//end main
 //==========================================================================
 
 class Hello : public CBase_Hello
 {
-public:
-  Hello()
-  {
-    CkPrintf("Hello %d created\n",thisIndex);
-  }
-                                                                                
-  Hello(CkMigrateMessage *m) {}
-                                                                                
-  void SayHi(int hiNo)
-  {
-    CkPrintf("Hi[%d] from element %d\n",hiNo,thisIndex);
+  public:
+    Hello()
+    {
+      CkPrintf("Hello %d created\n",thisIndex);
+    }
 
-/*
-    readonly_mdintegrate.state_class_out();
-    readonly_mdatoms.state_class_out();
-    readonly_mdinter.state_class_out();
-    readonly_mdintra.state_class_out();
-    readonly_general_data.state_class_out();
-    readonly_cp.state_class_out();
-*/
-    if (thisIndex < nElements-1)
-      //Pass the hello on:
-      thisProxy[thisIndex+1].SayHi(hiNo+1);
-    else
-      //We've been around once-- we're done.
-      // mainProxy.done();
-      CkExit ();
-  }
+    Hello(CkMigrateMessage *m) {}
+
+    void SayHi(int hiNo)
+    {
+      CkPrintf("Hi[%d] from element %d\n",hiNo,thisIndex);
+
+      /*
+         readonly_mdintegrate.state_class_out();
+         readonly_mdatoms.state_class_out();
+         readonly_mdinter.state_class_out();
+         readonly_mdintra.state_class_out();
+         readonly_general_data.state_class_out();
+         readonly_cp.state_class_out();
+       */
+      if (thisIndex < nElements-1)
+        //Pass the hello on:
+        thisProxy[thisIndex+1].SayHi(hiNo+1);
+      else
+        //We've been around once-- we're done.
+        // mainProxy.done();
+        CkExit ();
+    }
 };
 
 #include "../charm_defs/main_charm.def.h"

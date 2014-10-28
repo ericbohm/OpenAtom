@@ -15,46 +15,46 @@ class PSSCRATCH;
 
 class CPLOCAL{
 
- //---------------------------------------------------------------------------
- public:
+  //---------------------------------------------------------------------------
+  public:
 
- //---------------------------------------------------------------------------
- //con-destruct:
-  CPLOCAL(){};
- ~CPLOCAL(){};
+    //---------------------------------------------------------------------------
+    //con-destruct:
+    CPLOCAL(){};
+    ~CPLOCAL(){};
 
- //---------------------------------------------------------------------------
- // functions
-  static void CP_hart_eext_calc(int , complex *,int , FastAtoms *,complex *, 
-				double *,double *,double *,int *, int *, int *, double *,int, PSSCRATCH *, int nfreq_cmi_update=4);
+    //---------------------------------------------------------------------------
+    // functions
+    static void CP_hart_eext_calc(int , complex *,int , FastAtoms *,complex *, 
+        double *,double *,double *,int *, int *, int *, double *,int, PSSCRATCH *, int nfreq_cmi_update=4);
 
-  static void CP_get_vpsnow(int *,int ,double ,double ,double ,
-                            double *,double *,double *,double *,
-                            double *,int *,int ,int ,double);
- //---------------------------------------------------------------------------
+    static void CP_get_vpsnow(int *,int ,double ,double ,double ,
+        double *,double *,double *,double *,
+        double *,int *,int ,int ,double);
+    //---------------------------------------------------------------------------
 
-  static void getEesPrms(int *, int *, int *, int *, int *);
+    static void getEesPrms(int *, int *, int *, int *, int *);
 
-  static void eesSetEesWghtGgrp(int , int *, int *, int *,double *, double *, 
-                                int ,int ,int ,int );
+    static void eesSetEesWghtGgrp(int , int *, int *, int *,double *, double *, 
+        int ,int ,int ,int );
 
-  static void eesAtmBsplineRgrp(FastAtoms *, int *, RHORHARTDATA **, PSSCRATCH *);
+    static void eesAtmBsplineRgrp(FastAtoms *, int *, RHORHARTDATA **, PSSCRATCH *);
 
-  static void eesPackGridRchare(int , int , double *, int ,int , int ***, double ***, int *, 
-                                int **, int );
+    static void eesPackGridRchare(int , int , double *, int ,int , int ***, double ***, int *, 
+        int **, int );
 
-  static void eesHartEextGchare(int , int , complex *, complex *, complex *, complex *,
-                                double *, double *,double *,double *,
-                                int *,int *,int *,double *,int,int nfreq_cmi_update = 100);
+    static void eesHartEextGchare(int , int , complex *, complex *, complex *, complex *,
+        double *, double *,double *,double *,
+        int *,int *,int *,double *,int,int nfreq_cmi_update = 100);
 
-  static void eesEwaldGchare(int ,complex *,double *, double *,double *,
-                             int *, int *, int *, double *,int,int nfreq_cmi_update = 100);
+    static void eesEwaldGchare(int ,complex *,double *, double *,double *,
+        int *, int *, int *, double *,int,int nfreq_cmi_update = 100);
 
-  static void eesAtmForceRchare(int , FastAtoms *,int , 
-                                int ***, double ***, double ***, double ***, 
-                                int *, int **,  double *, int ,int ,int );
-//---------------------------------------------------------------------------
-   };  //CPLOCAL
+    static void eesAtmForceRchare(int , FastAtoms *,int , 
+        int ***, double ***, double ***, double ***, 
+        int *, int **,  double *, int ,int ,int );
+    //---------------------------------------------------------------------------
+};  //CPLOCAL
 //==========================================================================
 
 #endif

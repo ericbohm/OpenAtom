@@ -5,8 +5,8 @@
 #include <ctime>
 
 typedef struct complex{
-    double  re;
-    double  im;   
+  double  re;
+  double  im;   
 };
 
 #define PRINTF printf
@@ -40,10 +40,10 @@ int main(){
   for(int is=0;is<nstate;is++){
     sprintf(fname, "STATES/state%d.out",is + 1);
     fp = fopen(fname,"r");
-     fscanf(fp,"%d %d %d %d",&nktot,&n1,&n2,&n3);
-     for(int i =0;i<nktot;i++){
-       fscanf(fp,"%lf %lf %d %d %d",&data[i].re,&data[i].im,&kx[i],&ky[i],&kz[i]);    
-     }//endfor
+    fscanf(fp,"%d %d %d %d",&nktot,&n1,&n2,&n3);
+    for(int i =0;i<nktot;i++){
+      fscanf(fp,"%lf %lf %d %d %d",&data[i].re,&data[i].im,&kx[i],&ky[i],&kz[i]);    
+    }//endfor
     fclose(fp);
 
     flip_data_set(nktot,kx,ky,kz,data);
@@ -52,7 +52,7 @@ int main(){
     fp_out = fopen(fname,"w");
     fprintf(fp_out,"%d %d %d %d\n",nktot2,n1,n2,n3);
     for(int i =0;i<nktot2;i++){
-       fprintf(fp_out,"%lf %lf %d %d %d\n",data[i].re,data[i].im,kx[i],ky[i],kz[i]);    
+      fprintf(fp_out,"%lf %lf %d %d %d\n",data[i].re,data[i].im,kx[i],ky[i],kz[i]);    
     }//endfor
     fclose(fp_out);
 
@@ -63,8 +63,8 @@ int main(){
 
   return 1;
 
-//==========================================================================
-  }//end main
+  //==========================================================================
+}//end main
 //==========================================================================
 
 
@@ -79,10 +79,10 @@ int main(){
 
 void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
 
-//==========================================================================
-    {//begin routine 
-//==========================================================================
-// Count half plane kx=0 of piny data : check piny data
+  //==========================================================================
+{//begin routine 
+  //==========================================================================
+  // Count half plane kx=0 of piny data : check piny data
 
   int nplane0 = 0;
   for(int i=0;i<nktot;i++){
@@ -119,8 +119,8 @@ void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
     EXIT(1);
   }//endif
 
-//==========================================================================
-// Expand the data set
+  //==========================================================================
+  // Expand the data set
 
   for(int i=nktot-2;i>=0;i--){
     kx[(i+nplane0)]   = kx[i];
@@ -129,8 +129,8 @@ void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
     data[(i+nplane0)] = data[i];
   }//endfor
 
-//==========================================================================
-// Create the bottom half of plane zero by symmetry : 
+  //==========================================================================
+  // Create the bottom half of plane zero by symmetry : 
 
   int i1 = 0;
   for(int i=0;i<nplane0-1;i++){
@@ -169,16 +169,16 @@ void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
   }
 #endif
 
-//==========================================================================
-// Exit
+  //==========================================================================
+  // Exit
 
   free(kxt);
   free(kyt);
   free(kzt);
   free(datat);
 
-//==========================================================================
-// Now we have full planes in the upper half space. We can flip them over
+  //==========================================================================
+  // Now we have full planes in the upper half space. We can flip them over
 
   int nnow = nktot + nplane0 - 1;
   int nktot2 = 2*nktot - 1;
@@ -218,6 +218,6 @@ void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
   free(kyt);
   free(kzt);
   free(datat);
-//==========================================================================
-    }//end routine
+  //==========================================================================
+}//end routine
 //==========================================================================

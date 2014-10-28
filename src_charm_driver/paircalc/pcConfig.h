@@ -9,20 +9,20 @@
  */
 
 namespace cp {
-    namespace paircalc {
+  namespace paircalc {
 
-/**
- * Dumb structure that holds all the configuration inputs required for paircalc 
- * instantiation, functioning and interaction.
- *
- * Almost all of these are invariant through the lifetime of the PC array.
- * Notably, booleans used in if conditions scattered throughout the code are known at instantiation time.
- * In the perfect future, values like message priorities and branching factors could change adaptively during the run.
- * Perhaps, even the decomposition values (grain sizes etc.)
- */
-class pcConfig
-{
-    public:
+    /**
+     * Dumb structure that holds all the configuration inputs required for paircalc 
+     * instantiation, functioning and interaction.
+     *
+     * Almost all of these are invariant through the lifetime of the PC array.
+     * Notably, booleans used in if conditions scattered throughout the code are known at instantiation time.
+     * In the perfect future, values like message priorities and branching factors could change adaptively during the run.
+     * Perhaps, even the decomposition values (grain sizes etc.)
+     */
+    class pcConfig
+    {
+      public:
         //-------------------- Vars that determine the type of the PC array -----------------------
         /// Is this a minimization or dynamics run
         bool isDynamics; ///< @note: This could turn into an enum as more run modes are introduced
@@ -103,7 +103,7 @@ class pcConfig
         bool shouldDelayBWsend; ///< @note: Originally, delaybw
 
         //------------------- Timing / Tracing configs --------------------------------------------
-        #ifdef _CP_SUBSTEP_TIMING_
+#ifdef _CP_SUBSTEP_TIMING_
         /// The timer ID for the forward path
         int forwardTimerID;
         /// The timer ID for the backward path
@@ -112,7 +112,7 @@ class pcConfig
         CkCallback beginTimerCB;
         /// The callback that will stop the substep timer
         CkCallback endTimerCB;
-        #endif
+#endif
 
         /**{
          * BGL's painful NIC forces us to split long computations. Configure GEMM splitting here 
@@ -127,52 +127,52 @@ class pcConfig
 
         void pup(PUP::er &p)
         {
-            p|isDynamics;
-            p|isSymmetric;
-            p|arePhantomsOn;
-            p|useComplexMath;
-            // Vars that indicate problem size / decomposition
-            p|numPlanes;
-            p|numStates;
-            p|numChunks;
-            p|grainSize;
-            p|orthoGrainSize;
-            // Instance, Array, Group identification etc.
-            p|instanceIndex;
-            p|uponSetupCompletion;
-            p|gSpaceAID;
-            p|gSpaceEP;
-            p|PsiVEP;
-            // Configure the PC array behavior
-            p|conserveMemory;
-            p|isLBon;
-            p|isDoublePackOn;
-            // Input communication configs
-            p|isInputMulticast;
-            p|inputSpanningTreeFactor;
-            p|inputMsgPriority;
-            // Output communication configs
-            p|isOutputReduced;
-            p|resultMsgPriority;
-            // Backward path configs
-            p|areBWTilesCollected;
-            p|isBWstreaming;
-            p|isBWbarriered;
-            p|shouldDelayBWsend;
-            // Timing / Tracing configs
-            #ifdef _CP_SUBSTEP_TIMING_
-            p|forwardTimerID;
-            p|backwardTimerID;
-            p|beginTimerCB;
-            p|endTimerCB;
-            #endif
-            p|gemmSplitFWk;
-            p|gemmSplitFWm;
-            p|gemmSplitBW;
+          p|isDynamics;
+          p|isSymmetric;
+          p|arePhantomsOn;
+          p|useComplexMath;
+          // Vars that indicate problem size / decomposition
+          p|numPlanes;
+          p|numStates;
+          p|numChunks;
+          p|grainSize;
+          p|orthoGrainSize;
+          // Instance, Array, Group identification etc.
+          p|instanceIndex;
+          p|uponSetupCompletion;
+          p|gSpaceAID;
+          p|gSpaceEP;
+          p|PsiVEP;
+          // Configure the PC array behavior
+          p|conserveMemory;
+          p|isLBon;
+          p|isDoublePackOn;
+          // Input communication configs
+          p|isInputMulticast;
+          p|inputSpanningTreeFactor;
+          p|inputMsgPriority;
+          // Output communication configs
+          p|isOutputReduced;
+          p|resultMsgPriority;
+          // Backward path configs
+          p|areBWTilesCollected;
+          p|isBWstreaming;
+          p|isBWbarriered;
+          p|shouldDelayBWsend;
+          // Timing / Tracing configs
+#ifdef _CP_SUBSTEP_TIMING_
+          p|forwardTimerID;
+          p|backwardTimerID;
+          p|beginTimerCB;
+          p|endTimerCB;
+#endif
+          p|gemmSplitFWk;
+          p|gemmSplitFWm;
+          p|gemmSplitBW;
         }
-};
+    };
 
-    } // end namespace paircalc
+  } // end namespace paircalc
 } // end namespace cp
 /*@}*/
 #endif // PC_CONFIG_H

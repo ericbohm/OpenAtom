@@ -25,15 +25,15 @@
 
 FILE *cfopen(const char file_name[],const char *mode)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {  /* begin routine */
   FILE *fp;
 #ifdef DEBUG
   LINE line;
 #endif
 
-/*==========================================================================*/
-/* File name check */ 
+  /*==========================================================================*/
+  /* File name check */ 
 
   if(strlen(file_name)==0){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -43,10 +43,10 @@ FILE *cfopen(const char file_name[],const char *mode)
     EXIT(1);
   }/*endif*/
 
-/*==========================================================================*/
-/* Write to a file  */ 
+  /*==========================================================================*/
+  /* Write to a file  */ 
 
-   if(mode[0] == 'w'){
+  if(mode[0] == 'w'){
     if((fp=fopen(file_name,"r")) != NULL){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("ERROR: %s already exists! (exiting)\n",file_name);
@@ -63,8 +63,8 @@ FILE *cfopen(const char file_name[],const char *mode)
     }/*endif*/
   }/*endif*/
 
-/*==========================================================================*/
-/* Overwrite a file  */ 
+  /*==========================================================================*/
+  /* Overwrite a file  */ 
 
   if(mode[0] == 'o'){
     if((fp=fopen(file_name,"w")) == NULL){
@@ -76,8 +76,8 @@ FILE *cfopen(const char file_name[],const char *mode)
     }/*endif*/
   }/*endif*/
 
-/*==========================================================================*/
-/* Read from a file  */ 
+  /*==========================================================================*/
+  /* Read from a file  */ 
 
   if(mode[0] == 'r'){
     if((fp=fopen(file_name,"r")) == NULL){
@@ -89,8 +89,8 @@ FILE *cfopen(const char file_name[],const char *mode)
     }/*endif*/
   }/*endif*/
 
-/*==========================================================================*/
-/* Append to a file  */ 
+  /*==========================================================================*/
+  /* Append to a file  */ 
 
   if(mode[0] == 'a'){
     if((fp=fopen(file_name,"a")) == NULL){
@@ -103,27 +103,27 @@ FILE *cfopen(const char file_name[],const char *mode)
   }/*endif*/
 
 #ifdef DEBUG
-    PRINTF("name = %s\n",file_name);
-    fgets(line,MAXLINE,fp);
-    PRINTF("line (%p): %s\n",fp,line);
-    rewind(fp);
+  PRINTF("name = %s\n",file_name);
+  fgets(line,MAXLINE,fp);
+  PRINTF("line (%p): %s\n",fp,line);
+  rewind(fp);
 #endif
 
-/*==========================================================================*/
+  /*==========================================================================*/
 
   if(fp == NULL){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("ERROR: Null file pointer created for file %s\n",file_name);
-     PRINTF("ERROR: Using mode %s\n",mode);
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     FFLUSH(stdout);
-     EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("ERROR: Null file pointer created for file %s\n",file_name);
+    PRINTF("ERROR: Using mode %s\n",mode);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
 
   return fp;
 
-/*--------------------------------------------------------------------------*/
-  }/* end routine */
+  /*--------------------------------------------------------------------------*/
+}/* end routine */
 /*==========================================================================*/
 
 
@@ -132,15 +132,15 @@ FILE *cfopen(const char file_name[],const char *mode)
 /*==========================================================================*/
 
 void spline_fit(double *c0i, double *c1i, double *c2i, double *c3i, 
-		double *xi, int nsplin)
+    double *xi, int nsplin)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int i, m, n;
   int ip1, mm1, mp1;
   double c0, c1, c2, c3, divdf1, divdf3, dx,g;
   double *diag,*d;
-  
+
   diag = (double *)cmalloc(nsplin*sizeof(double),"spline_fit")-1;
   d    = (double *)cmalloc(nsplin*sizeof(double),"spline_fit")-1;
 
@@ -195,8 +195,8 @@ void spline_fit(double *c0i, double *c1i, double *c2i, double *c3i,
   cfree(&d[1],"spline_fit");
   cfree(&diag[1],"spline_fit");
 
-/*--------------------------------------------------------------------------*/
-   } /* spline_fit */
+  /*--------------------------------------------------------------------------*/
+} /* spline_fit */
 /*==========================================================================*/
 
 

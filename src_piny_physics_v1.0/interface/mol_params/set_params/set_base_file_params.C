@@ -28,9 +28,9 @@
 /*==========================================================================*/
 
 void set_def_base_params(FILENAME_PARSE *filename_parse,
-			 DICT_WORD def_base_dict[], int num_def_base_dict)
+    DICT_WORD def_base_dict[], int num_def_base_dict)
 {
- /*==========================================================================*/
+  /*==========================================================================*/
   /*-----------------------------------------------------------------------*/ 
   /* 1) /inter_file{} */
   strcpy(filename_parse->def_inter_name,def_base_dict[1].keyarg);
@@ -67,7 +67,7 @@ void set_def_base_params(FILENAME_PARSE *filename_parse,
 /*==========================================================================*/
 
 void set_user_base_params(FILENAME_PARSE *filename_parse,
-			  DICT_WORD user_base_dict[], int num_user_base_dict)
+    DICT_WORD user_base_dict[], int num_user_base_dict)
 {
   /*=======================================================================*/
   /*---------------------------------------------------------------------*/ 

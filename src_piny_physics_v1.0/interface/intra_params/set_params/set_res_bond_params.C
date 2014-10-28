@@ -26,15 +26,15 @@
 /*==========================================================================*/
 
 void set_res_bond_params(char *filename,char fun_key[],int ires_bond,
-			 DICT_WORD res_bond_dict[],int num_res_bond_dict,
-			 RESBOND_PRM resbond_prm[],
-                         int nres_now,MDATOM_MAPS *atommaps,int ires_off,
-                         int pi_beads)
+    DICT_WORD res_bond_dict[],int num_res_bond_dict,
+    RESBOND_PRM resbond_prm[],
+    int nres_now,MDATOM_MAPS *atommaps,int ires_off,
+    int pi_beads)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
   int num,i,index,ires1,ires2,ires_typ;
-  
+
   /*========================================================================*/
   /* I) Check for missing key words*/
   for(i=1;i<=num_res_bond_dict;i++){
@@ -78,14 +78,14 @@ void set_res_bond_params(char *filename,char fun_key[],int ires_bond,
 
   strcpy(resbond_prm[ires_bond].res1_site,res_bond_dict[5].keyarg);
   if(strcasecmp(res_bond_dict[5].keyarg,"null")==0){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("You have defined the null bond site!!!     \n");
-        PRINTF("Atoms are defaulted to the null bond site. \n");
-        PRINTF("Choose another name for your bond site and \n");
-        PRINTF("be excellent to your residue.              \n");
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("You have defined the null bond site!!!     \n");
+    PRINTF("Atoms are defaulted to the null bond site. \n");
+    PRINTF("Choose another name for your bond site and \n");
+    PRINTF("be excellent to your residue.              \n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
 
   /*-----------------------------------------------------------------------*/ 
@@ -93,14 +93,14 @@ void set_res_bond_params(char *filename,char fun_key[],int ires_bond,
 
   strcpy(resbond_prm[ires_bond].res2_site,res_bond_dict[6].keyarg);
   if(strcasecmp(res_bond_dict[6].keyarg,"null")==0){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("You have defined the null bond site!!!    \n");
-        PRINTF("Atoms are defaulted to the null bond site. \n");
-        PRINTF("Choose another name for your bond site and \n");
-        PRINTF("be excellent to your residue.              \n");
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("You have defined the null bond site!!!    \n");
+    PRINTF("Atoms are defaulted to the null bond site. \n");
+    PRINTF("Choose another name for your bond site and \n");
+    PRINTF("be excellent to your residue.              \n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
 
   /*-----------------------------------------------------------------------*/ 
@@ -124,12 +124,12 @@ void set_res_bond_params(char *filename,char fun_key[],int ires_bond,
   if((num <0)){keyarg_barf(res_bond_dict,filename,fun_key,index);}
   resbond_prm[ires_bond].opt = num;
   if(num == 1 && pi_beads>1){ 
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Constraints not implemented under  \n");
-        PRINTF(" path integral dynamics.            \n");
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Constraints not implemented under  \n");
+    PRINTF(" path integral dynamics.            \n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
 
   /*-----------------------------------------------------------------------*/ 
@@ -139,33 +139,33 @@ void set_res_bond_params(char *filename,char fun_key[],int ires_bond,
 
   /*=======================================================================*/
   /* III) Check the res types versus the res indicies given                */
-    
+
   ires_typ = atommaps->ires_typ_jres_jmol_typ[ires1+ires_off];
   if(strcasecmp(resbond_prm[ires_bond].res1_typ,
-                atommaps->res_typ[ires_typ])!=0){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");     
-     PRINTF("Input error in ~res_bond_def\n");
-     PRINTF("1st Residue type, 1st residue index mismatch in file %s\n",
-             filename);
-     PRINTF("Residue index %d is of type %s not of type %s\n",
-           ires1,resbond_prm[ires_bond].res1_typ,atommaps->res_typ[ires_typ]);
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     FFLUSH(stdout);
-     EXIT(1);
+        atommaps->res_typ[ires_typ])!=0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");     
+    PRINTF("Input error in ~res_bond_def\n");
+    PRINTF("1st Residue type, 1st residue index mismatch in file %s\n",
+        filename);
+    PRINTF("Residue index %d is of type %s not of type %s\n",
+        ires1,resbond_prm[ires_bond].res1_typ,atommaps->res_typ[ires_typ]);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
   ires_typ = atommaps->ires_typ_jres_jmol_typ[ires2+ires_off];
   if(strcasecmp(resbond_prm[ires_bond].res2_typ,
-		atommaps->res_typ[ires_typ])!=0){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");     
-     PRINTF("Input error in ~res_bond_def\n");
-     PRINTF("2nd Residue type, 2nd residue index mismatch in file %s\n",
-             filename);
-     PRINTF("Residue index %d is of type %s not of type %s\n",
-            ires2,resbond_prm[ires_bond].res2_typ,
-	    atommaps->res_typ[ires_typ]);
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     FFLUSH(stdout);
-     EXIT(1);
+        atommaps->res_typ[ires_typ])!=0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");     
+    PRINTF("Input error in ~res_bond_def\n");
+    PRINTF("2nd Residue type, 2nd residue index mismatch in file %s\n",
+        filename);
+    PRINTF("Residue index %d is of type %s not of type %s\n",
+        ires2,resbond_prm[ires_bond].res2_typ,
+        atommaps->res_typ[ires_typ]);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
 
   /*-----------------------------------------------------------------------*/ 

@@ -30,30 +30,30 @@
 
 void set_potsurf_dict(DICT_WORD *surf_dict[],int *num_surf_dict, int ifirst)
 
-/*=======================================================================*/
-/* Begin Routine */
+  /*=======================================================================*/
+  /* Begin Routine */
 {/*begin routine*/
-/*=======================================================================*/
-/* Local Variables */
+  /*=======================================================================*/
+  /* Local Variables */
 
   int i;
 
-/*=======================================================================*/
-/* 0) Malloc the dictionary */
+  /*=======================================================================*/
+  /* 0) Malloc the dictionary */
 
   if(ifirst==1){
     *num_surf_dict=7;
     *surf_dict = (DICT_WORD *)cmalloc(*num_surf_dict*sizeof(DICT_WORD),"set_potsurf_dict")-1;  
   }/*endif*/
 
-/*=======================================================================*/
-/* I) Assign the users set flags 0 */
+  /*=======================================================================*/
+  /* I) Assign the users set flags 0 */
 
   for(i=1;i<=*num_surf_dict;i++){(*surf_dict)[i].iuset    = 0;}
   for(i=1;i<=*num_surf_dict;i++){(*surf_dict)[i].key_type = 0;}
 
-/*=======================================================================*/
-/* II) Fill the dictionary with words */
+  /*=======================================================================*/
+  /* II) Fill the dictionary with words */
   /*-----------------------------------------------------------------------*/ 
   /*  1) /surface_type{} */
   strcpy((*surf_dict)[1].keyword,"surface_type");
@@ -71,7 +71,7 @@ void set_potsurf_dict(DICT_WORD *surf_dict[],int *num_surf_dict, int ifirst)
   strcpy((*surf_dict)[3].keyword,"pot_type");
   strcpy((*surf_dict)[3].keyarg,"");
   strcpy((*surf_dict)[3].error_mes,
-       "lennard-jones_12-3,lennard-jones_9-3,null");
+      "lennard-jones_12-3,lennard-jones_9-3,null");
   (*surf_dict)[3].key_type = 1;  /* must spec*/
   /*-----------------------------------------------------------------------*/ 
   /*  4) /min_dist{} */

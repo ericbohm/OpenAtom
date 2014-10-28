@@ -20,37 +20,37 @@
 
 
 class MDTHERM_POS {
- public:
-  int num_nhc;                    // Num: Number of thermostats 
-  int len_nhc;                    // Num: Length of thermostat chains 
-  double **x_nhc,**v_nhc;         // Lst: Atm NHC pos,vel,for;         
-                                  // Lth: num_nhc x len_nhc            
+  public:
+    int num_nhc;                    // Num: Number of thermostats 
+    int len_nhc;                    // Num: Length of thermostat chains 
+    double **x_nhc,**v_nhc;         // Lst: Atm NHC pos,vel,for;         
+    // Lth: num_nhc x len_nhc            
 
-//--------------------------------------------------------------------
-// Default constructor/destructor
+    //--------------------------------------------------------------------
+    // Default constructor/destructor
 
-  MDTHERM_POS(){
-    num_nhc = 0;
-    len_nhc = 0;
-  }
-  ~MDTHERM_POS(){}
+    MDTHERM_POS(){
+      num_nhc = 0;
+      len_nhc = 0;
+    }
+    ~MDTHERM_POS(){}
 
-//--------------------------------------------------------------------
+    //--------------------------------------------------------------------
 #ifdef PUP_ON
-  void pup(PUP::er &p){
+    void pup(PUP::er &p){
 
-    // PUP ints
+      // PUP ints
 
-    p | num_nhc;
-    p | len_nhc;
+      p | num_nhc;
+      p | len_nhc;
 
-  // PUP arrays
+      // PUP arrays
 
-    pup2d_dbl(p,&x_nhc,len_nhc,num_nhc,"mdtherm_pos");
-    pup2d_dbl(p,&v_nhc,len_nhc,num_nhc,"mdtherm_pos");
+      pup2d_dbl(p,&x_nhc,len_nhc,num_nhc,"mdtherm_pos");
+      pup2d_dbl(p,&v_nhc,len_nhc,num_nhc,"mdtherm_pos");
 
 
-  } // end pack/unpack 
+    } // end pack/unpack 
 #endif
 
 }; // end class definition 

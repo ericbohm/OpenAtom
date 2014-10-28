@@ -20,15 +20,15 @@
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 
- void set_bond_params(DICT_WORD *intra_dict,int num_intra_dict,
-                      char *fun_key,char *file_name,int jmol_typ,
-                      MDCONSTRNT *mdconstrnt,MDGHOST_ATOMS *mdghost_atoms,
-                      MDCLATOMS_INFO *clatoms_info,MDATOM_MAPS *atommaps,
-                      MDBOND *bond,NULL_INTER_PARSE *null_inter_parse,
-                      BUILD_INTRA *build_intra, int iresidue, int ires_off,
-                      int mol_hydrog_con_opt)
+void set_bond_params(DICT_WORD *intra_dict,int num_intra_dict,
+    char *fun_key,char *file_name,int jmol_typ,
+    MDCONSTRNT *mdconstrnt,MDGHOST_ATOMS *mdghost_atoms,
+    MDCLATOMS_INFO *clatoms_info,MDATOM_MAPS *atommaps,
+    MDBOND *bond,NULL_INTER_PARSE *null_inter_parse,
+    BUILD_INTRA *build_intra, int iresidue, int ires_off,
+    int mol_hydrog_con_opt)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 { /*begin routine*/
   int num,index,ifound,igo;
   int itype1,itype2;
@@ -37,8 +37,8 @@
   int i,itype;
   int mass_now1,mass_now2;
 
-/*=======================================================================*/
-/* I) Check for missing key words*/
+  /*=======================================================================*/
+  /* I) Check for missing key words*/
 
   for(i=1;i<=2;i++){
     if(intra_dict[i].iuset==0 && intra_dict[i].key_type==1){
@@ -46,9 +46,9 @@
     }
   }/*endfor*/
 
-/*=======================================================================*/
-/* II) Fill the dictionary with words */
-/*-----------------------------------------------------------------------*/
+  /*=======================================================================*/
+  /* II) Fill the dictionary with words */
+  /*-----------------------------------------------------------------------*/
   /*  1) \atom1{}    */
   index = 1;
   sscanf(intra_dict[1].keyarg,"%d",&num);
@@ -64,7 +64,7 @@
   sscanf(intra_dict[2].keyarg,"%d",&num);
   iatm_ind2 = num;
   if(iatm_ind2>build_intra->natmind_1res_now||iatm_ind2<0){
-            keyarg_barf(intra_dict,file_name,fun_key,index);}
+    keyarg_barf(intra_dict,file_name,fun_key,index);}
   imask2 = build_intra->mask_atm[iatm_ind2];  
   if(imask2>0)iatm_ind2 = build_intra->index_atm[iatm_ind2];
   /*----------------------------------------------------------------------*/
@@ -78,12 +78,12 @@
     keyarg_barf(intra_dict,file_name,fun_key,index);
   }
   if(ifound == 2 && clatoms_info->pi_beads>1){ 
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Constraints not implemented under  \n");
-        PRINTF(" path integral molecular dynamics. \n");
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Constraints not implemented under  \n");
+    PRINTF(" path integral molecular dynamics. \n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
   }/*endif*/
   /*-----------------------------------------------------------------------*/
   /*  6) bond type and correct modifier if hydrog_con_opt is on  */
@@ -95,20 +95,20 @@
     strcpy(build_intra->cbond_typ_now->atm2,atommaps->atm_typ[itype2]);
     strcpy(build_intra->cbond_typ_now->label,intra_dict[6].keyarg);
     mass_now1 =
-            (int)NINT(clatoms_info->mass[(clatoms_info->natm_tot+iatm_ind1)]);
+      (int)NINT(clatoms_info->mass[(clatoms_info->natm_tot+iatm_ind1)]);
     mass_now2 =
-            (int)NINT(clatoms_info->mass[(clatoms_info->natm_tot+iatm_ind2)]);
-  /* check to see if this is any atom-H bond                      */
+      (int)NINT(clatoms_info->mass[(clatoms_info->natm_tot+iatm_ind2)]);
+    /* check to see if this is any atom-H bond                      */
     if((mass_now1<=2) || (mass_now2<=2)){
       if(mol_hydrog_con_opt==1){ifound=2;}
     }/*endif*/
-  /* check to see if this is a polar atom-H bond (polar=N,O,S)    */
+    /* check to see if this is a polar atom-H bond (polar=N,O,S)    */
     if((mass_now1<=2) && ((mass_now2==14) || (mass_now2==16)
-                                          || (mass_now2==32))){
+          || (mass_now2==32))){
       if(mol_hydrog_con_opt==2){ifound=2;}
     }/*endif*/
     if((mass_now2<=2) && ((mass_now1==14) || (mass_now1==16)
-                                          || (mass_now1==32))){
+          || (mass_now1==32))){
       if(mol_hydrog_con_opt==2){ifound=2;}
     }/*endif*/
   }/*endif*/
@@ -120,28 +120,28 @@
     if(bond->npow+1 > build_intra->nbond_pow_max){
       build_intra->nbond_pow_max += NMEM_MIN;
       bond->j1_pow = (int *)crealloc(&(bond->j1_pow)[1],
-             build_intra->nbond_pow_max*sizeof(int),"set_bond_params")-1;
+          build_intra->nbond_pow_max*sizeof(int),"set_bond_params")-1;
       bond->j2_pow = (int *)crealloc(&(bond->j2_pow)[1],
-             build_intra->nbond_pow_max*sizeof(int),"set_bond_params")-1;
+          build_intra->nbond_pow_max*sizeof(int),"set_bond_params")-1;
       bond->jtyp_pow=(int *)crealloc(&(bond->jtyp_pow)[1],
-             build_intra->nbond_pow_max*sizeof(int),"set_bond_params")-1;
+          build_intra->nbond_pow_max*sizeof(int),"set_bond_params")-1;
     }/*endif*/
     /*----------------------------------------------------------------------*/
     /* B) Check type */
     itype = (bond->ntyp_pow)+1;
     for(i=1;i<=bond->ntyp_pow;i++){
       if((strcasecmp(build_intra->cbond_typ_pow[i].atm1,
-                     build_intra->cbond_typ_now->atm1)==0)
-         &&(strcasecmp(build_intra->cbond_typ_pow[i].atm2,
-                       build_intra->cbond_typ_now->atm2)==0)
-         &&(strcasecmp(build_intra->cbond_typ_pow[i].label,
-                       build_intra->cbond_typ_now->label)==0)) {itype=i;}
+              build_intra->cbond_typ_now->atm1)==0)
+          &&(strcasecmp(build_intra->cbond_typ_pow[i].atm2,
+              build_intra->cbond_typ_now->atm2)==0)
+          &&(strcasecmp(build_intra->cbond_typ_pow[i].label,
+              build_intra->cbond_typ_now->label)==0)) {itype=i;}
       if((strcasecmp(build_intra->cbond_typ_pow[i].atm1,
-                     build_intra->cbond_typ_now->atm2)==0)
-         &&(strcasecmp(build_intra->cbond_typ_pow[i].atm2,
-                       build_intra->cbond_typ_now->atm1)==0)
-         &&(strcasecmp(build_intra->cbond_typ_pow[i].label,
-                       build_intra->cbond_typ_now->label)==0)) {itype=i;}
+              build_intra->cbond_typ_now->atm2)==0)
+          &&(strcasecmp(build_intra->cbond_typ_pow[i].atm2,
+              build_intra->cbond_typ_now->atm1)==0)
+          &&(strcasecmp(build_intra->cbond_typ_pow[i].label,
+              build_intra->cbond_typ_now->label)==0)) {itype=i;}
     }/*endfor*/
     /*----------------------------------------------------------------------*/
     /* C) Add space */
@@ -156,11 +156,11 @@
     if(itype==(bond->ntyp_pow)+1){
       bond->ntyp_pow+=1;
       strcpy(build_intra->cbond_typ_pow[itype].atm1,
-             build_intra->cbond_typ_now->atm1);
+          build_intra->cbond_typ_now->atm1);
       strcpy(build_intra->cbond_typ_pow[itype].atm2,
-             build_intra->cbond_typ_now->atm2);
+          build_intra->cbond_typ_now->atm2);
       strcpy(build_intra->cbond_typ_pow[itype].label,
-             build_intra->cbond_typ_now->label);
+          build_intra->cbond_typ_now->label);
     }/*endif*/
     /*----------------------------------------------------------------------*/
     /* E) Assign */
@@ -181,28 +181,28 @@
     if(bond->ncon+1 > build_intra->nbond_con_max){
       build_intra->nbond_con_max += NMEM_MIN;
       bond->j1_con = (int *)crealloc(&(bond->j1_con)[1],
-                 build_intra->nbond_con_max*sizeof(int),"set_bond_params")-1;
+          build_intra->nbond_con_max*sizeof(int),"set_bond_params")-1;
       bond->j2_con = (int *)crealloc(&(bond->j2_con)[1],
-                 build_intra->nbond_con_max*sizeof(int),"set_bond_params")-1;
+          build_intra->nbond_con_max*sizeof(int),"set_bond_params")-1;
       bond->jtyp_con=(int *)crealloc(&(bond->jtyp_con)[1],
-                 build_intra->nbond_con_max*sizeof(int),"set_bond_params")-1;
+          build_intra->nbond_con_max*sizeof(int),"set_bond_params")-1;
     }/*endif*/
     /*---------------------------------------------------------------------*/
     /* B) Check type */
     itype = (bond->ntyp_con)+1;
     for(i=1;i<=bond->ntyp_con;i++){
       if((strcasecmp(build_intra->cbond_typ_con[i].atm1,
-                     build_intra->cbond_typ_now->atm1)==0)
-         &&(strcasecmp(build_intra->cbond_typ_con[i].atm2,
-                       build_intra->cbond_typ_now->atm2)==0)
-         &&(strcasecmp(build_intra->cbond_typ_con[i].label,
-                       build_intra->cbond_typ_now->label)==0)) {itype=i;}
+              build_intra->cbond_typ_now->atm1)==0)
+          &&(strcasecmp(build_intra->cbond_typ_con[i].atm2,
+              build_intra->cbond_typ_now->atm2)==0)
+          &&(strcasecmp(build_intra->cbond_typ_con[i].label,
+              build_intra->cbond_typ_now->label)==0)) {itype=i;}
       if((strcasecmp(build_intra->cbond_typ_con[i].atm1,
-                     build_intra->cbond_typ_now->atm2)==0)
-         &&(strcasecmp(build_intra->cbond_typ_con[i].atm2,
-                       build_intra->cbond_typ_now->atm1)==0)
-         &&(strcasecmp(build_intra->cbond_typ_con[i].label,
-                       build_intra->cbond_typ_now->label)==0)) {itype=i;}
+              build_intra->cbond_typ_now->atm2)==0)
+          &&(strcasecmp(build_intra->cbond_typ_con[i].atm2,
+              build_intra->cbond_typ_now->atm1)==0)
+          &&(strcasecmp(build_intra->cbond_typ_con[i].label,
+              build_intra->cbond_typ_now->label)==0)) {itype=i;}
     }/*endfor*/
     /*---------------------------------------------------------------------*/
     /* C) Add space */
@@ -217,11 +217,11 @@
     if(itype==(bond->ntyp_con)+1){
       bond->ntyp_con+=1;
       strcpy(build_intra->cbond_typ_con[itype].atm1,
-             build_intra->cbond_typ_now->atm1);
+          build_intra->cbond_typ_now->atm1);
       strcpy(build_intra->cbond_typ_con[itype].atm2,
-             build_intra->cbond_typ_now->atm2);
+          build_intra->cbond_typ_now->atm2);
       strcpy(build_intra->cbond_typ_con[itype].label,
-             build_intra->cbond_typ_now->label);
+          build_intra->cbond_typ_now->label);
     }/*endif*/
     /*---------------------------------------------------------------------*/
     /* E) Assign */
@@ -234,14 +234,14 @@
     /*---------------------------------------------------------------------*/
     /* F) Error */
     if((mdghost_atoms->ighost_flag[bond->j1_con[bond->ncon]]!=0)||
-       (mdghost_atoms->ighost_flag[bond->j2_con[bond->ncon]]!=0)){
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("Ghost atoms are not permitted in constrained bonds\n");
-        PRINTF("in molecule index %d in residue index %d in file %s\n",
-                jmol_typ,iresidue,file_name);
-        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        FFLUSH(stdout);
-        EXIT(1);
+        (mdghost_atoms->ighost_flag[bond->j2_con[bond->ncon]]!=0)){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Ghost atoms are not permitted in constrained bonds\n");
+      PRINTF("in molecule index %d in residue index %d in file %s\n",
+          jmol_typ,iresidue,file_name);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }/*endif*/      
 
   }/*endif*/
@@ -255,10 +255,10 @@
       build_intra->nbond_nul_max += NMEM_MIN;
       null_inter_parse->jbond1_nul     = 
         (int *) crealloc(&(null_inter_parse->jbond1_nul)[1],
-                build_intra->nbond_nul_max*sizeof(int),"set_bond_params")-1;
+            build_intra->nbond_nul_max*sizeof(int),"set_bond_params")-1;
       null_inter_parse->jbond2_nul     = 
         (int *) crealloc(&(null_inter_parse->jbond2_nul)[1],
-                build_intra->nbond_nul_max*sizeof(int),"set_bond_params")-1;
+            build_intra->nbond_nul_max*sizeof(int),"set_bond_params")-1;
     }  /*endif*/
     /*---------------------------------------------------------------------*/
     /* B) Spread */

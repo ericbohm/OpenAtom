@@ -29,33 +29,33 @@
 /*==========================================================================*/
 
 void set_res_def_params(char filename[],char fun_key[],
-			DICT_WORD res_def_dict[], int num_res_def_dict,
-			MDATOM_MAPS *atommaps,NAME res_param_name[],
-			int nres_now,
-                        BUILD_INTRA *build_intra,int ires_off,
-                        FILENAME_PARSE *filename_parse)
+    DICT_WORD res_def_dict[], int num_res_def_dict,
+    MDATOM_MAPS *atommaps,NAME res_param_name[],
+    int nres_now,
+    BUILD_INTRA *build_intra,int ires_off,
+    FILENAME_PARSE *filename_parse)
 
-/*==========================================================================*/
-/*      Begin Routine                                                       */
+  /*==========================================================================*/
+  /*      Begin Routine                                                       */
 { /*begin routine */
 
-/*==========================================================================*/
-/*      Local Variables */
+  /*==========================================================================*/
+  /*      Local Variables */
   int i,num,index,ires_ind,ifound;
 
-/*=======================================================================*/
-/* I) Check for missing key words  */
-  
+  /*=======================================================================*/
+  /* I) Check for missing key words  */
+
   for(i=1;i<num_res_def_dict;i++){
     if(res_def_dict[i].iuset==0 && res_def_dict[i].key_type==1){
       keyword_miss(res_def_dict,filename,fun_key,i);
     }
   }    /*endfor*/
 
-/*======================================================================*/
-/* II) Set the params */
-/*-----------------------------------------------------------------------*/ 
-/*  1)\residue_index{} */
+  /*======================================================================*/
+  /* II) Set the params */
+  /*-----------------------------------------------------------------------*/ 
+  /*  1)\residue_index{} */
 
   sscanf(res_def_dict[1].keyarg,"%d",&ires_ind);
   index = 1;
@@ -73,7 +73,7 @@ void set_res_def_params(char filename[],char fun_key[],
   if((num<=0)){
     keyarg_barf(res_def_dict,filename,fun_key,index);
   }
-  
+
   /*-----------------------------------------------------------------------*/ 
   /*  3)\residue_def_parm_file{} */
 
@@ -95,7 +95,7 @@ void set_res_def_params(char filename[],char fun_key[],
       build_intra->nres_typ_max+=NMEM_MIN;
       atommaps->res_typ = (NAME *)
         crealloc(&(atommaps->res_typ[1]),
-        (build_intra->nres_typ_max)*sizeof(NAME),"set_res_def_params")-1;
+            (build_intra->nres_typ_max)*sizeof(NAME),"set_res_def_params")-1;
     }/*endif*/
     strcpy(atommaps->res_typ[atommaps->nres_typ],res_def_dict[4].keyarg);
     ifound = atommaps->nres_typ;
@@ -105,7 +105,7 @@ void set_res_def_params(char filename[],char fun_key[],
   /* 5 )\residue_def_fix_file{} */
   strcpy(filename_parse->res_fix_name[ires_ind],res_def_dict[5].keyarg);
 
-/*-----------------------------------------------------------------------*/ 
+  /*-----------------------------------------------------------------------*/ 
 }  /*end routine*/
 /*==========================================================================*/
 

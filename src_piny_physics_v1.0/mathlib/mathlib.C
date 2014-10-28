@@ -29,12 +29,12 @@
 
 double ran_essl(double *qseed)
 
-/*==========================================================================*/
-  {/*begin routine */
-/*==========================================================================*/
+  /*==========================================================================*/
+{/*begin routine */
+  /*==========================================================================*/
   int n=1,ierr=0;
   double x;
-/*==========================================================================*/
+  /*==========================================================================*/
 
   DURAND(qseed,&n,&x,&ierr);
 
@@ -50,8 +50,8 @@ double ran_essl(double *qseed)
   }/*endif*/  
   return x;
 
-/*-------------------------------------------------------------------------*/
-   }/*end routine*/
+  /*-------------------------------------------------------------------------*/
+}/*end routine*/
 /*==========================================================================*/
 
 
@@ -63,63 +63,63 @@ double ran_essl(double *qseed)
 
 void gaussran(int nran, long *iseed, long *iseed2, double *qseed, double gauss[])
 
-/*========================================================================*/
+  /*========================================================================*/
 {/*begin routine*/
-/*========================================================================*/
-/*             Local variable declarations                                */
-   int i,iii,loop;
-   double twopi,rad2,al,r,phi,arg;
+  /*========================================================================*/
+  /*             Local variable declarations                                */
+  int i,iii,loop;
+  double twopi,rad2,al,r,phi,arg;
 
-   int ran_opt = 1;
-/*========================================================================*/
-/* I) Constants */
-    twopi = 2.0*M_PI;
-    rad2 = sqrt(2.0);
-    loop = nran/2;
+  int ran_opt = 1;
+  /*========================================================================*/
+  /* I) Constants */
+  twopi = 2.0*M_PI;
+  rad2 = sqrt(2.0);
+  loop = nran/2;
 
-/*========================================================================*/
-/* II) Make nran (or nran-1 if nran odd) Gaussian random numbers          */
-    for(i=1;i<=loop;i++){
-/*------------------------------------------------------------------------*/
-/* A) uniform random numbers in r and phi */
-       switch(ran_opt){
-         case 0: r   = ran_essl(qseed); 
-                 phi = ran_essl(qseed); 
-                 break;
-         case 1: r   = altRandom(iseed); 
-                 phi = altRandom(iseed); 
-                 break;
-       }//end switch
-       r   = MAX(r,1e-30);
-       r   = MIN(r,1.0);
-/*------------------------------------------------------------------------*/
-/* B) Gaussify in x and y*/
-       al  = sqrt(-log(r))*rad2;
-       arg = twopi*phi;
-       gauss[2*i-1] = al*cos(arg);
-       gauss[2*i]   = al*sin(arg);
-     }/*endfor*/
-/*========================================================================*/
-/* III) Make one more if nran is odd */
+  /*========================================================================*/
+  /* II) Make nran (or nran-1 if nran odd) Gaussian random numbers          */
+  for(i=1;i<=loop;i++){
+    /*------------------------------------------------------------------------*/
+    /* A) uniform random numbers in r and phi */
+    switch(ran_opt){
+      case 0: r   = ran_essl(qseed); 
+              phi = ran_essl(qseed); 
+              break;
+      case 1: r   = altRandom(iseed); 
+              phi = altRandom(iseed); 
+              break;
+    }//end switch
+    r   = MAX(r,1e-30);
+    r   = MIN(r,1.0);
+    /*------------------------------------------------------------------------*/
+    /* B) Gaussify in x and y*/
+    al  = sqrt(-log(r))*rad2;
+    arg = twopi*phi;
+    gauss[2*i-1] = al*cos(arg);
+    gauss[2*i]   = al*sin(arg);
+  }/*endfor*/
+  /*========================================================================*/
+  /* III) Make one more if nran is odd */
 
-    if((nran % 2)!=0){
-       switch(ran_opt){
-         case 0: r   = ran_essl(qseed); 
-                 phi = ran_essl(qseed); 
-                 break;
-         case 1: r   = altRandom(iseed); 
-                 phi = altRandom(iseed); 
-                 break;
-       }//end switch
-       r   = MAX(r,1e-30);
-       r   = MIN(r,1.0);
-       arg = twopi*phi;
-       al  = sqrt(-log(r))*rad2;
-       gauss[nran] = al*cos(arg);
-     }/*endif*/
+  if((nran % 2)!=0){
+    switch(ran_opt){
+      case 0: r   = ran_essl(qseed); 
+              phi = ran_essl(qseed); 
+              break;
+      case 1: r   = altRandom(iseed); 
+              phi = altRandom(iseed); 
+              break;
+    }//end switch
+    r   = MAX(r,1e-30);
+    r   = MIN(r,1.0);
+    arg = twopi*phi;
+    al  = sqrt(-log(r))*rad2;
+    gauss[nran] = al*cos(arg);
+  }/*endif*/
 
-/*------------------------------------------------------------------------*/
-  }/*end routine*/
+  /*------------------------------------------------------------------------*/
+}/*end routine*/
 /*========================================================================*/
 
 
@@ -133,7 +133,7 @@ void gaussran(int nran, long *iseed, long *iseed2, double *qseed, double gauss[]
 
 void cputime(double *time)
 
-/*==========================================================================*/
+  /*==========================================================================*/
 {
 
   static double to=0.;
@@ -169,7 +169,7 @@ void matmul_2(double *a1, double *a2, double *a3, int n)
   for (i = 1; i <= n; ++i) {
     for (j = 1; j <= n; ++j) {
       for (k = 1; k <= n; ++k) {
-	a3[(j + (i-1)*n)] += a1[(j + (k-1)*n)] * a2[(k + (i-1)*n)];
+        a3[(j + (i-1)*n)] += a1[(j + (k-1)*n)] * a2[(k + (i-1)*n)];
       }
     }
   }
@@ -195,7 +195,7 @@ void matmul_2s(double *a1, double *a3, int n)
   for (i = 1; i <= n; ++i) {
     for (j = 1; j <= n; ++j) {
       for (k = 1; k <= n; ++k) {
-	a3[(j + (i-1)*n)] += a1[(j + (k-1)*n)] * a1[(k + (i-1)*n)];
+        a3[(j + (i-1)*n)] += a1[(j + (k-1)*n)] * a1[(k + (i-1)*n)];
       }
     }
   }
@@ -222,7 +222,7 @@ void matmul_3(double *a1, double *a2)
   for (i = 1; i <= 3; ++i) {
     for (j = 1; j <= 3; ++j) {
       for (k = 1; k <= 3; ++k) {
-	a3[(j + (i-1)*3)] += a1[(j + (k-1)*3)] * a2[(k + (i-1)*3)];
+        a3[(j + (i-1)*3)] += a1[(j + (k-1)*3)] * a2[(k + (i-1)*3)];
       }
     }
   }
@@ -244,7 +244,7 @@ void matmul_tt(double *a1, double *a2, double *a3, int n)
 {
   /* Local variables */
   int i, j, k;
-  
+
   /* Function Body */
   for (i = 1; i <= n; ++i) {
     for (j = 1; j <= n; ++j) {
@@ -254,7 +254,7 @@ void matmul_tt(double *a1, double *a2, double *a3, int n)
   for (i = 1; i <= n; ++i) {
     for (j = 1; j <= n; ++j) {
       for (k = 1; k <= n; ++k) {
-	a3[(j + (i-1)*n)] += a1[(k + (i-1)*n)] * a2[(j + (k-1)*n)];
+        a3[(j + (i-1)*n)] += a1[(k + (i-1)*n)] * a2[(j + (k-1)*n)];
       }
     }
   }
@@ -281,7 +281,7 @@ void matmul_t(double *a1, double *a2, double *a3, int n)
   for (i = 1; i <= n; ++i) {
     for (j = 1; j <= n; ++j) {
       for (k = 1; k <= n; ++k) {
-	a3[(j + (i-1)*n)] += a1[(k + (i-1)*n)] * a2[(k + (j-1)*n)];
+        a3[(j + (i-1)*n)] += a1[(k + (i-1)*n)] * a2[(k + (j-1)*n)];
       }
     }
   }
@@ -309,7 +309,7 @@ void matmul_t2(double *a1, double *a2, double *a3, int n)
   for (i = 1; i <= n; ++i) {
     for (j = 1; j <= n; ++j) {
       for (k = 1; k <= n; ++k) {
-	a3[(j + (i-1)*n)] += a1[(i + (k-1)*n)] * a2[(j + (k-1)*n)];
+        a3[(j + (i-1)*n)] += a1[(i + (k-1)*n)] * a2[(j + (k-1)*n)];
       }
     }
   }
@@ -323,13 +323,13 @@ void matmul_t2(double *a1, double *a2, double *a3, int n)
 /*ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*===============================================================*/
 void diag33(double *vmat, double *veig, double *veigv, double *fv1, 
-            double *fv2)
+    double *fv2)
 
 {/*begin routine */
-   int matz=1,ndiag=3,ndiagm=3;
-   int ierr;
-   RS(&ndiagm,&ndiag,&(vmat[1]),&(veig[1]),&matz,
-     &(veigv[1]),&(fv1[1]),&(fv2[1]),&ierr);
+  int matz=1,ndiag=3,ndiagm=3;
+  int ierr;
+  RS(&ndiagm,&ndiag,&(vmat[1]),&(veig[1]),&matz,
+      &(veigv[1]),&(fv1[1]),&(fv2[1]),&ierr);
 
 }/* end routine */
 /*===============================================================*/
@@ -344,25 +344,25 @@ void diag33(double *vmat, double *veig, double *veigv, double *fv1,
 
 void gethinv(double *hmat, double *hmati, double *deth, int iperd)
 
-/*===============================================================*/
-   {/*begin routine */
-/*===============================================================*/
+  /*===============================================================*/
+{/*begin routine */
+  /*===============================================================*/
   double vol;
   int i;
-/*===============================================================*/
-/* gets inverse, hmati, of the iperd dimensional matrix hmat */
-/* (stored as a 3 x 3) */
+  /*===============================================================*/
+  /* gets inverse, hmati, of the iperd dimensional matrix hmat */
+  /* (stored as a 3 x 3) */
 
   *deth = 0.0;
   for(i=1;i<=9;i++){hmati[i]=0.0;}
 
-/*===============================================================*/
-/* Perd=3 */
+  /*===============================================================*/
+  /* Perd=3 */
 
   if (iperd == 3) {
     vol = (hmat[1] * (hmat[5] * hmat[9] - hmat[8] * hmat[6]) + 
-	   hmat[4] * (hmat[8] * hmat[3] - hmat[2] * hmat[9]) + 
-	   hmat[7] * (hmat[2] * hmat[6] - hmat[5] * hmat[3]));
+        hmat[4] * (hmat[8] * hmat[3] - hmat[2] * hmat[9]) + 
+        hmat[7] * (hmat[2] * hmat[6] - hmat[5] * hmat[3]));
     *deth = vol;
     hmati[1] = (hmat[5] * hmat[9] - hmat[8] * hmat[6]) / vol;
     hmati[5] = (hmat[1] * hmat[9] - hmat[7] * hmat[3]) / vol;
@@ -375,8 +375,8 @@ void gethinv(double *hmat, double *hmati, double *deth, int iperd)
     hmati[6] = (hmat[3] * hmat[4] - hmat[6] * hmat[1]) / vol;
   }/*endif*/
 
-/*===============================================================*/
-/* Perd=2 */
+  /*===============================================================*/
+  /* Perd=2 */
 
   if (iperd == 2) {
     vol = hmat[1] * hmat[5] - hmat[4] * hmat[2];
@@ -388,18 +388,18 @@ void gethinv(double *hmat, double *hmati, double *deth, int iperd)
     *deth = vol * hmat[9];
   }/*endif*/
 
-/*===============================================================*/
-/* Perd=1,0,cluster_ewald */
+  /*===============================================================*/
+  /* Perd=1,0,cluster_ewald */
 
   if(iperd <=1 || iperd==4) {
-   *deth = hmat[1]*hmat[5]*hmat[9];
-   hmati[1] = 1.0/hmat[1];
-   hmati[5] = 1.0/hmat[5];
-   hmati[9] = 1.0/hmat[9];
+    *deth = hmat[1]*hmat[5]*hmat[9];
+    hmati[1] = 1.0/hmat[1];
+    hmati[5] = 1.0/hmat[5];
+    hmati[9] = 1.0/hmat[9];
   }/*endif*/
 
-/*===============================================================*/
-/* Errors */
+  /*===============================================================*/
+  /* Errors */
 
   if((*deth)==0.0){
     printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");    
@@ -411,8 +411,8 @@ void gethinv(double *hmat, double *hmati, double *deth, int iperd)
     exit(1);
   } /*endif*/
 
-/*---------------------------------------------------------------*/
-  } /* gethinv */
+  /*---------------------------------------------------------------*/
+} /* gethinv */
 /*===============================================================*/
 
 
@@ -424,13 +424,13 @@ void gethinv(double *hmat, double *hmati, double *deth, int iperd)
 /*===============================================================*/
 double getdeth(double *hmat)
 {
-  
+
   double getdeth;
   /* gets det of hmat */
-  
+
   getdeth = (hmat[1] * (hmat[5] * hmat[9] - hmat[8] * hmat[6]) + 
-             hmat[4] * (hmat[8] * hmat[3] - hmat[2] * hmat[9]) + 
-             hmat[7] * (hmat[2] * hmat[6] - hmat[5] * hmat[3]));
+      hmat[4] * (hmat[8] * hmat[3] - hmat[2] * hmat[9]) + 
+      hmat[7] * (hmat[2] * hmat[6] - hmat[5] * hmat[3]));
   return getdeth;
 
 } /* getdeth */
@@ -479,8 +479,8 @@ double dsum1(int n,double *a,int astep)
 /*===============================================================*/
 double gerf(double x)
 {
-/*===============================================================*/
-/*  Local variables */
+  /*===============================================================*/
+  /*  Local variables */
 
   double p=0.3614;
   double e1 = 0.2041422096422003, e2 = 0.1997535956961481;
@@ -490,17 +490,17 @@ double gerf(double x)
   double e9 = 0.06965131976970335;
   double eee,tt,gerf;
 
-/*===============================================================*/
-/* Calculate the error function */
+  /*===============================================================*/
+  /* Calculate the error function */
 
-   eee    = exp(-x*x);
-   tt     = 1.0/(1.0+p*x);
-   gerf   = 1.0 - ((((((((e9*tt+e8)*tt+e7)*tt+e6)*tt+e5)*tt
-                               +e4)*tt+e3)*tt+e2)*tt+e1)*tt*eee;
+  eee    = exp(-x*x);
+  tt     = 1.0/(1.0+p*x);
+  gerf   = 1.0 - ((((((((e9*tt+e8)*tt+e7)*tt+e6)*tt+e5)*tt
+            +e4)*tt+e3)*tt+e2)*tt+e1)*tt*eee;
 
-/*===============================================================*/
-   return gerf;
-/*===============================================================*/
+  /*===============================================================*/
+  return gerf;
+  /*===============================================================*/
 }/* end function */
 /*===============================================================*/
 
@@ -511,8 +511,8 @@ double gerf(double x)
 /*===============================================================*/
 double gerfc(double x)
 {
-/*===============================================================*/
-/*  Local variables */
+  /*===============================================================*/
+  /*  Local variables */
 
   double p=0.3614;
   double e1 = 0.2041422096422003, e2 = 0.1997535956961481;
@@ -522,18 +522,18 @@ double gerfc(double x)
   double e9 = 0.06965131976970335;
   double eee,tt,gerf,gerfc;
 
-/*===============================================================*/
-/* Calculate the error function */
+  /*===============================================================*/
+  /* Calculate the error function */
 
-   eee    = exp(-x*x);
-   tt     = 1.0/(1.0+p*x);
-   gerf   = 1.0 - ((((((((e9*tt+e8)*tt+e7)*tt+e6)*tt+e5)*tt
-                               +e4)*tt+e3)*tt+e2)*tt+e1)*tt*eee;
-   gerfc = 1.0 - gerf;
+  eee    = exp(-x*x);
+  tt     = 1.0/(1.0+p*x);
+  gerf   = 1.0 - ((((((((e9*tt+e8)*tt+e7)*tt+e6)*tt+e5)*tt
+            +e4)*tt+e3)*tt+e2)*tt+e1)*tt*eee;
+  gerfc = 1.0 - gerf;
 
-/*===============================================================*/
-   return gerfc;
-/*===============================================================*/
+  /*===============================================================*/
+  return gerfc;
+  /*===============================================================*/
 }/* end function */
 /*===============================================================*/
 

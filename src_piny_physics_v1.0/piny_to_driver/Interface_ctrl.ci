@@ -8,17 +8,17 @@
 
 module Interface_ctrl {
 
-//---------------------------------------------------------------------------
-// invokes the pup routine for each global readonly class automatically
+  //---------------------------------------------------------------------------
+  // invokes the pup routine for each global readonly class automatically
 
 
-//  readonly MDINTEGRATE  readonly_mdintegrate;
-//  readonly MDATOMS      readonly_mdatoms;
-//  readonly MDINTER      readonly_mdinter;
-//  readonly MDINTRA      readonly_mdintra;
-//  readonly GENERAL_DATA readonly_general_data;
-//  readonly CP           readonly_cp; 
+  //  readonly MDINTEGRATE  readonly_mdintegrate;
+  //  readonly MDATOMS      readonly_mdatoms;
+  //  readonly MDINTER      readonly_mdinter;
+  //  readonly MDINTRA      readonly_mdintra;
+  //  readonly GENERAL_DATA readonly_general_data;
+  //  readonly CP           readonly_cp; 
 
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 };// end module Interface_ctrl
 //===========================================================================

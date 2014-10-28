@@ -1,14 +1,14 @@
 PINY strategy :
 
-       Each routine is passed a number tasks.
-       Loop over the task.
-       Not bad in massively parallel because the overhead 
-       of the loop is not big.
+Each routine is passed a number tasks.
+Loop over the task.
+Not bad in massively parallel because the overhead 
+of the loop is not big.
 
 LeanMD stragegy:
 
-       Write the routine to perform 1 task.
-       Not bad in scalar if you can inline OK?
-       for(){
-         fuction_call()
-       }
+Write the routine to perform 1 task.
+Not bad in scalar if you can inline OK?
+for(){
+  fuction_call()
+}

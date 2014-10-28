@@ -13,8 +13,8 @@ using std::endl;
 #endif
 
 extern "C" {void  DGEMM(char *, char *, int *, int *, int *, double *,
-			   double *, int *, double *, int *, double *,
-			   double *, int *);}
+    double *, int *, double *, int *, double *,
+    double *, int *);}
 
 void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex *A, int *lda, complex *B, int *ldb, double *beta, complex *C, int *ldc);
 void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double *A, int *lda, double *B, int *ldb, double *beta, double *C, int *ldc);
@@ -25,139 +25,139 @@ extern CkReduction::reducerType sumFastDoubleType;
 #include "load_balance/MapTable.h"
 #include "orthog_ctrl/ortho.h"
 /** @addtogroup Ortho
-    @{
-*/
+  @{
+ */
 
 /******************************************************************************/
 /* helper functions */
 
 /* Should be called by user to create matrices. Documented in header file. */
 int make_multiplier(
-        CLA_Matrix_interface *A, CLA_Matrix_interface *B, CLA_Matrix_interface *C,
-        CProxy_ArrayElement bindA, CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
-        int M, //nstates
-        int K, //nstates
-        int N, //nstates
-        int m, //orthograinsize
-        int k, //orthograinsize
-        int n, //orthograinsize
-        int strideM, // 1
-        int strideK, // 1
-        int strideN, // 1
-        CkCallback cbA, CkCallback cbB, CkCallback cbC,
-        CkGroupID gid, int algorithm, int gemmSplitOrtho
-        )
+    CLA_Matrix_interface *A, CLA_Matrix_interface *B, CLA_Matrix_interface *C,
+    CProxy_ArrayElement bindA, CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
+    int M, //nstates
+    int K, //nstates
+    int N, //nstates
+    int m, //orthograinsize
+    int k, //orthograinsize
+    int n, //orthograinsize
+    int strideM, // 1
+    int strideK, // 1
+    int strideN, // 1
+    CkCallback cbA, CkCallback cbB, CkCallback cbC,
+    CkGroupID gid, int algorithm, int gemmSplitOrtho
+    )
 {
-    /* validate arguments */
-    if(algorithm < MM_ALG_MIN || MM_ALG_MAX < algorithm)
-        return ERR_INVALID_ALG;
+  /* validate arguments */
+  if(algorithm < MM_ALG_MIN || MM_ALG_MAX < algorithm)
+    return ERR_INVALID_ALG;
 
-    if(m > M || k > K || n > N)
-        return ERR_INVALID_DIM;
+  if(m > M || k > K || n > N)
+    return ERR_INVALID_DIM;
 
-    /* create arrays */
-    CkArrayOptions optsA, optsB, optsC;
-    optsA.bindTo(bindA);
-    optsB.bindTo(bindB);
-    optsC.bindTo(bindC);
-    optsA.setAnytimeMigration(false);
-    optsB.setAnytimeMigration(false);
-    optsC.setAnytimeMigration(false);
-    CProxy_CLA_Matrix pa = CProxy_CLA_Matrix::ckNew(optsA);
-    CProxy_CLA_Matrix pb = CProxy_CLA_Matrix::ckNew(optsB);
-    CProxy_CLA_Matrix pc = CProxy_CLA_Matrix::ckNew(optsC);
-    A->setProxy(pa);
-    B->setProxy(pb);
-    C->setProxy(pc);
+  /* create arrays */
+  CkArrayOptions optsA, optsB, optsC;
+  optsA.bindTo(bindA);
+  optsB.bindTo(bindB);
+  optsC.bindTo(bindC);
+  optsA.setAnytimeMigration(false);
+  optsB.setAnytimeMigration(false);
+  optsC.setAnytimeMigration(false);
+  CProxy_CLA_Matrix pa = CProxy_CLA_Matrix::ckNew(optsA);
+  CProxy_CLA_Matrix pb = CProxy_CLA_Matrix::ckNew(optsB);
+  CProxy_CLA_Matrix pc = CProxy_CLA_Matrix::ckNew(optsC);
+  A->setProxy(pa);
+  B->setProxy(pb);
+  C->setProxy(pc);
 
-    /* populate arrays */
-    int M_chunks = (M + m - 1) / m; // same as ceil(1.0 * M / m)
-    int K_chunks = (K + k - 1) / k; // same as ceil(1.0 * K / k)
-    int N_chunks = (N + n - 1) / n; // same as ceil(1.0 * N / n)
-    if(M%m!=0)
-        M_chunks--;
-    if(K%k!=0)
-        K_chunks--;
-    if(N%n!=0)
-        N_chunks--;
+  /* populate arrays */
+  int M_chunks = (M + m - 1) / m; // same as ceil(1.0 * M / m)
+  int K_chunks = (K + k - 1) / k; // same as ceil(1.0 * K / k)
+  int N_chunks = (N + n - 1) / n; // same as ceil(1.0 * N / n)
+  if(M%m!=0)
+    M_chunks--;
+  if(K%k!=0)
+    K_chunks--;
+  if(N%n!=0)
+    N_chunks--;
 
-    //  correct for number of chunks
-    // just the size of the border elements
-    if(algorithm == MM_ALG_2D)
+  //  correct for number of chunks
+  // just the size of the border elements
+  if(algorithm == MM_ALG_2D)
+  {
+    for(int i = 0; i < M_chunks; i++)
+      for(int j = 0; j < K_chunks; j++)
+        (A->p(i * strideM, j * strideK)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_A, B->p, C->p, cbA, gemmSplitOrtho);
+    A->p.doneInserting();
+
+    for(int i = 0; i < K_chunks; i++)
+      for(int j = 0; j < N_chunks; j++)
+        (B->p(i * strideK, j * strideN)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_B, A->p, C->p, cbB, gemmSplitOrtho);
+    B->p.doneInserting();
+
+    for(int i = 0; i < M_chunks; i++)
+      for(int j = 0; j < N_chunks; j++)
+        (C->p(i * strideM, j * strideN)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_C, A->p, B->p, cbC, gemmSplitOrtho);
+    C->p.doneInserting();
+  }
+  else if(algorithm == MM_ALG_3D)
+  {
+    CProxy_CLA_MM3D_multiplier mult = CProxy_CLA_MM3D_multiplier::ckNew();
+    int curpe = 0;
+    int totpe = CkNumPes();
+    for(int i = 0; i < M_chunks; i++)
     {
-        for(int i = 0; i < M_chunks; i++)
-            for(int j = 0; j < K_chunks; j++)
-                (A->p(i * strideM, j * strideK)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_A, B->p, C->p, cbA, gemmSplitOrtho);
-        A->p.doneInserting();
+      int mm = m;
+      if(i == M_chunks - 1)
+      {
+        mm = M % m;
+        if(mm == 0)
+          mm = m;
+      }
 
-        for(int i = 0; i < K_chunks; i++)
-            for(int j = 0; j < N_chunks; j++)
-                (B->p(i * strideK, j * strideN)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_B, A->p, C->p, cbB, gemmSplitOrtho);
-        B->p.doneInserting();
-
-        for(int i = 0; i < M_chunks; i++)
-            for(int j = 0; j < N_chunks; j++)
-                (C->p(i * strideM, j * strideN)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_C, A->p, B->p, cbC, gemmSplitOrtho);
-        C->p.doneInserting();
-    }
-    else if(algorithm == MM_ALG_3D)
-    {
-        CProxy_CLA_MM3D_multiplier mult = CProxy_CLA_MM3D_multiplier::ckNew();
-        int curpe = 0;
-        int totpe = CkNumPes();
-        for(int i = 0; i < M_chunks; i++)
+      for(int j = 0; j < N_chunks; j++)
+      {
+        int nn = n;
+        if(j == N_chunks - 1)
         {
-            int mm = m;
-            if(i == M_chunks - 1)
-            {
-                mm = M % m;
-                if(mm == 0)
-                    mm = m;
-            }
-
-            for(int j = 0; j < N_chunks; j++)
-            {
-                int nn = n;
-                if(j == N_chunks - 1)
-                {
-                    nn = N % n;
-                    if(nn == 0)
-                        nn = n;
-                }
-
-                for(int l = 0; l < K_chunks; l++)
-                {
-                    int kk = k;
-                    if(l == K_chunks - 1)
-                    {
-                        kk = K % k;
-                        if(kk == 0)
-                            kk = k;
-                    }
-                    mult(i, j, l).insert(mm, kk, nn, curpe);
-                    curpe = (curpe + 1) % totpe;
-                }
-            }
+          nn = N % n;
+          if(nn == 0)
+            nn = n;
         }
-        mult.doneInserting();
 
-        for(int i = 0; i < M_chunks; i++)
-            for(int j = 0; j < K_chunks; j++)
-                (A->p(i * strideM, j * strideK)).insert(mult, M, K, N, m, k, n,strideM, strideK, strideN, MULTARG_A, cbA, gid, gemmSplitOrtho);
-        A->p.doneInserting();
-
-        for(int i = 0; i < K_chunks; i++)
-            for(int j = 0; j < N_chunks; j++)
-                (B->p(i * strideK, j * strideN)).insert(mult, M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_B, cbB, gid, gemmSplitOrtho);
-        B->p.doneInserting();
-
-        for(int i = 0; i < M_chunks; i++)
-            for(int j = 0; j < N_chunks; j++)
-                (C->p(i * strideM, j * strideN)).insert(mult, M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_C, cbC, gid, gemmSplitOrtho);
-        C->p.doneInserting();
+        for(int l = 0; l < K_chunks; l++)
+        {
+          int kk = k;
+          if(l == K_chunks - 1)
+          {
+            kk = K % k;
+            if(kk == 0)
+              kk = k;
+          }
+          mult(i, j, l).insert(mm, kk, nn, curpe);
+          curpe = (curpe + 1) % totpe;
+        }
+      }
     }
+    mult.doneInserting();
 
-    return SUCCESS;
+    for(int i = 0; i < M_chunks; i++)
+      for(int j = 0; j < K_chunks; j++)
+        (A->p(i * strideM, j * strideK)).insert(mult, M, K, N, m, k, n,strideM, strideK, strideN, MULTARG_A, cbA, gid, gemmSplitOrtho);
+    A->p.doneInserting();
+
+    for(int i = 0; i < K_chunks; i++)
+      for(int j = 0; j < N_chunks; j++)
+        (B->p(i * strideK, j * strideN)).insert(mult, M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_B, cbB, gid, gemmSplitOrtho);
+    B->p.doneInserting();
+
+    for(int i = 0; i < M_chunks; i++)
+      for(int j = 0; j < N_chunks; j++)
+        (C->p(i * strideM, j * strideN)).insert(mult, M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_C, cbC, gid, gemmSplitOrtho);
+    C->p.doneInserting();
+  }
+
+  return SUCCESS;
 }
 
 
@@ -168,8 +168,8 @@ int make_multiplier(
 
 /* constructor for 2D algorithm */
 CLA_Matrix::CLA_Matrix(int _M, int _K, int _N, int _m, int _k, int _n,
- int strideM, int strideK, int strideN, int _part,
- CProxy_CLA_Matrix _other1, CProxy_CLA_Matrix _other2, CkCallback ready, int _gemmSplitOrtho){
+    int strideM, int strideK, int strideN, int _part,
+    CProxy_CLA_Matrix _other1, CProxy_CLA_Matrix _other2, CkCallback ready, int _gemmSplitOrtho){
   /* initialize simple members */
   this->M = _M; this->K = _K; this->N = _N;
   this->um = _m; this->uk = _k; this->un = _n;
@@ -239,11 +239,11 @@ CLA_Matrix::CLA_Matrix(int _M, int _K, int _N, int _m, int _k, int _n,
   /* make communication group for A, B, destination arrays for C */
   if(part == MULTARG_A){
     commGroup2D = CProxySection_CLA_Matrix::ckNew(other2, thisIndex.x,
-     thisIndex.x, 1, 0, (N_chunks - 1) * strideN, strideN);
+        thisIndex.x, 1, 0, (N_chunks - 1) * strideN, strideN);
     tmpA = tmpB = NULL;
   } else if(part == MULTARG_B) {
     commGroup2D = CProxySection_CLA_Matrix::ckNew(other2, 0,
-     (M_chunks - 1) * strideM, strideM, thisIndex.y, thisIndex.y, 1);
+        (M_chunks - 1) * strideM, strideM, thisIndex.y, thisIndex.y, 1);
     tmpA = tmpB = NULL;
   } else if(part == MULTARG_C) {
     tmpA = new internalType[this->m * K];
@@ -256,8 +256,8 @@ CLA_Matrix::CLA_Matrix(int _M, int _K, int _N, int _m, int _k, int _n,
 
 /* constructor for 3D algorithm */
 CLA_Matrix::CLA_Matrix(CProxy_CLA_MM3D_multiplier p, int M, int K, int N,
- int m, int k, int n, int strideM, int strideK, int strideN, int part,
- CkCallback cb, CkGroupID gid, int _gemmSplitOrtho){
+    int m, int k, int n, int strideM, int strideK, int strideN, int part,
+    CkCallback cb, CkGroupID gid, int _gemmSplitOrtho){
   /* set up easy variable */
   this->M = M; this->K = K; this->N = N;
   this->um = m; this->uk = k; this->un = n;
@@ -320,26 +320,26 @@ CLA_Matrix::CLA_Matrix(CProxy_CLA_MM3D_multiplier p, int M, int K, int N,
     int x = thisIndex.x / strideM;
     int y = thisIndex.y / strideK;
     commGroup3D = CProxySection_CLA_MM3D_multiplier::ckNew(p, x, x, 1, 0,
-     N_chunks - 1, 1, y, y, 1);
+        N_chunks - 1, 1, y, y, 1);
     contribute(0, NULL, CkReduction::sum_int, cb);
   } else if(part == MULTARG_B) {
     int x = thisIndex.x / strideK;
     int y = thisIndex.y / strideN;
     commGroup3D = CProxySection_CLA_MM3D_multiplier::ckNew(p, 0,
-     M_chunks - 1, 1, y, y, 1, x, x, 1);
+        M_chunks - 1, 1, y, y, 1, x, x, 1);
     contribute(0, NULL, CkReduction::sum_int, cb);
   } else if(part == MULTARG_C) {
     init_cb = cb;
     int x = thisIndex.x / strideM;
     int y = thisIndex.y / strideN;
     commGroup3D = CProxySection_CLA_MM3D_multiplier::ckNew(p, x, x, 1, y, y, 1,
-     0, K_chunks - 1, 1);
+        0, K_chunks - 1, 1);
     commGroup3D.ckSectionDelegate(CProxy_CkMulticastMgr(gid).ckLocalBranch());
     CLA_MM3D_mult_init_msg *m = new CLA_MM3D_mult_init_msg(gid,
-     CkCallback(CkIndex_CLA_Matrix::readyC(NULL),
-     thisProxy(thisIndex.x, thisIndex.y)), CkCallback(
-     CkIndex_CLA_Matrix::mult_done(NULL), thisProxy(thisIndex.x,
-     thisIndex.y)));
+        CkCallback(CkIndex_CLA_Matrix::readyC(NULL),
+          thisProxy(thisIndex.x, thisIndex.y)), CkCallback(
+          CkIndex_CLA_Matrix::mult_done(NULL), thisProxy(thisIndex.x,
+            thisIndex.y)));
     commGroup3D.initialize_reduction(m);
   }
 }
@@ -396,11 +396,11 @@ void CLA_Matrix::ResumeFromSync(void){
   if(algorithm == MM_ALG_2D){
     if(part == MULTARG_A){
       commGroup2D = CProxySection_CLA_Matrix::ckNew(other2, thisIndex.x,
-       thisIndex.x, 1, 0, (N_chunks - 1) * N_stride, N_stride);
+          thisIndex.x, 1, 0, (N_chunks - 1) * N_stride, N_stride);
       tmpA = tmpB = NULL;
     } else if(part == MULTARG_B) {
       commGroup2D = CProxySection_CLA_Matrix::ckNew(other2, 0,
-       (M_chunks - 1) * M_stride, M_stride, thisIndex.y, thisIndex.y, 1);
+          (M_chunks - 1) * M_stride, M_stride, thisIndex.y, thisIndex.y, 1);
       tmpA = tmpB = NULL;
     }
   } else if(algorithm == MM_ALG_3D){
@@ -409,45 +409,45 @@ void CLA_Matrix::ResumeFromSync(void){
       int x = thisIndex.x / M_stride;
       int y = thisIndex.y / K_stride;
       commGroup3D = CProxySection_CLA_MM3D_multiplier::ckNew(p, x, x, 1, 0,
-       N_chunks - 1, 1, y, y, 1);
+          N_chunks - 1, 1, y, y, 1);
       contribute(0, NULL, CkReduction::sum_int, cb);
     } else if(part == MULTARG_B) {
       int x = thisIndex.x / K_stride;
       int y = thisIndex.y / N_stride;
       commGroup3D = CProxySection_CLA_MM3D_multiplier::ckNew(p, 0,
-       M_chunks - 1, 1, y, y, 1, x, x, 1);
+          M_chunks - 1, 1, y, y, 1, x, x, 1);
       contribute(0, NULL, CkReduction::sum_int, cb);
     } else if(part == MULTARG_C) {
       init_cb = cb;
       int x = thisIndex.x / M_stride;
       int y = thisIndex.y / N_stride;
       commGroup3D = CProxySection_CLA_MM3D_multiplier::ckNew(p, x, x, 1, y, y,
-       1, 0, K_chunks - 1, 1);
-/*
-      commGroup3D.ckSectionDelegate(CProxy_CkMulticastMgr(gid).ckLocalBranch());
-      CLA_MM3D_mult_init_msg *m = new CLA_MM3D_mult_init_msg(gid,
-       CkCallback(CkIndex_CLA_Matrix::readyC(NULL),
-       thisProxy(thisIndex.x, thisIndex.y)), CkCallback(
-       CkIndex_CLA_Matrix::mult_done(NULL), thisProxy(thisIndex.x,
-       thisIndex.y)));
-      commGroup3D.initialize_reduction(m);
-*/
+          1, 0, K_chunks - 1, 1);
+      /*
+         commGroup3D.ckSectionDelegate(CProxy_CkMulticastMgr(gid).ckLocalBranch());
+         CLA_MM3D_mult_init_msg *m = new CLA_MM3D_mult_init_msg(gid,
+         CkCallback(CkIndex_CLA_Matrix::readyC(NULL),
+         thisProxy(thisIndex.x, thisIndex.y)), CkCallback(
+         CkIndex_CLA_Matrix::mult_done(NULL), thisProxy(thisIndex.x,
+         thisIndex.y)));
+         commGroup3D.initialize_reduction(m);
+       */
     }
 #endif
   }
 }
 
 void CLA_Matrix::multiply(double alpha, double beta, internalType *data,
- void (*fptr) (void*), void *usr_data){
+    void (*fptr) (void*), void *usr_data){
   if(algorithm == MM_ALG_2D){
     // A and B send out their chunks, ignoring alpha, beta, ftpr, and usr_data
     if(part == MULTARG_A){
       CLA_Matrix_msg *msg = new (m * k) CLA_Matrix_msg(data, m, k, thisIndex.x,
-       thisIndex.y);
+          thisIndex.y);
       commGroup2D.receiveA(msg);
     } else if(part == MULTARG_B){
       CLA_Matrix_msg *msg = new (k * n) CLA_Matrix_msg(data, k, n, thisIndex.x,
-       thisIndex.y);
+          thisIndex.y);
       commGroup2D.receiveB(msg);
     }
     /* C stores the paramters for the multiplication */
@@ -467,11 +467,11 @@ void CLA_Matrix::multiply(double alpha, double beta, internalType *data,
   } else if(algorithm == MM_ALG_3D){
     if(part == MULTARG_A){
       CLA_Matrix_msg *msg = new (m * k) CLA_Matrix_msg(data, m, k, thisIndex.x,
-       thisIndex.y);
+          thisIndex.y);
       commGroup3D.receiveA(msg);
     } else if(part == MULTARG_B){
       CLA_Matrix_msg *msg = new (k * n) CLA_Matrix_msg(data, k, n, thisIndex.x,
-       thisIndex.y);
+          thisIndex.y);
       commGroup3D.receiveB(msg);
     } else if(part == MULTARG_C){
       fcb = fptr;
@@ -501,7 +501,7 @@ void CLA_Matrix::receiveA(CLA_Matrix_msg *msg){
   row_count++;
   for(int i = 0; i < m; i++)
     CmiMemcpy(&tmpA[K * i + uk * (msg->fromY / K_stride)], &msg->data[i * msg->d2],
-     msg->d2 * sizeof(internalType));
+        msg->d2 * sizeof(internalType));
   delete msg;
 
   /* If we have all the parts, multiply */
@@ -513,7 +513,7 @@ void CLA_Matrix::receiveB(CLA_Matrix_msg *msg){
   /* store current part */
   col_count++;
   CmiMemcpy(&tmpB[n * uk * (msg->fromX / K_stride)], msg->data,
-   msg->d1 * msg->d2 * sizeof(internalType));
+      msg->d1 * msg->d2 * sizeof(internalType));
   delete msg;
 
   /* If we have all the parts, multiply */
@@ -526,45 +526,45 @@ void CLA_Matrix::receiveB(CLA_Matrix_msg *msg){
 
 void CLA_Matrix::multiply()
 {
-    // Reset counters
-    row_count = col_count = 0;
-    got_start = false;
+  // Reset counters
+  row_count = col_count = 0;
+  got_start = false;
 
-    // Transpose result matrix (if beta != 0)
-    if(beta != 0)
-        transpose(dest, m, n);
-    // Multiply
-    char trans = 'T';
+  // Transpose result matrix (if beta != 0)
+  if(beta != 0)
+    transpose(dest, m, n);
+  // Multiply
+  char trans = 'T';
 
-    #define BUNDLE_USER_EVENTS
+#define BUNDLE_USER_EVENTS
 
-        #ifdef CMK_TRACE_ENABLED
-            double StartTime=CmiWallTimer();
-        #endif
-        #ifdef PRINT_DGEMM_PARAMS
-            CkPrintf("CLA_MATRIX DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, K, alpha, beta, K, n, m);
-        #endif
-        #ifdef _NAN_CHECK_
-            for(int in=0; in<K; in++)
-                for(int jn=0; jn<m; jn++)
-                    CkAssert(isfinite(tmpA[in*m+jn]));
-            for(int in=0; in<n; in++)
-                for(int jn=0; jn<K; jn++)
-                    CkAssert(isfinite(tmpB[in*K+jn]));
-        #endif
-        myGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta, dest, &m);
-        #ifdef _NAN_CHECK_
-            for(int in=0; in<m; in++)
-                for(int jn=0; jn<n; jn++)
-                    CkAssert(isfinite(dest[in*n+jn]));
-        #endif
-        #ifdef CMK_TRACE_ENABLED
-            traceUserBracketEvent(401, StartTime, CmiWallTimer());
-        #endif
-    // Transpose the result
-    transpose(dest, n, m);
-    // Tell caller we are done
-    fcb(user_data);
+#ifdef CMK_TRACE_ENABLED
+  double StartTime=CmiWallTimer();
+#endif
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("CLA_MATRIX DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, K, alpha, beta, K, n, m);
+#endif
+#ifdef _NAN_CHECK_
+  for(int in=0; in<K; in++)
+    for(int jn=0; jn<m; jn++)
+      CkAssert(isfinite(tmpA[in*m+jn]));
+  for(int in=0; in<n; in++)
+    for(int jn=0; jn<K; jn++)
+      CkAssert(isfinite(tmpB[in*K+jn]));
+#endif
+  myGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta, dest, &m);
+#ifdef _NAN_CHECK_
+  for(int in=0; in<m; in++)
+    for(int jn=0; jn<n; jn++)
+      CkAssert(isfinite(dest[in*n+jn]));
+#endif
+#ifdef CMK_TRACE_ENABLED
+  traceUserBracketEvent(401, StartTime, CmiWallTimer());
+#endif
+  // Transpose the result
+  transpose(dest, n, m);
+  // Tell caller we are done
+  fcb(user_data);
 }
 
 
@@ -603,7 +603,7 @@ void CLA_Matrix::mult_done(CkReductionMsg *msg){
 /******************************************************************************/
 /* CLA_Matrix_msg */
 CLA_Matrix_msg::CLA_Matrix_msg(internalType *data, int d1, int d2, int fromX,
- int fromY){
+    int fromY){
   CmiMemcpy(this->data, data, d1 * d2 * sizeof(internalType));
   this->d1 = d1; this->d2 = d2;
   this->fromX = fromX; this->fromY = fromY;
@@ -666,12 +666,12 @@ void CLA_MM3D_multiplier::multiply(internalType *A, internalType *B){
 #endif
   myGEMM(&trans, &trans, &m, &n, &k, &alpha, A, &k, B, &n, &beta, C, &m);
 #ifdef CMK_TRACE_ENABLED
-    traceUserBracketEvent(402, StartTime, CmiWallTimer());
+  traceUserBracketEvent(402, StartTime, CmiWallTimer());
 #endif
   CmiNetworkProgress();
   //    redGrp->contribute(m * n * sizeof(double), C, CkReduction::sum_double,
   redGrp->contribute(m * n * sizeof(internalType), C, sumFastDoubleType,
-   sectionCookie, reduce_CB);
+      sectionCookie, reduce_CB);
   delete [] C;
 }
 /*@}*/

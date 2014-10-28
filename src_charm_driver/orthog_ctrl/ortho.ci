@@ -1,74 +1,74 @@
 module ortho
 {
-	class CLA_Matrix_interface;
-	include "paircalc/pcFwdDeclarations.h";
-    include "orthog_ctrl/orthoConfig.h";
-    namespace cp {
-        namespace ortho {
-            class PCSectionManager;
-        }
+  class CLA_Matrix_interface;
+  include "paircalc/pcFwdDeclarations.h";
+  include "orthog_ctrl/orthoConfig.h";
+  namespace cp {
+    namespace ortho {
+      class PCSectionManager;
     }
+  }
 
-	message orthoMtrigger;
-	message initCookieMsg;
-        class CkDataMsg; // Just a forward declaration
-	array [2D] Ortho{
-		entry void Ortho(int m, int n, CLA_Matrix_interface matA1,
-		 CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
-		 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
-		 CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
-		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
-         cp::ortho::orthoConfig &_cfg,
-         CkArrayID step2Helper,
-         int timekeep, CkGroupID oMCastGID, CkGroupID oRedGID
-         	);
-		entry Ortho();
-		entry void acceptSectionLambda(CkReductionMsg *msg);
-		entry void resume();
-		entry void resumeV(CkReductionMsg *msg);
-		entry void maxCheck(CkReductionMsg *msg);
-		entry void makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, CkArrayID symAID, CkArrayID asymAID);
-		entry void start_calc(CkReductionMsg *msg);	
-		entry void orthoCookieinit(initCookieMsg *msg);
-		entry void do_iteration();
-		entry [nokeep] void do_iteration(orthoMtrigger *msg);
-		entry void step_2();
-		entry void step_3();	
-		entry void recvStep2(CkDataMsg *msg); //double result[size], int size);
-		entry void collect_results();
-		entry [nokeep] void collect_results(orthoMtrigger *msg);
-		entry void print_results();
-  		entry void collect_error(CkReductionMsg *msg);
-		entry void ready();
-		entry void all_ready();
-		entry void sendOrthoTtoAsymm();
-	};
-
-
-
-	message OrthoHelperMsg {
-		internalType A[];
-		internalType B[];
-	};
+  message orthoMtrigger;
+  message initCookieMsg;
+  class CkDataMsg; // Just a forward declaration
+  array [2D] Ortho{
+    entry void Ortho(int m, int n, CLA_Matrix_interface matA1,
+        CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
+        CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
+        CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
+        CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
+        cp::ortho::orthoConfig &_cfg,
+        CkArrayID step2Helper,
+        int timekeep, CkGroupID oMCastGID, CkGroupID oRedGID
+        );
+    entry Ortho();
+    entry void acceptSectionLambda(CkReductionMsg *msg);
+    entry void resume();
+    entry void resumeV(CkReductionMsg *msg);
+    entry void maxCheck(CkReductionMsg *msg);
+    entry void makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, CkArrayID symAID, CkArrayID asymAID);
+    entry void start_calc(CkReductionMsg *msg);	
+    entry void orthoCookieinit(initCookieMsg *msg);
+    entry void do_iteration();
+    entry [nokeep] void do_iteration(orthoMtrigger *msg);
+    entry void step_2();
+    entry void step_3();	
+    entry void recvStep2(CkDataMsg *msg); //double result[size], int size);
+    entry void collect_results();
+    entry [nokeep] void collect_results(orthoMtrigger *msg);
+    entry void print_results();
+    entry void collect_error(CkReductionMsg *msg);
+    entry void ready();
+    entry void all_ready();
+    entry void sendOrthoTtoAsymm();
+  };
 
 
 
-	array [2D] OrthoHelper {
-		entry void OrthoHelper(int m, int n, CLA_Matrix_interface matA2,CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, CkCallback);
-		entry OrthoHelper();
-		entry void recvAB(OrthoHelperMsg *msg);
-	};
+  message OrthoHelperMsg {
+    internalType A[];
+    internalType B[];
+  };
 
 
 
-    include "load_balance/IntMap.h";
-	group OrthoMap : CkArrayMap {
-		entry OrthoMap(MapType2);
-	};
+  array [2D] OrthoHelper {
+    entry void OrthoHelper(int m, int n, CLA_Matrix_interface matA2,CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, CkCallback);
+    entry OrthoHelper();
+    entry void recvAB(OrthoHelperMsg *msg);
+  };
 
 
 
-	group OrthoHelperMap : CkArrayMap {
-		entry OrthoHelperMap(MapType2);
-	};
+  include "load_balance/IntMap.h";
+  group OrthoMap : CkArrayMap {
+    entry OrthoMap(MapType2);
+  };
+
+
+
+  group OrthoHelperMap : CkArrayMap {
+    entry OrthoHelperMap(MapType2);
+  };
 };

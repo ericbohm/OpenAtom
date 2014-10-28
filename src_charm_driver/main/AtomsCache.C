@@ -51,43 +51,43 @@ extern CProxy_CPcharmParaInfoGrp   scProxy;
  */
 //==============================================================================
 AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstance) : natm(_natm), natm_nl(n_nl), thisInstance(_thisInstance)
-//==============================================================================
-  {// begin routine
-//==============================================================================
+                                                                                      //==============================================================================
+{// begin routine
+  //==============================================================================
 
-    fastAtoms.natm = natm;
-    iteration=0;
-    temperScreenFile = NULL;
-    fastAtoms.q    = new double[natm];
-    fastAtoms.x    = new double[natm];
-    fastAtoms.y    = new double[natm];
-    fastAtoms.z    = new double[natm];
-    fastAtoms.fx   = new double[natm];
-    fastAtoms.fy   = new double[natm];
-    fastAtoms.fz   = new double[natm];
-    fastAtoms.fxu   = new double[natm];
-    fastAtoms.fyu   = new double[natm];
-    fastAtoms.fzu   = new double[natm];
-    for(int i=0;i<natm;i++){
-      fastAtoms.q[i]  = a[i].q;
-      fastAtoms.x[i]  = a[i].x;
-      fastAtoms.y[i]  = a[i].y;
-      fastAtoms.z[i]  = a[i].z;
-      fastAtoms.fx[i] = a[i].fx;
-      fastAtoms.fy[i] = a[i].fy;
-      fastAtoms.fz[i] = a[i].fz;
-    }//endfor
-    if(config.UberKmax>1 || config.UberImax>1 )
-    {
-      // we will do the file output
-      temperScreenFile = openScreenfWrite("TEMPER_OUT", "screen", thisInstance.idxU.z,thisInstance.idxU.x, true);
-    }
-  else
-    {
-      temperScreenFile = stdout;
-    }
-
+  fastAtoms.natm = natm;
+  iteration=0;
+  temperScreenFile = NULL;
+  fastAtoms.q    = new double[natm];
+  fastAtoms.x    = new double[natm];
+  fastAtoms.y    = new double[natm];
+  fastAtoms.z    = new double[natm];
+  fastAtoms.fx   = new double[natm];
+  fastAtoms.fy   = new double[natm];
+  fastAtoms.fz   = new double[natm];
+  fastAtoms.fxu   = new double[natm];
+  fastAtoms.fyu   = new double[natm];
+  fastAtoms.fzu   = new double[natm];
+  for(int i=0;i<natm;i++){
+    fastAtoms.q[i]  = a[i].q;
+    fastAtoms.x[i]  = a[i].x;
+    fastAtoms.y[i]  = a[i].y;
+    fastAtoms.z[i]  = a[i].z;
+    fastAtoms.fx[i] = a[i].fx;
+    fastAtoms.fy[i] = a[i].fy;
+    fastAtoms.fz[i] = a[i].fz;
+  }//endfor
+  if(config.UberKmax>1 || config.UberImax>1 )
+  {
+    // we will do the file output
+    temperScreenFile = openScreenfWrite("TEMPER_OUT", "screen", thisInstance.idxU.z,thisInstance.idxU.x, true);
   }
+  else
+  {
+    temperScreenFile = stdout;
+  }
+
+}
 
 
 
@@ -103,8 +103,8 @@ AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstan
  **/ 
 //==========================================================================
 void AtomsCache::contributeforces(){
-//==========================================================================
-  
+  //==========================================================================
+
   int i,j;
   // collate all the forces that RS RHO NL deposited on the atoms
   double *ftot           = new double[(3*natm)];
@@ -121,8 +121,8 @@ void AtomsCache::contributeforces(){
   contribute((3*natm)*sizeof(double),ftot,CkReduction::sum_double,cb);
   delete [] ftot;
   zeroforces();
-//==========================================================================
-  }//end routine
+  //==========================================================================
+}//end routine
 //==========================================================================
 
 
@@ -139,9 +139,9 @@ void AtomsCache::acceptAtoms(AtomMsg *msg)
   for(int atomI = msg->natmStr, j=0; atomI < msg->natmEnd ; atomI++ ,j+=9){
 #ifdef _CP_DEBUG_ATMS_
     if(CkMyPe()==0)
-      {
-	CkPrintf("{%d} AtomPos[%d] updated to %.5g,%.5g,%.5g from %.5g,%.5g,%.5g\n",thisInstance.proxyOffset, atomI, msg->data[j],  msg->data[j+1],  msg->data[j+2], fastAtoms.x[atomI],  fastAtoms.y[atomI],  fastAtoms.z[atomI]);
-      }
+    {
+      CkPrintf("{%d} AtomPos[%d] updated to %.5g,%.5g,%.5g from %.5g,%.5g,%.5g\n",thisInstance.proxyOffset, atomI, msg->data[j],  msg->data[j+1],  msg->data[j+2], fastAtoms.x[atomI],  fastAtoms.y[atomI],  fastAtoms.z[atomI]);
+    }
 #endif
     fastAtoms.x[atomI]=msg->data[j];
     fastAtoms.y[atomI]=msg->data[j+1];
@@ -170,8 +170,8 @@ void AtomsCache::acceptAtoms(AtomMsg *msg)
 //==========================================================================
 void AtomsCache::atomsDone(CkReductionMsg *msg)
 {
-    //    CkPrintf("{%d}[%d] AtomsCache::atomsDone(msg)\n ", thisInstance.proxyOffset, CkMyPe());     
-//==========================================================================
+  //    CkPrintf("{%d}[%d] AtomsCache::atomsDone(msg)\n ", thisInstance.proxyOffset, CkMyPe());     
+  //==========================================================================
   delete msg;
   atomsDone();
 }
@@ -186,28 +186,28 @@ void AtomsCache::atomsDone(CkReductionMsg *msg)
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void AtomsCache::atomsDone() {
-//==========================================================================
-// Increment iteration counters
-//  CkPrintf("{%d}[%d] AtomsCache::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
+  //==========================================================================
+  // Increment iteration counters
+  //  CkPrintf("{%d}[%d] AtomsCache::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
   int myid = CkMyPe();
 
- EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
- iteration++;
- eg->estruct.iteration_atm   = iteration;
- eg->iteration_atm           = iteration;
- // CkPrintf("{%d}[%d] atomsDone now at eg->iteration_atm %d \n",thisInstance.proxyOffset,myid,eg->iteration_atm);
+  EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
+  iteration++;
+  eg->estruct.iteration_atm   = iteration;
+  eg->iteration_atm           = iteration;
+  // CkPrintf("{%d}[%d] atomsDone now at eg->iteration_atm %d \n",thisInstance.proxyOffset,myid,eg->iteration_atm);
 
 #ifdef _DEBUG_CHECK_ATOM_COMM_
- char fname[100];
- sprintf(fname,"atoms.out.%d.%d",iteration,myid);
- FILE *fp = fopen(fname,"w");
- for(int i=0;i<natm;i++){
-   fprintf(fp,"%.10g %.10g %.10g\n",atoms[i].x,atoms[i].y,atoms[i].z);
- }//endfor
- fclose(fp);
+  char fname[100];
+  sprintf(fname,"atoms.out.%d.%d",iteration,myid);
+  FILE *fp = fopen(fname,"w");
+  for(int i=0;i<natm;i++){
+    fprintf(fp,"%.10g %.10g %.10g\n",atoms[i].x,atoms[i].y,atoms[i].z);
+  }//endfor
+  fclose(fp);
 #endif
- releaseGSP();
-     
+  releaseGSP();
+
 }
 
 
@@ -217,40 +217,40 @@ void AtomsCache::atomsDone() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void AtomsCache::releaseGSP() {
- int myid = CkMyPe();
- // CkPrintf("{%d}[%d] running release GSP\n",thisInstance.proxyOffset, myid);
-//==========================================================================
-// Use the cool new data caching system to say we're done.
+  int myid = CkMyPe();
+  // CkPrintf("{%d}[%d] running release GSP\n",thisInstance.proxyOffset, myid);
+  //==========================================================================
+  // Use the cool new data caching system to say we're done.
 
 
-   //each k-point needs to be handled
-   for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ 
-     
-     UberCollection thisPoint=thisInstance;
-     thisPoint.idxU.y=kpoint; // not at the gamma point
-     thisPoint.setPO();
-     eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
-     CkAssert(eesData!=NULL);
-     int *indState     = eesData->gspStateInd;
-     int *indPlane     = eesData->gspPlaneInd;
-     int ngo           = eesData->nchareGSPProcT;
-     
-     for(int i=0; i<ngo; i++){
-       int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
-       if(iadd!=1){
-	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	 CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
-		  myid,iadd,indState[i],indPlane[i]);
-	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	 CkExit();
-       }//endif
-       //       CkPrintf("{%d}[%d] AtomsCache::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
-       UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
-     }//endfor
-   }//endfor
+  //each k-point needs to be handled
+  for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ 
 
-//==============================================================================
-  }//end routine
+    UberCollection thisPoint=thisInstance;
+    thisPoint.idxU.y=kpoint; // not at the gamma point
+    thisPoint.setPO();
+    eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
+    CkAssert(eesData!=NULL);
+    int *indState     = eesData->gspStateInd;
+    int *indPlane     = eesData->gspPlaneInd;
+    int ngo           = eesData->nchareGSPProcT;
+
+    for(int i=0; i<ngo; i++){
+      int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
+      if(iadd!=1){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
+            myid,iadd,indState[i],indPlane[i]);
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkExit();
+      }//endif
+      //       CkPrintf("{%d}[%d] AtomsCache::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
+      UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
+    }//endfor
+  }//endfor
+
+  //==============================================================================
+}//end routine
 //==============================================================================
 
 //==============================================================================

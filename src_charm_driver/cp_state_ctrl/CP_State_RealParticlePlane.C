@@ -49,8 +49,8 @@ extern Config config;
 //=========================================================================
 
 /** @addtogroup Particle
-    @{
-*/
+  @{
+ */
 
 //============================================================================
 // Energy reduction client for ees method!
@@ -93,7 +93,7 @@ void CP_State_RealParticlePlane::printEnlRSimp(double cp_enl_loc,int index,int i
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   CkPrintf("Enl contrib arrived from %d : %g %d %d %d\n",index,cp_enl_loc,countEnl,
-            itime_in,itimeRed);
+      itime_in,itimeRed);
 #endif
 
   // output and save the data
@@ -115,15 +115,15 @@ void CP_State_RealParticlePlane::printEnlRSimp(double cp_enl_loc,int index,int i
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_State_RealParticlePlane::CP_State_RealParticlePlane(
-                             int ngridA_in, int ngridB_in, int ngridC_in,
-                             int numIterNL_in, int zmatSizeMax_in,
-                             int Rstates_per_pe_in,int nChareG_in,
-                             int ees_nonlocal_in, UberCollection _instance):
+    int ngridA_in, int ngridB_in, int ngridC_in,
+    int numIterNL_in, int zmatSizeMax_in,
+    int Rstates_per_pe_in,int nChareG_in,
+    int ees_nonlocal_in, UberCollection _instance):
   thisInstance(_instance)
-//============================================================================
-  {//begin routine
-//============================================================================
-// The non-local guts variables
+  //============================================================================
+{//begin routine
+  //============================================================================
+  // The non-local guts variables
 
   ngridA         = ngridA_in;            // grid size along a
   ngridB         = ngridB_in;            // grid size along b
@@ -165,8 +165,8 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   launchFFT        = false;
   countZ           = 0;      // Zmat communication counter
 
-//============================================================================
-// No migration: No atSync load-balancing act
+  //============================================================================
+  // No migration: No atSync load-balancing act
 
   setMigratable(false);
   usesAtSync = false;
@@ -181,8 +181,8 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   saveddmn_z=NULL;
   savedigrid=NULL;
 #endif
-//----------------------------------------------------------------------------
-  }//end routine
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 //============================================================================
@@ -193,12 +193,12 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
 //============================================================================
 void CP_State_RealParticlePlane::init(){
 
-//============================================================================
-// Malloc the projector memory, non-local matrix and register with your cache
+  //============================================================================
+  // Malloc the projector memory, non-local matrix and register with your cache
 
   if(ees_nonlocal==1){
-   //--------
-   // malloc
+    //--------
+    // malloc
     projPsiC    = (complex*) fftw_malloc(csize*sizeof(complex));
     projPsiR    = reinterpret_cast<double*> (projPsiC);
     if(config.doublePack){
@@ -210,15 +210,15 @@ void CP_State_RealParticlePlane::init(){
       zmat       = reinterpret_cast<double*> (zmatC);
       zmatScr    = reinterpret_cast<double*> (zmatScrC);
     }//endif
-   //--------
-   // Register
+    //--------
+    // Register
     eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch (); 
     eesData->registerCacheRPP(thisIndex.y);
   }//endif
 
 
-//============================================================================
-// Choose reduction plane reasonably intelligently
+  //============================================================================
+  // Choose reduction plane reasonably intelligently
 
   int *red_pl       = new int[nstates];
   //foreach state, try to find a new proc for each state's reduction plane
@@ -230,18 +230,18 @@ void CP_State_RealParticlePlane::init(){
   for(int state=0; state<nstates;state++){
     int plane=0;
     while(plane<nChareR){
-        bool used=false;
-        int thisstateplaneproc=RPPImaptable[thisInstance.proxyOffset].get(state,plane)%CkNumPes();
-	if(usedProc[thisstateplaneproc]>=charperpe);
-	{
-	  used=true;
-	}
-        if(!used || (plane+1==nChareR)){
-	    usedProc[thisstateplaneproc]++;
-            red_pl[state]=plane;
-            plane=nChareR;
-        }//endif
-        plane++;
+      bool used=false;
+      int thisstateplaneproc=RPPImaptable[thisInstance.proxyOffset].get(state,plane)%CkNumPes();
+      if(usedProc[thisstateplaneproc]>=charperpe);
+      {
+        used=true;
+      }
+      if(!used || (plane+1==nChareR)){
+        usedProc[thisstateplaneproc]++;
+        red_pl[state]=plane;
+        plane=nChareR;
+      }//endif
+      plane++;
     }//end while : plane < nchareR
   }//end for : i
   reductionPlaneNum = red_pl[thisIndex.x];
@@ -249,8 +249,8 @@ void CP_State_RealParticlePlane::init(){
   delete [] usedProc;
 
 
-//============================================================================
-// Build section reductions
+  //============================================================================
+  // Build section reductions
 
   //-----------------------------------------------------------
   // The plane section reduction to the reduction plane for zmat
@@ -260,9 +260,9 @@ void CP_State_RealParticlePlane::init(){
   planeRedSectionComplete=false;
   if(thisIndex.y==reductionPlaneNum){
     rPlaneSectProxy = 
-       CProxySection_CP_State_RealParticlePlane::ckNew(thisProxy.ckGetArrayID(),
-	  					       thisIndex.x,thisIndex.x,1,
-						       0,nChareR-1,1);
+      CProxySection_CP_State_RealParticlePlane::ckNew(thisProxy.ckGetArrayID(),
+          thisIndex.x,thisIndex.x,1,
+          0,nChareR-1,1);
     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
     rPlaneSectProxy.ckDelegate(mcastGrp);
     mcastGrp->setSection(rPlaneSectProxy);
@@ -270,9 +270,9 @@ void CP_State_RealParticlePlane::init(){
     rPlaneSectProxy.setPlaneRedCookie(emsg);
   }//endif
   else
-    { // if you aren't in the reduction plane you are setup
-      planeRedSectionComplete=true;
-    }
+  { // if you aren't in the reduction plane you are setup
+    planeRedSectionComplete=true;
+  }
 
   //-----------------------------------------------------------
   // The reduction over states involving the reduction planes for cp_enl
@@ -280,42 +280,42 @@ void CP_State_RealParticlePlane::init(){
   //-----------------------------------------------------------
 
   if(thisIndex.y==reductionPlaneNum && thisIndex.x==0){
-      CkArrayIndexMax *elems = new CkArrayIndexMax[nstates];
-      CkArrayIndex2D idx(0, reductionPlaneNum);  // cheesy constructor
-      for (int j = 0; j < nstates; j++) {
-	idx.index[0] = j;  idx.index[1] = red_pl[j];
-	elems[j] = idx;
-      }//endfor
-      rPlaneENLProxy = 
-  	   CProxySection_CP_State_RealParticlePlane::ckNew(thisProxy.ckGetArrayID(),
-  		  				           elems, nstates);
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-      rPlaneENLProxy.ckDelegate(mcastGrp);
-      mcastGrp->setSection(rPlaneENLProxy);
-      EnlCookieMsg *emsg= new EnlCookieMsg;
-      rPlaneENLProxy.setEnlCookie(emsg);
-      delete [] elems;
+    CkArrayIndexMax *elems = new CkArrayIndexMax[nstates];
+    CkArrayIndex2D idx(0, reductionPlaneNum);  // cheesy constructor
+    for (int j = 0; j < nstates; j++) {
+      idx.index[0] = j;  idx.index[1] = red_pl[j];
+      elems[j] = idx;
+    }//endfor
+    rPlaneENLProxy = 
+      CProxySection_CP_State_RealParticlePlane::ckNew(thisProxy.ckGetArrayID(),
+          elems, nstates);
+    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+    rPlaneENLProxy.ckDelegate(mcastGrp);
+    mcastGrp->setSection(rPlaneENLProxy);
+    EnlCookieMsg *emsg= new EnlCookieMsg;
+    rPlaneENLProxy.setEnlCookie(emsg);
+    delete [] elems;
   }//endif
   else
-    { // if not part of enl, setup complete
-      bool inEnl=false;
-      for (int j = 0; j < nstates; j++) {
-	if(thisIndex.x ==j && thisIndex.y== red_pl[j])
-	  inEnl=true;
-      }//endfor
-      if(!inEnl)
-	enlSectionComplete=true;
-    }
+  { // if not part of enl, setup complete
+    bool inEnl=false;
+    for (int j = 0; j < nstates; j++) {
+      if(thisIndex.x ==j && thisIndex.y== red_pl[j])
+        inEnl=true;
+    }//endfor
+    if(!inEnl)
+      enlSectionComplete=true;
+  }
   initComplete();
   delete [] red_pl;
 
-//============================================================================
-// Setup the comlib to talk to GPP
+  //============================================================================
+  // Setup the comlib to talk to GPP
 
   gPP_proxy = UparticlePlaneProxy[thisInstance.proxyOffset];
 #ifdef USE_COMLIB
   if (config.useMssInsGPP){
-     ComlibAssociateProxy(mssPInstance,gPP_proxy);
+    ComlibAssociateProxy(mssPInstance,gPP_proxy);
   }//endif
 #endif
 
@@ -358,14 +358,14 @@ void CP_State_RealParticlePlane::initComplete()
   // registering. The coalesced completion state is reported in to the
   // global initialization phase process.
   if(  enlSectionComplete && planeRedSectionComplete)
-    {
-      //      CkPrintf("RPP[%d %d] initComplete\n",thisIndex.x, thisIndex.y);
-      int constructed=1;
-      contribute(sizeof(int), &constructed, CkReduction::sum_int, 
-		 CkCallback(CkIndex_InstanceController::doneInit(NULL),
-			    CkArrayIndex1D(thisInstance.proxyOffset),
-			    instControllerProxy), thisInstance.proxyOffset);
-    }
+  {
+    //      CkPrintf("RPP[%d %d] initComplete\n",thisIndex.x, thisIndex.y);
+    int constructed=1;
+    contribute(sizeof(int), &constructed, CkReduction::sum_int, 
+        CkCallback(CkIndex_InstanceController::doneInit(NULL),
+          CkArrayIndex1D(thisInstance.proxyOffset),
+          instControllerProxy), thisInstance.proxyOffset);
+  }
 }
 
 //============================================================================
@@ -404,114 +404,114 @@ CP_State_RealParticlePlane::~CP_State_RealParticlePlane(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
-//============================================================================
-//  Make sure you belong here.
+  //============================================================================
+  //  Make sure you belong here.
 
-    if(ees_nonlocal==0){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Yo dawg, ees nonlocal is off. RPP can't recvFromEesGPP\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
+  if(ees_nonlocal==0){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Yo dawg, ees nonlocal is off. RPP can't recvFromEesGPP\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
-//============================================================================
+  //============================================================================
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->size ;i++)
-    {
-      CkAssert(finite(msg->data[i].re));
-      CkAssert(finite(msg->data[i].im));
-    }
+  {
+    CkAssert(finite(msg->data[i].re));
+    CkAssert(finite(msg->data[i].im));
+  }
 #endif
-//============================================================================
-//  Unpack the message, get some local variables and increment counters
+  //============================================================================
+  //  Unpack the message, get some local variables and increment counters
 
-    int size               = msg->size; 
-    int iterNLNow          = msg->step; 
-    int Index              = msg->senderIndex; // which g-space chare sent the data
-    complex *partiallyFFTd = msg->data;
+  int size               = msg->size; 
+  int iterNLNow          = msg->step; 
+  int Index              = msg->senderIndex; // which g-space chare sent the data
+  complex *partiallyFFTd = msg->data;
 
-    CPcharmParaInfo *sim   = CPcharmParaInfo::get();
-    int nchareG            = sim->nchareG;
-    int **tranUnpack       = sim->index_tran_upackNL;
-    int *nline_per_chareG  = sim->nlines_per_chareG;
+  CPcharmParaInfo *sim   = CPcharmParaInfo::get();
+  int nchareG            = sim->nchareG;
+  int **tranUnpack       = sim->index_tran_upackNL;
+  int *nline_per_chareG  = sim->nlines_per_chareG;
 
-    count++;
-    // if we are starting a totally new time step, increment the time; zero the nonlocal energy
-    if(iterNL==0 && count==1){itime++; cp_enl=0.0;}
+  count++;
+  // if we are starting a totally new time step, increment the time; zero the nonlocal energy
+  if(iterNL==0 && count==1){itime++; cp_enl=0.0;}
 
-    // If we doing a new iteration, refresh the memory, increment iterNL
-    // In real space, we must zero out here because not every value
-    // is initialized. e.g. some zero elements are not set.
-    if(count==1){
-      iterNL++; 
-      bzero(projPsiR,planeSize*sizeof(double)); // OK when !doublepack too
-    }//endif
+  // If we doing a new iteration, refresh the memory, increment iterNL
+  // In real space, we must zero out here because not every value
+  // is initialized. e.g. some zero elements are not set.
+  if(count==1){
+    iterNL++; 
+    bzero(projPsiR,planeSize*sizeof(double)); // OK when !doublepack too
+  }//endif
 
-//============================================================================
-// Consistency Checking
+  //============================================================================
+  // Consistency Checking
 
-    if (count > nchareG) {
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf(
-      "Mismatch in allowed # of NL-gspace chare arrays sending to NLR-chare: %d %d %d %d\n",
-                count,nchareG,thisIndex.x,thisIndex.y);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
+  if (count > nchareG) {
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf(
+        "Mismatch in allowed # of NL-gspace chare arrays sending to NLR-chare: %d %d %d %d\n",
+        count,nchareG,thisIndex.x,thisIndex.y);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
-    if(size!=nline_per_chareG[Index]){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Dude, size %d != %d for NL-Rchare %d %d from G-chare %d\n",
-               size,nline_per_chareG[Index],thisIndex.y,Index,Index);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
+  if(size!=nline_per_chareG[Index]){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Dude, size %d != %d for NL-Rchare %d %d from G-chare %d\n",
+        size,nline_per_chareG[Index],thisIndex.y,Index,Index);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
-    if(iterNLNow!=iterNL || recvBlock==1){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Dude, iter count %d != %d for NL-Rchare %d %d %d\n",iterNLNow,iterNL,
-                   thisIndex.y,Index,recvBlock);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
+  if(iterNLNow!=iterNL || recvBlock==1){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Dude, iter count %d != %d for NL-Rchare %d %d %d\n",iterNLNow,iterNL,
+        thisIndex.y,Index,recvBlock);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
-//============================================================================
-//   Copy out the data set and delete the message
+  //============================================================================
+  //   Copy out the data set and delete the message
 
-// You have received packed data (x,y) from processor sendIndex
-// Every real space chare receives the same x,y indicies.
-// For double pack, x=0,1,2,3,4 ...  y= {-K ... K}
-// The x increase with processor number. The y are split.
-// The rundescriptor contains all we need to unpack the data.
-// For doublepack : nffty*run[i][j].x + run[i][j].y
-// we store this stuff in the convenient package
-// Pictorially a half cylinder is sent which is unpacked into
-// a half cube for easy FFTing. Y is the inner index.
+  // You have received packed data (x,y) from processor sendIndex
+  // Every real space chare receives the same x,y indicies.
+  // For double pack, x=0,1,2,3,4 ...  y= {-K ... K}
+  // The x increase with processor number. The y are split.
+  // The rundescriptor contains all we need to unpack the data.
+  // For doublepack : nffty*run[i][j].x + run[i][j].y
+  // we store this stuff in the convenient package
+  // Pictorially a half cylinder is sent which is unpacked into
+  // a half cube for easy FFTing. Y is the inner index.
 
-    for(int i=0;i< size;i++){projPsiC[tranUnpack[Index][i]] = partiallyFFTd[i];}
-    delete msg;
+  for(int i=0;i< size;i++){projPsiC[tranUnpack[Index][i]] = partiallyFFTd[i];}
+  delete msg;
 
-//============================================================================
-// When you have collected the full data set, continue
+  //============================================================================
+  // When you have collected the full data set, continue
 
-    if(count == nchareG) {
-      count     = 0;
-      recvBlock = 1;
+  if(count == nchareG) {
+    count     = 0;
+    recvBlock = 1;
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
-      if(thisIndex.x==0)
-       CkPrintf("HI, I am rPP %d %d in recvfromGpp : %d\n",thisIndex.x,thisIndex.y,iterNL);
+    if(thisIndex.x==0)
+      CkPrintf("HI, I am rPP %d %d in recvfromGpp : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
-      fftDataDone=true;
-      if(launchFFT){
-	thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
-        if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.1\n");CkExit();}
-      }else{
-        if(iterNL!=1){CkPrintf("Badddd launchFFT.2\n");CkExit();}
-      }//endif
+    fftDataDone=true;
+    if(launchFFT){
+      thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
+      if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.1\n");CkExit();}
+    }else{
+      if(iterNL!=1){CkPrintf("Badddd launchFFT.2\n");CkExit();}
     }//endif
+  }//endif
 
-//----------------------------------------------------------------------------
-  }// end routine
+  //----------------------------------------------------------------------------
+}// end routine
 //============================================================================
 
 
@@ -521,23 +521,23 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::FFTNLEesFwdR(){
-//============================================================================
+  //============================================================================
 
   fftDataDone=false;
   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
   int nplane_x = sim->nplane_x;
   if(!config.doublePack){nplane_x = (nplane_x+1)/2;} // convert to the doublePack definition
 
-//============================================================================
+  //============================================================================
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
-   CkPrintf("HI, I am rPP %d %d in FFTNL : %d %d %d %d\n",
-     thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
+    CkPrintf("HI, I am rPP %d %d in FFTNL : %d %d %d %d\n",
+        thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
 #endif
   // This is actually in place, projPsiR and projPsiC use the same memory location
 #if CMK_TRACE_ENABLED
-   double  StartTime=CmiWallTimer();
+  double  StartTime=CmiWallTimer();
 #endif    
 
 #ifdef _Glenn_DBG_KPT_
@@ -546,80 +546,80 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
   if(thisIndex.x==0 && thisIndex.y==0){
     sprintf(junk,"rpp%d.%d_beforeFFT.out",thisIndex.x,thisIndex.y);
     fp = fopen(junk,"w");
-     for(int i=0;i<ngridB;i++){
-       for(int j=i*ngridA,k=0;j<(i+1)*ngridA;j++,k++){
-         fprintf(fp,"%d %d %.10g %.10g\n",i,k,projPsiC[j].re,projPsiC[j].im);
-       }//endfor
-     }//endfor
-     fclose(fp);
+    for(int i=0;i<ngridB;i++){
+      for(int j=i*ngridA,k=0;j<(i+1)*ngridA;j++,k++){
+        fprintf(fp,"%d %d %.10g %.10g\n",i,k,projPsiC[j].re,projPsiC[j].im);
+      }//endfor
+    }//endfor
+    fclose(fp);
   }//endif
 #endif
 
   UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
-                                                    nplane_x,ngridA,ngridB,myPlane);
+      nplane_x,ngridA,ngridB,myPlane);
 #ifdef _Glenn_DBG_KPT_
   if(thisIndex.x==0 && thisIndex.y==0){
     sprintf(junk,"rpp%d.%d_afterFFT.out",thisIndex.x,thisIndex.y);
     fp = fopen(junk,"w");
-     for(int i=0;i<ngridB;i++){
-       for(int j=i*ngridA,k=0;j<(i+1)*ngridA;j++,k++){
-         fprintf(fp,"%d %d %.10g %.10g\n",i,k,projPsiC[j].re,projPsiC[j].im);
-       }//endfor
-     }//endfor
-     fclose(fp);
+    for(int i=0;i<ngridB;i++){
+      for(int j=i*ngridA,k=0;j<(i+1)*ngridA;j++,k++){
+        fprintf(fp,"%d %d %.10g %.10g\n",i,k,projPsiC[j].re,projPsiC[j].im);
+      }//endfor
+    }//endfor
+    fclose(fp);
   }//endif
 #endif
 
 #if CMK_TRACE_ENABLED
-   traceUserBracketEvent(doNlFFTGtoR_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(doNlFFTGtoR_, StartTime, CmiWallTimer());    
 #endif
 
-//============================================================================
-//  Lots of Ugly debugging stuff
+  //============================================================================
+  //  Lots of Ugly debugging stuff
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrix("projPsiC",(double *)projPsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  dumpMatrix("projPsiC",(double *)projPsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
-    // at this point we're checking that we did the fft correctly
-    // which implicitly checks that we collated the input correctly
+  // at this point we're checking that we did the fft correctly
+  // which implicitly checks that we collated the input correctly
 
   if(savedprojpsiC==NULL){ // load it
-      savedprojpsiC= new complex[csize];
-      loadMatrix("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    savedprojpsiC= new complex[csize];
+    loadMatrix("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   for(int i=0;i<csize;i++){
-      if(fabs(projPsiC[i].re-savedprojpsiC[i].re)>0.0001){
-	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, 
-                                              projPsiC[i].re, savedprojpsiC[i].re);
-      }//endif
-      CkAssert(fabs(projPsiC[i].re-savedprojpsiC[i].re)<0.0001);
-      CkAssert(fabs(projPsiC[i].im-savedprojpsiC[i].im)<0.0001);
+    if(fabs(projPsiC[i].re-savedprojpsiC[i].re)>0.0001){
+      fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, 
+          projPsiC[i].re, savedprojpsiC[i].re);
+    }//endif
+    CkAssert(fabs(projPsiC[i].re-savedprojpsiC[i].re)<0.0001);
+    CkAssert(fabs(projPsiC[i].im-savedprojpsiC[i].im)<0.0001);
   }//endfor
 #endif
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
-   CkPrintf("HI, I am rPP %d %d in FFTNL.2 : %d %d %d %d\n",
-     thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
+    CkPrintf("HI, I am rPP %d %d in FFTNL.2 : %d %d %d %d\n",
+        thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
 #endif
 
-//============================================================================
-// You can't start computing until all the cache stuff has completed.
+  //============================================================================
+  // You can't start computing until all the cache stuff has completed.
 
   if(registrationFlag==1){computeZmatEes();}
 
   if(registrationFlag==0 && iterNL!=1 || iterNL==0){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Dude, iter count %d > 1 for NL-Rchare %d %d and no reg?\n",iterNL,
-                   thisIndex.x,thisIndex.y);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Dude, iter count %d > 1 for NL-Rchare %d %d and no reg?\n",iterNL,
+        thisIndex.x,thisIndex.y);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
   }//endif
 
-//----------------------------------------------------------------------------
-   }//end routine
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 
@@ -630,74 +630,74 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
 //============================================================================
 void CP_State_RealParticlePlane::computeZmatEes(){
 
-   CPcharmParaInfo *sim = CPcharmParaInfo::get();
-   int iterNL1          = iterNL-1;           // silly C++ convention
-   int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
-   int nZmat            = nmem_zmat[iterNL1]; 
-   if(!config.doublePack){nZmat *=2;} //size in doubles of complex beasty
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int iterNL1          = iterNL-1;           // silly C++ convention
+  int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
+  int nZmat            = nmem_zmat[iterNL1]; 
+  if(!config.doublePack){nZmat *=2;} //size in doubles of complex beasty
 
-//============================================================================ 
-// Check out your B-splines from the cache
+  //============================================================================ 
+  // Check out your B-splines from the cache
 
-   eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch (); 
-   int *allowedRppChares = eesData->allowedRppChares;
-   CkAssert(allowedRppChares[myPlane]==1);
+  eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch (); 
+  int *allowedRppChares = eesData->allowedRppChares;
+  CkAssert(allowedRppChares[myPlane]==1);
 
-   if(iterNL==1){eesData->queryCacheRPP(myPlane,itime,iterNL);}// query once a t-step
+  if(iterNL==1){eesData->queryCacheRPP(myPlane,itime,iterNL);}// query once a t-step
 
-   int *plane_index = eesData->RppData[myPlane]->plane_index;
-   int **igrid      = eesData->RppData[myPlane]->igrid;
-   double **mn      = eesData->RppData[myPlane]->mn;
+  int *plane_index = eesData->RppData[myPlane]->plane_index;
+  int **igrid      = eesData->RppData[myPlane]->igrid;
+  double **mn      = eesData->RppData[myPlane]->mn;
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
-   if(thisIndex.x==0)
+  if(thisIndex.x==0)
     CkPrintf("HI, I am rPP %d %d in computeZmat : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-//============================================================================
-// Compute Zmat
+  //============================================================================
+  // Compute Zmat
 
 #if CMK_TRACE_ENABLED
-   double  StartTime=CmiWallTimer();
+  double  StartTime=CmiWallTimer();
 #endif    
 
-   if(config.doublePack){
-     CPNONLOCAL::eesZmatRchare(projPsiR,iterNL,zmat,igrid,mn,
-                               plane_index,thisIndex.x,myPlane);
-   }else{
-     CPNONLOCAL::eesZmatRchareC(projPsiC,iterNL,zmatC,igrid,mn,
-                               plane_index,thisIndex.x,myPlane);
-   }//endif
+  if(config.doublePack){
+    CPNONLOCAL::eesZmatRchare(projPsiR,iterNL,zmat,igrid,mn,
+        plane_index,thisIndex.x,myPlane);
+  }else{
+    CPNONLOCAL::eesZmatRchareC(projPsiC,iterNL,zmatC,igrid,mn,
+        plane_index,thisIndex.x,myPlane);
+  }//endif
 
 #if CMK_TRACE_ENABLED
-   traceUserBracketEvent(eesZmatR_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(eesZmatR_, StartTime, CmiWallTimer());    
 #endif
 
-//============================================================================
-// Launch section reduction : If !doublePack reduction is still done as doubles
+  //============================================================================
+  // Launch section reduction : If !doublePack reduction is still done as doubles
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
-   if(thisIndex.x==0)
+  if(thisIndex.x==0)
     CkPrintf("HI, I am rPP %d %d in send to zmat-red : %d %d %d d\n",
-         thisIndex.x,thisIndex.y,iterNL,reductionPlaneNum,nZmat,zmatSizeMax);
+        thisIndex.x,thisIndex.y,iterNL,reductionPlaneNum,nZmat,zmatSizeMax);
 #endif
 
 #define _FANCY_RED_METHOD_
 #ifdef _FANCY_RED_METHOD_
-   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-   CkCallback cb(CkIndex_CP_State_RealParticlePlane::recvZMatEes(NULL),
-                 CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
-                 UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
-   mcastGrp->contribute((nZmat*sizeof(double)),zmat,sumFastDoubleType,
-                           rPlaneRedCookie,cb, iterNL);
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+  CkCallback cb(CkIndex_CP_State_RealParticlePlane::recvZMatEes(NULL),
+      CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
+      UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
+  mcastGrp->contribute((nZmat*sizeof(double)),zmat,sumFastDoubleType,
+      rPlaneRedCookie,cb, iterNL);
 #else
-   thisProxy(thisIndex.x,reductionPlaneNum).recvZMatEesSimp(nZmat,zmat,
-                                               thisIndex.x,thisIndex.y,iterNL);
+  thisProxy(thisIndex.x,reductionPlaneNum).recvZMatEesSimp(nZmat,zmat,
+      thisIndex.x,thisIndex.y,iterNL);
 #endif
 
 
-//----------------------------------------------------------------------------
-    }//end routine
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 
@@ -706,78 +706,78 @@ void CP_State_RealParticlePlane::computeZmatEes(){
 // this chare has sent its zmat. This chare must therefore recv in zmatScr
 //============================================================================
 void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
-                                        int state, int index,int iterNL_in){
-//============================================================================
+    int state, int index,int iterNL_in){
+  //============================================================================
 
-   CPcharmParaInfo *sim = CPcharmParaInfo::get();
-   int iterNL1          = iterNL_in-1;        // silly C++ convention
-   int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
-   int nZmat            = nmem_zmat[iterNL1];
-   if(!config.doublePack){nZmat *= 2;}
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int iterNL1          = iterNL_in-1;        // silly C++ convention
+  int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
+  int nZmat            = nmem_zmat[iterNL1];
+  if(!config.doublePack){nZmat *= 2;}
 
-//============================================================================
-// check for errors
+  //============================================================================
+  // check for errors
 
-   if(size !=  nZmat){
+  if(size !=  nZmat){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Dude, size != nzmat : %d : %d %d : %d %d\n",
+        iterNL,thisIndex.x,thisIndex.y,state,index);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+  if(iterNL!=iterNL_in && iterNL!=iterNL_in-1){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Dude, wrong iterNls : %d %d : %d %d : %d %d\n",
+        iterNL,iterNL_in,thisIndex.x,thisIndex.y,state,index);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+  if(state != thisIndex.x){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Dude, you sent to the wrong state : %d %d  : %d %d : %d %d\n",
+        iterNL,iterNL_in,thisIndex.x,thisIndex.y,state,index);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+
+  //============================================================================
+  // Recv the reduced zmatrix and chuck the message. Recv into scratch because
+  // it could be this chare has not yet contributed and you would overwrite
+  // critical data if you used zmat[]
+
+  countZ++;
+  if(countZ==1){bzero(zmatScr,nZmat*sizeof(double));}
+  for(int i=0;i<nZmat;i++){zmatScr[i]+=_zmat[i];}
+
+  //============================================================================
+  // Bcast the puppy dog back out to your friends : Bow-Wow-Wow
+
+  if(countZ==nChareR){
+    if(iterNL != iterNL){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Dude, size != nzmat : %d : %d %d : %d %d\n",
-                   iterNL,thisIndex.x,thisIndex.y,state,index);
+      CkPrintf("Wrong iterNls strange racing: %d %d : %d %d : %d %d\n",
+          iterNL,iterNL_in,thisIndex.x,thisIndex.y,state,index);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
-   }//endif
-   if(iterNL!=iterNL_in && iterNL!=iterNL_in-1){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Dude, wrong iterNls : %d %d : %d %d : %d %d\n",
-                   iterNL,iterNL_in,thisIndex.x,thisIndex.y,state,index);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-   }//endif
-   if(state != thisIndex.x){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Dude, you sent to the wrong state : %d %d  : %d %d : %d %d\n",
-                   iterNL,iterNL_in,thisIndex.x,thisIndex.y,state,index);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-   }//endif
-
-//============================================================================
-// Recv the reduced zmatrix and chuck the message. Recv into scratch because
-// it could be this chare has not yet contributed and you would overwrite
-// critical data if you used zmat[]
-
-    countZ++;
-    if(countZ==1){bzero(zmatScr,nZmat*sizeof(double));}
-    for(int i=0;i<nZmat;i++){zmatScr[i]+=_zmat[i];}
-
-//============================================================================
-// Bcast the puppy dog back out to your friends : Bow-Wow-Wow
-
-    if(countZ==nChareR){
-      if(iterNL != iterNL){
-        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        CkPrintf("Wrong iterNls strange racing: %d %d : %d %d : %d %d\n",
-                   iterNL,iterNL_in,thisIndex.x,thisIndex.y,state,index);
-        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        CkExit();
-      }//endif
-#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
-      CkPrintf("HI, I am rPP %d %d in recvZmatSimp blasting off to forces: %d %d\n",
-          thisIndex.x,thisIndex.y,iterNL,index);
-#endif
-      countZ=0;
-      for(int i=0;i<nChareR;i++){
-	CompAtmForcMsg *rmsg = new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
-	if(config.prioNLFFTMsg){
-	  CkSetQueueing(rmsg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(rmsg) = config.gsNLfftpriority+thisIndex.x+iterNL_in;
-	}//endif
-	rmsg->init(nZmat,zmatScr,iterNL_in);
-	thisProxy(thisIndex.x,i).computeAtmForcEes(rmsg);
-      }//endfor
     }//endif
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
+    CkPrintf("HI, I am rPP %d %d in recvZmatSimp blasting off to forces: %d %d\n",
+        thisIndex.x,thisIndex.y,iterNL,index);
+#endif
+    countZ=0;
+    for(int i=0;i<nChareR;i++){
+      CompAtmForcMsg *rmsg = new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
+      if(config.prioNLFFTMsg){
+        CkSetQueueing(rmsg, CK_QUEUEING_IFIFO);
+        *(int*)CkPriorityPtr(rmsg) = config.gsNLfftpriority+thisIndex.x+iterNL_in;
+      }//endif
+      rmsg->init(nZmat,zmatScr,iterNL_in);
+      thisProxy(thisIndex.x,i).computeAtmForcEes(rmsg);
+    }//endfor
+  }//endif
 
-//----------------------------------------------------------------------------
-  }//end routine
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 
@@ -787,58 +787,58 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
-//============================================================================
+  //============================================================================
 
-   CPcharmParaInfo *sim = CPcharmParaInfo::get();
-   int iterNL_in        = msg->getUserFlag();
-   //   int iterNL1          = iterNL_in-1;        // silly C++ convention
-   int iterNL1          = iterNL-1;        // silly C++ convention
-   int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
-   int nZmat            = nmem_zmat[iterNL1];
-   if(!config.doublePack){nZmat *=2;}
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int iterNL_in        = msg->getUserFlag();
+  //   int iterNL1          = iterNL_in-1;        // silly C++ convention
+  int iterNL1          = iterNL-1;        // silly C++ convention
+  int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
+  int nZmat            = nmem_zmat[iterNL1];
+  if(!config.doublePack){nZmat *=2;}
 
-//============================================================================
-// Some debuggin
+  //============================================================================
+  // Some debuggin
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
-    if(thisIndex.x==0)
-     CkPrintf("HI, I am rPP %d %d in recvZmat : %d\n",thisIndex.x,thisIndex.y,iterNL);
+  if(thisIndex.x==0)
+    CkPrintf("HI, I am rPP %d %d in recvZmat : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->getSize()/sizeof(double) ;i++){
-      CkAssert(finite(((double*) msg->getData())[i]));
+    CkAssert(finite(((double*) msg->getData())[i]));
   }//endfor
 #endif
 
-//============================================================================
-// Recv the reduced zmatrix into zmat and chuck the message
+  //============================================================================
+  // Recv the reduced zmatrix into zmat and chuck the message
 
-    CkAssert(msg->getSize() ==  nZmat* sizeof(double));
-    double *realValues = (double *) msg->getData(); 
-    for(int i=0;i<nZmat;i++){zmat[i]=realValues[i];}
+  CkAssert(msg->getSize() ==  nZmat* sizeof(double));
+  double *realValues = (double *) msg->getData(); 
+  for(int i=0;i<nZmat;i++){zmat[i]=realValues[i];}
 
-    delete msg;
+  delete msg;
 
-//============================================================================
-// Bcast the puppy dog back out to your friends : Bow-Wow-Wow
+  //============================================================================
+  // Bcast the puppy dog back out to your friends : Bow-Wow-Wow
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
-    if(thisIndex.x==0)
-     CkPrintf("HI, I am rPP %d %d in recvZmat sending to compute: %d\n",
-            thisIndex.x,thisIndex.y,iterNL);
+  if(thisIndex.x==0)
+    CkPrintf("HI, I am rPP %d %d in recvZmat sending to compute: %d\n",
+        thisIndex.x,thisIndex.y,iterNL);
 #endif
-   CompAtmForcMsg *rmsg=new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
-   if(config.prioNLFFTMsg){
-	CkSetQueueing(rmsg, CK_QUEUEING_IFIFO);
-	*(int*)CkPriorityPtr(rmsg) = config.gsNLfftpriority+thisIndex.x+iterNL_in;
-   }//endif
+  CompAtmForcMsg *rmsg=new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
+  if(config.prioNLFFTMsg){
+    CkSetQueueing(rmsg, CK_QUEUEING_IFIFO);
+    *(int*)CkPriorityPtr(rmsg) = config.gsNLfftpriority+thisIndex.x+iterNL_in;
+  }//endif
 
-   rmsg->init(nZmat,zmat,iterNL);
-   CkAssert(rmsg->iterNL>0);
-   rPlaneSectProxy.computeAtmForcEes(rmsg);
+  rmsg->init(nZmat,zmat,iterNL);
+  CkAssert(rmsg->iterNL>0);
+  rPlaneSectProxy.computeAtmForcEes(rmsg);
 
-//----------------------------------------------------------------------------
-  }//end routine
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 
@@ -848,261 +848,261 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg){
-//============================================================================
-// Unpack the message : Get some sizes : copy out message.  
-//                    :  Do not delete msg. Its a nokeep!!!!!!!!!!!!
-//============================================================================
+  //============================================================================
+  // Unpack the message : Get some sizes : copy out message.  
+  //                    :  Do not delete msg. Its a nokeep!!!!!!!!!!!!
+  //============================================================================
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
-   if(thisIndex.x==0)
+  if(thisIndex.x==0)
     CkPrintf("HI, I am rPP %d %d in compteAtmforc : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-   int nZmat_in=msg->nZmat;
+  int nZmat_in=msg->nZmat;
 
-   double *zmat_loc=msg->zmat;
-   int iterNL_in=msg->iterNL;
-   CkAssert(msg->iterNL>0);
-   CPcharmParaInfo *sim = CPcharmParaInfo::get();
-   int iterNL1          = iterNL-1;          // silly C++ convention
-   int *nmem_zmat       = sim->nmem_zmat;    // zmat memory size
-   int nZmat            = nmem_zmat[iterNL1];
-   if(!config.doublePack){nZmat *=2;} //size in doubles of complex beasty
+  double *zmat_loc=msg->zmat;
+  int iterNL_in=msg->iterNL;
+  CkAssert(msg->iterNL>0);
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int iterNL1          = iterNL-1;          // silly C++ convention
+  int *nmem_zmat       = sim->nmem_zmat;    // zmat memory size
+  int nZmat            = nmem_zmat[iterNL1];
+  if(!config.doublePack){nZmat *=2;} //size in doubles of complex beasty
 
-   /*  In the reduction case each iteration arrives together. This coordination scheme is redundant */
-   if(iterNL_in !=  iterNL || nZmat_in != nZmat){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("RPP [%d,%d] Dude, iteration mismatch : %d %d z %d %d\n",
-	       thisIndex.x,thisIndex.y,
-	       iterNL,iterNL_in,nZmat_in, nZmat );
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-   }//endif
+  /*  In the reduction case each iteration arrives together. This coordination scheme is redundant */
+  if(iterNL_in !=  iterNL || nZmat_in != nZmat){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("RPP [%d,%d] Dude, iteration mismatch : %d %d z %d %d\n",
+        thisIndex.x,thisIndex.y,
+        iterNL,iterNL_in,nZmat_in, nZmat );
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
-   CmiMemcpy(zmat,zmat_loc,sizeof(double)*nZmat_in);
+  CmiMemcpy(zmat,zmat_loc,sizeof(double)*nZmat_in);
 
-//============================================================================
-// Check out your B-splines from the cache and get some parameters
+  //============================================================================
+  // Check out your B-splines from the cache and get some parameters
 
-   eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch (); 
-   FFTcache *fftcache  = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
+  eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch (); 
+  FFTcache *fftcache  = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
 
-   int *allowedRppChares = eesData->allowedRppChares;
-   CkAssert(allowedRppChares[myPlane]==1);
+  int *allowedRppChares = eesData->allowedRppChares;
+  CkAssert(allowedRppChares[myPlane]==1);
 
-   int *plane_index    = eesData->RppData[myPlane]->plane_index;
-   int **igrid         = eesData->RppData[myPlane]->igrid;
-   int *nBreakJ        = eesData->RppData[myPlane]->nBreakJ;
-   int **sBreakJ       = eesData->RppData[myPlane]->sBreakJ;
-   double **dmn_x      = eesData->RppData[myPlane]->dmn_x;
-   double **dmn_y      = eesData->RppData[myPlane]->dmn_y;
-   double **dmn_z      = eesData->RppData[myPlane]->dmn_z;
-   double **mn         = eesData->RppData[myPlane]->mn;
-   double  *projPsiRScr = fftcache->tmpDataR;
-   complex *projPsiCScr = fftcache->tmpData;
-   fftcache->getCacheMem("CP_State_RealParticlePlane::computeAtmForcEes");
+  int *plane_index    = eesData->RppData[myPlane]->plane_index;
+  int **igrid         = eesData->RppData[myPlane]->igrid;
+  int *nBreakJ        = eesData->RppData[myPlane]->nBreakJ;
+  int **sBreakJ       = eesData->RppData[myPlane]->sBreakJ;
+  double **dmn_x      = eesData->RppData[myPlane]->dmn_x;
+  double **dmn_y      = eesData->RppData[myPlane]->dmn_y;
+  double **dmn_z      = eesData->RppData[myPlane]->dmn_z;
+  double **mn         = eesData->RppData[myPlane]->mn;
+  double  *projPsiRScr = fftcache->tmpDataR;
+  complex *projPsiCScr = fftcache->tmpData;
+  fftcache->getCacheMem("CP_State_RealParticlePlane::computeAtmForcEes");
 
-   AtomsCache *ag         = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
-   FastAtoms *fastAtoms = &(ag->fastAtoms);
+  AtomsCache *ag         = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
+  FastAtoms *fastAtoms = &(ag->fastAtoms);
 
-   // projPsiR     comes in with info for atoms
-   // projPsiRSsr leaves with info for psiforces to (ngrid_a+2)*ngrid_b elements 
-   int n_a, n_b, n_c, n_interp, nAtm;
-   CPNONLOCAL::getEesPrms(&n_a,&n_b,&n_c,&n_interp,&nAtm);
-   int n_interp2=n_interp*n_interp;
+  // projPsiR     comes in with info for atoms
+  // projPsiRSsr leaves with info for psiforces to (ngrid_a+2)*ngrid_b elements 
+  int n_a, n_b, n_c, n_interp, nAtm;
+  CPNONLOCAL::getEesPrms(&n_a,&n_b,&n_c,&n_interp,&nAtm);
+  int n_interp2=n_interp*n_interp;
 
-//============================================================================
-// Debug yourself
+  //============================================================================
+  // Debug yourself
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
-   if(thisIndex.x==0)
+  if(thisIndex.x==0)
     CkPrintf("HI, I am rPP %d %d in compteAtmforc : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
 #ifdef _CP_GS_DUMP_VKS_
 #ifdef _INSANEO_PARANOID_COMPARE_THAT_EATS_HUGE_MEMORY_
-    dumpMatrix2DDouble("mn",mn, nAtm, n_interp2, thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-    dumpMatrix2DDouble("dmn_x",dmn_x, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-    dumpMatrix2DDouble("dmn_y",dmn_y, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+  dumpMatrix2DDouble("mn",mn, nAtm, n_interp2, thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+  dumpMatrix2DDouble("dmn_x",dmn_x, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+  dumpMatrix2DDouble("dmn_y",dmn_y, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
 
-    dumpMatrix2DDouble("dmn_z",dmn_z, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-    dumpMatrix2DInt("igrid",igrid, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+  dumpMatrix2DDouble("dmn_z",dmn_z, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+  dumpMatrix2DInt("igrid",igrid, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
 #endif
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
-    // at this point we're checking that nobody poisoned projPsiR, igrid dmn_[xyz] mn 
-    // projPsiR uses the same location as projpsiC, so we hold our nose
-    // and cut and paste
+  // at this point we're checking that nobody poisoned projPsiR, igrid dmn_[xyz] mn 
+  // projPsiR uses the same location as projpsiC, so we hold our nose
+  // and cut and paste
   if(savedprojpsiC==NULL)
-    { // load it
-      savedprojpsiC= new complex[csize];
-      loadMatrix("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    }
+  { // load it
+    savedprojpsiC= new complex[csize];
+    loadMatrix("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  }
 #ifdef _INSANEO_PARANOID_COMPARE_THAT_EATS_HUGE_MEMORY_
   if(savedmn==NULL){ // load it
-      savedigrid   = (int **)fftw_malloc(nAtm*sizeof(int*));
+    savedigrid   = (int **)fftw_malloc(nAtm*sizeof(int*));
 
-      savedmn    = (double **)fftw_malloc(nAtm*sizeof(double*));
-      saveddmn_x = (double **)fftw_malloc(nAtm*sizeof(double*));
-      saveddmn_y = (double **)fftw_malloc(nAtm*sizeof(double*));
-      saveddmn_z = (double **)fftw_malloc(nAtm*sizeof(double*));
-      // Argh! this crazy iterate from 1 stuff escaped from
-      // the piny box of evil fortranisms
-      for(int i=0;i<nAtm;i++){
-	savedigrid[i]    = (int *)fftw_malloc(n_interp2*sizeof(int))-1;    
-	double *tmp = (double *)fftw_malloc(4*n_interp2*sizeof(double));
-	// by dint of more ugly trickery we store 4 array rows in 1
-	// which provides a nice way for us to quietly violate logical
-	// array boundaries without tripping over memory we don't own
-	int ioff    = 0;
-	savedmn[i]       = &tmp[ioff]-1;  ioff+=n_interp2;
-	saveddmn_x[i]    = &tmp[ioff]-1;  ioff+=n_interp2;
-	saveddmn_y[i]    = &tmp[ioff]-1;  ioff+=n_interp2;
-	saveddmn_z[i]    = &tmp[ioff]-1;  
-      }//endfor
+    savedmn    = (double **)fftw_malloc(nAtm*sizeof(double*));
+    saveddmn_x = (double **)fftw_malloc(nAtm*sizeof(double*));
+    saveddmn_y = (double **)fftw_malloc(nAtm*sizeof(double*));
+    saveddmn_z = (double **)fftw_malloc(nAtm*sizeof(double*));
+    // Argh! this crazy iterate from 1 stuff escaped from
+    // the piny box of evil fortranisms
+    for(int i=0;i<nAtm;i++){
+      savedigrid[i]    = (int *)fftw_malloc(n_interp2*sizeof(int))-1;    
+      double *tmp = (double *)fftw_malloc(4*n_interp2*sizeof(double));
+      // by dint of more ugly trickery we store 4 array rows in 1
+      // which provides a nice way for us to quietly violate logical
+      // array boundaries without tripping over memory we don't own
+      int ioff    = 0;
+      savedmn[i]       = &tmp[ioff]-1;  ioff+=n_interp2;
+      saveddmn_x[i]    = &tmp[ioff]-1;  ioff+=n_interp2;
+      saveddmn_y[i]    = &tmp[ioff]-1;  ioff+=n_interp2;
+      saveddmn_z[i]    = &tmp[ioff]-1;  
+    }//endfor
 
-      loadMatrix2DDouble("mn",savedmn, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-      loadMatrix2DDouble("dmn_x",saveddmn_x, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-      loadMatrix2DDouble("dmn_y",saveddmn_y, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-      loadMatrix2DDouble("dmn_z",saveddmn_z, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-      loadMatrix2DInt("igrid",savedigrid, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    loadMatrix2DDouble("mn",savedmn, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    loadMatrix2DDouble("dmn_x",saveddmn_x, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    loadMatrix2DDouble("dmn_y",saveddmn_y, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    loadMatrix2DDouble("dmn_z",saveddmn_z, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    loadMatrix2DInt("igrid",savedigrid, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
   }//endif : loading
 
   for(int i=0;i<nAtm;i++){
-   if(plane_index[i]!=0){
-    for(int j=1;j<=n_interp2;j++){
-      if(fabs(mn[i][j]-savedmn[i][j])>0.0001){
-       fprintf(stderr,"RPP [%d,%d] %d %d element mn %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,j,mn[i][j],savedmn[i][j]);
-      }//endif
-      CkAssert(fabs(mn[i][j]-savedmn[i][j])<0.0001);
-      if(fabs(dmn_x[i][j]-saveddmn_x[i][j])>0.0001){
-       fprintf(stderr,"RPP [%d,%d] %d %d element dmn_x %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,j,dmn_x[i][j],saveddmn_x[i][j]);
-      }//endif
-      CkAssert(fabs(dmn_x[i][j]-saveddmn_x[i][j])<0.0001);
-      if(fabs(dmn_y[i][j]-saveddmn_y[i][j])>0.0001){
-       fprintf(stderr,"RPP [%d,%d] %d %d element dmn_y %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,j,dmn_y[i][j],saveddmn_y[i][j]);
-      }//endif
-      CkAssert(fabs(dmn_y[i][j]-saveddmn_y[i][j])<0.0001);
-      if(fabs(dmn_z[i][j]-saveddmn_z[i][j])>0.0001){
-       fprintf(stderr,"RPP [%d,%d] %d %d element dmn_z %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,j,dmn_z[i][j],saveddmn_z[i][j]);
-      }//endif
-      CkAssert(fabs(dmn_z[i][j]-saveddmn_z[i][j])<0.0001);
-      if(igrid[i][j]!=savedigrid[i][j]){
-       fprintf(stderr,"RPP [%d,%d] %d %d element igrid %d not %d\n",thisIndex.x,thisIndex.y,i,j,igrid[i][j],savedigrid[i][j]);
-      }//endif
-      CkAssert(igrid[i][j]==savedigrid[i][j]);
-    }//end for
-   }//end if
+    if(plane_index[i]!=0){
+      for(int j=1;j<=n_interp2;j++){
+        if(fabs(mn[i][j]-savedmn[i][j])>0.0001){
+          fprintf(stderr,"RPP [%d,%d] %d %d element mn %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,j,mn[i][j],savedmn[i][j]);
+        }//endif
+        CkAssert(fabs(mn[i][j]-savedmn[i][j])<0.0001);
+        if(fabs(dmn_x[i][j]-saveddmn_x[i][j])>0.0001){
+          fprintf(stderr,"RPP [%d,%d] %d %d element dmn_x %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,j,dmn_x[i][j],saveddmn_x[i][j]);
+        }//endif
+        CkAssert(fabs(dmn_x[i][j]-saveddmn_x[i][j])<0.0001);
+        if(fabs(dmn_y[i][j]-saveddmn_y[i][j])>0.0001){
+          fprintf(stderr,"RPP [%d,%d] %d %d element dmn_y %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,j,dmn_y[i][j],saveddmn_y[i][j]);
+        }//endif
+        CkAssert(fabs(dmn_y[i][j]-saveddmn_y[i][j])<0.0001);
+        if(fabs(dmn_z[i][j]-saveddmn_z[i][j])>0.0001){
+          fprintf(stderr,"RPP [%d,%d] %d %d element dmn_z %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,j,dmn_z[i][j],saveddmn_z[i][j]);
+        }//endif
+        CkAssert(fabs(dmn_z[i][j]-saveddmn_z[i][j])<0.0001);
+        if(igrid[i][j]!=savedigrid[i][j]){
+          fprintf(stderr,"RPP [%d,%d] %d %d element igrid %d not %d\n",thisIndex.x,thisIndex.y,i,j,igrid[i][j],savedigrid[i][j]);
+        }//endif
+        CkAssert(igrid[i][j]==savedigrid[i][j]);
+      }//end for
+    }//end if
   }//endfor
 #endif
 #endif
 
-//============================================================================
-// Perform the computation of the atom forces and energy finally 
+  //============================================================================
+  // Perform the computation of the atom forces and energy finally 
 
 #if CMK_TRACE_ENABLED
-   double  StartTime=CmiWallTimer();
+  double  StartTime=CmiWallTimer();
 #endif    
 
-   double cp_enl_now = 0.0;
-   if(config.doublePack){
-     CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl_now,zmat,igrid,mn,dmn_x,dmn_y,dmn_z,
-   		      projPsiR,projPsiRScr,plane_index,nBreakJ,sBreakJ,
-		      myPlane,thisIndex.x,kpoint_ind,fastAtoms);
-   }else{
-     CPNONLOCAL::eesEnergyAtmForcRchareC(iterNL,&cp_enl_now,zmatC,igrid,mn,dmn_x,dmn_y,dmn_z,
-   		      projPsiC,projPsiCScr,plane_index,nBreakJ,sBreakJ,
-		      myPlane,thisIndex.x,kpoint_ind,fastAtoms);
-   }//endif
-   cp_enl += cp_enl_now;
+  double cp_enl_now = 0.0;
+  if(config.doublePack){
+    CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl_now,zmat,igrid,mn,dmn_x,dmn_y,dmn_z,
+        projPsiR,projPsiRScr,plane_index,nBreakJ,sBreakJ,
+        myPlane,thisIndex.x,kpoint_ind,fastAtoms);
+  }else{
+    CPNONLOCAL::eesEnergyAtmForcRchareC(iterNL,&cp_enl_now,zmatC,igrid,mn,dmn_x,dmn_y,dmn_z,
+        projPsiC,projPsiCScr,plane_index,nBreakJ,sBreakJ,
+        myPlane,thisIndex.x,kpoint_ind,fastAtoms);
+  }//endif
+  cp_enl += cp_enl_now;
 
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(eesEnergyAtmForcR_, StartTime, CmiWallTimer());    
 #endif
 
-//============================================================================
-// If we are done, send out the energy : HELP HELP Evil Section Multicast
+  //============================================================================
+  // If we are done, send out the energy : HELP HELP Evil Section Multicast
 
-   if(thisIndex.y==reductionPlaneNum && iterNL==numIterNl){
+  if(thisIndex.y==reductionPlaneNum && iterNL==numIterNl){
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
-     if(thisIndex.x==0)
-       CkPrintf("HI, I am rPP %d %d sending Enl : %d\n",thisIndex.x,thisIndex.y,iterNL);
+    if(thisIndex.x==0)
+      CkPrintf("HI, I am rPP %d %d sending Enl : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
 #ifdef _FANCY_RED_METHOD_
-     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-     //     CkCallback cb=CkCallback(printEnlR, NULL);
-     CkCallback cb(CkIndex_CP_State_RealParticlePlane::printEnlR(NULL),
-                 CkArrayIndex2D(0,reductionPlaneNum),
-                 UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
-     mcastGrp->contribute(sizeof(double),(void*) &cp_enl, 
-		          CkReduction::sum_double,rEnlCookie, cb, itime);
+    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+    //     CkCallback cb=CkCallback(printEnlR, NULL);
+    CkCallback cb(CkIndex_CP_State_RealParticlePlane::printEnlR(NULL),
+        CkArrayIndex2D(0,reductionPlaneNum),
+        UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
+    mcastGrp->contribute(sizeof(double),(void*) &cp_enl, 
+        CkReduction::sum_double,rEnlCookie, cb, itime);
 #else
-     thisProxy(0,0).printEnlRSimp(cp_enl,thisIndex.x,itime);
+    thisProxy(0,0).printEnlRSimp(cp_enl,thisIndex.x,itime);
 #endif
-   }//endif : we are done and can reduce the non-local energy
+  }//endif : we are done and can reduce the non-local energy
 
-//============================================================================
-// More nasty debuggin
+  //============================================================================
+  // More nasty debuggin
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrix("zmat",(double *)zmat, 1, nZmat_in,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-    dumpMatrix("projPsiRScr",(double *)projPsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  dumpMatrix("zmat",(double *)zmat, 1, nZmat_in,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+  dumpMatrix("projPsiRScr",(double *)projPsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
-    // check that we did the zmat gather/scatter correctly and 
+  // check that we did the zmat gather/scatter correctly and 
 
   if(savedzmat==NULL)
-    { // load it
-      savedzmat= new double[nZmat_in];
-      loadMatrix("zmat",(double *)savedzmat, 1, nZmat_in,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-    }
+  { // load it
+    savedzmat= new double[nZmat_in];
+    loadMatrix("zmat",(double *)savedzmat, 1, nZmat_in,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+  }
   for(int i=0;i<nZmat_in; i++)
+  {
+    if(fabs(zmat[i]-savedzmat[i])>0.0001)
     {
-      if(fabs(zmat[i]-savedzmat[i])>0.0001)
-	{
-	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, zmat[i], savedzmat[i]);
-	}
-      CkAssert(fabs(zmat[i]-savedzmat[i])<0.0001);
-
+      fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, zmat[i], savedzmat[i]);
     }
+    CkAssert(fabs(zmat[i]-savedzmat[i])<0.0001);
+
+  }
   if(savedProjpsiRScr==NULL)
-    { // load it
-      savedProjpsiRScr= new double[planeSize];
-      loadMatrix("projPsiRScr",(double *)savedProjpsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    }
+  { // load it
+    savedProjpsiRScr= new double[planeSize];
+    loadMatrix("projPsiRScr",(double *)savedProjpsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  }
   for(int i=0;i<planeSize;i++)
+  {
+    if(fabs(projPsiRScr[i]-savedProjpsiRScr[i])>0.0001)
     {
-      if(fabs(projPsiRScr[i]-savedProjpsiRScr[i])>0.0001)
-	{
-	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiRScr[i], savedProjpsiRScr[i]);
-	  dumpMatrix("badprojPsiRScr",(double *)projPsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-	}
-      CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
-
+      fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiRScr[i], savedProjpsiRScr[i]);
+      dumpMatrix("badprojPsiRScr",(double *)projPsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
+    CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
+
+  }
 
 #endif
 
-//============================================================================
-// zero the total enl energy if we are done.
+  //============================================================================
+  // zero the total enl energy if we are done.
 
-   if(iterNL==numIterNl){
-     cp_enl = 0.0;
-     launchFFT=false;
-   }//endif
+  if(iterNL==numIterNl){
+    cp_enl = 0.0;
+    launchFFT=false;
+  }//endif
 
-//============================================================================
-// Time to make the Psiforces (donuts!)
+  //============================================================================
+  // Time to make the Psiforces (donuts!)
 
   FFTNLEesBckR();
 
-//============================================================================
-// Do not delete the nokeep message!!! 
-//----------------------------------------------------------------------------
-  }//end routine
+  //============================================================================
+  // Do not delete the nokeep message!!! 
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 //============================================================================
@@ -1118,7 +1118,7 @@ void CP_State_RealParticlePlane::launchFFTControl(int time_in){
     if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.4\n");CkExit();}
     thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
   }//endif
-//----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
 }
 //============================================================================
 
@@ -1129,7 +1129,7 @@ void CP_State_RealParticlePlane::launchFFTControl(int time_in){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::FFTNLEesBckR(){
-//============================================================================
+  //============================================================================
 
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int nplane_x = sim->nplane_x;
@@ -1137,83 +1137,83 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
-   CkPrintf("HI, I am rPP %d %d in FFTNLbck : %d %d %d %d\n",
-     thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
+    CkPrintf("HI, I am rPP %d %d in FFTNLbck : %d %d %d %d\n",
+        thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
 #endif
 
   FFTcache *fftcache   = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
   double  *projPsiRScr = fftcache->tmpDataR;
   complex *projPsiCScr = fftcache->tmpData;
 
-//============================================================================
-// Debugging stuff
+  //============================================================================
+  // Debugging stuff
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   // double check that projPsiRScr is still ok
   if(savedProjpsiRScr==NULL){ // load it
-      savedProjpsiRScr= new double[planeSize];
-      loadMatrix("projPsiRScr",(double *)savedProjpsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    savedProjpsiRScr= new double[planeSize];
+    loadMatrix("projPsiRScr",(double *)savedProjpsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
 
   for(int i=0;i<planeSize;i++){
-   if(fabs(projPsiRScr[i]-savedProjpsiRScr[i])>0.0001){
-     fprintf(stderr,"RPP[%d,%d] %d element projpsi %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,projPsiRScr[i],savedProjpsiRScr[i]);
-   }//endif
-   CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
-   CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
+    if(fabs(projPsiRScr[i]-savedProjpsiRScr[i])>0.0001){
+      fprintf(stderr,"RPP[%d,%d] %d element projpsi %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,projPsiRScr[i],savedProjpsiRScr[i]);
+    }//endif
+    CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
+    CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
   }//endfor
 #endif
 
-//============================================================================
-// here is the computation of the fft
+  //============================================================================
+  // here is the computation of the fft
 
 #if CMK_TRACE_ENABLED
   double StartTime= CmiWallTimer();    
 #endif
 
-    fftcache->doNlFFTRtoG_Rchare(projPsiCScr,projPsiRScr,nplane_x,ngridA,ngridB,myPlane);
+  fftcache->doNlFFTRtoG_Rchare(projPsiCScr,projPsiRScr,nplane_x,ngridA,ngridB,myPlane);
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doNlFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
 
-//============================================================================
-// Here is the tedious debuggins
+  //============================================================================
+  // Here is the tedious debuggins
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrix("projPsiCScr",(double *)projPsiCScr, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  dumpMatrix("projPsiCScr",(double *)projPsiCScr, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
-    // at this point we're checking that we did the fft correctly
-    // which implicitly checks that we did the zmat gather/scatter correctly
+  // at this point we're checking that we did the fft correctly
+  // which implicitly checks that we did the zmat gather/scatter correctly
 
   if(savedProjpsiCScr==NULL){ // load it
-      savedProjpsiCScr= new complex[csize];
-      loadMatrix("projPsiCScr",(double *)savedProjpsiCScr, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    savedProjpsiCScr= new complex[csize];
+    loadMatrix("projPsiCScr",(double *)savedProjpsiCScr, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   for(int i=0;i<csize;i++){
-   if(fabs(projPsiCScr[i].re-savedProjpsiCScr[i].re)>0.0001){
-    fprintf(stderr,"RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,
-                                                  projPsiCScr[i].re,savedProjpsiCScr[i].re);
-    fprintf(stderr, "HI, I am rPP %d %d in FFTNLbck : %d %d %d %d\n",
-    thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
-   }//endif
-   CkAssert(fabs(projPsiCScr[i].re-savedProjpsiCScr[i].re)<0.0001);
-   CkAssert(fabs(projPsiCScr[i].im-savedProjpsiCScr[i].im)<0.0001);
+    if(fabs(projPsiCScr[i].re-savedProjpsiCScr[i].re)>0.0001){
+      fprintf(stderr,"RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x,thisIndex.y,i,
+          projPsiCScr[i].re,savedProjpsiCScr[i].re);
+      fprintf(stderr, "HI, I am rPP %d %d in FFTNLbck : %d %d %d %d\n",
+          thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
+    }//endif
+    CkAssert(fabs(projPsiCScr[i].re-savedProjpsiCScr[i].re)<0.0001);
+    CkAssert(fabs(projPsiCScr[i].im-savedProjpsiCScr[i].im)<0.0001);
   }//endfor
 #endif
 
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(doNlFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
-//============================================================================
-// Now that the FFT is done, go back to Gspace
+  //============================================================================
+  // Now that the FFT is done, go back to Gspace
 
   sendToEesGPP();
 
-//============================================================================
-   }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 
@@ -1224,7 +1224,7 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::sendToEesGPP(){
-//============================================================================
+  //============================================================================
 
   CPcharmParaInfo *sim   = CPcharmParaInfo::get();
   FFTcache *fftcache     = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
@@ -1233,61 +1233,61 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
   int *nlines_per_chareG = sim->nlines_per_chareG;
   complex *projPsiCScr   = fftcache->tmpData;
 
-//===================================================================
-// Perform the transpose and then the blast off the final 1D-FFT
+  //===================================================================
+  // Perform the transpose and then the blast off the final 1D-FFT
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
-   CkPrintf("HI, I am rPP %d %d in sendtoGPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
+    CkPrintf("HI, I am rPP %d %d in sendtoGPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
 #ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if(config.useMssInsGPP){mssPInstance.beginIteration();}
 #else
-//    if(config.useMssInsGPP){ComlibBegin(UparticlePlaneProxy[thisInstance.proxyOffset], iterNL);}
+  //    if(config.useMssInsGPP){ComlibBegin(UparticlePlaneProxy[thisInstance.proxyOffset], iterNL);}
 #endif
 #endif
 
-    for (int ic=0;ic<nchareG;ic++) { // chare arrays to which we will send
-      int sendFFTDataSize = nlines_per_chareG[ic];
-      GSPPIFFTMsg *msg    = new (sendFFTDataSize, 8 * sizeof(int)) GSPPIFFTMsg; 
-      msg->iterNL         = iterNL;
-      msg->size           = sendFFTDataSize;
-      msg->offset         = thisIndex.y;    // c-plane-index
-      complex *data       = msg->data;
-      if(config.prioNLFFTMsg){
-	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = config.gsNLfftpriority+thisIndex.x;
-      }//endif
-      for(int i=0;i<sendFFTDataSize;i++){data[i] = projPsiCScr[tranpack[ic][i]];}
-      UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x, ic).recvFromEesRPP(msg); // send the message
-    }//end for : chare sending
+  for (int ic=0;ic<nchareG;ic++) { // chare arrays to which we will send
+    int sendFFTDataSize = nlines_per_chareG[ic];
+    GSPPIFFTMsg *msg    = new (sendFFTDataSize, 8 * sizeof(int)) GSPPIFFTMsg; 
+    msg->iterNL         = iterNL;
+    msg->size           = sendFFTDataSize;
+    msg->offset         = thisIndex.y;    // c-plane-index
+    complex *data       = msg->data;
+    if(config.prioNLFFTMsg){
+      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+      *(int*)CkPriorityPtr(msg) = config.gsNLfftpriority+thisIndex.x;
+    }//endif
+    for(int i=0;i<sendFFTDataSize;i++){data[i] = projPsiCScr[tranpack[ic][i]];}
+    UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x, ic).recvFromEesRPP(msg); // send the message
+  }//end for : chare sending
 
 #ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if(config.useMssInsGPP){mssPInstance.endIteration();}
 #else
-//    if(config.useMssInsGPP){ComlibEnd(UparticlePlaneProxy[thisInstance.proxyOffset], iterNL);}
+  //    if(config.useMssInsGPP){ComlibEnd(UparticlePlaneProxy[thisInstance.proxyOffset], iterNL);}
 #endif
 #endif
 
-//============================================================================
-// If it looks like this is the end, reset my counters baby.
-// If its not the end, GParticlePlane will invoke the entry methods again
+  //============================================================================
+  // If it looks like this is the end, reset my counters baby.
+  // If its not the end, GParticlePlane will invoke the entry methods again
 
   recvBlock = 0; // I am done, I can recv messages now from PP
-                 // If I recv with recvblock==1, something is terribly wrong
+  // If I recv with recvblock==1, something is terribly wrong
   if(iterNL==numIterNl){
     iterNL = 0;
     cp_enl = 0;
     launchFFT=false;
   }//endif
-   
+
   fftcache->freeCacheMem("CP_State_RealParticlePlane::sendToEesGPP");
 
-//----------------------------------------------------------------------------
-   }//end routine
+  //----------------------------------------------------------------------------
+}//end routine
 //============================================================================
 
 
@@ -1299,15 +1299,15 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 int CP_State_RealParticlePlane::calcReductionPlaneNum(int state){
-//============================================================================
-  
+  //============================================================================
+
   int nstatemax=nstates-1;
   int ncharemax=nChareR-1;
   int planeNum= (state %ncharemax);
   if(planeNum<0){
-      CkPrintf(" PP [%d %d] calc nstatemax %d ncharemax %d state %d planenum %d\n",
-                 thisIndex.x, thisIndex.y,nstatemax, ncharemax, state, planeNum); 
-      CkExit();
+    CkPrintf(" PP [%d %d] calc nstatemax %d ncharemax %d state %d planenum %d\n",
+        thisIndex.x, thisIndex.y,nstatemax, ncharemax, state, planeNum); 
+    CkExit();
   }//endif
   return planeNum;
 
@@ -1321,28 +1321,28 @@ int CP_State_RealParticlePlane::calcReductionPlaneNum(int state){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::setPlaneRedCookie(EnlCookieMsg *m){
-//============================================================================
-// Do not delete msg. Its a nokeep.
-//============================================================================
+  //============================================================================
+  // Do not delete msg. Its a nokeep.
+  //============================================================================
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
-   CkPrintf("RPP[%d %d] gets rPlaneRedCookie\n",thisIndex.x, thisIndex.y);
+    CkPrintf("RPP[%d %d] gets rPlaneRedCookie\n",thisIndex.x, thisIndex.y);
 #endif
 
   CkGetSectionInfo(rPlaneRedCookie,m);
   int cookiedone=1;
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-   CkCallback cb(CkIndex_CP_State_RealParticlePlane::planeRedSectDone(NULL),
-                 CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
-                 UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
-   mcastGrp->contribute(sizeof(int),&cookiedone,CkReduction::sum_int,
-     rPlaneRedCookie,cb);
-     // if not root, we are set up
+  CkCallback cb(CkIndex_CP_State_RealParticlePlane::planeRedSectDone(NULL),
+      CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
+      UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
+  mcastGrp->contribute(sizeof(int),&cookiedone,CkReduction::sum_int,
+      rPlaneRedCookie,cb);
+  // if not root, we are set up
   if(thisIndex.y!=reductionPlaneNum)
-    {
-      planeRedSectionComplete=true;
-      initComplete();
-    }
+  {
+    planeRedSectionComplete=true;
+    initComplete();
+  }
 }
 //============================================================================
 
@@ -1353,22 +1353,22 @@ void CP_State_RealParticlePlane::setPlaneRedCookie(EnlCookieMsg *m){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
-//============================================================================
-// Do not delete msg. Its a nokeep.
-//============================================================================
+  //============================================================================
+  // Do not delete msg. Its a nokeep.
+  //============================================================================
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
-   CkPrintf("RPP[%d %d] gets rEnlCookie\n",thisIndex.x, thisIndex.y);
+    CkPrintf("RPP[%d %d] gets rEnlCookie\n",thisIndex.x, thisIndex.y);
 #endif
   CkGetSectionInfo(rEnlCookie,m);
   int cookiedone=1;
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
   CkCallback cb(CkIndex_CP_State_RealParticlePlane::enlSectDone(NULL),
-                 CkArrayIndex2D(0,reductionPlaneNum),
-                 UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
-     mcastGrp->contribute(sizeof(int), &cookiedone, 
-		          CkReduction::sum_int,rEnlCookie, cb);
-     // if not root, we are set up
+      CkArrayIndex2D(0,reductionPlaneNum),
+      UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
+  mcastGrp->contribute(sizeof(int), &cookiedone, 
+      CkReduction::sum_int,rEnlCookie, cb);
+  // if not root, we are set up
   if(thisIndex.y!=reductionPlaneNum || thisIndex.x!=0){     
     enlSectionComplete=true;
     initComplete();
@@ -1381,13 +1381,13 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-  void CP_State_RealParticlePlane::registrationDone() {
-//==========================================================================
+void CP_State_RealParticlePlane::registrationDone() {
+  //==========================================================================
 
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
-   CkPrintf("HI, I am realPPa %d %d \n",thisIndex.x,thisIndex.y);
+    CkPrintf("HI, I am realPPa %d %d \n",thisIndex.x,thisIndex.y);
 #endif
 
   registrationFlag=1;
@@ -1400,7 +1400,7 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
     CkExit();
   }//endif
 
- }//end routine
+}//end routine
 //==========================================================================
 
 
@@ -1408,66 +1408,66 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::pup(PUP::er &p) {
-//============================================================================
+  //============================================================================
 
-   p|rhoRTime;
-   p|ees_nonlocal;
-   p|nChareR; 
-   p|nChareG;
-   p|Rstates_per_pe;
-   p|myPlane;
-   p|registrationFlag;
-   p|recvBlock;
+  p|rhoRTime;
+  p|ees_nonlocal;
+  p|nChareR; 
+  p|nChareG;
+  p|Rstates_per_pe;
+  p|myPlane;
+  p|registrationFlag;
+  p|recvBlock;
 
-   p|ibead_ind; p|kpoint_ind; p|itemper_ind;
+  p|ibead_ind; p|kpoint_ind; p|itemper_ind;
 
-   p|numIterNl;
-   p|countEnl;
-   p|count;
-   p|iterNL;
-   p|itime;
-   p|itimeRed;
-   p|countZ;
- 
-   p|ngridA;
-   p|ngridB;
-   p|ngridC;
-   p|planeSize;
-   p|planeSizeT;
-   p|csize;
-   p|zmatSizeMax;
-   p|reductionPlaneNum;
-   p|cp_enl; 
-   p|cp_enlTot; 
+  p|numIterNl;
+  p|countEnl;
+  p|count;
+  p|iterNL;
+  p|itime;
+  p|itimeRed;
+  p|countZ;
 
-   p|rPlaneSectProxy;
-   p|rPlaneENLProxy;
-   p|rPlaneRedCookie;
-   p|rEnlCookie;
-   p|gPP_proxy;
+  p|ngridA;
+  p|ngridB;
+  p|ngridC;
+  p|planeSize;
+  p|planeSizeT;
+  p|csize;
+  p|zmatSizeMax;
+  p|reductionPlaneNum;
+  p|cp_enl; 
+  p|cp_enlTot; 
 
-   if(ees_nonlocal==1){
-     int nZ  = zmatSizeMax;
-     if(config.doublePack){nZ *=2;}
-     if (p.isUnpacking()) {
-       projPsiC = (complex*) fftw_malloc(csize*sizeof(complex));
-       projPsiR = reinterpret_cast<double*> (projPsiC);
-       if(config.doublePack){
-         zmat    = (double*) fftw_malloc(zmatSizeMax*sizeof(double));
-         zmatScr = (double*) fftw_malloc(zmatSizeMax*sizeof(double));
-       }else{
-         zmatC    = (complex*) fftw_malloc(zmatSizeMax*sizeof(complex));
-         zmatScrC = (complex*) fftw_malloc(zmatSizeMax*sizeof(complex));
-         zmat     = reinterpret_cast<double*> (zmatC);
-         zmatScr  = reinterpret_cast<double*> (zmatScrC);
-       }//endif
-     }//endif
-     p(zmat,nZ);    // pup as double even when zmat is complex
-     p(zmatScr,nZ); // pup as double even when zmat is complex
-     p((char*)projPsiC,csize *sizeof(complex)); // Why is there a cast to char ?
-   }//endif
+  p|rPlaneSectProxy;
+  p|rPlaneENLProxy;
+  p|rPlaneRedCookie;
+  p|rEnlCookie;
+  p|gPP_proxy;
 
-//---------------------------------------------------------------------------
-  }//end routine
+  if(ees_nonlocal==1){
+    int nZ  = zmatSizeMax;
+    if(config.doublePack){nZ *=2;}
+    if (p.isUnpacking()) {
+      projPsiC = (complex*) fftw_malloc(csize*sizeof(complex));
+      projPsiR = reinterpret_cast<double*> (projPsiC);
+      if(config.doublePack){
+        zmat    = (double*) fftw_malloc(zmatSizeMax*sizeof(double));
+        zmatScr = (double*) fftw_malloc(zmatSizeMax*sizeof(double));
+      }else{
+        zmatC    = (complex*) fftw_malloc(zmatSizeMax*sizeof(complex));
+        zmatScrC = (complex*) fftw_malloc(zmatSizeMax*sizeof(complex));
+        zmat     = reinterpret_cast<double*> (zmatC);
+        zmatScr  = reinterpret_cast<double*> (zmatScrC);
+      }//endif
+    }//endif
+    p(zmat,nZ);    // pup as double even when zmat is complex
+    p(zmatScr,nZ); // pup as double even when zmat is complex
+    p((char*)projPsiC,csize *sizeof(complex)); // Why is there a cast to char ?
+  }//endif
+
+  //---------------------------------------------------------------------------
+}//end routine
 //============================================================================
 /*@}*/

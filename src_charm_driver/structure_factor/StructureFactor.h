@@ -19,60 +19,60 @@ extern Config config;
 
 class StructureFactor : public CBase_StructureFactor
 {
- public:
-  StructureFactor(CkMigrateMessage *m);
-  StructureFactor(int _numSfGrps, int _numSfDups, int _natm_nl_grp_max, int _numdest, int *_destinations, UberCollection _thisInstance) : numSfGrps(_numSfGrps), numSfDups(_numSfDups), natm_nl_grp_max(_natm_nl_grp_max), numdest(_numdest), thisInstance(_thisInstance)
-    {
-      k_x=NULL;
-      k_y=NULL;
-      k_z=NULL;
-      structFactor=NULL;   
-      structFactor_fx=NULL;
-      structFactor_fy=NULL;
-      structFactor_fz=NULL;
-      destinations =new int[numdest];
-      CmiMemcpy(destinations,_destinations, numdest *sizeof(int));
-      
-      gsSize=0;
-//      usesAtSync=true; not until we come up with a migration scheme
-      setMigratable(false);
-#ifdef _CP_DEBUG_SF_CALC_
-  CkPrintf("[%d %d %d] created SF\n",thisIndex.x, thisIndex.y, thisIndex.z);
-#endif
-    }
+  public:
+    StructureFactor(CkMigrateMessage *m);
+    StructureFactor(int _numSfGrps, int _numSfDups, int _natm_nl_grp_max, int _numdest, int *_destinations, UberCollection _thisInstance) : numSfGrps(_numSfGrps), numSfDups(_numSfDups), natm_nl_grp_max(_natm_nl_grp_max), numdest(_numdest), thisInstance(_thisInstance)
+  {
+    k_x=NULL;
+    k_y=NULL;
+    k_z=NULL;
+    structFactor=NULL;   
+    structFactor_fx=NULL;
+    structFactor_fy=NULL;
+    structFactor_fz=NULL;
+    destinations =new int[numdest];
+    CmiMemcpy(destinations,_destinations, numdest *sizeof(int));
 
-  ~StructureFactor(){
-    if(k_x!=NULL)
-      {
-	fftw_free(k_x);
-	fftw_free(k_y);
-	fftw_free(k_z);
-      }
-    if(structFactor!=NULL)
-      {
-	fftw_free(structFactor);
-	fftw_free(structFactor_fx);
-	fftw_free(structFactor_fy);
-	fftw_free(structFactor_fz);
-      }
-    if(destinations!=NULL)
-      delete [] destinations;
+    gsSize=0;
+    //      usesAtSync=true; not until we come up with a migration scheme
+    setMigratable(false);
+#ifdef _CP_DEBUG_SF_CALC_
+    CkPrintf("[%d %d %d] created SF\n",thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
   }
 
-  void acceptDestination(int _numdest, int *_destinations)
+    ~StructureFactor(){
+      if(k_x!=NULL)
+      {
+        fftw_free(k_x);
+        fftw_free(k_y);
+        fftw_free(k_z);
+      }
+      if(structFactor!=NULL)
+      {
+        fftw_free(structFactor);
+        fftw_free(structFactor_fx);
+        fftw_free(structFactor_fy);
+        fftw_free(structFactor_fz);
+      }
+      if(destinations!=NULL)
+        delete [] destinations;
+    }
+
+    void acceptDestination(int _numdest, int *_destinations)
     {
 #ifdef _CP_DEBUG_SF_CALC_
-  CkPrintf("[%d %d %d] SF has %d destinations\n",thisIndex.x, thisIndex.y, thisIndex.z, _numdest);
+      CkPrintf("[%d %d %d] SF has %d destinations\n",thisIndex.x, thisIndex.y, thisIndex.z, _numdest);
 #endif
       numdest=_numdest;
       destinations =new int[numdest];
       CmiMemcpy(destinations,_destinations, numdest *sizeof(int));
     }
-  // compute and send
-  void computeSF(SFDummyMsg *msg);
+    // compute and send
+    void computeSF(SFDummyMsg *msg);
 
-  // accept initializing kvector from gspace
-  void acceptKVectors(int n, int *_k_x, int *_k_y, int *_k_z)
+    // accept initializing kvector from gspace
+    void acceptKVectors(int n, int *_k_x, int *_k_y, int *_k_z)
     {
       gsSize=n;
       k_x= (int *)fftw_malloc(gsSize*sizeof(int));
@@ -82,7 +82,7 @@ class StructureFactor : public CBase_StructureFactor
       CmiMemcpy(k_y,_k_y,gsSize*sizeof(int));
       CmiMemcpy(k_z,_k_z,gsSize*sizeof(int));
     }
-  void pup(PUP::er &p)
+    void pup(PUP::er &p)
     {
       p|gsSize;
       p|numSfGrps;
@@ -99,21 +99,21 @@ class StructureFactor : public CBase_StructureFactor
       p(destinations, numdest);
     }
 
- private:	
-  int numSfGrps;
-  int numSfDups;
-  int natm_nl_grp_max;
-  int gsSize;
-  int *k_x;
-  int *k_y;
-  int *k_z;
-  complex *structFactor;   
-  complex *structFactor_fx;
-  complex *structFactor_fy;
-  complex *structFactor_fz;
-  int numdest;
-  int *destinations;
-  const UberCollection thisInstance;
+  private:	
+    int numSfGrps;
+    int numSfDups;
+    int natm_nl_grp_max;
+    int gsSize;
+    int *k_x;
+    int *k_y;
+    int *k_z;
+    complex *structFactor;   
+    complex *structFactor_fx;
+    complex *structFactor_fy;
+    complex *structFactor_fz;
+    int numdest;
+    int *destinations;
+    const UberCollection thisInstance;
 };
 
 #endif //_StructureFactor_h_

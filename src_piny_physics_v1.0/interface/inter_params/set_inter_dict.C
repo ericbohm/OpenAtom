@@ -31,30 +31,30 @@
 
 void set_potinter_dict(DICT_WORD *inter_dict[],int *num_inter_dict, int ifirst)
 
-/*=======================================================================*/
-/* Begin Routine */
+  /*=======================================================================*/
+  /* Begin Routine */
 {/*begin routine*/
-/*=======================================================================*/
-/* Local Variables */
+  /*=======================================================================*/
+  /* Local Variables */
 
   int i;
 
-/*=======================================================================*/
-/* 0) Malloc the dictionary */
+  /*=======================================================================*/
+  /* 0) Malloc the dictionary */
 
   if(ifirst==1){
     *num_inter_dict=16;
     *inter_dict = (DICT_WORD *)cmalloc(*num_inter_dict*sizeof(DICT_WORD),"set_inter_dict")-1;  
   }/*endif*/
 
-/*=======================================================================*/
-/* I) Assign the users set flags 0 */
+  /*=======================================================================*/
+  /* I) Assign the users set flags 0 */
 
   for(i=1;i<=*num_inter_dict;i++){(*inter_dict)[i].iuset    = 0;}
   for(i=1;i<=*num_inter_dict;i++){(*inter_dict)[i].key_type = 0;}
 
-/*=======================================================================*/
-/* II) Fill the dictionary with words */
+  /*=======================================================================*/
+  /* II) Fill the dictionary with words */
   /*-----------------------------------------------------------------------*/ 
   /*  1) /atom1{} */
   strcpy((*inter_dict)[1].keyword,"atom1");
@@ -153,17 +153,17 @@ void set_potinter_dict(DICT_WORD *inter_dict[],int *num_inter_dict, int ifirst)
 /*==========================================================================*/
 
 void set_pot_explicit_lj_dict(DICT_WORD *explicit_lj_dict[],
-                              int *num_explicit_lj_dict, int ifirst)
+    int *num_explicit_lj_dict, int ifirst)
 
-/*=======================================================================*/
+  /*=======================================================================*/
 {/*begin routine*/
-/*=======================================================================*/
-/* Local Variables */
+  /*=======================================================================*/
+  /* Local Variables */
 
   int i;
 
-/*=======================================================================*/
-/* 0) Malloc the dictionary */
+  /*=======================================================================*/
+  /* 0) Malloc the dictionary */
 
   if(ifirst==1){
     *num_explicit_lj_dict=5;
@@ -171,14 +171,14 @@ void set_pot_explicit_lj_dict(DICT_WORD *explicit_lj_dict[],
       (DICT_WORD *)cmalloc(*num_explicit_lj_dict*sizeof(DICT_WORD),"set_inter_dict")-1;  
   }/*endif*/
 
-/*=======================================================================*/
-/* I) Assign the users set flags 0 */
+  /*=======================================================================*/
+  /* I) Assign the users set flags 0 */
 
   for(i=1;i<=*num_explicit_lj_dict;i++){(*explicit_lj_dict)[i].iuset    = 0;}
   for(i=1;i<=*num_explicit_lj_dict;i++){(*explicit_lj_dict)[i].key_type = 0;}
 
-/*=======================================================================*/
-/* II) Fill the dictionary with words */
+  /*=======================================================================*/
+  /* II) Fill the dictionary with words */
   /*-----------------------------------------------------------------------*/ 
   /*  1) \atom1{} */
   strcpy((*explicit_lj_dict)[1].keyword,"atom1");
