@@ -60,6 +60,23 @@ void GSpaceDriver::pup(PUP::er &p)
   p|sfCompSectionProxy;
 }
 
+/** Prints out timings and calls a reduction letting the instance controller
+ *  know that the computation is complete.
+ */
+void GSpaceDriver::finishComputation() {
+#ifdef _CP_SUBSTEP_TIMING_
+#if USE_HPM
+  // Print additional timing information
+  (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif
+#endif
+  // Contribute to a reduction to let the instance controller know
+  // that the computation is complete.
+  CkCallback cb(CkIndex_InstanceController::cleanExit(NULL),
+      CkArrayIndex1D(thisInstance.proxyOffset),
+      instControllerProxy);
+  contribute(cb);
+}
 
 
 
@@ -104,11 +121,7 @@ void GSpaceDriver::startControl()
   /// Do other initialization chores
   init();
   /// Call the SDAG method in charge of control flow
-  if (cp_min_opt==1) {
-	  driveMinimization();
-  } else {
-    driveDynamics();
-  }
+  driveGSpace();
 }
 
 
