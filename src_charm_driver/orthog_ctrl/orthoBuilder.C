@@ -53,12 +53,9 @@ namespace cp {
       availGlobR->reset();
       PeList *avail= new PeList();
       MapType2 orthoMapTable;
-      if (cfg.instanceIndex == 0)
-      {
-        orthoMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
-
-        int success = 0;
-        if(config.loadMapFiles)
+      orthoMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
+      int success = 0;
+      if(config.loadMapFiles)
         {
           int size[2];
           size[0] = size[1] = cfg.numStates/cfg.grainSize;
@@ -66,26 +63,22 @@ namespace cp {
           success = mf->loadMap("OrthoMap", &orthoMapTable);
           delete mf;
         }
-        if(success == 0)
-        {
+      if(success == 0)
+	{
           SCalcMap *asymmMap = CProxy_SCalcMap(asymmHandle.mapperGID).ckLocalBranch();
           MapType4 *maptable = asymmMap->getMapTable();
           OrthoMapTable Otable = OrthoMapTable(&orthoMapTable, avail, cfg.numStates, cfg.grainSize, maptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
         }
-
-        // Save a globally visible handle to the mapTable that builders of other ortho instances can access
-        impl::dirtyGlobalMapTable4Ortho = new MapType2(orthoMapTable);
-      }
-      // else, simply translate the instance 0 ortho map
-      else
+      if (cfg.instanceIndex > 0)
       {
         int x = mapCfg.mapOffset.getx();
         int y = mapCfg.mapOffset.gety();
         int z = mapCfg.mapOffset.getz();
-        if((CkNumPes()==1) && !mapCfg.isTorusFake)
-          orthoMapTable = *impl::dirtyGlobalMapTable4Ortho;
-        else
-          orthoMapTable.translate(impl::dirtyGlobalMapTable4Ortho, x, y, z, mapCfg.isTorusMap);
+        if((CkNumPes()>1) || mapCfg.isTorusFake)
+	  {
+	    MapType2 orthoMapTableCopy(orthoMapTable);
+	    orthoMapTable.translate(&orthoMapTableCopy, x, y, z, mapCfg.isTorusMap);
+	  }
       }
 
       double newtime=CmiWallTimer();
@@ -118,8 +111,6 @@ namespace cp {
       orthoOpts.setStaticInsertion(true);
       orthoOpts.setAnytimeMigration(false);
       CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
-
-
 
       // Create maps for the Ortho helper chares
       if(config.useOrthoHelpers)

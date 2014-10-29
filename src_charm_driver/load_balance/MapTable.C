@@ -154,7 +154,7 @@ void IntMap1::translate(IntMap1 *fromMap, int offsetX, int offsetY, int offsetZ,
   else
   {
     for(int xind=0; xind<keyXmax; xind++)
-      set(xind,fromMap->get(xind)+offsetX);
+      set(xind,(fromMap->get(xind)+offsetX)%config.numPes);
   }
 };
 
@@ -193,7 +193,7 @@ void IntMap2on2::translate(IntMap2on2 *fromMap, int offsetX, int offsetY, int of
   {
     for(int xind=0; xind<keyXmax; xind++)
       for(int yind=0; yind<keyYmax; yind++) {
-        set(xind, yind,fromMap->get(xind, yind)+offsetX);
+        set(xind, yind,(fromMap->get(xind, yind)+offsetX)%config.numPes);
       }
   }
 };
@@ -239,7 +239,7 @@ void IntMap3::translate(IntMap3 *fromMap, int offsetX, int offsetY, int offsetZ,
     for(int xind=0; xind<keyXmax; xind++)
       for(int yind=0; yind<keyYmax; yind++) {
         for(int zind=0; zind<keyZmax; zind++) {
-          set(xind, yind, zind, fromMap->get(xind, yind,zind)+offsetX);
+          set(xind, yind, zind, (fromMap->get(xind, yind,zind)+offsetX)%config.numPes);
         }
       }
   }
@@ -293,7 +293,7 @@ void IntMap4::translate(IntMap4 *fromMap, int offsetX, int offsetY, int offsetZ,
       for(int xind=0; xind<keyXmax; xind++){
         for(int yind=0; yind<keyYmax; yind++) {
           for(int zind=0; zind<keyZmax; zind++) {
-            set(wind, xind*keyStep, yind*keyStep, zind, fromMap->get(wind, xind*keyStep, yind*keyStep,zind)+offsetX);
+            set(wind, xind*keyStep, yind*keyStep, zind, (fromMap->get(wind, xind*keyStep, yind*keyStep,zind)+offsetX)%config.numPes);
           }
         }
       }

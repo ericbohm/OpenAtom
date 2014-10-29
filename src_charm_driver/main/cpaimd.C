@@ -120,6 +120,7 @@
  * ![Overview Of OpenAtom Control Flow](controlFlowAmongstChareArrays_small.gif)
  */
 
+int numPes;
 #include "cpaimd.h"
 
 #include "InstanceController.h"
@@ -168,7 +169,7 @@ UberCollection thisInstance;
  * torus map logic on non torus architectures.
  */
 /**@{*/
-int numPes;
+
 bool fakeTorus;
 extern void initFFTLock(void);
 
@@ -409,7 +410,7 @@ main::main(CkArgMsg *msg) {
   /* choose whether ortho should use local callback */
   Ortho_use_local_cb = true;
   paircalcstartup(&cfgSymmPC, &cfgAsymmPC, sim, doublePack);
-
+  cp::ortho::orthoConfig orthoCfg;
   //============================================================================    
   // Compute structure factor grp parameters and static map for chare arrays
   /**@}*/
@@ -649,8 +650,9 @@ main::main(CkArgMsg *msg) {
 
 		//============================================================================
 		// Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
-		cp::ortho::orthoConfig orthoCfg;
+
 		orthostartup(&orthoCfg, &cfgSymmPC, &cfgAsymmPC, sim, peList4PCmapping);
+
 
 		//============================================================================
 		// compute the location for the non-local Z reduction roots for each plane
@@ -3244,9 +3246,8 @@ void orthostartup( cp::ortho::orthoConfig *orthoCfg,  pc::pcConfig *cfgSymmPC, p
   // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
   cfgSymmPC->uponSetupCompletion  = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
   cfgAsymmPC->uponSetupCompletion = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
-
-  // Identify who is the owner for this bubble
-  CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
+		// Identify who is the owner for this bubble
+		CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
 
   // Fill out a structure with all configs needed for PC mapping
   cp::startup::PCMapConfig pcMapCfg(boxSize, 
@@ -3259,6 +3260,7 @@ void orthostartup( cp::ortho::orthoConfig *orthoCfg,  pc::pcConfig *cfgSymmPC, p
   // Delegate the actual construction/initialization to a creation manager
   cp::startup::PCCreationManager pcCreator(*cfgSymmPC, *cfgAsymmPC, *orthoCfg);
   pcCreator.build(pcHandleCB, pcMapCfg);
+
 }
 
 //============================================================================
