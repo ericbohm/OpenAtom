@@ -3,9 +3,22 @@
 //============================================================================
 /** \file CP_Rho_RHartExt.C
  *
- *  This is a description of the "life" of a CP_Rho_RHartExt object
+ *  At the start of the program, the constructor CP_Rho_RHartExt is
+ *  called, FFTs set up and registration with the atoms cache is
+ *  performed. This chare is only needed for the N log N EES Ext method.
  *
- *  Fill in details here
+ *  CP_Rho_RHartExt is started by a message sent from a launch
+ *  point chare array selected by the user as a configurable
+ *  parameter.
+ *
+ *  When the launch command arrives, the chare pops the atom cache for
+ *  an EES approximate to the 1st atom type structure factor in real space.
+ *  This is partly ffted to atmsf(gx,gy,z) then sent back to
+ *  GHartExt. GHartEext does its dance and sends back data that can be
+ *  used to compute the atom forces from the Ext energy of this atom
+ *  type. The fft is completed and forces on the atoms added. The 
+ *
+ *  
  */ 
 //============================================================================
 
@@ -1100,9 +1113,11 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
 
 
 //============================================================================
-// Get forces on atoms from Ewald or electrons
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * Get forces on atoms from Ewald or electrons by EES method
+ */
 //============================================================================
 void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
   //============================================================================
@@ -1223,7 +1238,9 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// Glenn's Rhart exit 
+/**
+ * Glenn's RhartExt exit  - handy, dandy debugging exit call
+ */
 //============================================================================
 void CP_Rho_RHartExt::exitForDebugging(){
   countDebug++;  

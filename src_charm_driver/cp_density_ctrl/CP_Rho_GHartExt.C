@@ -8,17 +8,25 @@
  *  called.  We create our own rho_gs slab because we need the
  *  kvectors and the fft code.
  *
- *  Each iteration, the CP_Rho_GpacePlane object sends us the same rho
- *  data it will use in its own FFTs.  We then call the very intensive
- *  HartExtVksG function on the data.  We contribute the energy to the
- *  reduction, fft the vks, and ship the vks to rhoReal.
+ *  N^2 method:
+ *   Each iteration, the CP_Rho_GpacePlane object sends us the same rho
+ *   data it will use in its own FFTs.  We then call the very intensive
+ *   HartExtVksG function on the data.  We contribute the energy to the
+ *   reduction, fft the vks, and ship the vks to rhoReal. Done!
  *
- *  Then we're done until the next iteration.
+ *
+ *  N log N EES (Euler-Exponential Spline) method:
+ *   Each iteration, the CP_Rho_GpacePlane object sends us the same rho
+ *   data it will use in its own FFTs.  The CP_Rho_RHartExt object will 
+ *   send a partially FFTed EES approximated atom structure factor for an
+ *   atom type. The atom types (water has two) are parallelized by nchareHartAtmT.
+ *   Using an EES Atm SF and the density, eext energy, VKS and atom forces are computed.
+ *   Atom forces need to go back to RHartEext to be completed and applied to that atoms.
+ *   When all the atom types are down, the total atom SF is accumulated and used to 
+ *   compute the Ewald energy - hartree is computed at the same time. The vks is partly 
+ *   ffted and shipped back to rhoReal. The ewald is partly ffted and shipped back 
+ *   to CP_Rho_RHartExt to get the forces on the atoms. Done!
  * 
- *  There is no RthThread control loop here because there is no
- *  meaningful flow of entry methods.  We get a message, we calculate,
- *  we send, we're done.  This object exists solely as a way to
- *  parallelize the uncomfortably long HartExtVks computation.
  */ 
 //============================================================================
 
@@ -68,6 +76,7 @@ extern ComlibInstanceHandle         commGHartRHartIns1;
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 /**
  *  This object just gets a rho message, computes GHartExt, and sends
  *  vks.  
@@ -76,7 +85,7 @@ extern ComlibInstanceHandle         commGHartRHartIns1;
 CP_Rho_GHartExt::CP_Rho_GHartExt(
     int _ngridaEext, int _ngridbEext, int _ngridcEext, int _ees_eext_on,
     int _natmTyp, UberCollection _instance) :thisInstance(_instance)
-                                             //============================================================================
+//============================================================================
 {//begin routine
   //============================================================================
 
@@ -217,6 +226,10 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(
   usesAtSync = true;
   if(config.lbdensity){
     setMigratable(true);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Hold on there pardner! Migratable true in CP_Rho_GHartExt?? \n",
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
   }else{
     setMigratable(false);
   }//endif
@@ -227,9 +240,13 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(
 
 
 //============================================================================
-// Post constructor initialization
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * Post constructor initialization - register in the ees cache if
+ * necessary, contribute to cache reductions, set up some proxies, setmigratable,
+ * periodic BC for wires,surfaces,clusters ...
+ */
 //============================================================================
 void CP_Rho_GHartExt::init(){
   //==================================================================================
@@ -357,9 +374,12 @@ void CP_Rho_GHartExt::pup(PUP::er &p){
 //============================================================================
 
 //============================================================================
-// The density arrives from RhoGspace ONCE a time step
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** 
+ * The density arrives from RhoGspace - ONCE a time step (iteration).
+ * Invoke compute of eext and/or Hartree energy is you have all the stuff you need.
+ */
 //============================================================================
 void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
   //============================================================================
@@ -412,9 +432,11 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 
 
 //============================================================================
-// Compute hartree eext and vks using the N^2 method
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** 
+ * Compute hartree eext and vks using the N^2 method
+ */
 //============================================================================
 void CP_Rho_GHartExt::HartExtVksG() { 
   //============================================================================
@@ -488,7 +510,11 @@ void CP_Rho_GHartExt::HartExtVksG() {
 
 
 //============================================================================
-// Partly fft vks(gx,gy,gz) -> vks(gx,gy,z)
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** 
+ * Partly fft vks(gx,gy,gz) -> vks(gx,gy,z) then invoke transpose
+ */
 //============================================================================
 void CP_Rho_GHartExt::FFTVks() { 
   //============================================================================
@@ -528,9 +554,13 @@ void CP_Rho_GHartExt::FFTVks() {
 
 
 //============================================================================
-// Send vks_hart_ext back to rho_real where fft(gx,gy) will be performed
+// 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** 
+ * Send vks_hart_ext back to rho_real where fft(gx,gy)-> fft(x,y) performed
+ */
 //============================================================================
 void CP_Rho_GHartExt::sendVks() { 
   //============================================================================
@@ -634,9 +664,15 @@ void CP_Rho_GHartExt::sendVks() {
 //============================================================================
 
 //==========================================================================
-// Make sure everyone is registered on the 1st time step
+
+
+
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** 
+ * Make sure everyone is registered in the Cache on the 1st time step
+ */
 //==========================================================================
 void CP_Rho_GHartExt::registrationDone(CkReductionMsg *msg) {
   //==========================================================================
@@ -656,10 +692,13 @@ void CP_Rho_GHartExt::registrationDone(CkReductionMsg *msg) {
 //==========================================================================
 
 
-//============================================================================
-// Recv Atm SF from RhoRhart : Euler Exponential spline based method
+ 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** 
+ *  Recv Atm SF (gx,gy,z) from RhoRhart : Euler Exponential spline based method
+ */
 //============================================================================
 void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
   //============================================================================
@@ -767,10 +806,11 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
 
 
 //============================================================================
-// Finish FFting to G-space  ::
-//         2D)  atmSF(gx,gy,z) -> atmSF(gx,gy,gz)
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** Finish FFting to G-space  ::
+ *         2D)  atmSF(gx,gy,z) -> atmSF(gx,gy,gz)
+ */
 //============================================================================
 void CP_Rho_GHartExt::FFTEesBck(){
   //============================================================================
@@ -809,7 +849,11 @@ void CP_Rho_GHartExt::FFTEesBck(){
 
 
 //============================================================================
-// compute HartreeEextEes
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * compute HartreeEextEes
+ */
 //============================================================================
 void CP_Rho_GHartExt::getHartEextEes(){
   //============================================================================
@@ -943,9 +987,11 @@ void CP_Rho_GHartExt::getHartEextEes(){
 
 
 //============================================================================
-// Statr FFting to R-space atmSF(gx,gy,gz) -> atmSF(gx,gy,z)
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * Start FFTing back to R-space atmSF(gx,gy,gz) -> atmSF(gx,gy,z)
+ */
 //============================================================================
 void CP_Rho_GHartExt::FFTEesFwd(int flag){
   //============================================================================
@@ -976,9 +1022,12 @@ void CP_Rho_GHartExt::FFTEesFwd(int flag){
 
 
 //============================================================================
-// Send the SF data to back to Rhart to get atm forces
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** 
+ * Send the SF(z,gx,gy) data to back to Rhart to get atm forces
+ */
 //============================================================================
 void CP_Rho_GHartExt::sendAtmSF(int flag){
   //============================================================================
@@ -1103,9 +1152,11 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 //============================================================================
 
 //============================================================================
-// Collect the SF from all the atm type chares on chare 0
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * Collect the SF from all the atm type chares on chare 0 to compute Ewald sum
+ */
 //============================================================================
 void CP_Rho_GHartExt::acceptAtmSFTot(int size, complex *inSF){
   //============================================================================
@@ -1166,9 +1217,12 @@ void CP_Rho_GHartExt::acceptAtmSFTot(int size, complex *inSF){
 
 
 //============================================================================
-// Collect the VKS from all the atm type chares on chare 1
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * Reduce VKS contribs from all the eext atm type chares onto chare 0
+ * Invoke the FFT back to real space when it is all here
+ */
 //============================================================================
 void CP_Rho_GHartExt::acceptVks(int size, complex * inVks){
   //============================================================================
@@ -1200,7 +1254,9 @@ void CP_Rho_GHartExt::acceptVks(int size, complex * inVks){
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// Glenn's special exit 
+/** 
+ * Glenn's special exit for debugging - convenient to have around and not rewrite.
+ */
 //============================================================================
 void CP_Rho_GHartExt::exitForDebugging(){
   //============================================================================

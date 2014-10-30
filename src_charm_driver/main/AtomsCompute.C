@@ -526,6 +526,27 @@ void AtomsCompute::integrateAtoms(){
   }//endif
 
   //============================================================
+  // Just a little debug, early in the computation, beats a cup of coffee
+  /*#define _DEBUG_PIMD_TRANSFORM_*/
+#ifdef _DEBUG_PIMD_TRANSFORM_
+   if(numPIMDBeads>1 && cp_min_opt==0 && cp_wave_opt==0 && natmNow>0){
+      AtomsCache *ag = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
+      int iter_now = ag->iteration;
+      char fname[100];
+      sprintf(fname,"BeadTransformTest_Bead.%d_Atm.%d_%d_Iter.%d",mybead,natmStr,natmEnd,iter_now);
+      FILE *fp = fopen(fname,"w");
+      for(int ii=natmStr; ii<natmEnd;ii++){
+        fprintf(fp,"%g %g %g %g %g %g %g %g %g\n",
+                    atoms[ii].x  ,atoms[ii].y  ,atoms[ii].z,
+                    atoms[ii].xu ,atoms[ii].yu ,atoms[ii].zu,
+                    atoms[ii].fx ,atoms[ii].fy ,atoms[ii].fz,
+   		    atoms[ii].fxu,atoms[ii].fyu,atoms[ii].fzu);
+      }//endfor
+      fclose(fp);
+   }//endif
+   
+#endif
+  //============================================================
   // Integrate the atoms : Path Integral Ready
 
 #ifndef  _CP_DEBUG_SCALC_ONLY_ 
