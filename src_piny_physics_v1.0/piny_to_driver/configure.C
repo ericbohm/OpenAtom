@@ -76,9 +76,8 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   if(nspin>1){
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
     PRINTF("    Danger, Danger, nspin > 1 = %d\n",nspin);
-    PRINTF("    This is not yet supported in any way, shape or form\n");
+    PRINTF("    This is only experimentally supported\n");
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
-    EXIT(1);
   }//endif
 
   if(ntemper>1){
@@ -121,9 +120,8 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   if(nkpoint>1){
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
     PRINTF("    Danger, Danger, nkpoint > 1 = %d\n",nkpoint);
-    PRINTF("    This is not yet supported in any way, shape or form in this version\n");
+    PRINTF("    This is only experimentally supported in this version\n");
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
-    EXIT(1);
   }//endif
 
   if(nspin>1){

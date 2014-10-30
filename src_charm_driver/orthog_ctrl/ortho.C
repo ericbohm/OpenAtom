@@ -263,7 +263,7 @@ void Ortho::collect_results(void){
   // Output debug information then increment iteration counter
 
 #ifdef _CP_DEBUG_TMAT_
-  print_results();
+  dumpMatrix("tmat",(double *)A, m, n,numGlobalIter,thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 #endif
 #ifdef TRACE_MEMORY
   traceMemoryUsage();
@@ -875,6 +875,11 @@ void Ortho::pup(PUP::er &p){
   PUParray(p,B, m * n);
   PUParray(p,C, m * n);
   PUParray(p,tmp_arr, m * n);
+}
+
+void Ortho::print_results()
+{
+  dumpMatrix("tmat", A, m, n,numGlobalIter,thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 }
 
 #include "orthoMap.h"
