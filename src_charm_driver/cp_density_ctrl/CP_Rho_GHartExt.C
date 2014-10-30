@@ -227,7 +227,7 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(
   if(config.lbdensity){
     setMigratable(true);
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Hold on there pardner! Migratable true in CP_Rho_GHartExt?? \n",
+    CkPrintf("Hold on there pardner. Migratable true in CP_Rho_GHartExt?? \n");
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }else{
