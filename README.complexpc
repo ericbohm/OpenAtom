@@ -1,0 +1,14 @@
+Append -DCP_PAIRCALC_USES_COMPLEX_MATH to the CPPFLAGS line in your config.mk
+An example here:
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -I$(FFT_HOME)/include -DCP_PAIRCALC_USES_COMPLEX_MATH 
+
+
+If you want lambda dumps, append this to the CPPFLAGS in config.mk
+CPPFLAGS += -D_CP_GS_DUMP_LAMBDA_
+
+Compile and enjoy complex-pc
+
+For debugging purposes, add these to the PINY input file to override physics validity warnings that would otherwise reject your not quite right k-points.
+
+   \cp_allow_duplicate_kpts{on}
+   \cp_force_complex_psi{on}
