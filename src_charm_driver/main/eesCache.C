@@ -75,9 +75,6 @@ eesCache::eesCache(int _nchareRPP, int _nchareGPP, int _nchareRHart,
   nchareRHartProc = 0;
   nchareGHartProc = 0;
 
-  gspStateInd     = new int [nMallSize];
-  gspPlaneInd     = new int [nMallSize];
-
   allowedRppChares      = new int[nchareRPP];
   allowedGppChares      = new int[nchareGPP];
   allowedRhoRHartChares = new int[nchareRHart];
@@ -196,7 +193,7 @@ void eesCache::registerCacheGHart(int index, int ncoef, int *ka, int *kb, int *k
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void eesCache::registerCacheGSP(int is ,int ip){
+void eesCache::registerCacheGSP(int kpt, int spin, int is ,int ip){
 
   if(allowedGspChares[ip]==0){
     nchareGSPProc       += 1;
@@ -206,28 +203,11 @@ void eesCache::registerCacheGSP(int is ,int ip){
   }//endif
 
   int i = nchareGSPProcT;
-  if(nMallSize<=i ){
-    CkPrintf("Bad Mall size in registerCacheGSP %d %d\n",nMallSize,i);
-    CkExit();
-  }//endif
 
-  gspStateInd[i]  = is;
-  gspPlaneInd[i]  = ip;
+  gspKptSpinStatePlaneVec.push_back(KthSpinStatePlaneTuple(kpt, spin, is, ip));
+  //  CkPrintf("[%d] register kpt %d spin %d state %d plane %d\n", CkMyPe(), kpt, spin, is, ip);
   nchareGSPProcT += 1;
 
-  if(2*nchareGSPProcT >= nMallSize){
-    nMallSize *= 2;
-    int *tempS = new int [nMallSize];
-    int *tempP = new int [nMallSize];
-    for(int j=0;j<nchareGSPProcT;j++){
-      tempS[j] = gspStateInd[j];
-      tempP[j] = gspPlaneInd[j];
-    }//endfor
-    delete [] gspStateInd;
-    delete [] gspPlaneInd;
-    gspStateInd = tempS;
-    gspPlaneInd = tempP;
-  }//endif
 }
 //==============================================================================
 

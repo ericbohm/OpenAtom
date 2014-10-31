@@ -2936,7 +2936,6 @@ void Config::simpleRangeCheck(){
   rangeExit(PCCollectTiles,"PCCollectTiles",1);
   rangeExit(PCdelayBWSend,"PCdelayBWSend",1);    
   rangeExit(PCstreamBWout,"PCstreamBWout",1);
-  rangeExit(doublePack,"doublePack",1);
   rangeExit(fftprogresssplit,"fftprogresssplit",0);
   rangeExit(fftprogresssplitReal,"fftprogresssplitReal",0);
   rangeExit(rhoGHelpers,"rhoGHelpers",0);

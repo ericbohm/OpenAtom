@@ -1221,7 +1221,7 @@ void GEN_WAVE::read_kpoints(int kpt_file_name_set,char *kpt_fname, int istart)
   /* ALL assigned after input and/or dynamic memory allocation */
   int igamma_kpt_ind;
   int nkpoint_now;
-  int doublepack;
+  int doublepack=1;
   double *akpoint;
   double *bkpoint;
   double *ckpoint;

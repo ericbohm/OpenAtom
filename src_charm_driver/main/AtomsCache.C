@@ -222,33 +222,28 @@ void AtomsCache::releaseGSP() {
   //==========================================================================
   // Use the cool new data caching system to say we're done.
 
-
-  //each k-point needs to be handled
-  for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ 
-
-    UberCollection thisPoint=thisInstance;
-    thisPoint.idxU.y=kpoint; // not at the gamma point
-    thisPoint.setPO();
-    eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
-    CkAssert(eesData!=NULL);
-    int *indState     = eesData->gspStateInd;
-    int *indPlane     = eesData->gspPlaneInd;
-    int ngo           = eesData->nchareGSPProcT;
-
-    for(int i=0; i<ngo; i++){
-      int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
+  //each co-located k-point and spin needs to be handled
+  eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+  int limit=eesData->gspKptSpinStatePlaneVec.length();
+  for(int i=0; i<limit; i++)
+    {
+      UberCollection thisPoint=thisInstance;
+      thisPoint.idxU.y=eesData->gspKptSpinStatePlaneVec[i].getKpoint();
+      thisPoint.idxU.s=eesData->gspKptSpinStatePlaneVec[i].getSpin();
+      thisPoint.setPO();
+      int state=eesData->gspKptSpinStatePlaneVec[i].getState();
+      int plane=eesData->gspKptSpinStatePlaneVec[i].getPlane();
+      int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](state,plane).ckLocal()->registrationFlag;
       if(iadd!=1){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
-            myid,iadd,indState[i],indPlane[i]);
+		 myid,iadd,state,plane);
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
       }//endif
       //       CkPrintf("{%d}[%d] AtomsCache::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
-      UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
+      UgSpaceDriverProxy[thisPoint.proxyOffset](state,plane).doneMovingAtoms(iteration); 
     }//endfor
-  }//endfor
-
   //==============================================================================
 }//end routine
 //==============================================================================

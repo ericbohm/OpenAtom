@@ -1300,6 +1300,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
       UberCollection zeroKpointInstance=thisInstance;
       zeroKpointInstance.idxU.y=0;
+      zeroKpointInstance.idxU.s=0;
       int proxyOffset=zeroKpointInstance.setPO();
       // At some future point we could split the cache proxy so that
       // it could be shared across pretty much any kind of instance.
