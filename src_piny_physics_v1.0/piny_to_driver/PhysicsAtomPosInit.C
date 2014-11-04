@@ -53,6 +53,7 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
   iextended_on  = (mdtherm_info->iextended_on);
   kT            = (genstatepoint->t_ext)/BOLTZ;
   cp_min_opt    = (gensimopts->cp_wave_min+gensimopts->cp_min);
+  cp_bomd_opt   = gensimopts->cp_bomd;
   istart_typ    = gensimopts->istart;
   num_nhc       = (mdtherm_info->num_nhc);
   len_nhc       = (mdtherm_info->len_nhc);
@@ -235,7 +236,7 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
     }//endif
   }//endfor
 
-  if(cp_min_opt==0 && iextended_on==1  && num_nhc>0){
+  if((cp_min_opt==0 || cp_bomd_opt == 1) && iextended_on==1  && num_nhc>0){
     for(int i=0;i<natm_tot;i++){
       int iii = 3*i+1;
       for(int j=0,j1=1;j<len_nhc;j++,j1++){

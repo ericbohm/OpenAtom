@@ -64,8 +64,8 @@ extern CProxy_PhysScratchCache pScratchProxy;
  */
 //==============================================================================
 AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
-    int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC, int nChareAtoms_,
-    UberCollection _thisInstance) : natm(n), natm_nl(n_nl), len_nhc(len_nhc_), iextended_on(iextended_on_), cp_min_opt(cp_min_opt_), cp_wave_opt(cp_wave_opt_), isokin_opt(isokin_opt_), kT(kT_), nChareAtoms(nChareAtoms_), thisInstance(_thisInstance) 
+    int cp_wave_opt_, int cp_bomd_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC, int nChareAtoms_,
+    UberCollection _thisInstance) : natm(n), natm_nl(n_nl), len_nhc(len_nhc_), iextended_on(iextended_on_), cp_min_opt(cp_min_opt_), cp_wave_opt(cp_wave_opt_), cp_bomd_opt(cp_bomd_opt_), isokin_opt(isokin_opt_), kT(kT_), nChareAtoms(nChareAtoms_), thisInstance(_thisInstance) 
                                     //==============================================================================
 {// begin routine
   //==============================================================================
@@ -119,7 +119,7 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
   ftot           = (double *)fftw_malloc((3*natm+2)*sizeof(double));
 
   zeroforces();
-  if(iextended_on==1 && cp_min_opt==0){
+  if(iextended_on==1 && (cp_min_opt==0 || cp_bomd_opt==1)){
     zeronhc();
   }//endif
 
@@ -516,12 +516,18 @@ void AtomsCompute::integrateAtoms(){
 #endif
 
   //============================================================
+  // Move atoms
+  int move_atoms = 0;
+  if(cp_min_opt==0 && cp_wave_opt==0) { move_atoms = 1; }
+  if(cp_bomd_opt==1 && tol_reached==1) { move_atoms = 1; }
+
+  //============================================================
   // Path integral :  Overwrite variables to keep integrator clean:
   //                  Add the chain force to transformed forces.
   //                  Scale the masses to fict bead masses
   //                  This is PIMD Respa implementation friendly 
 
-  if(numPIMDBeads>1 && cp_min_opt==0 && cp_wave_opt==0 && natmNow>0){
+  if(numPIMDBeads>1 && move_atoms && natmNow>0){
     switchPIMDBeadForceMass(mybead,natmStr,natmEnd,&potPIMDChain_loc);
   }//endif
 
@@ -529,7 +535,7 @@ void AtomsCompute::integrateAtoms(){
   // Just a little debug, early in the computation, beats a cup of coffee
   /*#define _DEBUG_PIMD_TRANSFORM_*/
 #ifdef _DEBUG_PIMD_TRANSFORM_
-   if(numPIMDBeads>1 && cp_min_opt==0 && cp_wave_opt==0 && natmNow>0){
+   if(numPIMDBeads>1 && move_atoms && natmNow>0){
       AtomsCache *ag = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
       int iter_now = ag->iteration;
       char fname[100];
@@ -551,7 +557,7 @@ void AtomsCompute::integrateAtoms(){
 
 #ifndef  _CP_DEBUG_SCALC_ONLY_ 
   ATOMINTEGRATE::ctrl_atom_integrate(*iteration,natm,len_nhc,cp_min_opt,
-      cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
+      cp_wave_opt,cp_bomd_opt,tol_reached,iextended_on,atoms,atomsNHC,myid,
       &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
       myoutput_on,natmNow,natmStr,natmEnd,mybead);
 #endif
@@ -559,7 +565,7 @@ void AtomsCompute::integrateAtoms(){
   //============================================================
   // Path integral :  Rescale to the physical masses
 
-  if(numPIMDBeads>1 && cp_min_opt==0 && cp_wave_opt==0 && natmNow>0){
+  if(numPIMDBeads>1 && move_atoms==1 && natmNow>0){
     unswitchPIMDMass(mybead,natmStr,natmEnd);
   }//endif
 
@@ -584,7 +590,7 @@ void AtomsCompute::integrateAtoms(){
 
   zeroforces();
 
-  if(cp_wave_opt==0 && cp_min_opt==0){
+  if(move_atoms==1){
     if(natmNow>0){
       sendAtoms(eKinetic_loc,eKineticNhc_loc,potNhc_loc,potPIMDChain_loc,natmNow,natmStr,natmEnd);
     }//endif
@@ -689,6 +695,9 @@ void AtomsCompute::outputAtmEnergy() {
   double potNhc         = eg->estruct.potNhc_atm;
   double free_atm       = 3*((double)natm);
   int iperd             = sim->iperd;
+  int move_atoms=0;
+  if (cp_min_opt==0 && cp_min_wave==0) { move_atoms = 1; }
+  if (cp_bomd_opt==1 && tol_reached==1) { move_atoms = 1; }
 
   if(myid==0){
     if(iperd!=0){
@@ -701,7 +710,7 @@ void AtomsCompute::outputAtmEnergy() {
     }else{
       fprintf(temperScreenFile,"Iter [%d] ATM_COUL    = %5.8lf\n",*iteration, pot_ewd_rs_now);
     }//endif
-    if(cp_min_opt==0){
+    if(move_atoms==1){
       fprintf(temperScreenFile,"Iter [%d] atm eKin    = %5.8lf\n",*iteration, eKinetic);
       fprintf(temperScreenFile,"Iter [%d] atm Temp    = %5.8lf\n",*iteration, (2.0*eKinetic*BOLTZ/free_atm));
       fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",*iteration, fmag);
@@ -1049,10 +1058,13 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
 
 void AtomsCompute::atomsDone(CkReductionMsg *msg)
 {
+  int move_atoms = 0;
+  if(cp_min_opt==0 && cp_wave_opt==0) { move_atoms = 1; }
+  if(cp_bomd_opt==1 && tol_reached==1) { move_atoms = 1; }
   // This means that all the atomCompute chares are done integrating
   // in minimization.  Tell the atomCaches they can go ahead now.
   delete msg;
-  if(cp_wave_opt==0 && cp_min_opt==0)
+  if(move_atoms==1)
     bcastAtomsToAtomCache();
   else
     UatomsCacheProxy[thisInstance.proxyOffset].atomsDone();

@@ -28,6 +28,7 @@ class PhysicsAtomPosInit{
     int            natm_nl;
     int            iextended_on;
     int            cp_min_opt;
+    int            cp_bomd_opt;
     int            cp_wave_opt;
     int            num_nhc;
     int            len_nhc;
