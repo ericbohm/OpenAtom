@@ -15,6 +15,22 @@
 //============================================================================
 // Group Container class : Only allowed chare data classes have data.
 //============================================================================
+
+struct KthSpinStatePlaneTuple {
+ public:
+  int kpoint, spin, state, plane;
+  KthSpinStatePlaneTuple() {}
+  KthSpinStatePlaneTuple(int _kpoint, int _spin, int _state, int _plane) : kpoint(_kpoint), spin(_spin), state(_state), plane(_plane) {}
+  inline int getKpoint(){return kpoint;}
+  inline int getSpin(){return spin;}
+  inline int getState(){return state;}
+  inline int getPlane(){return plane;}
+  inline int setKpoint(int _kpoint){kpoint=_kpoint;return kpoint;}
+  inline int setSpin(int _spin){spin=_spin;return spin;}
+  inline int setState(int _state){state=_state;return state;}
+  inline int setPlane(int _plane){plane=_plane;return plane;}
+};
+
 class eesCache: public Group {
   public:
     // Variables
@@ -25,8 +41,7 @@ class eesCache: public Group {
 
     int nstates;
     int nchareGSPProcT;           // Total number of GSP on proc
-    int *gspStateInd;             // state index of gsp chare on proc
-    int *gspPlaneInd;             // state index of gsp chare on proc
+    CkVec <KthSpinStatePlaneTuple> gspKptSpinStatePlaneVec;             // state index of gsp chare on proc
     int nMallSize;
 
     int nchareGPP;              // Chare Plane array index sizes
@@ -78,7 +93,7 @@ class eesCache: public Group {
     void registerCacheRPP  (int );
     void registerCacheGHart(int ,int, int *,int *,int*);
     void registerCacheRHart(int );
-    void registerCacheGSP(int,int);
+    void registerCacheGSP(int, int, int,int);
     void registerCacheRHOG(int );
 
     // Ask the cache if it is warm

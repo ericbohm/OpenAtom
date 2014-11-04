@@ -174,34 +174,28 @@ void EnergyGroup::energyDone(){
   // Use the cool new data caching system
 
   int myid          = CkMyPe();
-  for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ //each
-    //k-point
-    //needs to be
-    //handled
-    //     CkPrintf("{%d}[%d] EnergyGroup::energyDone.\n ", thisInstance.proxyOffset, CkMyPe());     
-    UberCollection thisPoint=thisInstance;
-    thisPoint.idxU.y=kpoint; // not at the gamma point
-    thisPoint.setPO();
-
-    eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
-    int *indState     = eesData->gspStateInd;
-    int *indPlane     = eesData->gspPlaneInd;
-    int ngo           = eesData->nchareGSPProcT;
-    for(int i=0; i<ngo; i++){
-      int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
+  eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+  int limit=eesData->gspKptSpinStatePlaneVec.length();
+  for(int i=0; i<limit; i++)
+    {
+      UberCollection thisPoint=thisInstance;
+      thisPoint.idxU.y=eesData->gspKptSpinStatePlaneVec[i].getKpoint();
+      thisPoint.idxU.s=eesData->gspKptSpinStatePlaneVec[i].getSpin();
+      thisPoint.setPO();
+      int state=eesData->gspKptSpinStatePlaneVec[i].getState();
+      int plane=eesData->gspKptSpinStatePlaneVec[i].getPlane();
+      int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](state,plane).ckLocal()->registrationFlag;
       if(iadd!=1){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        CkPrintf("Energy : Bad registration cache flag on proc %d %d %d %d\n",
-            myid,iadd,indState[i],indPlane[i]);
+        CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
+		 myid,iadd,state,plane);
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
       }//endif
-      UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneComputingEnergy(iteration_atm); 
+      //       CkPrintf("{%d}[%d] AtomsCache::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
+      UgSpaceDriverProxy[thisPoint.proxyOffset](state,plane).doneComputingEnergy(iteration_atm); 
     }//endfor
-  }//endfor
 }//end routine
-
-
 
 
 /*//==========================================================================

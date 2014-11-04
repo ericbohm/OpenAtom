@@ -856,8 +856,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
     registrationFlag  = 1;
     eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-    eesData->registerCacheGSP(thisIndex.x,thisIndex.y);
-
+    eesData->registerCacheGSP(thisInstance.idxU.y, thisInstance.idxU.s, thisIndex.x,thisIndex.y);
     //============================================================================
     // Section Reductions and SF proxy creation
 

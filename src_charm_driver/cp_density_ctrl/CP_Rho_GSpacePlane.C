@@ -644,6 +644,10 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+/**
+ * Send partly FFTed gradients back to RhoR one at a time
+ */
+//============================================================================
 void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) { 
   //============================================================================
 
@@ -778,6 +782,10 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+/**
+ * Send partly FFTed gradients back to RhoR all at once
+ */
+//============================================================================
 void CP_Rho_GSpacePlane::RhoGSendRhoRall() { 
   //============================================================================
 
@@ -850,16 +858,17 @@ void CP_Rho_GSpacePlane::RhoGSendRhoRall() {
 
 
 //============================================================================
-//  RhoReal sends rho(gx,gy,z) here such that it is now decomposed 
-//  with lines of constant gx,gy in funny order to load balance.
-//
-//  We cannot receive whitebyrds until every divRho sent above has been received
-//  and processed by RhoReal. Therefore, our divRho memory is safe and warm 
-//  while it it processing in the routines before the send. It is also safe
-//  during the send
-//
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ *  RhoReal sends rho(gx,gy,z) here such that it is now decomposed 
+ *  with lines of constant gx,gy in funny order to load balance.
+ *
+ *  We cannot receive whitebyrds until every divRho sent above has been received
+ *  and processed by RhoReal. Therefore, our divRho memory is safe and warm 
+ *  while it it processing in the routines before the send. It is also safe
+ *  during the send
+*/
 //============================================================================
 void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
   //============================================================================
@@ -963,16 +972,17 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
 
 
 //============================================================================
-//  RhoReal sends rho(gx,gy,z) here such that it is now decomposed 
-//  with lines of constant gx,gy in funny order to load balance.
-//
-//  We cannot receive whitebyrds until every divRho sent above has been received
-//  and processed by RhoReal. Therefore, our divRho memory is safe and warm 
-//  while it it processing in the routines before the send. It is also safe
-//  during the send
-//
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ *  RhoReal sends rho(gx,gy,z) here such that it is now decomposed 
+ *  with lines of constant gx,gy in funny order to load balance.
+ *
+ *  We cannot receive whitebyrds until every divRho sent above has been received
+ *  and processed by RhoReal. Therefore, our divRho memory is safe and warm 
+ *  while it it processing in the routines before the send. It is also safe
+ *  during the send
+*/
 //============================================================================
 void CP_Rho_GSpacePlane::acceptWhiteByrdAll(RhoGSFFTMsg *msg) {
   //============================================================================
@@ -1088,6 +1098,11 @@ void CP_Rho_GSpacePlane::acceptWhiteByrdAll(RhoGSFFTMsg *msg) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+/**
+    The partially FFT'ed white byrd correction to VKS arrives to RhoG 
+    and ffts invoked. Only happens if gradient corrections are on.
+ */
+//============================================================================
 void CP_Rho_GSpacePlane::acceptWhiteByrd() {
   //============================================================================
   // Set the timer and some options
@@ -1156,7 +1171,9 @@ void CP_Rho_GSpacePlane::ResumeFromSync(){
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// Glenn's RhoReal exit 
+/**
+ * Glenn's RhoG exit 
+ */
 //============================================================================
 void CP_Rho_GSpacePlane::exitForDebugging(){
   countDebug++;  

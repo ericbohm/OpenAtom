@@ -18,7 +18,6 @@
  *  used to compute the atom forces from the Ext energy of this atom
  *  type. The fft is completed and forces on the atoms added. The 
  *
- *  
  */ 
 //============================================================================
 
@@ -152,6 +151,10 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ *  Register in the atom cache etc.
+ */
 //============================================================================
 void CP_Rho_RHartExt::init(){
   //============================================================================
@@ -292,10 +295,12 @@ void CP_Rho_RHartExt::pup(PUP::er &p){
 
 
 //============================================================================
-// Invoke by Rspace-density : Density has arrived in r-space and will soon arrive
-//                            in g-space. Get moving RhartExt
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * Invoke by Rspace-density : Density has arrived in r-space and will soon arrive
+ *                            in g-space. Get moving RhartExt
+ */
 //============================================================================
 void CP_Rho_RHartExt::startEextIter(){
   //============================================================================
@@ -339,9 +344,11 @@ void CP_Rho_RHartExt::startEextIter(){
 
 
 //==========================================================================
-// Make sure everyone is registered on the 1st time step
-//==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/**
+ * Make sure everyone is registered on the 1st time step
+ */
 //==========================================================================
 void CP_Rho_RHartExt::registrationDone(CkReductionMsg *msg) {
   //==========================================================================
@@ -369,9 +376,11 @@ void CP_Rho_RHartExt::registrationDone(CkReductionMsg *msg) {
 
 
 //============================================================================
-// Start the real space part of the EES interpolation for atmSF(iatmTyp)
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * Start the real space part of the EES interpolation foratmSF(iatmTyp)
+ */
 //============================================================================
 void CP_Rho_RHartExt::computeAtmSF(){
   //============================================================================
@@ -425,7 +434,9 @@ void CP_Rho_RHartExt::computeAtmSF(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// FFT of SF(x,y,z,iatmTyp) -> SF(gx,gy,z,iatmTyp)
+/**
+ * FFT of SF(x,y,z,iatmTyp) -> SF(gx,gy,z,iatmTyp)
+ **/
 //============================================================================
 void CP_Rho_RHartExt::fftAtmSfRtoG(){
   //============================================================================
@@ -496,11 +507,11 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// Double Transpose Fwd Send : A(gx,y,z) on the way to A(gx,gy,z)
-//                             Send so that (y,z) parallelism is 
-//                             switched to (gx,z)
-//
+/**
+ * Double Transpose Fwd Send : A(gx,y,z) on the way to A(gx,gy,z)
+ *                             Send so that (y,z) parallelism is 
+ *                             switched to (gx,z)
+ **/
 //============================================================================
 void CP_Rho_RHartExt::sendAtmSfRyToGy(){
   //============================================================================
@@ -580,12 +591,12 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// Double Transpose Fwd Recv : A(gx,y,z) on the way to A(gx,gy,z)
-//                             Recv so that (y,z) parallel switched to (gx,z)
-//
-// Invoked natm_typ times per algorithm step : 
-//
+/**
+ * Double Transpose Fwd Recv : A(gx,y,z) on the way to A(gx,gy,z)
+ *                             Recv so that (y,z) parallel switched to (gx,z)
+ *
+ * Invoked natm_typ times per algorithm step : 
+ */
 //============================================================================
 void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
   //============================================================================
@@ -662,7 +673,10 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// Send SF(gx,gy,z,iatmTYP) to g-space whence the FFT will be completed
+/**
+ * Send EESatmSF(gx,gy,z,iatmTYP) to g-space whence the FFT will be
+ * completed
+ **/
 //============================================================================
 void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
   //============================================================================
@@ -758,10 +772,15 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 
 
 //============================================================================
-// Hartree sends back atom forces from e-atm interation
-// Depending on the flag, it is Ewald or e-atm interation
+// 
+// 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * Hartree sends back atom forces from ext interation
+ * Depending on the flag, it is Ewald or e-atm interation
+ */
 //============================================================================
 void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
   //============================================================================
@@ -884,9 +903,11 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
 
 
 //============================================================================
-// Complete the FFT : sf(gx,gy,z) ->sf(x,y,z)
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+    Start the FFT : eesExtAtmForc(gx,gy,z) -> eesExtAtmForc(x,y,z)
+ */
 //============================================================================
 void CP_Rho_RHartExt::fftAtmForcGtoR(int flagEwd){
   //============================================================================
@@ -939,6 +960,10 @@ void CP_Rho_RHartExt::fftAtmForcGtoR(int flagEwd){
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ *   Send out the partially transformed EES atom force for Rhosubplanes>1
+ */
 //============================================================================
 void CP_Rho_RHartExt::sendAtmForcGxToRx(int iopt){
   //============================================================================
@@ -1030,6 +1055,10 @@ void CP_Rho_RHartExt::sendAtmForcGxToRx(int iopt){
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ *  Recieve the partially transformed EES atom structure factor for Rhosubplanes>1
+ */
 //============================================================================
 void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
   //============================================================================
