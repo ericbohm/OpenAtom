@@ -60,7 +60,7 @@ module gSpaceDriver
     entry void driveGSpace() {
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! that we have met the desired tolerance by setting exitFlag to 1.
-      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag && !myGSpaceObj->exitFlagMin) {
+      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag) {
         if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
           //! Resets flags and increases the iteration counter
           serial { myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter(); }

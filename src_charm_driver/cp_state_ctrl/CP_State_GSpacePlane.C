@@ -186,7 +186,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
         exitFlag=1; outputFlag=1;
         if(thisIndex.x==0 && thisIndex.y==0){
           CkPrintf("----------------------------------------------\n");
-          CkPrintf("   CP wavefunction force tolerence reached!   \n");
+          CkPrintf("ALL CP wavefunction force tolerences reached! \n");
           CkPrintf("----------------------------------------------\n");
         }//endif
       }
