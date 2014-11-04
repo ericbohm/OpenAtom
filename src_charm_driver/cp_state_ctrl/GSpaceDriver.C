@@ -31,6 +31,7 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
   ees_nonlocal = sim->ees_nloc_on;
   natm_nl = sim->natm_nl;
   cp_min_opt = sim->cp_min_opt;
+  cp_bomd_opt = sim->cp_bomd_opt;
   gen_wave = sim->gen_wave;
   ndump_frq = sim->ndump_frq;
 }//end routine

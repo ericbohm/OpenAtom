@@ -21,7 +21,7 @@ class ATOMINTEGRATE{
     //---------------------------------------------------------------------------
     // Functions
 
-    static void ctrl_atom_integrate(int ,int ,int ,int ,int,int,Atom *,AtomNHC *,
+    static void ctrl_atom_integrate(int ,int ,int ,int, int, int ,int,int,Atom *,AtomNHC *,
         int,double *,double *,double*,int *,int,int,int,int,int);
 
     static void integrate_1st_half_step(int ,int ,int ,Atom *,AtomNHC *,int,int,int);

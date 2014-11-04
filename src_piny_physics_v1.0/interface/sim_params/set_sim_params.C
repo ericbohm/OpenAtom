@@ -1056,6 +1056,7 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   gensimopts->cp_wave_pimd = 0;
   gensimopts->cp_pimd = 0; 
   gensimopts->cp_min = 0; 
+  gensimopts->cp_bomd = 0;
   gensimopts->cp_wave_min = 0;
   gensimopts->cp_wave_min_pimd = 0;
   gensimopts->debug = 0;
@@ -1077,6 +1078,8 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     gensimopts->cp_wave = 1; ifound++;}
   if(strcasecmp(dict[1].keyarg,"cp_wave_pimd")==0){
     gensimopts->cp_wave_pimd = 1; ifound++;}
+  if(strcasecmp(dict[1].keyarg,"cp_bomd")==0){
+    gensimopts->cp_bomd = 1; ifound++;}
   if(strcasecmp(dict[1].keyarg,"cp_min")==0){
     gensimopts->cp_min = 1; ifound++;}
   if(strcasecmp(dict[1].keyarg,"cp_wave_min")==0){
@@ -1093,6 +1096,7 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     gensimopts->debug_pimd = 1; ifound++;}
   index=1;
   if(ifound != 1) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+  if(gensimopts->cp_bomd == 1) gensimopts->cp_wave_min = 1;
 
   /*-----------------------------------------------------------------------*/ 
   /*  2)\ensemble_typ{nve,nvt,npt_i,npt_f,nst} */
