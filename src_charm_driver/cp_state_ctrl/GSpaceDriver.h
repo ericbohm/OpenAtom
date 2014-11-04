@@ -67,6 +67,8 @@ class GSpaceDriver: public CBase_GSpaceDriver
     ///
     int cp_min_opt;
     ///
+    int cp_bomd_opt;
+    ///
     int gen_wave;
     ///
     int ndump_frq;

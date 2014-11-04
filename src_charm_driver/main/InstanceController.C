@@ -234,9 +234,13 @@ void InstanceController::doneInit(CkReductionMsg *msg){
     if (done_init == numPhases){ 
       //          PRINT_LINE_STAR;
       CkPrintf("{%d} Chare array launch and initialization complete       \n",thisIndex);
-      if(CPcharmParaInfo::get()->cp_min_opt==1){
+      if(CPcharmParaInfo::get()->cp_min_opt==1 && CPcharmParaInfo::get()->cp_bomd==0){
         CkPrintf("{%d} Running Open Atom CP Minimization: \n",thisIndex);
-      }else{
+      }
+      if(CPcharmParaInfo::get()->cp_bomd_opt==1){
+        CkPrintf("{%d} Running Open Atom CP BOMD Dynamics: \n", thisIndex);
+      }
+      if (CPcharmParaInfo::get()cp_min_opt==0) {
         CkPrintf("{%d} Running Open Atom CP Dynamics: \n",thisIndex);
       }//endif
       //          PRINT_LINE_STAR; CkPrintf("\n");

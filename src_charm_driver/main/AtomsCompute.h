@@ -86,7 +86,7 @@ class AtomsCompute: public CBase_AtomsCompute {
     FILE *temperScreenFile;
 
     AtomsCompute(CkMigrateMessage *m) {}
-    AtomsCompute(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *, int nChareAtoms, UberCollection thisInstance);
+    AtomsCompute(int,int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *, int nChareAtoms, UberCollection thisInstance);
     void init();
     ~AtomsCompute();
     void integrateAtoms();

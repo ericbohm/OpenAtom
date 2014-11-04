@@ -149,6 +149,7 @@ class CPcharmParaInfo {
    int cp_std;
    int cp_wave;
    int cp_min_opt;
+   int cp_bomd_opt;
    int cp_min_update; 
    int cp_min_cg;
    int cp_min_std;
@@ -258,6 +259,7 @@ class CPcharmParaInfo {
      cp_std       = s.cp_std;
      cp_wave      = s.cp_wave;
      cp_min_opt   = s.cp_min_opt;
+     cp_bomd_opt  = s.cp_bomd_opt;
      cp_min_update= s.cp_min_update;
      cp_min_cg    = s.cp_min_cg;
      cp_min_std   = s.cp_min_std;
@@ -484,6 +486,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
      cp_std       = s.cp_std;
      cp_wave      = s.cp_wave;
      cp_min_opt   = s.cp_min_opt;
+     cp_bomd_opt  = s.cp_bomd_opt;
      cp_min_update= s.cp_min_update;
      cp_min_cg    = s.cp_min_cg;
      cp_min_std   = s.cp_min_std;
@@ -778,6 +781,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       p|ndump_frq;  p|istart_typ_cp; p|cp_grad_corr_on;
       p|cp_opt;     p|cp_std;     p|cp_wave;
       p|cp_min_opt; p|cp_min_update; p|cp_min_std; p|cp_force_complex_psi;
+      p|cp_bomd_opt;
       p|cp_min_cg; p|rhoRsubplanes;
       p|sizeX;      p|sizeY;      p|sizeZ;  
       p|ees_eext_on;    p|ees_nloc_on;

@@ -67,15 +67,15 @@ module gSpaceDriver
       // appropriate control flow.
       // TODO: Need to update flags to be able to decide between more than just
       // minimization and dynamics.
-      if (cp_min_opt == 1) {
+      if (cp_min_opt) {
         serial { computeMinimization(); }
-        when minimizationDone(bool reachedTolerance) {}
-      } else if (cp_min_opt == 2) {
+        when minimizationDone(bool success) {}
+      } else if (some_flag) {
         serial { computeBOMD(); }
         when bomdDone(bool success) {}
       } else {
         serial { computeDynamics(); }
-        when dynamicsDone(bool exceededTolerance) {}
+        when dynamicsDone(bool success) {}
       }
       serial { finishComputation(); }
     };
@@ -259,18 +259,21 @@ module gSpaceDriver
       serial { thisProxy[thisIndex].dynamicsDone(myGSpaceObj->exitFlag); }
     };
 
+    // Born-Oppenheimer Molecular Dynamics
     entry void computeBOMD() {
-      // TODO: Put this in a loop
-      serial { computeMinimization(); }
-      when minimizationDone(bool toleranceReached) serial {
-        if (toleranceReached) {
-          // TODO: Move atoms or something
-          thisProxy[thisIndex].bomdDone(true);
-        } else {
-          // TODO: Print an error about tolerance or something
-          thisProxy[thisIndex].bomdDone(false);
+      while (someCounter < someMax) {
+        serial { computeMinimization(); }
+        when minimizationDone(bool success) serial {
+          if (success) {
+            // TODO: Move atoms or something
+          } else {
+            thisProxy[thisIndex].bomdDone(false);
+            return;
+          }
         }
+        someCounter++;
       }
+      thisProxy[thisIndex].bomdDone(true);
     };
   };
 };

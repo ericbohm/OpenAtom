@@ -2395,6 +2395,7 @@ void control_physics_to_driver(UberCollection thisInstance){
       int iextended_on  = PhysicsAtom->iextended_on;
       int cp_min_opt    = PhysicsAtom->cp_min_opt;
       int cp_wave_opt   = PhysicsAtom->cp_wave_opt;
+      int cp_bomd_opt   = PhysicsAtom->cp_bomd_opt;
       int isokin_opt    = PhysicsAtom->isokin_opt;
       double kT         = PhysicsAtom->kT;
 
@@ -2404,7 +2405,8 @@ void control_physics_to_driver(UberCollection thisInstance){
       PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC,ibead,itemper);
       UegroupProxy.push_back(CProxy_EnergyGroup::ckNew(thisInstance)); 
       // FIXME, this needs a real computation
-      // also we need a real map
+      // also we need a real map. This was a naive, simple mapping scheme. We
+      // can do better.
       int nChareAtoms=(config.numPesPerInstance<natm) ? config.numPesPerInstance : natm;
 
       if (firstInstance) {
@@ -2434,7 +2436,7 @@ void control_physics_to_driver(UberCollection thisInstance){
       UatomsComputeProxy.push_back( CProxy_AtomsCompute::ckNew(natm,natm_nl,
 							       len_nhc,
 							       iextended_on,
-							       cp_min_opt,cp_wave_opt,isokin_opt,
+							       cp_min_opt,cp_wave_opt,cp_bomd_opt,isokin_opt,
 							       kT,atoms,
 							       atomsNHC,
 							       nChareAtoms,
