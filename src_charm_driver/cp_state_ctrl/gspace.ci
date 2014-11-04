@@ -132,11 +132,13 @@ module gSpaceDriver
 
         //! Wait for both the energy computation, and the atoms to be moved
         //! before going to the next iteration.
-        overlap {
-          if (!_SDAG_DEBUG_PSI_OFF_) {
-            when doneComputingEnergy(const int AtomGrpIter) {}
+        if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
+          overlap {
+            if (!_SDAG_DEBUG_PSI_OFF_) {
+              when doneComputingEnergy(const int AtomGrpIter) {}
+            }
+            when doneMovingAtoms(const int AtomsGrpIter) {}
           }
-          when doneMovingAtoms(const int AtomsGrpIter) {}
         }
 
         //! Print out the iteration times and set isFirstStep to false.
