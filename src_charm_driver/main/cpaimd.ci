@@ -57,11 +57,11 @@ module Atoms
 
   array [1D] AtomsCompute {
     entry AtomsCompute(int natm, int natm_nl, int len_nhc, int iextended_on,
-        int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
+        int cp_min_opt, int cp_wave_opt, int cp_bomd_opt, int isokin_opt, double kT,
         Atom atoms[natm],AtomNHC atomsNHC[natm], int nChareAtoms, UberCollection);
     entry void init();
     entry void acceptAtoms(AtomMsg *);
-    entry void startRealSpaceForces();  	
+    entry void startRealSpaceForces(int);  	
     entry void acceptNewTemperature(double temp);
     entry void recvContribute(CkReductionMsg *);
     entry void recvContributeForces(CkReductionMsg *);
@@ -144,9 +144,9 @@ module instanceController
     entry void printEnergyEexc(CkReductionMsg *msg);
     entry void printEnergyHart(CkReductionMsg *msg);
     entry void printFictEke(CkReductionMsg *msg);
-    entry void allDoneCPForces(CkReductionMsg *m);
+    entry [reductiontarget] void allDoneCPForces(int);
     entry void printEnergyEke(CkReductionMsg *m);
-    entry void allDoneCPForcesAllKPoint(CkReductionMsg *m);
+    entry [reductiontarget] void allDoneCPForcesAllKPoint(int);
     entry [nokeep] void initCookie(ICCookieMsg *msg);
     entry void doneInit(CkReductionMsg *msg);
     entry void cleanExit(CkReductionMsg *m);

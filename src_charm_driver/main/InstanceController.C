@@ -234,13 +234,13 @@ void InstanceController::doneInit(CkReductionMsg *msg){
     if (done_init == numPhases){ 
       //          PRINT_LINE_STAR;
       CkPrintf("{%d} Chare array launch and initialization complete       \n",thisIndex);
-      if(CPcharmParaInfo::get()->cp_min_opt==1 && CPcharmParaInfo::get()->cp_bomd==0){
+      if(CPcharmParaInfo::get()->cp_min_opt==1 && CPcharmParaInfo::get()->cp_bomd_opt==0){
         CkPrintf("{%d} Running Open Atom CP Minimization: \n",thisIndex);
       }
       if(CPcharmParaInfo::get()->cp_bomd_opt==1){
         CkPrintf("{%d} Running Open Atom CP BOMD Dynamics: \n", thisIndex);
       }
-      if (CPcharmParaInfo::get()cp_min_opt==0) {
+      if (CPcharmParaInfo::get()->cp_min_opt==0) {
         CkPrintf("{%d} Running Open Atom CP Dynamics: \n",thisIndex);
       }//endif
       //          PRINT_LINE_STAR; CkPrintf("\n");
@@ -395,9 +395,8 @@ void InstanceController::printFictEke(CkReductionMsg *m){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void InstanceController::allDoneCPForces(CkReductionMsg *m){
+void InstanceController::allDoneCPForces(int tol_reached){
   //============================================================================
-  delete m;
   // only the 0th instance of each k-point and spin is allowed to do this 
 
   UberCollection thisInstance(thisIndex);
@@ -405,14 +404,13 @@ void InstanceController::allDoneCPForces(CkReductionMsg *m){
   {
     // contribute to the section which includes all k-points of this
     // bead
-    long unsigned int foo(1);
     UberCollection instance=thisInstance;
     instance.idxU.y=0;
     int offset=instance.calcPO();
 
     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-    CkCallback cb(CkIndex_InstanceController::allDoneCPForcesAllKPoint(NULL),CkArrayIndex1D(offset),thisProxy);
-    mcastGrp->contribute(sizeof(long unsigned int),&foo,CkReduction::sum_int,  allKPcookie, cb);
+    CkCallback cb(CkReductionTarget(InstanceController, allDoneCPForcesAllKPoint),CkArrayIndex1D(offset),thisProxy);
+    mcastGrp->contribute(sizeof(int), &tol_reached, CkReduction::min_int, allKPcookie, cb);
   }
   else
   {
@@ -420,7 +418,7 @@ void InstanceController::allDoneCPForces(CkReductionMsg *m){
     int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
 
     fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration,thisInstance.idxU.x);  
-    UatomsComputeProxy[thisIndex].startRealSpaceForces();
+    UatomsComputeProxy[thisIndex].startRealSpaceForces(tol_reached);
   }
 
   //============================================================================
@@ -431,13 +429,13 @@ void InstanceController::allDoneCPForces(CkReductionMsg *m){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void InstanceController::allDoneCPForcesAllKPoint(CkReductionMsg *m){
+void InstanceController::allDoneCPForcesAllKPoint(int tol_reached){
   UberCollection thisInstance(thisIndex);
   FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
   int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
 
   fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration,thisInstance.idxU.x);  
-  UatomsComputeProxy[thisIndex].startRealSpaceForces();
+  UatomsComputeProxy[thisIndex].startRealSpaceForces(tol_reached);
 }
 
 //============================================================================
