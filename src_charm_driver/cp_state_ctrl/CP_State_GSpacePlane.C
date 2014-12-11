@@ -1700,8 +1700,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
     }else{
 #endif
-      int i=0;
-      contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::allDoneCPForces(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+      contribute(sizeof(int), &exitFlag,CkReduction::min_int, CkCallback(CkReductionTarget(InstanceController, allDoneCPForces),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 #ifdef _CP_DEBUG_PSI_OFF_
     }//endif
 #endif

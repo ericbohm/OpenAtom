@@ -96,14 +96,14 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
     EXIT(1);
   }//endif
 
-  if(cp_min == 1 && cp_bomd_opt == 1){
+  if(gensimopts->cp_min == 1 && cp_bomd_opt == 1){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("You can either minimize the atoms or move them with BOMD\n");
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
   }
 
-  if(cp_wave_min == 0 && cp_bomd_opt == 1){
+  if(gensimopts->cp_wave_min == 0 && cp_bomd_opt == 1){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("We need to minimize the wave function before doing BOMD\n");
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
