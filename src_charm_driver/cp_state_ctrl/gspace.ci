@@ -67,10 +67,10 @@ module gSpaceDriver
       // appropriate control flow.
       // TODO: Need to update flags to be able to decide between more than just
       // minimization and dynamics.
-      if (cp_min_opt) {
+      if (cp_min_opt && !cp_bomd_opt) {
         serial { computeMinimization(); }
         when minimizationDone(bool success) {}
-      } else if (some_flag) {
+      } else if (cp_bomd_opt) {
         serial { computeBOMD(); }
         when bomdDone(bool success) {}
       } else {
@@ -122,11 +122,9 @@ module gSpaceDriver
           serial { myGSpaceObj->combineForcesGetEke(); }
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
-        serial { myGSpaceObj->launchAtoms(); }
-
         if (!_SDAG_DEBUG_PSI_OFF_) {
           serial { myGSpaceObj->computeLambdaAndCg(); }
-          when doneLambdaAndCg() {}
+          when doneLambdaAndCg() serial { myGSpaceObj->launchAtoms(); }
 
           serial { myGSpaceObj->computeRedPsi(); }
           when doneRedPsi() {}
@@ -259,19 +257,17 @@ module gSpaceDriver
 
     // Born-Oppenheimer Molecular Dynamics
     entry void computeBOMD() {
-      while (someCounter < someMax) {
+      while (bomdIter < maxBOMDIter) {
         serial { computeMinimization(); }
         when minimizationDone(bool success) serial {
-          if (success) {
-            // TODO: Move atoms or something
-          } else {
+          if (!success) {
             thisProxy[thisIndex].bomdDone(false);
             return;
           }
         }
-        someCounter++;
+        serial { bomdIter++; }
       }
-      thisProxy[thisIndex].bomdDone(true);
+      serial { thisProxy[thisIndex].bomdDone(true); }
     };
   };
 };

@@ -24,8 +24,8 @@ class InstanceController: public CBase_InstanceController {
     void printEnergyHart(CkReductionMsg *msg);
     void printEnergyEexc(CkReductionMsg *msg);
     void printFictEke(CkReductionMsg *msg);
-    void allDoneCPForces(CkReductionMsg *m);
-    void allDoneCPForcesAllKPoint(CkReductionMsg *m);
+    void allDoneCPForces(int);
+    void allDoneCPForcesAllKPoint(int);
     void printEnergyEke(CkReductionMsg *m);
     void cleanExit(CkReductionMsg *m);
     void cleanExitAll(CkReductionMsg *m);

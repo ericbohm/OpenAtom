@@ -626,11 +626,12 @@ void AtomsCompute::integrateAtoms(){
  * global group reduction of all atom forces (within this bead) -> recvContribute
  **/
 //==============================================================================
-void AtomsCompute::startRealSpaceForces(){
+void AtomsCompute::startRealSpaceForces(int t_reached){
   //==========================================================================
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("{%d}[%d] AtomsCompute::startRealSpaceForces\n ", thisInstance.proxyOffset, thisIndex);     
 #endif
+  tol_reached = t_reached;
   //==========================================================================
   // Atom parallelization : same as for integrate
 
@@ -696,7 +697,7 @@ void AtomsCompute::outputAtmEnergy() {
   double free_atm       = 3*((double)natm);
   int iperd             = sim->iperd;
   int move_atoms=0;
-  if (cp_min_opt==0 && cp_min_wave==0) { move_atoms = 1; }
+  if (cp_min_opt==0 && cp_wave_opt==0) { move_atoms = 1; }
   if (cp_bomd_opt==1 && tol_reached==1) { move_atoms = 1; }
 
   if(myid==0){

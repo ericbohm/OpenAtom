@@ -34,6 +34,11 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
   cp_bomd_opt = sim->cp_bomd_opt;
   gen_wave = sim->gen_wave;
   ndump_frq = sim->ndump_frq;
+
+  // TODO: These should be read in just like every other param
+  bomdIter = 0;
+  maxBOMDIter = 1;
+  maxMinIter = config.maxIter;
 }//end routine
 
 
