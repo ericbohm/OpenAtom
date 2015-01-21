@@ -10,6 +10,6 @@
   inputPhy: water.input.min.$K
   outRef: ref-$K-p1.log
   keys: [ees-nl0l0, ees-nl0l1]
-  numpe: [1,2]
+  numpe: [1]
   set_name: water
 

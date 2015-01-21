@@ -1,23 +1,29 @@
-def execute_command(config_dict, original_working_dir):
+def execute_command(config_dict):
 	import os
-	import stat
-	current_working_dir = os.getcwd()
-	os.chdir(original_working_dir)
-	testscript = open('testscript', 'a')
-	testscript.close()
-	os.chmod('testscript', 511)
-	testscript = open('testscript', 'a')
-	os.chdir(current_working_dir)
-	folder_list = config_dict.keys()
-	folder_list.remove('general_info')
-	for folder_name in folder_list:
-		os.chdir(folder_name)
-		testscript.write('cd '+folder_name+'\n')
+	import shutil
+	import subprocess
 
-		os.popen(config_dict[folder_name]['command'])
-		testscript.write(config_dict[folder_name]['command']+'\n')
+	os.chdir(config_dict['data_path'])
+	shutil.rmtree(config_dict['output_path'])
+	os.mkdir(config_dict['output_path'])
+	tests = config_dict['tests']
 
-		os.chdir('..')
-		testscript.write('cd ..\n')
-	testscript.close()
+	for test_dict in tests:
+		setup_dataset()
+		clean_dataset()
 
+		command = test_dict['command']
+		print 'Running command: ' + `command`
+		outfile = open(test_dict['output_file'],'w')
+		subprocess.call(command, stdout = outfile, stderr = outfile)
+		outfile.close()
+
+def clean_dataset():
+	import subprocess
+	print 'Cleaning dataset'
+	subprocess.call('../../utils/tidy')
+
+def setup_dataset():
+	import subprocess
+	print 'Setting up dataset'
+	subprocess.call('../../utils/setup')
