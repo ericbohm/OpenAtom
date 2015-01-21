@@ -4,10 +4,12 @@ def execute_command(config_dict):
 	import subprocess
 
 	os.chdir(config_dict['data_path'])
-	shutil.rmtree(config_dict['output_path'])
-	os.mkdir(config_dict['output_path'])
-	tests = config_dict['tests']
 
+	if os.path.exists(config_dict['output_path']):
+		shutil.rmtree(config_dict['output_path'])
+	os.mkdir(config_dict['output_path'])
+
+	tests = config_dict['tests']
 	for test_dict in tests:
 		setup_dataset()
 		clean_dataset()
