@@ -45,16 +45,14 @@ def compare_iteration(testoutput, reffile, magnum):
 			test_Psi_key_list.append(dict_key)
 			test_dict[dict_key] = new_list
 	if len(ref_Psi_key_list) != len(test_Psi_key_list):
-		print 'test output file is incomplete'
-		return False
+		return [False, 'Test output and ref output don\'t match in size']
 	for value in ref_Psi_key_list:
 		if len(ref_dict[value]) != len(test_dict[value]):
-			print 'test output file is incomplete'
-			return False
+			return [False, 'Test output and ref output don\'t match in size']
 		counter = 0
 		while counter < len(ref_dict[value]):
 			if compare_number.compare_number(ref_dict[value][counter], test_dict[value][counter], magnum) == False:
-				return False
+				return [False, 'Values do not match']
 			counter = counter + 1
 	for ref_line in ref_content:
 		for keys in option_key_words:
@@ -71,7 +69,7 @@ def compare_iteration(testoutput, reffile, magnum):
 			if found_op_key == 0:
 				continue
 			if len(ref_number_list) != len(test_number_list):
-				return False
+				return [False, 'Test output and ref output don\'t match in size']
 			counter = 0
 			while counter < len(ref_number_list):
 				if compare_number.compare_number(test_number_list[counter], ref_number_list[counter], magnum) == False:
@@ -89,20 +87,16 @@ def compare_iteration(testoutput, reffile, magnum):
 						test_number_list = stripNumbers.stripNumbers(test_line, 0)
 						break
 				if found_key == 0:
-					print 'output file is incomplete \n'
-					return False
+					return [False, 'Missing key in test output']
 				if keys != 'MagForPsi':
 					if len(ref_number_list) != len(test_number_list):
-						return False
+						return [False, 'Test output and ref output don\'t match in size']
 					counter = 0
 					while counter < len(ref_number_list):
 						if compare_number.compare_number(test_number_list[counter], ref_number_list[counter], magnum) == False:
-							return False
+							return [False, 'Values do not match']
 						counter = counter + 1
 				if keys == 'MagForPsi':
 					if compare_number.compare_number(test_number_list[0], ref_number_list[0], magnum) == False:
-						return False			
-	return True
-			
-			
-		
+						return [False, 'Values do not match']
+	return [True, '']

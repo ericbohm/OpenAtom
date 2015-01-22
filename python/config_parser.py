@@ -5,7 +5,7 @@ def test(config_dict):
 	import execute_command
 	import summary_generator
 
-	config_dict['tests'] = config_reader.config_reader(config_dict)
+	config_dict = config_reader.config_reader(config_dict)
 	print 'Read test config......................................................'
 	config_dict = command_generator.command_generator(config_dict)
 	print 'Generated commands....................................................'

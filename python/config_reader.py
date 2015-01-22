@@ -10,6 +10,8 @@ def config_reader(config_dict):
 	config_file = yaml.load(stream)
 	stream.close()
 
+	config_dict = dict(config_dict.items() + config_file[0].items())
+
 	tests = []
 
 	test_count = len(config_file)
@@ -59,4 +61,5 @@ def config_reader(config_dict):
 				tests.append(test_dict)
 				print 'Read test: ' + `test_dict`
 		counter = counter + 1
-	return tests
+	config_dict['tests'] = tests
+	return config_dict
