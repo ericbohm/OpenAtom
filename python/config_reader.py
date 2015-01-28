@@ -59,7 +59,6 @@ def config_reader(config_dict):
 				test_dict['output_file'] = os.path.join(output_path, output_file)
 
 				tests.append(test_dict)
-				print 'Read test: ' + `test_dict`
 		counter = counter + 1
 	config_dict['tests'] = tests
 	return config_dict

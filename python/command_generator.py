@@ -13,7 +13,6 @@ def command_generator(config_dict):
 
 		command = [charmrun, '++local', '+p'+numpe, exe, par_cfg, phy_cfg]
 
-		print 'Generated command ' + `command`
 		test_dict['command'] = command
 	return config_dict
 
