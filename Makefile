@@ -87,8 +87,6 @@ test: test-unit test-regr
 test-unit:
 
 test-regr: compile
-	#@$(MAKE) $(call TESTARGS,$(testop_regr),testrecipe.mk) $@
-	#@echo "=========== Regression test output is in the test directory: $(testop_regr)"
 	cd python; python test_runner.py tests.config
 
 retest: clean_test test
