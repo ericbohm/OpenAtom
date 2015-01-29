@@ -1,22 +1,38 @@
-def config_reader(config_dict):
-	import yaml
+def parse_tests(data, exe, test):
 	import os
+	import yaml
+
+	# config_dict will contain entries common to every test in this config file
+	config_dict = {}
+
+	data_path = os.path.abspath(data)
+	exe_path = os.path.abspath(exe)
+	test_path = os.path.join(data_path,'tests',test)
+
+	config_dict['data_path'] = data_path
+	config_dict['exe_path'] = exe_path
+	config_dict['charmrun'] = os.path.join(exe_path,'charmrun')
+	config_dict['exe'] = os.path.join(exe_path,'OpenAtom')
+	config_dict['test_path'] = test_path
+	config_dict['output_path'] = os.path.join(test_path,'output')
+	config_dict['config_file'] = os.path.join(test_path,'testConfig.yml')
 
 	filename = config_dict['config_file']
 	output_path = config_dict['output_path']
-	test_path = config_dict['test_path']
 
+	# Open the config file and stream it in with yaml
 	stream = file(filename)
 	config_file = yaml.load(stream)
 	stream.close()
 
+  # Append the general info from the config file to our overall config
 	config_dict = dict(config_dict.items() + config_file[0].items())
 
 	tests = []
-
 	test_count = len(config_file)
 	counter = 1
 
+	# Make a dictionary entry in tests for every test we read from the config
 	while counter < test_count:
 		variants = []
 		numpes = []
@@ -41,7 +57,9 @@ def config_reader(config_dict):
 
 		for var in variants:
 			for numpe in numpes:
+				# Each test starts with all the general info. May be overwritten.
 				test_dict = {}
+				test_dict = dict(test_dict.items() + config_dict.items())
 
 				output_file = test_name
 				if var != '':
@@ -60,5 +78,6 @@ def config_reader(config_dict):
 
 				tests.append(test_dict)
 		counter = counter + 1
-	config_dict['tests'] = tests
-	return config_dict
+
+	print 'Read ' + str(len(tests)) + ' tests from ' + config_dict['config_file']
+	return tests

@@ -1,64 +1,64 @@
-def print_summary(results):
-	import string
+def execute_tests(tests):
+	import os
+	import shutil
+	import subprocess
 
-	header = string.ljust('TEST NAME',20)
-	header = header + string.ljust('VARIANT',20)
-	header = header + string.ljust('PES',4) + 'RESULT'
+	import test_checker
+	import test_output
+	import test_util
 
-	print string.ljust('', 80, '=')
-	print header
-	print string.ljust('', 80, '-')
+	print '\nExecuting ' + `len(tests)` + ' tests...\n'
+
+	# First just go through and make sure all output dirs are created fresh
+	for test_dict in tests:
+		if os.path.exists(test_dict['output_path']):
+			shutil.rmtree(test_dict['output_path'])
+		os.mkdir(test_dict['output_path'])
+
+	test_output.print_table_header()
 
 	passed = 0
 	failed = 0
+	# Then go through and execute each test one at a time
+	for i in range(len(tests)):
+		test_dict = tests[i]
 
-	for i in range(len(results)):
-		if i != 0 and results[i][0] == results[i-1][0]:
-			summ_str = make_summary_string(results[i],False)
-		else:
-			summ_str = make_summary_string(results[i],True)
-			if i != 0:
-				print ''
-		print summ_str
+		os.chdir(test_dict['data_path'])
+		test_util.setup_dataset()
+		test_util.clean_dataset()
 
-		if results[i][3]:
+		command = generate_command(test_dict)
+
+		test_output.print_summary_string(i+1, len(tests), test_dict)
+
+		f = open(test_dict['output_file'],'w')
+		subprocess.call(command, stdout = f, stderr = f)
+		f.close()
+
+		test_dict['result'] = test_checker.check_result(test_dict)
+
+		test_output.print_result_string(test_dict)
+
+		if test_dict['result'][0]:
 			passed = passed + 1
 		else:
 			failed = failed + 1
 
-	print string.ljust('', 80, '=')
-	print `passed` + ' PASSED\t' + `failed` + ' FAILED'
+	test_output.print_table_footer(passed, failed)
 
-def make_summary_string(result, print_name):
-	import string
-	summ_str = ''
-	if print_name:
-		summ_str = string.ljust(result[0],20)
-	else:
-		summ_str = string.ljust('',20)
-	summ_str = summ_str + string.ljust(result[1],20) + string.ljust(result[2],4)
-	if result[3]:
-		summ_str = summ_str + 'PASSED'
-	else:
-		summ_str = summ_str + 'FAILED: ' + result[4]
-	return summ_str
+	return failed
 
-import config_parser
-import subprocess
-import sys
-import os
-runs = []
-f = open(sys.argv[1], 'r')
-for line in f:
-	runs.append(line.split())
-f.close()
+def generate_command(test_dict):
+	import os
 
-base_directory = os.getcwd()
+	data_path = test_dict['data_path']
+	charmrun = os.path.relpath(test_dict['charmrun'],data_path)
+	exe = os.path.relpath(test_dict['exe'],data_path)
 
-results = []
+	numpe = test_dict['numpe']
+	par_cfg = os.path.relpath(test_dict['par_cfg'],data_path)
+	phy_cfg = os.path.relpath(test_dict['phy_cfg'],data_path)
 
-for run in runs:
-	os.chdir(base_directory)
-	results = results + config_parser.config_parser(run[0], run[1], run[2])
+	command = [charmrun, '++local', '+p'+numpe, exe, par_cfg, phy_cfg]
 
-print_summary(results)
+	return command

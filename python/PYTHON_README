@@ -1,31 +1,36 @@
-1\ Install the PyYAML package
-	1.1 Download the lateset version of PyYAML from http://pyyaml.org/wiki/PyYAML
-	1.2 install PyYAML by using command 'python setup.py install'. If you want to use arbitrary install path instead of default one, please use command 'python setup.py install --home=PATH' and then use command 'export PYTHONPATH = PATH/lib/python'.
+Python File Description
 
-2\ Run the program
-	2.1 Make sure that '*.py' and '*.yml' are in the same folder
-	2.2 at the terminal, type 'python config_parser.py configfile.yml executablepath > summary'. Program will read from the config file, launch the testing and compare the output files with ref files and store the results into the summary file.
-	2.3 That step will create a test directory and a script for the execution of tests in the test directory.  The testscript can be re-used without re-executing the python framework which generated it.
+1) test_driver.py
+  Main driver of the python code. Reads in either a config file specifying many
+  tests, or a single test configuration of (data set, exe dir, test name). It
+  makes calls to parse the tests and run them, calling sys.exit with the number
+  of failed tests.
 
+2) test_parser.py
+  Defines a single function, parse_test, that takes a data set path, exe path,
+  and test name, and generates a list of test dictionaries by reading the config
+  file for that test. It returns the list of test dictionaries, which can then
+  be passed to the test_runner to be run.
 
-3\ Rules for config file
- 	3.1 Every entry should start with '- '.
-	3.2 Every key should start with '  ' (two spaces).
-	3.3 Use format key: value
-	3.4 If there are multiple values for a single key, please use following format: key: [value0, value1, value2, ...]
-	3.5 There are at least two entries in each config file. The first one should contain general config infomation, the following keys are required in the first entry: numSigDigits (significant digit), iternum (iteration number). Testing entried should start from entry 2, the following keys are required for testing entry: machine names(use '[]' if there is no machine name.); inputDir; inputPar; inputPhy; outRef; keys; numpe (number of CPU).
-	3.6 Using '%K' to represent the values in key list; '%T' to represent the values in test name; '%P' to represent the values in numpe.
-	3.7 Please check 'testConfig.yml' for the sample of config files.
+3) test_runner.py
+  Defines a function, execute_tests, which takes a list of test dictionaries,
+  runs the tests, and compares the results to the output references. It uses the
+  test_checker module to check results, the test_output module to print a
+  summary of results as the tests are run, and the test_util module to prep
+  tests for execution. It also defines a helper function for generating commands
+  from a test dictionary.
 
-4\ python files' function description:
-	4.1 stripnumber.py : stripNumbers(inputstr, method), this function read a string and strip the numbers inside that string, stores them into an array and return the array. if method == 0 then the numbers in the array are float numbers; if method == 1 then the numbers in the array are integer numbers, if method == 2 then the numbers in the array are strings.
+4) test_checker.py
+  Defines a top level function for checking the results for a given test
+  dictionary as well as many helper functions to aid in checking. There is a
+  function for isolating the target iteration in the output, comparing keys
+  between output and reference, stripping numbers out of a line of text, and
+  comparing numbers to a desired precision. The top level function returns a
+  pair (Boolean, String) with [True, ''] if the test passed, and
+  [False, 'Reason'] when a test fails.
 
-	4.2 snippet.py : snippet(num, inputfile, outputfile), this function snips the specified iteration result from the inputfile and stores it into outputfile
-	4.3 compare_number.py : compare_number(num1, num2, numsigdig), this function compares two numbers to see if they equal to each other. num1 = the first number, num2 = the second number, numsigdig = significant digit.
+5) test_output.py
+  Various functions for neatly printing output of test results.
 
-	4.4 compare_iteration.py : compare_iteration(testoutput, reffile, magnum): this function compares a snipped testoutput file with reference file. magnum = magnificent number. This function depends on compare_number.py and stripNumbers.py
-
-	4.5 checkresult.py : checkresult(testoutput, reffile, iternum, magnum): this function snips the speicfied iteration, store it into a temp file and compares it with the reference file. This function depends on compare_iteration.py and snippet.py
-
-	4.6 config_parser.py : config_reader(filename) : this function reads the config file and launchs the specified tests, compares the results and prints out the summary
-
+6) test_util.py
+  Utility functions for cleaning up a data set before running it's tests.
