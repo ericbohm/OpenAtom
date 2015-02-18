@@ -87,6 +87,13 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
       EXIT(1);
     }//endif
 
+    if((gensimopts->cp_bomd)==1){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("CP bomd not yet implemented");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+
   }//endif
 
   //============================================================================
