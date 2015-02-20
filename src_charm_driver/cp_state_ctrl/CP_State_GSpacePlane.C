@@ -802,7 +802,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       fftw_free(vdataToBeSent);
 
       ioff += numPoints;
-      CmiNetworkProgress();
     }//endfor : loop over all possible chares in g-space (pencils)
 
     CkAssert(numData==ioff);
@@ -1413,7 +1412,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       CmiUsePersistentHandle(NULL, 0);
 #endif
       // progress engine baby
-      CmiNetworkProgress();
     }//endfor
     //fclose(fp);
 
@@ -1523,7 +1521,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     for(int index=0; index<gs.numPoints; index++)
       forces[index] = forcTmp[index]*scaleFactor;
     fftcache->freeCacheMem("CP_State_GSpacePlane::doIFFT");
-    CmiNetworkProgress();
 
     // Report that you are done
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
@@ -1635,7 +1632,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     gs.addForces(ppForces,k_x);
     bzero(ppForces,gs.numPoints*sizeof(complex));
-    CmiNetworkProgress();
 
     //================================================================================
     // Compute force due to quantum kinetic energy and add it in.
@@ -1887,7 +1883,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     int numPoints   = gs.numPoints;
 #ifndef _CP_DEBUG_ORTHO_OFF_
     asymmPCmgr.sendLeftData(numPoints,psi,false);
-    CmiNetworkProgress();
     asymmPCmgr.sendRightData(numPoints,force,false);
 #else
     acceptedLambda=true;

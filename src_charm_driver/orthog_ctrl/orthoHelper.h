@@ -86,10 +86,8 @@ class OrthoHelper : public CBase_OrthoHelper
       B = trigger->B;
       matA.multiply(trigger->factorA, 0, A, OrthoHelper::step_cb, (void*) this,
           thisIndex.x, thisIndex.y);
-      CmiNetworkProgress();
       matB.multiply(trigger->factorB, 0, B, OrthoHelper::step_cb, (void*) this,
           thisIndex.x, thisIndex.y);
-      CmiNetworkProgress();
       matC.multiply(trigger->factorC, 0, C, OrthoHelper::step_cb, (void*) this,
           thisIndex.x, thisIndex.y);
       // DO NOT DELETE MSG we're using that memory in A and B

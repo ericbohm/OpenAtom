@@ -345,7 +345,6 @@ void CP_State_RealSpacePlane::doFFT(){
       }//endfor
     }//endfor
   }//endif
-  CmiNetworkProgress();
 
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(doRealFwFFT_, StartTime, CmiWallTimer());
@@ -463,7 +462,6 @@ void CP_State_RealSpacePlane::doReduction(){
   }//endfor : subplanes
   CkAssert(off==ngrida*ngridb);
 
-  CmiNetworkProgress(); // yuck!
 
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(DoFFTContribute_, StartTime, CmiWallTimer());
@@ -568,7 +566,6 @@ void CP_State_RealSpacePlane::unpackProduct(ProductMsg *msg) {
       }//endfor
     }//endfor
   }//endif
-  CmiNetworkProgress();
 }//endroutine
 //============================================================================
 
@@ -685,7 +682,6 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 
     for(int i=0;i<sendFFTDataSize;i++){data[i] = vks_on_state[tranpack[ic][i]];}
     gproxy(thisIndex.x, ic).acceptIFFT(msg); // send the message
-    CmiNetworkProgress();
 
   }//end for : chare sending
 

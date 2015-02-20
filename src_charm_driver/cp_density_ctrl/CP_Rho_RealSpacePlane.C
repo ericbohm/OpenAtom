@@ -727,8 +727,6 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
         for(int ns=ist;ns<iend;ns++){
           CkAssert(ns<config.nstates);
           UrealParticlePlaneProxy[proxyOffset](ns,thisIndex.x).launchFFTControl(myTime);
-          if(ns%4)
-            CmiNetworkProgress();
         }//endfor
       }//endfor
     }//endif

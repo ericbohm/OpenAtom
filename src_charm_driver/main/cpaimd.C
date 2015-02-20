@@ -690,12 +690,10 @@ main::main(CkArgMsg *msg) {
 		// Initialize the density chare arrays
 		init_rho_chares(sim, thisInstance);
 
-		CmiNetworkProgressAfter(1);
 		//============================================================================ 
 		// Initialize commlib strategies for later association and delegation
 		if(sim->ees_nloc_on)
 		  init_eesNL_chares( natm_nl, natm_nl_grp_max, doublePack, excludePes, sim, thisInstance);
-		CmiNetworkProgressAfter(1);
 		firstInstance=false;
 		numInst++;
 	      }
@@ -1834,7 +1832,6 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
     }
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew(thisInstance);
   newtime=CmiWallTimer();
-  CmiNetworkProgressAfter(0);
   CkPrintf("RPPMap created in %g\n",newtime-Timer);
 
   if(config.dumpMapFiles) {
@@ -2064,7 +2061,6 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 #endif
     delete mf;
   }
-  CmiNetworkProgressAfter(0);
   //---------------------------------------------------------------------------
   // rho GS 
   // if there aren't enough free procs refresh the RhoAvail list;
@@ -2293,7 +2289,6 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   UrhoRealProxy[thisInstance.proxyOffset].doneInserting();
   /// @todo: valgrind complains of a tiny memleak here. Check if callbacks get destroyed properly. 
   UrhoRealProxy[thisInstance.proxyOffset].ckSetReductionClient( new CkCallback(CkIndex_InstanceController::printEnergyEexc(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
-  CmiNetworkProgressAfter(0);
   //--------------------------------------------------------------------------
   // insert rhog
   UrhoGProxy.push_back(CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, 1, 
@@ -2304,7 +2299,6 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
       }//endfor
   */
   UrhoGProxy[thisInstance.proxyOffset].doneInserting();
-  CmiNetworkProgressAfter(0);
   //--------------------------------------------------------------------------
   // insert rhoghart
   UrhoGHartExtProxy.push_back(CProxy_CP_Rho_GHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
@@ -2322,7 +2316,6 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   /// @todo: valgrind complains of a tiny memleak here. Check if callbacks get destroyed properly. 
   UrhoGHartExtProxy[thisInstance.proxyOffset].ckSetReductionClient(new CkCallback(CkIndex_InstanceController::printEnergyHart(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
   UrhoGHartExtProxy[thisInstance.proxyOffset].doneInserting();
-  CmiNetworkProgressAfter(0);
   //--------------------------------------------------------------------------
   // insert rhoRhart
   if(ees_eext_on){
@@ -2342,7 +2335,6 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     */
     UrhoRHartExtProxy[thisInstance.proxyOffset].doneInserting();
   }//endif
-  CmiNetworkProgressAfter(0);
   //===========================================================================
   // Output to the screen
   // need to add maps for these, for now just let em default

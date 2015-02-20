@@ -178,7 +178,6 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
 #endif
         }//endif
       }//endfor : jatm
-      CmiNetworkProgress();
     }//endfor : iatm
   }//endif : there is work to do 
   pot_ewd_ret[0] = pot_ewd;

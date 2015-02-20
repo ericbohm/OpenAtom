@@ -52,7 +52,6 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
       for(int d=0;d<size;d++)
         ret[d]+=inmatrix[d];
     }
-  //  CmiNetworkProgress();
   return CkReductionMsg::buildNew(size*sizeof(double),ret);
 }
 
@@ -780,8 +779,6 @@ PairCalculator::sendTiles(bool flag_dp)
       mcastGrp->contribute(cfg.orthoGrainSize * cfg.orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
       //mcastGrp->contribute(cfg.orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], CkReduction::sum_double, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
       touchedTiles[orthoIndex]=0;
-      if(++progcounter>8)
-      {progcounter=0;CmiNetworkProgress();}
     }
     else if(touchedTiles[orthoIndex]>tilesq)
     {
@@ -1925,7 +1922,6 @@ void PairCalculator::bwMultiplyHelper(int size, internalType *matrix1, internalT
     // Funny thing here, this logic works unchanged for remainder case.
     // off diagonals use the usual funny size othernewData
     // diagonals use a MxM newData
-    CmiNetworkProgress();
 #ifdef PRINT_DGEMM_PARAMS
     CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transform, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
 #endif
@@ -2013,7 +2009,6 @@ void PairCalculator::bwMultiplyDynOrthoT()
   if(notOnDiagonal)
     othernewDatad= reinterpret_cast <internalType*> (othernewData);
 
-  CmiNetworkProgress();
 
   char transform='N';
   // If internal representation is as doubles, treat each complex as 2 doubles
@@ -2325,7 +2320,6 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
       traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
       //	if((j-startGrain) % 8)
-      CmiNetworkProgress();
 
     }
   }
@@ -2354,7 +2348,6 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
 #endif
 
       //	  if((j-startGrain) % 8)
-      CmiNetworkProgress();
     }
   }
 }
@@ -2640,7 +2633,6 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
     traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif
-    CmiNetworkProgress();
     for(int ks=1;ks<=Kloop;ks++)
     {
       int koff    = ks*Ksplit;
@@ -2666,7 +2658,6 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
       traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif
-      CmiNetworkProgress();
     }//endfor
   }//endfor
 
@@ -2719,7 +2710,6 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
     traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif
-    CmiNetworkProgress();
     for(int ks=1;ks<=Kloop;ks++){
       int koff    = ks*Ksplit;
       int KsplitU = (ks==Kloop ? Ksplit+Krem : Ksplit);
@@ -2744,7 +2734,6 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
       traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif
-      CmiNetworkProgress();
     }//endfor
   }//endfor
 
@@ -2784,7 +2773,6 @@ void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *tran
 #endif
 #endif
 
-  CmiNetworkProgress();
   for(int i=1;i<=Mloop;i++)
   {
     int off = i*Msplit;
@@ -2810,7 +2798,6 @@ void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *tran
     traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
 #endif
-    CmiNetworkProgress();
   } //endfor
 #ifdef BUNDLE_USER_EVENT
 #ifdef CMK_TRACE_ENABLED

@@ -732,10 +732,8 @@ void Ortho::do_iteration(void){
 
   matA1.multiply(-1, 1, A, Ortho::step_2_cb, (void*) this,
       thisIndex.x, thisIndex.y);
-  CmiNetworkProgress();
   matB1.multiply(-1, 1, B, Ortho::step_2_cb, (void*) this,
       thisIndex.x, thisIndex.y);
-  CmiNetworkProgress();
   matC1.multiply(-1, 1, C, Ortho::step_2_cb, (void*) this,
       thisIndex.x, thisIndex.y);
 }

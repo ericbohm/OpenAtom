@@ -668,7 +668,6 @@ void CLA_MM3D_multiplier::multiply(internalType *A, internalType *B){
 #ifdef CMK_TRACE_ENABLED
   traceUserBracketEvent(402, StartTime, CmiWallTimer());
 #endif
-  CmiNetworkProgress();
   //    redGrp->contribute(m * n * sizeof(double), C, CkReduction::sum_double,
   redGrp->contribute(m * n * sizeof(internalType), C, sumFastDoubleType,
       sectionCookie, reduce_CB);

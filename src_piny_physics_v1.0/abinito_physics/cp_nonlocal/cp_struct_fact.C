@@ -152,9 +152,6 @@ void CPNONLOCAL::CP_calc_Struct_Fact(int gSpaceSize,
   int ic = 0;
   for(int i=0;i<gSpaceSize;i++){
 
-    if(i % 8 == 0)
-      CmiNetworkProgress();
-
     double gx,gy,gz,g2,g;
     gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
     gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
