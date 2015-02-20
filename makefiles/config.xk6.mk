@@ -3,7 +3,9 @@
   # Location of the charm installation
   CHARMBASE	= $(HOME)/charm
   # Location of the FFTW library installation
-  FFT_HOME	= $(HOME)/fftw
+  # module load fftw/2.1.5.7
+  # module load acml
+  FFT_HOME	= $(FFTW_DIR)/..
 
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
@@ -25,8 +27,8 @@
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
   CXXFLAGS += $(OPT)
-  INCDIRS  += /opt/cray/gni-headers/default/include
-  DEPSTRIPDIRS += /opt/cray/gni-headers/default/include
+  INCDIRS  += 
+  DEPSTRIPDIRS += 
 
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
