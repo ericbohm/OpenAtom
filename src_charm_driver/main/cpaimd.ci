@@ -265,7 +265,7 @@ mainmodule cpaimd {
 
   readonly CkGroupID mCastGrpId;
 
-  //#ifdef USE_COMLIB
+  #ifdef USE_COMLIB
   // exc, hart, eext communication
   readonly ComlibInstanceHandle commGHartInstance;
   readonly ComlibInstanceHandle commGInstance0;
@@ -303,7 +303,8 @@ mainmodule cpaimd {
   readonly ComlibInstanceHandle commRHartGHartIns;
   readonly ComlibInstanceHandle commGHartRHartIns0;
   readonly ComlibInstanceHandle commGHartRHartIns1;
-  //#endif
+  #endif
+
   // PINY Physics readonly data structures
   readonly MDINTEGRATE  readonly_mdintegrate;
   readonly MDATOMS      readonly_mdatoms;
