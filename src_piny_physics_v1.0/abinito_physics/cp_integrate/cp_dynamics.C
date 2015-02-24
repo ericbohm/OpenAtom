@@ -44,7 +44,7 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 
-  double dt      = gentimeinfo->dt;
+  double dt      = gentimeinfo->dt * gentimeinfo->bomd_scale;
   double dt2     = dt*0.5;
   int istrt      = nkx0_red;
   int applyorder;
@@ -111,7 +111,7 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 
-  double dt      = gentimeinfo->dt;
+  double dt      = gentimeinfo->dt * gentimeinfo->bomd_scale;
   if(fwdFlag==-1){dt=-dt;}
 
   double dt2     = dt*0.5;

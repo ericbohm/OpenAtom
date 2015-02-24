@@ -35,10 +35,8 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
   gen_wave = sim->gen_wave;
   ndump_frq = sim->ndump_frq;
 
-  // TODO: These should be read in just like every other param
-  bomdIter = 0;
-  maxBOMDIter = 1;
-  maxMinIter = config.maxIter;
+  // TODO: Find out where to actually set this
+  myGSpaceObj->num_steps = sim->ntime;
 }//end routine
 
 

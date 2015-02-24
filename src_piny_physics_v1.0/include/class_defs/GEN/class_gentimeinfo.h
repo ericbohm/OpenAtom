@@ -9,7 +9,7 @@ class GENTIMEINFO{
 
   //----------------
   public:
-    int ntime,itime;            // Num: Time-minimization steps           
+    int ntime,itime, btime;     // Num: Time-minimization steps
     int ix_respa;               // Opt: Extended system respa opt         
     int int_res_ter,int_res_tra;// Opt: Intra-inter respa opts            
     int nres_ter,nres_tra;      // Num: # intra-inter respa steps          
@@ -18,13 +18,14 @@ class GENTIMEINFO{
     int iget_pe_real_inter_freq;//Opt: Freq calc of realspace inter PE     
     int exit_flag;              // Num: Used to tell code to exit under   
     //      annealing and auto exit opt
-    double dt;                  // Num: Time step                         
+    double dt, bomd_scale;      // Num: Time step
 
     //----------------
     //con-destruct:
     GENTIMEINFO(){
       ntime        = 0;
       itime        = 0;
+      btime        = 0;
       ix_respa     = 0;
       int_res_ter  = 0;
       int_res_tra  = 0;
@@ -36,6 +37,7 @@ class GENTIMEINFO{
       nres_pimd    = 0;
       exit_flag    = 0;
       dt           = 0;
+      bomd_scale   = 0;
       iget_pe_real_inter_freq = 0;
     };
     ~GENTIMEINFO(){};
@@ -47,6 +49,7 @@ class GENTIMEINFO{
       //pupping ints
       p | ntime;
       p | itime;
+      p | btime;
       p | ix_respa;
       p | int_res_ter;
       p | int_res_tra;
@@ -59,7 +62,8 @@ class GENTIMEINFO{
       p | iget_pe_real_inter_freq;
       p | exit_flag;
       //pupping dbles
-      p |  dt;
+      p | dt;
+      p | bomd_scale;
 #ifdef _PARALLEL_DEBUG_        
       if (p.isUnpacking())
         state_class_out ();
@@ -75,6 +79,7 @@ class GENTIMEINFO{
 
       fprintf(fp,"ntime %d\n",ntime);
       fprintf(fp,"itime %d\n",itime);
+      fprintf(fp,"btime %d\n",btime);
       fprintf(fp,"ix_respa %d\n",ix_respa);
       fprintf(fp,"int_res_ter %d\n",int_res_ter);
       fprintf(fp,"int_res_tra %d\n",int_res_tra);
@@ -88,6 +93,7 @@ class GENTIMEINFO{
       fprintf(fp,"exit_flag %d\n",exit_flag);
       //dbles
       fprintf(fp," dt %g\n", dt);
+      fprintf(fp," bomd_scale %g\n", bomd_scale);
       fclose(fp);
     }// end routine
 

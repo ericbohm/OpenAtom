@@ -82,6 +82,12 @@ module gSpaceDriver
 
     //! \brief SDAG method for flow control while doing minimization
     entry void computeMinimization() {
+      serial {
+        if (thisIndex.x == 0 && thisIndex.y == 0) {
+          CkPrintf("Starting minimization with a max of %d steps\n", config.maxIter);
+        }
+        myGSpaceObj->min_iteration = 0;
+      }
       // Compute our initial psi unless gen_wave is on
       if (!_SDAG_DEBUG_PSI_OFF_ && gen_wave) {
         serial { myGSpaceObj->computeNewPsi(); }
@@ -89,7 +95,7 @@ module gSpaceDriver
       }
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! that we have met the desired tolerance by setting exitFlag to 1.
-      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag) {
+      while(myGSpaceObj->min_iteration < config.maxIter && !myGSpaceObj->exitFlag) {
         serial {
           //! Resets flags and increases the iteration counter
           myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
@@ -180,7 +186,7 @@ module gSpaceDriver
 
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! to exit because we have exceeded the allowed tolerance.
-      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag) {
+      while(myGSpaceObj->iteration < num_steps && !myGSpaceObj->exitFlag) {
         serial {
           //! Resets flags and increases the iteration counter.
           myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
@@ -259,15 +265,20 @@ module gSpaceDriver
 
     // Born-Oppenheimer Molecular Dynamics
     entry void computeBOMD() {
-      while (bomdIter < maxBOMDIter) {
-        serial { computeMinimization(); }
+      while (myGSpaceObj->iteration < num_steps) {
+        serial {
+          if (thisIndex.x == 0 && thisIndex.y == 0) {
+            CkPrintf("Starting BOMD iteration %d of %d\n", myGSpaceObj->iteration, num_steps);
+            myGSpaceObj->iteration++;
+          }
+          computeMinimization();
+        }
         when minimizationDone(bool success) serial {
           if (!success) {
             thisProxy[thisIndex].bomdDone(false);
             return;
           }
         }
-        serial { bomdIter++; }
       }
       serial { thisProxy[thisIndex].bomdDone(true); }
     };

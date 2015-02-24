@@ -1189,6 +1189,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     // with the tests that require them.
 
     int cp_min_opt = sim->cp_min_opt;
+    int cp_bomd_opt = sim->cp_bomd_opt;
 
     // Finished integrate and red psi are safe.
     // You can't get to these until you get passed through this routine
@@ -1198,8 +1199,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     iSentRedPsi      = 0;
     iSentRedPsiV     = 1;   if(cp_min_opt==0){iSentRedPsiV = 0;}
 
-    iteration++;   // my iteration # : not exactly in sync with other chares
-    //                  but should agree when chares meet.
+    // TODO: Clean this up, and maybe move out of this function into SDAG
+    if (cp_min_opt) {
+      min_iteration++;
+    }
+    if (!cp_bomd_opt) {
+      iteration++;   // my iteration # : not exactly in sync with other chares
+      //                  but should agree when chares meet.
+    }
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
     CkPrintf("GSP [%d,%d] StartNewIter : %d\n",thisIndex.x, thisIndex.y,iteration);
 #endif
