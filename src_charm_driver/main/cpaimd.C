@@ -359,8 +359,14 @@ main::main(CkArgMsg *msg) {
   double phase1start=Timer;
   //numPes = 2048; 
   numPes=CkNumPes();
+  int minimization_steps;
+  if (sim->cp_bomd_opt) {
+    minimization_steps = sim->btime;
+  } else {
+    minimization_steps = sim->ntime;
+  }
   config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
-		    sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
+		    minimization_steps,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
 		    ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c,
 		    sim->doublepack,sim->pi_beads,sim->nkpoint,sim->ntemper,sim->nspin);
 

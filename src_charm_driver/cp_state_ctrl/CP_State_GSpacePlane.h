@@ -128,6 +128,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
     int ibead_ind,kpoint_ind, itemper_ind,ispin_ind;
     ///
     int iteration;
+    int min_iteration;
+    int num_steps;
     ///
     int iRecvRedPsi;
     ///

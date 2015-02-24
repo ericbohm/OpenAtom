@@ -49,6 +49,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int nkf3            = nfft[3];
   int nstates         = cpcoeffs_info->nstate_up;
   int ntime           = gentimeinfo->ntime;
+  int btime           = gentimeinfo->btime;
   int ibinary_opt     = cpopts->iread_coef_binary;
   int cp_lsda         = cpopts->cp_lsda;
   int cp_lda          = cpopts->cp_lda;
@@ -68,6 +69,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 
   double vol          = gencell->vol;
   double dt           = gentimeinfo->dt;
+  double bomd_scale   = gentimeinfo->bomd_scale;
   double tol_norb     = cpconstrnt->c_tolnorb;
   double tol_cp_min   = genminopts->tol_coef;
   double tol_cp_dyn   = cpopts->tol_coef;
@@ -140,6 +142,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   sim->natm_nl        = natm_nl;
   sim->nlIters        = nlIters;
   sim->dt             = dt;
+  sim->bomd_scale     = bomd_scale;
   sim->vol            = vol;
 
   sim->iperd          = iperd;
@@ -158,11 +161,13 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   sim->cp_grad_corr_on= cp_grad_corr_on;
   sim->cp_force_complex_psi = cp_force_complex_psi;
 
+  // TODO: What if we are in BOMD?
   if(cp_min_opt==0){
     sim->ntime          = ntime+1;
   }else{
     sim->ntime          = ntime;
   }//endif
+  sim->btime = btime;
 
   sim->gen_wave=gen_wave; 
 

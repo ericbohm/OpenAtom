@@ -77,12 +77,6 @@ class GSpaceDriver: public CBase_GSpaceDriver
     ///
     bool isOutputNeeded;
 
-    /// BOMD Params
-    // TODO: Fix these up and don't hard code them
-    int bomdIter;
-    int maxBOMDIter;
-    int maxMinIter;
-
     /// Pointer to the GSpacePlane object that I am driving (controlling) 
     CP_State_GSpacePlane *myGSpaceObj;
     /// Pointer to the ParticlePlane object that I am driving (controlling) 

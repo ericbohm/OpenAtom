@@ -995,6 +995,18 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     PRINTF("Are you debugging?\n");
     PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
   }//endif
+  /*-----------------------------------------------------------------------*/ 
+  /* 42)\cp_bomd_max_minimization_steps{#} */
+  index=42;
+  sscanf(dict[index].keyarg,"%lg",&real_key_arg);
+  gentimeinfo->btime = (int)real_key_arg;
+  // TODO: Sanity checks here for <= 0.0 > 1000000
+  /*-----------------------------------------------------------------------*/ 
+  /* 43)\cp_bomd_timestep_scale{#} */
+  index=43;
+  sscanf(dict[index].keyarg,"%lg",&real_key_arg);
+  gentimeinfo->bomd_scale = real_key_arg;
+  // TODO: Sanity checks here for <= 0.0 > 1.0
   /*========================================================================*/
   // CP mass warning messages for the uninitiated
 
@@ -1043,7 +1055,7 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   /*========================================================================*/
   /*-----------------------------------------------------------------------*/ 
   /*  1)\simulation_typ{md,minimize,pimd,cp,cp_wave,cp_min,cp_wave_min,
-      cp_wave_min_pimd,cp_pimd,cp_wave_pimd,
+      cp_wave_min_pimd,cp_pimd,cp_wave_pimd,cp_bomd
       debug,debug_pimd,debug_cp} */
 
   ifound =0;
