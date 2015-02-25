@@ -87,7 +87,7 @@ test: test-unit test-regr
 test-unit:
 
 test-regr: compile
-	cd python; python test_driver.py tests.config
+	cd python; python test_driver.py jenkins.config
 
 retest: clean_test test
 
