@@ -12,7 +12,7 @@ def check_result(test_dict):
 
 	# Compare the output reference to the temporary output, then remove it
 	result = compare_iteration(output_temp, out_ref, sig_figs)
-	os.remove(output_temp)
+	#os.remove(output_temp)
 
 	return result
 

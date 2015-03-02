@@ -866,13 +866,13 @@ void CP_State_ParticlePlane::startNLEes(int iteration_in){
     CkExit();
   }//endif
 
-  if(iteration!=iteration_in){
+  /*if(iteration!=iteration_in){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Mismatch in time step between Gstate and Gpart %d %d for chare %d %d\n",
         iteration_in,iteration,thisIndex.y,thisIndex.x);
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
-  }//endif
+  }//endif*/
 
   if(iterNL>numNLiter){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

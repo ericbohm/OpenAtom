@@ -19,7 +19,6 @@ extern CProxy_InstanceController      instControllerProxy;
 GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance): 
   thisInstance(_thisInstance),
   myGSpaceObj(0),
-  isFirstStep(true),
   isPsiVupdateNeeded(false)
 {
 #ifdef DEBUG_CP_GSPACE_CREATION
@@ -34,9 +33,6 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
   cp_bomd_opt = sim->cp_bomd_opt;
   gen_wave = sim->gen_wave;
   ndump_frq = sim->ndump_frq;
-
-  // TODO: Find out where to actually set this
-  myGSpaceObj->num_steps = sim->ntime;
 }//end routine
 
 
@@ -54,7 +50,6 @@ GSpaceDriver::GSpaceDriver(CkMigrateMessage *msg):
 void GSpaceDriver::pup(PUP::er &p)
 {
   __sdag_pup(p);
-  p|isFirstStep;
   p|ees_nonlocal;
   p|natm_nl;
   p|cp_min_opt;
@@ -142,8 +137,8 @@ void GSpaceDriver::needUpdatedPsiV()
 /// Trigger the nonlocal computations
 void GSpaceDriver::startNonLocalEes(int iteration_loc)
 {
-  if(iteration_loc!=myGSpaceObj->iteration)
-    CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
+  //if(iteration_loc!=myGSpaceObj->iteration)
+  //  CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
 
   /// Set to false, just before I spawn the nonlocal work
 
