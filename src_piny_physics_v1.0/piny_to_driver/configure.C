@@ -3172,9 +3172,9 @@ void Config::Finale(int nkf1,int nkf2,int nkf3,int nplane_x,int nplane_x_rho, in
     EXIT(1);
   }//endif
 
-  if((gemmSplitBW % 2 !=0) || gemmSplitBW < sGrainSize){
+  if((gemmSplitBW % 2 !=0) || gemmSplitBW > sGrainSize){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("   gemmSplitBW %d must be an even number greater than sGrainSize %d !\n",
+    PRINTF("   gemmSplitBW %d must be an even number smaller than sGrainSize %d !\n",
         gemmSplitBW, sGrainSize);
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
