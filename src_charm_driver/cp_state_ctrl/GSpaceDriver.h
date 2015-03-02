@@ -58,8 +58,6 @@ class GSpaceDriver: public CBase_GSpaceDriver
     /// Triggers nonlocal energy computations
     void releaseSFComputeZ(); 					
 
-    /// True if this is the first step
-    bool isFirstStep;
     ///
     int ees_nonlocal;
     ///

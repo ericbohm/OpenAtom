@@ -130,6 +130,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
     int iteration;
     int min_iteration;
     int num_steps;
+    bool min_only;
     ///
     int iRecvRedPsi;
     ///
@@ -172,7 +173,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
     void launchAtoms();
     void launchOrthoT();
     void doFFT();
-    void startNewIter ();
+    void startNewMinIter();
+    void startNewIter();
     void sendPsi();
     void sendPsiV();
     void screenOutputPsi(int);

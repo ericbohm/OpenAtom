@@ -87,6 +87,7 @@ module gSpaceDriver
           CkPrintf("Starting minimization with a max of %d steps\n", config.maxIter);
         }
         myGSpaceObj->min_iteration = 0;
+        myGSpaceObj->exitFlag = 0;
       }
       // Compute our initial psi unless gen_wave is on
       if (!_SDAG_DEBUG_PSI_OFF_ && gen_wave) {
@@ -98,7 +99,7 @@ module gSpaceDriver
       while(myGSpaceObj->min_iteration < config.maxIter && !myGSpaceObj->exitFlag) {
         serial {
           //! Resets flags and increases the iteration counter
-          myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
+          myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewMinIter();
         }
 
         if (!_SDAG_DEBUG_PSI_OFF_) {
@@ -158,16 +159,14 @@ module gSpaceDriver
 
         //! Wait for both the energy computation, and the atoms to be moved
         //! before going to the next iteration.
-        if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
-          overlap {
-            if (!_SDAG_DEBUG_PSI_OFF_) {
-              when doneComputingEnergy(const int AtomGrpIter) {}
-            }
-            when doneMovingAtoms(const int AtomsGrpIter) {}
+        overlap {
+          if (!_SDAG_DEBUG_PSI_OFF_) {
+            when doneComputingEnergy(const int AtomGrpIter) {}
           }
+          when doneMovingAtoms(const int AtomsGrpIter) {}
         }
 
-        //! Print out the iteration times and set isFirstStep to false.
+        //! Print out the iteration times.
         serial {
           myGSpaceObj->screenPrintWallTimes();
         }
@@ -186,7 +185,7 @@ module gSpaceDriver
 
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! to exit because we have exceeded the allowed tolerance.
-      while(myGSpaceObj->iteration < num_steps && !myGSpaceObj->exitFlag) {
+      while(myGSpaceObj->iteration < myGSpaceObj->num_steps && !myGSpaceObj->exitFlag) {
         serial {
           //! Resets flags and increases the iteration counter.
           myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
@@ -265,12 +264,12 @@ module gSpaceDriver
 
     // Born-Oppenheimer Molecular Dynamics
     entry void computeBOMD() {
-      while (myGSpaceObj->iteration < num_steps) {
+      while (myGSpaceObj->iteration < myGSpaceObj->num_steps) {
         serial {
           if (thisIndex.x == 0 && thisIndex.y == 0) {
-            CkPrintf("Starting BOMD iteration %d of %d\n", myGSpaceObj->iteration, num_steps);
-            myGSpaceObj->iteration++;
+            CkPrintf("About to start iteration %d of %d\n", myGSpaceObj->iteration, myGSpaceObj->num_steps);
           }
+          myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
           computeMinimization();
         }
         when minimizationDone(bool success) serial {
@@ -434,6 +433,7 @@ module gStatePlane
     entry void acceptRedPsiV(GSRedPsiMsg *msg);
 
     entry void makePCproxies();
+    entry [local] void startNewMinIter();
     entry [local] void startNewIter();
 
     entry void computeEnergies(int p, double d);

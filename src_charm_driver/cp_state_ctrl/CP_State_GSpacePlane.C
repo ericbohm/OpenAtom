@@ -294,6 +294,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt  = sim->cp_min_opt;
+  int cp_bomd_opt = sim->cp_bomd_opt;
   int gen_wave    = sim->gen_wave;
   wallTimeArr=NULL;
   if(thisIndex.x==0 && thisIndex.y==0 && config.maxIter<30){
@@ -311,6 +312,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
   //============================================================================
 
+  // Control flow fields
+  iteration     = 0;
+  min_iteration = 0;
+  num_steps     = sim->ntime;
+  min_only      = (cp_min_opt && !cp_bomd_opt);
+
   istate_ind           = thisIndex.x;
   iplane_ind           = thisIndex.y;  
   ibead_ind            = thisInstance.idxU.x;
@@ -318,7 +325,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   itemper_ind          = thisInstance.idxU.z;
   ispin_ind            = 0;                   //needs to be updated 
   initialized          = false;
-  iteration            = 0;
   nrotation            = 0;
   iterRotation         = 0;
   gotHandles =0;
@@ -1126,6 +1132,23 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //============================================================================
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   //============================================================================
+  void CP_State_GSpacePlane::startNewMinIter ()  {
+    min_iteration++;
+
+    if (min_only) {
+      startNewIter();
+    } else {
+      finishedCpIntegrate = 0;
+      iRecvRedPsi      = 1;   if(numRecvRedPsi>0){iRecvRedPsi  = 0;}
+      iRecvRedPsiV     = 1;
+      iSentRedPsi      = 0;
+      iSentRedPsiV     = 1;
+    }
+  }
+
+  //============================================================================
+  //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  //============================================================================
   void CP_State_GSpacePlane::startNewIter ()  {
     //============================================================================
 
@@ -1137,7 +1160,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #if CMK_TRACE_ENABLED
     traceUserSuppliedData(iteration);
 #endif 
-    if(iteration>0){
+    /*if(iteration>0){
       if(UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp != iteration || 
           UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration  != iteration){
         CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);
@@ -1152,7 +1175,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);
         CkExit();
       }//endif
-    } //endif
+    } //endif*/
 
     if(!acceptedVPsi){
       CkPrintf("GSpace[%d,%d] Error: Flow of Control. Starting new iter (%d) before finishing Vpsi.\n",thisIndex.x,thisIndex.y,iteration+1);
@@ -1189,7 +1212,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     // with the tests that require them.
 
     int cp_min_opt = sim->cp_min_opt;
-    int cp_bomd_opt = sim->cp_bomd_opt;
 
     // Finished integrate and red psi are safe.
     // You can't get to these until you get passed through this routine
@@ -1199,14 +1221,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     iSentRedPsi      = 0;
     iSentRedPsiV     = 1;   if(cp_min_opt==0){iSentRedPsiV = 0;}
 
-    // TODO: Clean this up, and maybe move out of this function into SDAG
-    if (cp_min_opt) {
-      min_iteration++;
-    }
-    if (!cp_bomd_opt) {
-      iteration++;   // my iteration # : not exactly in sync with other chares
-      //                  but should agree when chares meet.
-    }
+    iteration++;   // my iteration # : not exactly in sync with other chares
+    //                  but should agree when chares meet.
+
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
     CkPrintf("GSP [%d,%d] StartNewIter : %d\n",thisIndex.x, thisIndex.y,iteration);
 #endif
@@ -3145,6 +3162,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //=============================================================================
     // (B) Generate some screen output of orthogonal psi
 
+    if (thisIndex.x == 0 && thisIndex.y == 0) {
+      CkPrintf("Iteration is %d, if > 0 printing out Psi\n", iteration);
+    }
     if(iteration>0){screenOutputPsi(iteration);}
 
     //=============================================================================
