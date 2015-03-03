@@ -66,6 +66,22 @@ Need to schedule a week of intensive development on this:
 2. Implement when Glenn visits
 
 
+----
+Implementation details for Ortho and PC.
 
+For 5a, add new actionType (3) to implement the multiply of Lambda_evec & \Psi.
+DGEMM Logic is the same as the current asymmetric normal backward path.
+For 5b, add new actionType (4) to implement the multiply of Lambda_evec * Force
+Must transpose the data to the recipients and use column instead of row logic.
+DGEMM Logic is slightly different from existing. new DGEMM call must be made.
+Column logic for tiles, offsets, etc.
+use inDataRight (Force) by matrix1 in the multiply.
+First cut implementation should disable the backward path streaming and collect the tiles before multiplyng.
+Might need to revise collecttiles to transpose during tile collection.  Experiment to determine.
+Output needs to land in new entry point in GSpaceStateplane to handle the F~ result of lambda_evec*F.
+The existing subtraction operation in acceptLambda must be delayed until F~ arrives.
+
+TODO: The Ortho(0,0) chare should output the eigenvalues in a file whose name is set by a new parameter in sim
+named lamdaeigenvaluefile.
 
        
