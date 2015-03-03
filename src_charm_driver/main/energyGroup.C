@@ -85,7 +85,7 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) 
   }
   // these other stuff comes from rho and we only have one of them for
   // all kpoints
-  estruct.eext         = es.eext;
+  estruct.eext         = es.eext;  // TODO: is this reduced over spin?
   estruct.ehart        = es.ehart;
   estruct.eewald_recip = es.eewald_recip;
   estruct.egga         = es.egga;

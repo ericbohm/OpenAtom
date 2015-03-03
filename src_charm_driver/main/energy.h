@@ -20,16 +20,17 @@
 struct EnergyStruct {
 
   int iteration_gsp;       // step upon which energies below computed
-  double enl;             // non local
+  double enl;             // non local - k and spin
   double eext;            // local external energy
-  double eke;             // quantum kinetic energy 
+  double eke;             // quantum kinetic energy - k and spin
   double ehart;           // hartree energy
-  double egga;            // exchange correlation grad corr
-  double eexc;            // exchange correlation local
-  double fictEke;         // fict KE from cp dynamics
+  double egga;            // exchange correlation grad corr - check for spin reduce
+  double eexc;            // exchange correlation local - check for spin reduce
+  double fictEke;         // fict KE from cp dynamics - k and spin
   double fmagPsi;         // coef force magnitude
   double eewald_recip;    // atm(ion)-atm(ion) recip (computed by psi chares)
   double totalElecEnergy; // sum of electronic energies + ewald_recip 
+                          // local total? or summed over k and spin?
   // no fict and no ewald_real
 
   int iteration_atm;       // step upon which energies below computed.
