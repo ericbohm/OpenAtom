@@ -1,13 +1,29 @@
-def parse_tests(data, exe, test):
+def parse_tests(exe_dir, test_args):
 	import os
 	import yaml
 
 	# config_dict will contain entries common to every test in this config file
 	config_dict = {}
 
-	data_path = os.path.abspath(data)
-	exe_path = os.path.abspath(exe)
-	test_path = os.path.join(data_path,'tests',test)
+	exe_path = os.path.abspath(exe_dir)
+	data_path = ''
+	test_path = ''
+	test_name = ''
+
+	if (len(test_args) > 0):
+		data_path = os.path.abspath(test_args[0])
+	if (len(test_args) > 1):
+		test_path = os.path.join(data_path,'tests',test_args[1])
+	if (len(test_args) > 2):
+		test_name = test_args[2]
+	if (len(test_args) <= 0 or len(test_args) > 3):
+		print "ERROR: Bad number of test arguments: " + str(test_args)
+		return 1
+
+	if (len(test_args) != 2):
+		print "ERROR: Currently we only support running tests with two arguments"
+		print "EXAMPLE: ../data/water_32M_10Ry regression"
+		return 1
 
 	config_dict['data_path'] = data_path
 	config_dict['exe_path'] = exe_path

@@ -36,6 +36,7 @@ endif
 buildsuffix   = $(shell echo $(sort $(OPT)) | sed "s| ||g")
 # The actual build directory name and location
 build         = $(strip $(where))/$(strip $(builddir))$(strip $(buildsuffix))
+absbuild      = $(call realpath,$(build))
 
 ################## Test directory related stuff ####################
 # The directory within which any tests are run
@@ -82,12 +83,14 @@ realclean:
 	@test ! -d $(build)  || $(RM) -r $(build)
 
 ################## Testing-related targets ####################
-test: test-unit test-regr
+test: compile
+	cd python; python test_driver.py $(absbuild) make_test.config
 
-test-unit:
+test-full: compile
+	cd python; python test_driver.py $(absbuild) full_test.config
 
-test-regr: compile
-	cd python; python test_driver.py jenkins.config
+test-jenkins: compile
+	cd python; python test_driver.py $(absbuild) jenkins.config
 
 retest: clean_test test
 
