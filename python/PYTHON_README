@@ -7,9 +7,9 @@ Python File Description
   of failed tests.
 
 2) test_parser.py
-  Defines a single function, parse_test, that takes a data set path, exe path,
-  and test name, and generates a list of test dictionaries by reading the config
-  file for that test. It returns the list of test dictionaries, which can then
+  Defines a single function, parse_test, that takes an exe path, and test args.
+  It generates a list of test dictionaries by reading the config file for that
+  set of test args. It returns the list of test dictionaries, which can then
   be passed to the test_runner to be run.
 
 3) test_runner.py

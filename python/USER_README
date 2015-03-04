@@ -15,16 +15,13 @@
 
 3) Running the framework:
   3.1 From the python directory, run
-      'python test_driver.py <dataset_path> <exe_path> <test_name>'. This
-      will run the tests described by the test script in
-      <dataset_path>/tests/<test_name> on the exe in <exe_path>
-  3.2 Alternatively, multiple tests can be specified in a single file and ran by
-      'python test_driver.py <config_file>. Each line in this file should be
-      <dataset_path> <exe_path> <test_name>. These tests will be run as if you
-      ran them using the command in 3.1, except results from all runs will be
-      summarized together.
-  3.3 TODO: For now, datasets must be located in the data directory of the
+      'python test_driver.py <exe_path> <config_file>'. This will run all tests
+      specified in the config file using the specified build.
+        3.1.1 Example test configs can be found in the python directory
+  3.2 TODO: For now, datasets must be located in the data directory of the
       openatom base directory
+  3.3 TODO: Allow the test config to specify just a data set, or a data set +
+      test_dir + test_name for more flexibility with testing
 
 4) Test Script:
   4.1 The header of the test script begins with '- config:'. Under this config
