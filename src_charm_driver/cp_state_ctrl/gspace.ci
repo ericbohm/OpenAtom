@@ -124,8 +124,12 @@ module gSpaceDriver
             when doneOutput() {}
           }
 
-          if (isPsiVupdateNeeded && cp_min_opt==1 && myGSpaceObj->iteration > 1) {
+          if (isPsiVupdateNeeded && cp_min_opt==0 && myGSpaceObj->iteration > 1) {
+#ifdef GSP_USE_PRIMITIVE_ROTATION
             serial { myGSpaceObj->computeNewPsiV(); }
+#else
+            serial { myGSpaceObj->computeNewPsiVFiniteDifference(); }
+#endif
             when donePsiV() serial { isPsiVupdateNeeded = false; }
           }
         }  // end if !_SDAG_DEBUG_PSI_OFF_
@@ -425,7 +429,7 @@ module gStatePlane
         when acceptRedPsiV(GSRedPsiMsg *msg) serial { unpackRedPsiV(msg); }
       }
       serial {
-        doneRedPsiIntegrate();
+        doneRedPsiVIntegrate();
         sendPsiV();
       }
       while (countVPsi != AllPsiExpected) {
@@ -440,6 +444,17 @@ module gStatePlane
 #endif
       serial { UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).donePsiV(); }
     };
+
+    entry void computeNewPsiVFiniteDifference() {
+      serial {
+        finiteDifferencePsiV();
+      }
+#ifdef BARRIER_CP_GSPACE_PSIV
+      when allDonePsiV(CkReductionMsg *msg) {}
+#endif
+      serial { UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).donePsiV(); }
+    };
+
 
     entry void doOutput() {
       // Everyone sends their portion of the output to the reduction plane

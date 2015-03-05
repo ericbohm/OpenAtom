@@ -192,6 +192,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
     void collectFileOutput(GStateOutMsg *msg);
     void unpackNewPsiV(CkReductionMsg *msg);
     void unpackNewPsiV(partialResultMsg *msg);
+    void finiteDifferencePsiV();
     void doNewPsiV();
     void psiCgOvlap(CkReductionMsg *msg);
     void unpackLambda(CkReductionMsg *msg);

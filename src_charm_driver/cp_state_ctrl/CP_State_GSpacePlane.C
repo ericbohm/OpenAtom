@@ -1736,6 +1736,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       int ncoef           = gs.numPoints;
       complex *psi_g      = gs.packedPlaneData;
       complex *psi_g_tmp  = gs.packedPlaneDataTemp;
+      // save the old psi for later finite difference
       CmiMemcpy(psi_g_tmp,psi_g,sizeof(complex)*ncoef);
     }//endif
 
@@ -3595,6 +3596,70 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //----------------------------------------------------------------------------
   }//end routine
   //==============================================================================
+
+
+  //==============================================================================
+  //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  //==============================================================================
+  /** process all the PsiV data */
+  void CP_State_GSpacePlane::finiteDifferencePsiV(){
+#ifdef DEBUG_CP_GSPACE_PSIV
+    CkPrintf("GSpace[%d,%d] finiteDifferencePsiV\n",thisIndex.x,thisIndex.y);
+#endif
+    /// III) Use finite difference until rotation scheme is improved
+    int ncoef           = gs.numPoints;
+    complex *scr  = gs.packedPlaneDataScr;  // replace no-ortho psi 
+    complex *psi  = gs.packedPlaneData;     // by orthonormal psi when norb rotating
+    CmiMemcpy(scr,psi,sizeof(complex)*ncoef);
+
+    CPcharmParaInfo *sim = CPcharmParaInfo::get();
+    eesCache *eesData    = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+
+    double *coef_mass    = eesData->GspData[iplane_ind]->coef_mass;
+    double dt           = sim->dt;
+    double dt2          = 2.0*dt;
+
+    complex *vpsi       = gs.packedVelData;
+    complex *psi_g      = gs.packedPlaneData;
+    complex *psi_g_tmp  = gs.packedPlaneDataTemp;
+    int istrt0          = gs.nkx0_red;
+    int istrt           = gs.nkx0_red+gs.nkx0_zero;
+    int iend            = gs.nkx0_red+gs.nkx0_uni;
+    
+
+    for(int i=0;i<ncoef;i++){
+      double vre = (psi_g[i].re-psi_g_tmp[i].re)/dt;
+      double vim = (psi_g[i].im-psi_g_tmp[i].im)/dt;
+      vpsi[i].re = vre;
+      vpsi[i].im = vim;
+    }//endif
+
+    double ake_new = 0.0;
+    for(int i=istrt0;i<istrt;i++){ake_new += vpsi[i].getMagSqr()*coef_mass[i];}       // g=0
+    for(int i=istrt;i<iend;i++)  {ake_new += vpsi[i].getMagSqr()*(2.0*coef_mass[i]);} // gx=0
+    for(int i=iend;i<ncoef;i++)  {ake_new += vpsi[i].getMagSqr()*coef_mass[i];}       // gx!=0
+
+    if(sim->cp_norb_rot_kescal==1){
+      double scale = sqrt(ake_old/ake_new);
+      for(int i=0;i<ncoef;i++){
+        vpsi[i].re *= scale;
+        vpsi[i].im *= scale;
+      }//endfor
+    }//endif
+    //// II) A Barrier for debugging
+
+#ifdef BARRIER_CP_GSPACE_PSIV
+    int wehaveours=1;
+    contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+        CkCallback(CkIndex_CP_State_GSpacePlane::allDonePsiV(NULL),thisProxy));
+#endif
+
+    //------------------------------------------------------------------------------
+
+  }//end routine
+  //==============================================================================
+
+
 
   //==============================================================================
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
