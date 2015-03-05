@@ -57,13 +57,26 @@ int main()
   PIBeadAtoms  pibeads(numBeads);
 
 //============================================================================
-// Check x to u and u to x
+// Output the values from OpenAtom
 
+  printf("========================================\n");
+  printf("     Input values from OpenAtom:\n");
+  printf("========================================\n\n");
   pibeads.output_PIMD_x();
   pibeads.output_PIMD_u();
+  pibeads.output_PIMD_fx();
   pibeads.output_PIMD_fu();
-
   pibeads.energy_PIMD_x();
+  pibeads.energy_PIMD_u();
+  printf("\n========================================\n\n");
+
+//============================================================================
+// Output the values computed here
+
+  printf("========================================\n");
+  printf("         Validation from standalone\n");
+  printf("========================================\n\n");
+
   pibeads.compute_PIMD_u();
   pibeads.output_PIMD_u();
   pibeads.energy_PIMD_u();
@@ -74,6 +87,7 @@ int main()
 
   pibeads.compute_PIMD_Fu();
   pibeads.output_PIMD_fu();
+  printf("\n========================================\n");
 
 //============================================================================
 
@@ -143,19 +157,24 @@ PIBeadAtoms::PIBeadAtoms(int numBeads_dum)
     fzu[i] = 0;
   }//endfor
 #else
-  char fname[100];
+  char fname[1000];
   FILE *fp;
-  int iatm,j;
-  printf("which atom do you want to test (0,50,95) : ");
+  int iatm,iter;
+  printf("Which atom do you want to test (0-95) : ");
   scanf("%d",&iatm);
-  sprintf(fname,"atm_%d",iatm);
-  fp = fopen(fname,"r");
-    for(int i =0;i<numBeads;i++){
-      fscanf(fp,"%d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",&j,
+  printf("which iteration : ");
+  scanf("%d",&iter);
+  for(int i =0;i<numBeads;i++){
+     sprintf(fname,"BeadTransformTest_Bead.%d_Atm.0_96_Iter.%d",i+1,iter);
+     printf("%s\n",fname);
+     fp = fopen(fname,"r");
+     for(int j=0;j<iatm+1;j++){
+      fscanf(fp,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
              &x[i],&y[i],&z[i],&xu[i],&yu[i],&zu[i],
 	     &fx[i],&fy[i],&fz[i],&fxu[i],&fyu[i],&fzu[i]);
-    }//endfor
-  fclose(fp);
+     }//endfor
+     fclose(fp);
+  }//endfor
 #endif
 
 //============================================================================

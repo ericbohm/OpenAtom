@@ -2746,8 +2746,8 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
 
       char bigenough[1000];  //we know our lines are shorter than this
       char localFile[1000]; // fromFile is const
-      strcpy(localFile,fromFile);
-      strcat(localFile,".gz");
+      strncpy(localFile,fromFile,1000);
+      strncat(localFile,".gz",1000);
       gzFile zfp=gzopen(localFile,"rb");
       if (zfp==NULL){
         PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -2802,8 +2802,8 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
     if(ibinary_opt==3){
 
       char localFile[1000]; // fromFile is const
-      strcpy(localFile,fromFile);
-      strcat(localFile,".gz");
+      strncpy(localFile,fromFile,1000);
+      strncat(localFile,".gz",1000);
       gzFile zfp=gzopen(localFile,"rb");
       if (zfp==NULL){
         PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

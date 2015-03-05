@@ -69,7 +69,7 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads_in
       iwrite_atm++;
       if(myid==0){
         int low = 0; int high = natm;
-        sprintf (temp_ext,"%s/Bead.%d_Temper.0/%s",dump_dir,ibead,itemper,cpname);
+        sprintf (temp_ext,"%s/Bead.%d_Temper.%d/%s",dump_dir,ibead,itemper,cpname);
         write_atom_output_conf(low,high,pi_beads,atoms,temp_ext);
       }//endif
     }//endif
@@ -77,7 +77,7 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads_in
     if( (itime % iwrite_par_confp)==0 && low_lim_par<high_lim_par){
       iwrite_atm++;
       if(myid==0){
-        sprintf (temp_ext,"%s/Bead.%d_Temper.0/%s",dump_dir,ibead,itemper,cpparname);
+        sprintf (temp_ext,"%s/Bead.%d_Temper.%d/%s",dump_dir,ibead,itemper,cpparname);
         write_atom_output_conf(low_lim_par,high_lim_par,pi_beads,atoms,temp_ext);
       }//endif
     }//endif
@@ -85,7 +85,7 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads_in
     if( (itime % iwrite_dump)==0 || itime==ntime){
       iwrite_atm++;
       if(myid==0){
-        sprintf (temp_ext,"%s/Bead.%d_Temper.0/%s",dump_dir,ibead,dname);
+        sprintf (temp_ext,"%s/Bead.%d_Temper.%d/%s",dump_dir,ibead,itemper,dname);
         write_atom_output_dump(natm,len_nhc,pi_beads,itime,atoms,atomsNHC,temp_ext);
       }//endif
     }//endif
