@@ -144,8 +144,10 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
   if(thisIndex.x==0 && thisIndex.y==0){
     int iprintout   = iteration-1;
 
-    fprintf(temperScreenFile, "Iter [%d] MagForPsi   =  %5.8lf | %5.8lf per entity\n", iprintout,d1,d1/rnatm);
-    fprintf(temperScreenFile,"Iter [%d] Memory      =  %ld\n",iprintout,CmiMemoryUsage());
+    if (!sim->cp_bomd_opt || fmagPsi_total <= tol_cp_min) {
+      fprintf(temperScreenFile, "Iter [%d] MagForPsi   =  %5.8lf | %5.8lf per entity\n", iprintout,d1,d1/rnatm);
+      fprintf(temperScreenFile,"Iter [%d] Memory      =  %ld\n",iprintout,CmiMemoryUsage());
+    }
     computeEnergies(ENERGY_FMAG, d1);
   }//endif
 
@@ -216,7 +218,9 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
     double cpuTimeOld = cpuTimeNow;
     cpuTimeNow        = CkWallTimer();
     if(iteration>1){
-      fprintf(temperScreenFile, "Iter [%d] CpuTime(GSP)= %g\n",iteration-1,cpuTimeNow-cpuTimeOld);
+      if (!sim->cp_bomd_opt || exitFlag) {
+        fprintf(temperScreenFile, "Iter [%d] CpuTime(GSP)= %g\n",iteration-1,cpuTimeNow-cpuTimeOld);
+      }
       if(cp_min_opt==0){
         int heavyside = 1-(iteration-iterRotation >= 1 ? 1 : 0);
         fprintf(temperScreenFile, "Iter [%d] Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d : %d\n",iteration,
@@ -313,10 +317,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //============================================================================
 
   // Control flow fields
-  iteration     = 0;
-  min_iteration = 0;
+  min_step      = 0;
+  bomd_step     = 0;
   num_steps     = sim->ntime;
-  min_only      = (cp_min_opt && !cp_bomd_opt);
+
+  // Used to stay synchronized with the atoms cache, instance controller, etc.
+  iteration     = 0;
 
   istate_ind           = thisIndex.x;
   iplane_ind           = thisIndex.y;  
@@ -1132,23 +1138,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //============================================================================
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   //============================================================================
-  void CP_State_GSpacePlane::startNewMinIter ()  {
-    min_iteration++;
-
-    if (min_only) {
-      startNewIter();
-    } else {
-      finishedCpIntegrate = 0;
-      iRecvRedPsi      = 1;   if(numRecvRedPsi>0){iRecvRedPsi  = 0;}
-      iRecvRedPsiV     = 1;
-      iSentRedPsi      = 0;
-      iSentRedPsiV     = 1;
-    }
-  }
-
-  //============================================================================
-  //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  //============================================================================
   void CP_State_GSpacePlane::startNewIter ()  {
     //============================================================================
 
@@ -1160,7 +1149,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #if CMK_TRACE_ENABLED
     traceUserSuppliedData(iteration);
 #endif 
-    /*if(iteration>0){
+    if(iteration>0){
       if(UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp != iteration || 
           UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration  != iteration){
         CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);
@@ -1175,7 +1164,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);
         CkExit();
       }//endif
-    } //endif*/
+    } //endif
 
     if(!acceptedVPsi){
       CkPrintf("GSpace[%d,%d] Error: Flow of Control. Starting new iter (%d) before finishing Vpsi.\n",thisIndex.x,thisIndex.y,iteration+1);
@@ -1668,6 +1657,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     CPNONLOCAL::CP_eke_calc(ncoef,istate,forces,psi_g,k_x,k_y,k_z,g2,eke_ret,config.doublePack,nkx0,
         kpoint_ind,config.nfreq_cpnonlocal_eke);
+
     contribute(sizeof(double), &gs.eke_ret, CkReduction::sum_double, 
         CkCallback(CkIndex_InstanceController::printEnergyEke(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
     //isEnergyReductionDone = false; ///@note: This doesnt seem necessary here and commenting out has not affected simple tests. This flag is reset at the start of the iter itself.
@@ -3162,9 +3152,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //=============================================================================
     // (B) Generate some screen output of orthogonal psi
 
-    if (thisIndex.x == 0 && thisIndex.y == 0) {
-      CkPrintf("Iteration is %d, if > 0 printing out Psi\n", iteration);
-    }
     if(iteration>0){screenOutputPsi(iteration);}
 
     //=============================================================================
@@ -3727,6 +3714,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
     int cp_min_opt    = sim->cp_min_opt;
+    int cp_bomd_opt   = sim->cp_bomd_opt;
     int nstates       = sim->nstates;
 
     complex *vpsi     = gs.packedVelData;
@@ -3741,7 +3729,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     /// Screen Output
 
 #ifdef _CP_DEBUG_COEF_SCREEN_
-    if(iteration<=ntime){
+    if(iteration<=ntime && (!cp_bomd_opt || exitFlag)){
       if(gs.istate_ind==0 || gs.istate_ind==nstates-1){
         for(int i = 0; i < gs.numPoints; i++){
           if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){

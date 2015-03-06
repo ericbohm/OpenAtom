@@ -41,6 +41,7 @@ class InstanceController: public CBase_InstanceController {
     int numKpointforces;
     bool atomsTempDone;
     bool gspTempDone;
+    bool printToScreen;
     CkSectionInfo allKPcookie;
 };
 

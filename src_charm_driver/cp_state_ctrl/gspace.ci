@@ -86,7 +86,7 @@ module gSpaceDriver
         if (thisIndex.x == 0 && thisIndex.y == 0) {
           CkPrintf("Starting minimization with a max of %d steps\n", config.maxIter);
         }
-        myGSpaceObj->min_iteration = 0;
+        myGSpaceObj->min_step = 0;
         myGSpaceObj->exitFlag = 0;
       }
       // Compute our initial psi unless gen_wave is on
@@ -96,10 +96,11 @@ module gSpaceDriver
       }
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! that we have met the desired tolerance by setting exitFlag to 1.
-      while(myGSpaceObj->min_iteration < config.maxIter && !myGSpaceObj->exitFlag) {
+      while(myGSpaceObj->min_step < config.maxIter && !myGSpaceObj->exitFlag) {
         serial {
           //! Resets flags and increases the iteration counter
-          myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewMinIter();
+          myGSpaceObj->min_step++;
+          myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
         }
 
         if (!_SDAG_DEBUG_PSI_OFF_) {
@@ -264,12 +265,9 @@ module gSpaceDriver
 
     // Born-Oppenheimer Molecular Dynamics
     entry void computeBOMD() {
-      while (myGSpaceObj->iteration < myGSpaceObj->num_steps) {
+      while (myGSpaceObj->bomd_step < myGSpaceObj->num_steps) {
         serial {
-          if (thisIndex.x == 0 && thisIndex.y == 0) {
-            CkPrintf("About to start iteration %d of %d\n", myGSpaceObj->iteration, myGSpaceObj->num_steps);
-          }
-          myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
+          myGSpaceObj->bomd_step++;
           computeMinimization();
         }
         when minimizationDone(bool success) serial {
@@ -433,7 +431,6 @@ module gStatePlane
     entry void acceptRedPsiV(GSRedPsiMsg *msg);
 
     entry void makePCproxies();
-    entry [local] void startNewMinIter();
     entry [local] void startNewIter();
 
     entry void computeEnergies(int p, double d);
