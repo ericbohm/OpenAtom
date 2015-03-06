@@ -1138,6 +1138,23 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //============================================================================
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   //============================================================================
+  void CP_State_GSpacePlane::startNewMinIter ()  {
+    min_iteration++;
+
+    if (min_only) {
+      startNewIter();
+    } else {
+      finishedCpIntegrate = 0;
+      iRecvRedPsi      = 1;   if(numRecvRedPsi>0){iRecvRedPsi  = 0;}
+      iRecvRedPsiV     = 1;
+      iSentRedPsi      = 0;
+      iSentRedPsiV     = 1;
+    }
+  }
+
+  //============================================================================
+  //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  //============================================================================
   void CP_State_GSpacePlane::startNewIter ()  {
     //============================================================================
 
@@ -1149,7 +1166,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #if CMK_TRACE_ENABLED
     traceUserSuppliedData(iteration);
 #endif 
-    if(iteration>0){
+    /*if(iteration>0){
       if(UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp != iteration || 
           UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration  != iteration){
         CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);
@@ -1164,7 +1181,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);
         CkExit();
       }//endif
-    } //endif
+    } //endif*/
 
     if(!acceptedVPsi){
       CkPrintf("GSpace[%d,%d] Error: Flow of Control. Starting new iter (%d) before finishing Vpsi.\n",thisIndex.x,thisIndex.y,iteration+1);
@@ -3152,6 +3169,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //=============================================================================
     // (B) Generate some screen output of orthogonal psi
 
+    if (thisIndex.x == 0 && thisIndex.y == 0) {
+      CkPrintf("Iteration is %d, if > 0 printing out Psi\n", iteration);
+    }
     if(iteration>0){screenOutputPsi(iteration);}
 
     //=============================================================================
