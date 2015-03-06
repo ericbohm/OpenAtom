@@ -1137,6 +1137,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #if CMK_TRACE_ENABLED
     traceUserSuppliedData(iteration);
 #endif 
+
     if(iteration>0){
       if(UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp != iteration || 
           UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration  != iteration){

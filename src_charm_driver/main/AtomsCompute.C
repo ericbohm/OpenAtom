@@ -395,7 +395,8 @@ CkExit();
 //==========================================================================
 // if classical go on to integration, otherwise Fx -> Fu
 
-if(numPIMDBeads>1){  
+if(numPIMDBeads>1){
+    eg->estruct.totalpotPIMDChain=0;  
   if(iteration==0){
     send_PIMD_Fx_and_x(); // atom integration must wait on both transforms
   }else{
@@ -703,6 +704,10 @@ void AtomsCompute::outputAtmEnergy() {
       fprintf(temperScreenFile,"Iter [%d] atm eKin    = %5.8lf\n",*iteration, eKinetic);
       fprintf(temperScreenFile,"Iter [%d] atm Temp    = %5.8lf\n",*iteration, (2.0*eKinetic*BOLTZ/free_atm));
       fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",*iteration, fmag);
+      if(numPIMDBeads>1)
+	{
+      fprintf(temperScreenFile,"Iter [%d] Bead Chain  = %5.8lf\n",*iteration, potPIMDChain);
+	}
       if(iextended_on==1){
         double free_Nhc;
         if(isokin_opt==0){
@@ -898,6 +903,12 @@ void AtomsCompute::bcastAtomsToAtomCache()
 
   UatomsCacheProxy[thisInstance.proxyOffset].acceptAtoms(msg);
 
+  if(amBeadRoot && !amZerothBead){
+      UberCollection instance=thisInstance;
+      instance.idxU.x=0;
+      int offset=instance.calcPO();
+      UatomsCacheProxy[offset][0].acceptChainContribution(potPIMDChain);
+    }
   //-------------------------------------------------------------------------
 }//end routine
 //==========================================================================

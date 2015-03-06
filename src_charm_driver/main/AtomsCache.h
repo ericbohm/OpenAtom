@@ -94,6 +94,7 @@ struct EnergyStruct;
         int iteration;
         FastAtoms fastAtoms;
         FILE *temperScreenFile;
+	int pimdchaincount;
 
 
         AtomsCache(int,int,Atom *,UberCollection thisInstance);
@@ -104,7 +105,10 @@ struct EnergyStruct;
         void atomsDone(CkReductionMsg *);
         void acceptAtoms(AtomMsg *);  // entry method
         void releaseGSP();
+	void acceptChainContribution(double PIMDChain);
         void zeroforces() {
+
+
           double *fx = fastAtoms.fx;
           double *fy = fastAtoms.fy;
           double *fz = fastAtoms.fz;

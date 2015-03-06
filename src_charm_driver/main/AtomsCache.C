@@ -55,6 +55,7 @@ AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstan
 {// begin routine
   //==============================================================================
 
+  pimdchaincount=0;
   fastAtoms.natm = natm;
   iteration=0;
   temperScreenFile = NULL;
@@ -268,5 +269,18 @@ AtomsCache::~AtomsCache(){
   delete [] fastAtoms.fyu;
   delete [] fastAtoms.fzu;
 }
+
+void AtomsCache::acceptChainContribution(double PIMDChain){
+
+  EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
+  eg->estruct.totalpotPIMDChain+=PIMDChain;
+  if(++pimdchaincount==config.UberImax-1)
+    {
+      fprintf(temperScreenFile,"Iter [%d] PIMD Chain  = %5.8lf\n",iteration, eg->estruct.totalpotPIMDChain);
+      pimdchaincount=0;
+    }
+}
+
+
 //=========================================
 /*@}*/

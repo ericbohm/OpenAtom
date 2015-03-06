@@ -25,7 +25,6 @@ class EnergyGroup : public Group {
     void energyDone();
     void sendToTemper(CkReductionMsg *);
     void resumeFromTemper();
-
     inline EnergyStruct getEnergyStruct(){return estruct;}
   private:
     int ktemps;

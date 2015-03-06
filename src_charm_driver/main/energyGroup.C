@@ -22,7 +22,6 @@ EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInst
   kpointEnergyDoneCount=0;
   //non local
   estruct.enl = 0;
-
   //local external energy
   estruct.eext = 0;
   estruct.eke = 0;
@@ -45,6 +44,8 @@ EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInst
   // total electronic part
   estruct.totalElecEnergy = 0; // needs ewald_real to be physical
   estruct.iteration_gsp = 0;
+
+  estruct.totalpotPIMDChain = 0.0;
 
   // atm stuff
   estruct.eKinetic_atm    = 0;    // classical kinetic energy
@@ -196,6 +197,7 @@ void EnergyGroup::energyDone(){
       UgSpaceDriverProxy[thisPoint.proxyOffset](state,plane).doneComputingEnergy(iteration_atm); 
     }//endfor
 }//end routine
+
 
 
 /*//==========================================================================

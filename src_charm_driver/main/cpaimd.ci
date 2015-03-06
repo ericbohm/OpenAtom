@@ -52,6 +52,7 @@ module Atoms
     entry void contributeforces();
     entry void atomsDone();
     entry void atomsDone(CkReductionMsg *);
+    entry void acceptChainContribution(double);
 
   };
 

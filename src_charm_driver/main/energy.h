@@ -40,6 +40,7 @@ struct EnergyStruct {
   double potNhc_atm;      // NHC pot energy
   double fmag_atm;        // magnitude of atm forces
   double potPIMDChain;
+  double totalpotPIMDChain;
 };
 PUPbytes(EnergyStruct);
 //============================================================================
