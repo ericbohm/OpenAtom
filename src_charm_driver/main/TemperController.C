@@ -4,56 +4,89 @@
 #include "energyGroup.h"
 #include "InstanceController.h"
 #include "TemperController.h"
+extern double altRandom(long *);
 
-
+const double kinv=315777.0; // atomic units, inverse of Boltzmann's constant
 extern CProxy_InstanceController         instControllerProxy;
 
-TemperController::TemperController()
+TemperController::TemperController(int _simtype, double *_temperatures, int numtemperatures, long _seed) : simType(_simtype), seed(_seed)
 {
   /* insert initialization here */  
   reportedIn=0;
   numTempers=config.UberKmax;
   numBeads=config.UberImax;
   CkPrintf("TemperController for Tempers %d and beads %d\n",numTempers,numBeads);
-  temperEnergy=new EnergyStruct[numTempers];
+  if(numTempers != numtemperatures)  CkAbort("numTempers must be equal to number of temperatures for the TemperController");
+  if(numTempers%2 != 0)  CkAbort("numTempers must be even");
+  temperEnergy=new double[numTempers];
   temperatures=new double[numTempers];
-  for(int i=0;i<numTempers;i++)   temperatures[i]=.0; //placeholder
+  index = new int[numTempers];
+  
+  for(int i=0; i<numTempers; i++) index[i]=i;
+  memcpy(temperatures, _temperatures, sizeof(double) * numtemperatures);
+  switchdir=0;
+
 }
 
 void TemperController::acceptData(int temper, EnergyStruct &energies)
 {
   reportedIn++;
-  //temperEnergy[temper]+=energies; // note += not defined on this
-  //struct, but that is the notional operation
-
-  /* we should be summing the energies here, as you will get one per
-     bead, but which ones we actually care about summing is for Glenn
-     to figure out. */
+  sumEnergies(energies, temper);
   if(reportedIn == numTempers*numBeads)
     acceptData();
 
 }
 
+void TemperController::sumEnergies(EnergyStruct &inEnergy, int temper)
+{
+  temperEnergy[temper]= inEnergy.enl + inEnergy.eext + inEnergy.eke 
+    + inEnergy.ehart + inEnergy.egga + inEnergy.eexc + inEnergy.fictEke 
+    + inEnergy.fmagPsi + inEnergy.eewald_recip + inEnergy.eewald_real;    
+  if(simType==1) temperEnergy[temper] += inEnergy.potPIMDChain; 
+}
+
 void TemperController::acceptData()
 {
   reportedIn=0;
-  CkPrintf("Hey Glenn, this is where the Temper controller could do its job\n");
+
   /* insert temperature manipulation code here*/
+  
+  /* switch energies based on a probability. Take into account nearest neighbor temperatures are moving around. 
+     Index has the map.
+   */
+  for(int i=switchdir; i<numTempers-switchdir; i+=2)
+    {
+      double t1=temperatures[i];
+      double t2=temperatures[i+1];
+      double deltaE=temperEnergy[index[i]] - temperEnergy[index[i+1]];
+      double deltaB=kinv *( 1.0/t1 - 1.0/t2);
+      double p=exp(deltaE*deltaB);
+      double randout=altRandom(&seed);
+      if(p > randout)
+	{
+	  // we will send the temperature using the index map
+	  int iii=index[i];
+	  index[i]=index[i+1];
+	  index[i+1]=iii;
+	}
+    }
+  switchdir = (switchdir==0) ? 1 : 0;
+
+  UberCollection uberindex;
 
   /* putting this in a for loop because we expect this to be personalized */
-  UberCollection index;
-  // average out the 
   for(int i=0; i < numTempers; i++)
   { 
-    index.idxU.x=i;
-    index.setPO();
+    uberindex.idxU.x=index[i];
+    uberindex.setPO();
     //      CkPrintf("sending temp to %d,%d,%d,%d\n",index.idxU.x, index.idxU.y, index.idxU.z, index.idxU.s);
-    instControllerProxy[i].acceptNewTemperature(temperatures[i]);
+    instControllerProxy[uberindex.proxyOffset].acceptNewTemperature(temperatures[i]);
   }
 }
 
 TemperController::~TemperController()
 {
+  delete [] index;
   delete [] temperEnergy;
   delete [] temperatures;
 }

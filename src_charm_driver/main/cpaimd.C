@@ -437,9 +437,13 @@ main::main(CkArgMsg *msg) {
   instControllerProxy.doneInserting();
 
   // make one controller temper
-  temperControllerProxy= CProxy_TemperController::ckNew(1);
-  temperControllerProxy.doneInserting();
-
+  if(sim->ntemper>1)
+    {
+      double faketemplist[sim->ntemper];
+      long seed=1888381834e3l;
+      temperControllerProxy= CProxy_TemperController::ckNew(1,faketemplist,sim->ntemper, seed, 1);
+      temperControllerProxy.doneInserting();
+    }
   // make one collector per uberKmax
   CkArrayOptions enlopts(config.UberKmax);
   ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, config.UberKmax, enlopts);

@@ -25,17 +25,22 @@
 class TemperController : public CBase_TemperController
 {
   public:
-    TemperController();
+  TemperController(int simtype, double *temps, int tempsize, long seed);
     ~TemperController();
     TemperController(CkMigrateMessage *m) {}
+    void sumEnergies(EnergyStruct &inEnergy, int temper);
     void acceptData(int temper, EnergyStruct &energies);
     void acceptData();
   private:
+    int simType;
     int numTempers;
     int numBeads;
     int reportedIn;
-    EnergyStruct *temperEnergy;
+    double *temperEnergy;
     double *temperatures;
+    int *index;
+    int switchdir;
+    long seed;
 };
 
 

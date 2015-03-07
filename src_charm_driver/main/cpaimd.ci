@@ -161,7 +161,7 @@ module instanceController
 module temperController
 {
   array [1D] TemperController {
-    entry void TemperController();
+    entry void TemperController(int, double temperatures[numtemps], int numtemps, long seed);
     entry void acceptData(int temper, EnergyStruct);
   };
 };
