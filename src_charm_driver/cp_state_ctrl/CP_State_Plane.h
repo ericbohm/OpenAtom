@@ -568,6 +568,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
 
     int registrationFlag;
 
+    bool doOutput;
     bool launchFFT; 
     bool fftDataDone;
     bool planeRedSectionComplete;

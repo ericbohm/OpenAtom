@@ -20,7 +20,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
-    int cp_min_opt, int cp_wave_opt, int iextended_on,
+    int cp_min_opt, int cp_wave_opt, int cp_bomd_opt, int tol_reached, int iextended_on,
     Atom *atoms,AtomNHC *atomsNHC,int myid,
     double *eKinetic,double *eKineticNhc,double *potNhc,
     int *iwrite_atm,int output_on,
@@ -38,9 +38,15 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
   PRINTF("GJM_DBG : Inside integrate %d\n",myid);  
 #endif
   //============================================================================
+  // (0) Check whether to move
+  int move_atoms = 0;
+  if (cp_min_opt == 0 && cp_wave_opt == 0) { move_atoms = 1; }
+  if (cp_bomd_opt == 1 && tol_reached == 1) { move_atoms = 1; }
+ 
+  //============================================================================
   // (I) Evolve to the last 1/2 step of previous step : only changes velocities
 
-  if(cp_min_opt==0 && cp_wave_opt==0){
+  if(move_atoms){
     integrate_2nd_half_step(itime,natm,len_nhc,iextended_on,atoms,atomsNHC,
         eKinetic,eKineticNhc,potNhc,natmNow,natmStr,natmEnd);
   }//endif
@@ -48,7 +54,7 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
   //============================================================================
   // (II) Save the end step velocities and positions : pos already saved for PIMD
 
-  if(cp_min_opt==0 && cp_wave_opt==0){
+  if(move_atoms){
     if(pi_beads==1){
       for(int i=natmStr;i<natmEnd;i++){
         atoms[i].xold = atoms[i].x;  atoms[i].vxold = atoms[i].vx;
@@ -67,7 +73,7 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
   //============================================================================
   // (III) Evolve to first 1/2 step of the present step
 
-  if(cp_min_opt==0 && cp_wave_opt==0){
+  if(move_atoms){
     integrate_1st_half_step(natm,len_nhc,iextended_on,atoms,atomsNHC,
         natmNow,natmStr,natmEnd); 
   }//endif

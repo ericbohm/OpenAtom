@@ -19,7 +19,6 @@ extern CProxy_InstanceController      instControllerProxy;
 GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance): 
   thisInstance(_thisInstance),
   myGSpaceObj(0),
-  isFirstStep(true),
   isPsiVupdateNeeded(false)
 {
 #ifdef DEBUG_CP_GSPACE_CREATION
@@ -31,6 +30,7 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
   ees_nonlocal = sim->ees_nloc_on;
   natm_nl = sim->natm_nl;
   cp_min_opt = sim->cp_min_opt;
+  cp_bomd_opt = sim->cp_bomd_opt;
   gen_wave = sim->gen_wave;
   ndump_frq = sim->ndump_frq;
 }//end routine
@@ -50,7 +50,6 @@ GSpaceDriver::GSpaceDriver(CkMigrateMessage *msg):
 void GSpaceDriver::pup(PUP::er &p)
 {
   __sdag_pup(p);
-  p|isFirstStep;
   p|ees_nonlocal;
   p|natm_nl;
   p|cp_min_opt;
@@ -60,6 +59,23 @@ void GSpaceDriver::pup(PUP::er &p)
   p|sfCompSectionProxy;
 }
 
+/** Prints out timings and calls a reduction letting the instance controller
+ *  know that the computation is complete.
+ */
+void GSpaceDriver::finishComputation() {
+#ifdef _CP_SUBSTEP_TIMING_
+#if USE_HPM
+  // Print additional timing information
+  (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif
+#endif
+  // Contribute to a reduction to let the instance controller know
+  // that the computation is complete.
+  CkCallback cb(CkIndex_InstanceController::cleanExit(NULL),
+      CkArrayIndex1D(thisInstance.proxyOffset),
+      instControllerProxy);
+  contribute(cb);
+}
 
 
 
@@ -121,8 +137,8 @@ void GSpaceDriver::needUpdatedPsiV()
 /// Trigger the nonlocal computations
 void GSpaceDriver::startNonLocalEes(int iteration_loc)
 {
-  if(iteration_loc!=myGSpaceObj->iteration)
-    CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
+  //if(iteration_loc!=myGSpaceObj->iteration)
+  //  CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
 
   /// Set to false, just before I spawn the nonlocal work
 

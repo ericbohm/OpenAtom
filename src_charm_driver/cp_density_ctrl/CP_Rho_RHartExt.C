@@ -311,6 +311,7 @@ void CP_Rho_RHartExt::startEextIter(){
 
   iteration ++;
   // the atoms haven't moved yet
+  // TODO: We'll need to make something like this for BOMD (keep iteration counters in sync)
   if(cp_min_opt==0){
     if(UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != iteration-1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

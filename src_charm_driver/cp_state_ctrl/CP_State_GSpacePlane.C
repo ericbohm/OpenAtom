@@ -144,8 +144,10 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
   if(thisIndex.x==0 && thisIndex.y==0){
     int iprintout   = iteration-1;
 
-    fprintf(temperScreenFile, "Iter [%d] MagForPsi   =  %5.8lf | %5.8lf per entity\n", iprintout,d1,d1/rnatm);
-    fprintf(temperScreenFile,"Iter [%d] Memory      =  %ld\n",iprintout,CmiMemoryUsage());
+    if (!sim->cp_bomd_opt || fmagPsi_total <= tol_cp_min) {
+      fprintf(temperScreenFile, "Iter [%d] MagForPsi   =  %5.8lf | %5.8lf per entity\n", iprintout,d1,d1/rnatm);
+      fprintf(temperScreenFile,"Iter [%d] Memory      =  %ld\n",iprintout,CmiMemoryUsage());
+    }
     computeEnergies(ENERGY_FMAG, d1);
   }//endif
 
@@ -216,7 +218,9 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
     double cpuTimeOld = cpuTimeNow;
     cpuTimeNow        = CkWallTimer();
     if(iteration>1){
-      fprintf(temperScreenFile, "Iter [%d] CpuTime(GSP)= %g\n",iteration-1,cpuTimeNow-cpuTimeOld);
+      if (!sim->cp_bomd_opt || exitFlag) {
+        fprintf(temperScreenFile, "Iter [%d] CpuTime(GSP)= %g\n",iteration-1,cpuTimeNow-cpuTimeOld);
+      }
       if(cp_min_opt==0){
         int heavyside = 1-(iteration-iterRotation >= 1 ? 1 : 0);
         fprintf(temperScreenFile, "Iter [%d] Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d : %d\n",iteration,
@@ -294,6 +298,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt  = sim->cp_min_opt;
+  int cp_bomd_opt = sim->cp_bomd_opt;
   int gen_wave    = sim->gen_wave;
   wallTimeArr=NULL;
   if(thisIndex.x==0 && thisIndex.y==0 && config.maxIter<30){
@@ -311,6 +316,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
   //============================================================================
 
+  // Control flow fields
+  min_step      = 0;
+  bomd_step     = 0;
+  num_steps     = sim->ntime;
+
+  // Used to stay synchronized with the atoms cache, instance controller, etc.
+  iteration     = 0;
+
   istate_ind           = thisIndex.x;
   iplane_ind           = thisIndex.y;  
   ibead_ind            = thisInstance.idxU.x;
@@ -318,7 +331,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   itemper_ind          = thisInstance.idxU.z;
   ispin_ind            = 0;                   //needs to be updated 
   initialized          = false;
-  iteration            = 0;
   nrotation            = 0;
   iterRotation         = 0;
   gotHandles =0;
@@ -1127,9 +1139,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   //============================================================================
   void CP_State_GSpacePlane::startNewIter ()  {
-    //============================================================================
-
-    // Check for flow of control errors :
+  //============================================================================
 
 #ifdef _CP_DEBUG_SF_CACHE_
     CkPrintf("GSP [%d,%d] StartNewIter\n",thisIndex.x, thisIndex.y);
@@ -1138,6 +1148,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     traceUserSuppliedData(iteration);
 #endif 
 
+    // Check for flow of control errors :
     if(iteration>0){
       if(UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp != iteration || 
           UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration  != iteration){
@@ -1162,11 +1173,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     doneNewIter = true;
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
-    if(thisIndex.x==0 && thisIndex.y==0 ){
+    if(thisIndex.x==0 && thisIndex.y==0 && (!sim->cp_bomd_opt || min_step == 0)){
       if(!(sim->cp_min_opt==1)){
         fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
         int iii = iteration;
-        if(!sim->gen_wave){iii+=1;}
         fprintf(temperScreenFile,"Iteration %d done\n",iii);
         fprintf(temperScreenFile,"===============================================================================\n");
         fprintf(temperScreenFile,"===============================================================================\n");
@@ -1201,6 +1211,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     iteration++;   // my iteration # : not exactly in sync with other chares
     //                  but should agree when chares meet.
+
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
     CkPrintf("GSP [%d,%d] StartNewIter : %d\n",thisIndex.x, thisIndex.y,iteration);
 #endif
@@ -1271,8 +1282,13 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
           CkPrintf("-------------------------------------------------------------------------------\n");
         }
       } else if(iteration>0) {
-        CkPrintf("Iteration time (GSP) : %g\n", 
-            wallTimeArr[itime] - wallTimeArr[itime-1]);
+        if (!sim->cp_bomd_opt) {
+          CkPrintf("Iteration time (GSP) : %g\n", 
+              wallTimeArr[itime] - wallTimeArr[itime-1]);
+        } else if (exitFlag) {
+          CkPrintf("BOMD step time (GSP) : %g\n", 
+              wallTimeArr[itime] - wallTimeArr[itime-min_step]);
+        }
       }//endif
     }//endif
   }
@@ -1645,6 +1661,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     CPNONLOCAL::CP_eke_calc(ncoef,istate,forces,psi_g,k_x,k_y,k_z,g2,eke_ret,config.doublePack,nkx0,
         kpoint_ind,config.nfreq_cpnonlocal_eke);
+
     contribute(sizeof(double), &gs.eke_ret, CkReduction::sum_double, 
         CkCallback(CkIndex_InstanceController::printEnergyEke(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
     //isEnergyReductionDone = false; ///@note: This doesnt seem necessary here and commenting out has not affected simple tests. This flag is reset at the start of the iter itself.
@@ -1701,8 +1718,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
     }else{
 #endif
-      int i=0;
-      contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::allDoneCPForces(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+      contribute(sizeof(int), &exitFlag,CkReduction::min_int, CkCallback(CkReductionTarget(InstanceController, allDoneCPForces),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 #ifdef _CP_DEBUG_PSI_OFF_
     }//endif
 #endif
@@ -3767,6 +3783,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
     int cp_min_opt    = sim->cp_min_opt;
+    int cp_bomd_opt   = sim->cp_bomd_opt;
     int nstates       = sim->nstates;
 
     complex *vpsi     = gs.packedVelData;
@@ -3775,13 +3792,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     int ntime = config.maxIter;
     if(cp_min_opt==0){ntime-=1;}
+    if (cp_min_opt == 1) { iprintout-=1; }
 
     //==============================================================================
 
     /// Screen Output
 
 #ifdef _CP_DEBUG_COEF_SCREEN_
-    if(iteration<=ntime){
+    if(iteration<=ntime && (!cp_bomd_opt || exitFlag)){
       if(gs.istate_ind==0 || gs.istate_ind==nstates-1){
         for(int i = 0; i < gs.numPoints; i++){
           if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){

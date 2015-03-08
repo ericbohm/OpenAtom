@@ -35,8 +35,8 @@ class GSpaceDriver: public CBase_GSpaceDriver
 {
   public:
     GSpaceDriver_SDAG_CODE
-      /// Constructors
-      GSpaceDriver() {}
+    /// Constructors
+    GSpaceDriver() {}
     GSpaceDriver(CkMigrateMessage *msg);
     GSpaceDriver(const UberCollection _thisInstance);
     /// Initializer
@@ -48,6 +48,9 @@ class GSpaceDriver: public CBase_GSpaceDriver
     void startControl();
     /// @entry local. GSpace notifies me that its ready to exit by calling this method
     void readyToExit();
+    /// Prints timing info and lets the instance contoller know that computation is done
+    void finishComputation();
+
     /// @entry Ortho notifies us that GSpace needs a tolerance update (velocity rotation)
     void needUpdatedPsiV();
     /// @entry Triggers nonlocal energy computations
@@ -55,14 +58,14 @@ class GSpaceDriver: public CBase_GSpaceDriver
     /// Triggers nonlocal energy computations
     void releaseSFComputeZ(); 					
 
-    /// True if this is the first step
-    bool isFirstStep;
     ///
     int ees_nonlocal;
     ///
     int natm_nl;
     ///
     int cp_min_opt;
+    ///
+    int cp_bomd_opt;
     ///
     int gen_wave;
     ///

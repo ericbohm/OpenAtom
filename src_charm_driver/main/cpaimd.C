@@ -359,8 +359,14 @@ main::main(CkArgMsg *msg) {
   double phase1start=Timer;
   //numPes = 2048; 
   numPes=CkNumPes();
+  int minimization_steps;
+  if (sim->cp_bomd_opt) {
+    minimization_steps = sim->btime;
+  } else {
+    minimization_steps = sim->ntime;
+  }
   config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
-		    sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
+		    minimization_steps,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
 		    ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c,
 		    sim->doublepack,sim->pi_beads,sim->nkpoint,sim->ntemper,sim->nspin);
 
@@ -2378,6 +2384,7 @@ void control_physics_to_driver(UberCollection thisInstance){
       int iextended_on  = PhysicsAtom->iextended_on;
       int cp_min_opt    = PhysicsAtom->cp_min_opt;
       int cp_wave_opt   = PhysicsAtom->cp_wave_opt;
+      int cp_bomd_opt   = PhysicsAtom->cp_bomd_opt;
       int isokin_opt    = PhysicsAtom->isokin_opt;
       double kT         = PhysicsAtom->kT;
 
@@ -2387,7 +2394,8 @@ void control_physics_to_driver(UberCollection thisInstance){
       PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC,ibead,itemper);
       UegroupProxy.push_back(CProxy_EnergyGroup::ckNew(thisInstance)); 
       // FIXME, this needs a real computation
-      // also we need a real map
+      // also we need a real map. This was a naive, simple mapping scheme. We
+      // can do better.
       int nChareAtoms=(config.numPesPerInstance<natm) ? config.numPesPerInstance : natm;
 
       if (firstInstance) {
@@ -2414,7 +2422,7 @@ void control_physics_to_driver(UberCollection thisInstance){
       UatomsComputeProxy.push_back( CProxy_AtomsCompute::ckNew(natm,natm_nl,
 							       len_nhc,
 							       iextended_on,
-							       cp_min_opt,cp_wave_opt,isokin_opt,
+							       cp_min_opt,cp_wave_opt,cp_bomd_opt,isokin_opt,
 							       kT,atoms,
 							       atomsNHC,
 							       nChareAtoms,

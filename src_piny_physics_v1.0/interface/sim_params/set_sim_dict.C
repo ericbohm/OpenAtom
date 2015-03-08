@@ -424,7 +424,7 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
   /*========================================================================*/
   /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 41;
+  *num_dict = 43;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_cp")-1;
 
   /*========================================================================*/
@@ -657,6 +657,18 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
   strcpy((*dict)[i].error_mes,"on,off");
   strcpy((*dict)[i].keyword,"cp_allow_duplicate_kpts");
   strcpy((*dict)[i].keyarg,"off");
+  /*-----------------------------------------------------------------------*/ 
+  /* 42)\cp_bomd_max_minimization_steps{#} */
+  i = 42;
+  strcpy((*dict)[i].error_mes,"an integer > 0");
+  strcpy((*dict)[i].keyword,"cp_bomd_max_minimization_steps");
+  strcpy((*dict)[i].keyarg,"100");
+  /*-----------------------------------------------------------------------*/ 
+  /* 43)\cp_bomd_timestep_scale{#} */
+  i = 43;
+  strcpy((*dict)[i].error_mes,"a real number > 0.0");
+  strcpy((*dict)[i].keyword,"cp_bomd_timestep_scale");
+  strcpy((*dict)[i].keyarg,"1.0");
   /*========================================================================*/
   /*------------------------------------------------------------------------*/
   /*========================================================================*/
@@ -698,7 +710,7 @@ void set_sim_dict_gen(int *num_dict,DICT_WORD *dict[])
   /*  1)\simulation_typ{md,minimize,cp,cp_wave,cp_min,cp_wave_min,
       debug,debug_cp}  */
   strcpy((*dict)[1].error_mes,
-      "minimize,md,pimd,cp,cp_pimd,cp_wave,cp_wave_pimd,cp_min,cp_wave_min,cp_wave_min_pimd");
+      "minimize,md,pimd,cp,cp_pimd,cp_wave,cp_wave_pimd,cp_min,cp_wave_min,cp_bomd,cp_wave_min_pimd");
   strcpy((*dict)[1].keyword,"simulation_typ");
   strcpy((*dict)[1].keyarg,"md");
   /*-----------------------------------------------------------------------*/ 

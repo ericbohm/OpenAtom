@@ -46,6 +46,7 @@ class AtomsCompute: public CBase_AtomsCompute {
     int len_nhc;
     int iextended_on;
     int cp_min_opt;
+    int cp_bomd_opt;
     int cp_wave_opt;
     int *iteration;
     int isokin_opt;
@@ -56,6 +57,7 @@ class AtomsCompute: public CBase_AtomsCompute {
     int PIBeadIndex;
     int TemperIndex;
     int numPIMDBeads;
+    int tol_reached;
     unsigned int handleForcesCount;
     double kT;              // temperature
     double pot_ewd_rs;      // total real space ewald energy
@@ -86,7 +88,7 @@ class AtomsCompute: public CBase_AtomsCompute {
     FILE *temperScreenFile;
 
     AtomsCompute(CkMigrateMessage *m) {}
-    AtomsCompute(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *, int nChareAtoms, UberCollection thisInstance);
+    AtomsCompute(int, int, int, int, int, int, int ,int, double, Atom *, AtomNHC *, int nChareAtoms, UberCollection thisInstance);
     void init();
     ~AtomsCompute();
     void integrateAtoms();
@@ -107,7 +109,7 @@ class AtomsCompute: public CBase_AtomsCompute {
     void acceptAtoms(AtomMsg *);
     void outputAtmEnergy();
     void bcastAtomsToAtomCache();
-    void startRealSpaceForces();
+    void startRealSpaceForces(int);
     void releaseGSP();
     void handleForces();
     //==========================================================================

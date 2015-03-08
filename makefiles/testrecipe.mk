@@ -16,13 +16,13 @@ refFile    = ref-$*.log
 
 # Define all the test configurations
 ees-nl0l0-p1-desc = EES: off for nonlocals; off for locals;
-ees-nl0l0-p1-args = $(regrInpDir)/cpaimd_config.p1 $(regrInpDir)/water.input.min.ees-nl0l0
+ees-nl0l0-p1-args = $(regrInpDir)/cpaimd_config.p1 $(regrInpDir)/water.input.min.ees-nl0l0 +logsize 10000000
 ees-nl0l1-p1-desc = EES: off for nonlocals; on for locals;
-ees-nl0l1-p1-args = $(regrInpDir)/cpaimd_config.p1 $(regrInpDir)/water.input.min.ees-nl0l1
+ees-nl0l1-p1-args = $(regrInpDir)/cpaimd_config.p1 $(regrInpDir)/water.input.min.ees-nl0l1 +logsize 10000000 
 ees-nl1l0-p1-desc = EES: on for nonlocals; off for locals;
-ees-nl1l0-p1-args = $(regrInpDir)/cpaimd_config.p1 $(regrInpDir)/water.input.min.ees-nl1l0
+ees-nl1l0-p1-args = $(regrInpDir)/cpaimd_config.p1 $(regrInpDir)/water.input.min.ees-nl1l0 +logsize 10000000
 ees-nl1l1-p1-desc = EES: on for nonlocal; on for locals;
-ees-nl1l1-p1-args = $(regrInpDir)/cpaimd_config.p1 $(regrInpDir)/water.input.min.ees-nl1l1
+ees-nl1l1-p1-args = $(regrInpDir)/cpaimd_config.p1 $(regrInpDir)/water.input.min.ees-nl1l1 +logsize 10000000
 
 # Define the list of tests to run
 testList   = ees-nl0l0-p1 ees-nl0l1-p1 ees-nl1l0-p1 ees-nl1l1-p1

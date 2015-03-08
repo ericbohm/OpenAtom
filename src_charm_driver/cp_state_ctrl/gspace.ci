@@ -53,78 +53,193 @@ module gSpaceDriver
     entry void doneOutput();
     entry void doneNLForces();
 
-    // Incoming reduction barrier notifications
-    entry [nokeep] void allDoneNLForces(CkReductionMsg *msg) { serial { doneNLForces(); } };
+    entry void minimizationDone(bool);
+    entry void dynamicsDone(bool);
+    entry void bomdDone(bool);
 
-    //! \brief SDAG method for flow control of the Driver and its associated GSpace object
+    // Incoming reduction barrier notifications
+    entry [nokeep] void allDoneNLForces(CkReductionMsg *msg) {
+      serial { doneNLForces(); }
+    };
+
     entry void driveGSpace() {
+      // Decide which type of computation you are doing and initiate the
+      // appropriate control flow.
+      // TODO: Need to update flags to be able to decide between more than just
+      // minimization and dynamics.
+      if (cp_min_opt && !cp_bomd_opt) {
+        serial { computeMinimization(); }
+        when minimizationDone(bool success) {}
+      } else if (cp_bomd_opt) {
+        serial { computeBOMD(); }
+        when bomdDone(bool success) {}
+      } else {
+        serial { computeDynamics(); }
+        when dynamicsDone(bool success) {}
+      }
+      serial { finishComputation(); }
+    };
+
+    //! \brief SDAG method for flow control while doing minimization
+    entry void computeMinimization() {
+      serial {
+        if (thisIndex.x == 0 && thisIndex.y == 0) {
+          CkPrintf("Starting minimization with a max of %d steps\n", config.maxIter);
+        }
+        myGSpaceObj->min_step = 0;
+        myGSpaceObj->exitFlag = 0;
+      }
+      // Compute our initial psi unless gen_wave is on
+      if (!_SDAG_DEBUG_PSI_OFF_ && gen_wave) {
+        serial { myGSpaceObj->computeNewPsi(); }
+        when doneNewPsi() {}
+      }
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! that we have met the desired tolerance by setting exitFlag to 1.
-      while(myGSpaceObj->iteration < config.maxIter && !myGSpaceObj->exitFlag) {
-        if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
+      while(myGSpaceObj->min_step < config.maxIter && !myGSpaceObj->exitFlag) {
+        serial {
           //! Resets flags and increases the iteration counter
-          serial { myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter(); }
+          myGSpaceObj->min_step++;
+          myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
+        }
 
-          if (!_SDAG_DEBUG_PSI_OFF_) {
-            //! If called, releaseSFComputeZ() triggers an NL force computation.
-            if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==0 && natm_nl!=0) serial {
-              releaseSFComputeZ();
+        if (!_SDAG_DEBUG_PSI_OFF_) {
+          //! If called, releaseSFComputeZ() triggers an NL force computation.
+          if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==0 && natm_nl!=0) serial {
+            releaseSFComputeZ();
+          }
+
+          //! Both branches of this if will trigger an NL force computation if
+          //! releaseSFComputeZ() was not called above.
+          if (!_SDAG_DEBUG_VKS_OFF_) serial {
+            myGSpaceObj->computePsiFandVKS();
+          } else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal && natm_nl) serial {
+            startNonLocalEes(myGSpaceObj->iteration);
+          }
+
+          //! Wait for both the VKS and the NL force computations to complete.
+          overlap {
+            if (!_SDAG_DEBUG_SFNL_OFF_) {
+              when doneNLForces() {}
             }
-
-            //! Both branches of this if will trigger an NL force computation if
-            //! releaseSFComputeZ() was not called above.
-            if (!_SDAG_DEBUG_VKS_OFF_) serial {
-              myGSpaceObj->computePsiFandVKS();
-            } else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==1 && natm_nl!=0) serial {
-              startNonLocalEes(myGSpaceObj->iteration);
+            if (!_SDAG_DEBUG_VKS_OFF_) {
+              when donePsiFandVKS() {}
             }
+          }
 
-            //! Wait for both the VKS and the NL force computations to complete.
-            overlap {
-              if (!_SDAG_DEBUG_SFNL_OFF_) {
-                when doneNLForces() {}
-              }
-              if (!_SDAG_DEBUG_VKS_OFF_) {
-                when donePsiFandVKS() {}
-              }
-            }
+          serial { myGSpaceObj->combineForcesGetEke(); }
+        }  // end if !_SDAG_DEBUG_PSI_OFF_
 
-            serial { myGSpaceObj->combineForcesGetEke(); }
-          }  // end if !_SDAG_DEBUG_PSI_OFF_
+        if (!_SDAG_DEBUG_PSI_OFF_) {
+          serial { myGSpaceObj->computeLambdaAndCg(); }
+          when doneLambdaAndCg() serial { myGSpaceObj->launchAtoms(); }
 
-          serial { myGSpaceObj->launchAtoms(); }
+          serial { myGSpaceObj->computeRedPsi(); }
+          when doneRedPsi() {}
+        }  // end if !_SDAG_DEBUG_PSI_OFF_
 
-          if (!_SDAG_DEBUG_PSI_OFF_) {
-            serial { myGSpaceObj->computeLambdaAndCg(); }
-            when doneLambdaAndCg() {}
-
-            //! If output is on and we are doing dynamics then dump to file
-            //! every ndump_frq iteration as well as the final iteration. We
-            //! skip the first iterations because nothing moves before iter 2.
-            if (config.stateOutput==1 && cp_min_opt==0 && myGSpaceObj->iteration > 1 &&
-                (myGSpaceObj->iteration % ndump_frq==1 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1)) {
-              serial { myGSpaceObj->doOutput(); }
-              when doneOutput() {}
-            }
-
-            serial { myGSpaceObj->computeRedPsi(); }
-            when doneRedPsi() {}
-          }  // end if !_SDAG_DEBUG_PSI_OFF_
-        }  // end if (cp_min_opt==1 && gen_wave==0) || firstStep==false
-
+        //! Compute our next Psi, update PsiV, and dump output.
         if (!_SDAG_DEBUG_PSI_OFF_) {
           serial { myGSpaceObj->computeNewPsi(); }
           when doneNewPsi() {}
 
-          //! If output is on and we are doing minimization then dump to file
-          //! every ndump_frq iteration as well as the final iteration.
-          if (config.stateOutput==1 && cp_min_opt==1 && myGSpaceObj->iteration > 0 &&
-              (myGSpaceObj->iteration % ndump_frq==0 || myGSpaceObj->iteration==config.maxIter || myGSpaceObj->exitFlag==1)) {
+          //! Dump to file every ndump_frq iterations and the final iteration.
+          if (config.stateOutput==1 &&
+              (myGSpaceObj->iteration % ndump_frq==0 ||
+               myGSpaceObj->iteration==config.maxIter ||
+               myGSpaceObj->exitFlag==1)) {
+            serial { myGSpaceObj->doOutput(); }
+            when doneOutput() {}
+          }
+        }  // end if !_SDAG_DEBUG_PSI_OFF_
+
+        //! Wait for both the energy computation, and the atoms to be moved
+        //! before going to the next iteration.
+        overlap {
+          if (!_SDAG_DEBUG_PSI_OFF_) {
+            when doneComputingEnergy(const int AtomGrpIter) {}
+          }
+          when doneMovingAtoms(const int AtomsGrpIter) {}
+        }
+
+        //! Print out the iteration times.
+        serial {
+          myGSpaceObj->screenPrintWallTimes();
+        }
+      }  // end while simulation is running
+
+      serial { thisProxy[thisIndex].minimizationDone(myGSpaceObj->exitFlag); }
+    };
+
+    //! \brief SDAG method for flow control while doing dynamics
+    entry void computeDynamics() {
+      //! Compute our initial psi
+      if (!_SDAG_DEBUG_PSI_OFF_) {
+        serial { myGSpaceObj->computeNewPsi(); }
+        when doneNewPsi() {}
+      }  // end if !_SDAG_DEBUG_PSI_OFF_
+
+      //! Loop until we hit the last iteration, or the GSpacePlane has signaled
+      //! to exit because we have exceeded the allowed tolerance.
+      while(myGSpaceObj->iteration < myGSpaceObj->num_steps && !myGSpaceObj->exitFlag) {
+        serial {
+          //! Resets flags and increases the iteration counter.
+          myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
+        }
+
+        if (!_SDAG_DEBUG_PSI_OFF_) {
+          //! If called, releaseSFComputeZ() triggers an NL force computation.
+          if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal == 0 && natm_nl) serial {
+            releaseSFComputeZ();
+          }
+
+          //! Both branches of this if will trigger an NL force computation if
+          //! releaseSFComputeZ() was not called above.
+          if (!_SDAG_DEBUG_VKS_OFF_) serial {
+            myGSpaceObj->computePsiFandVKS();
+          } else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal && natm_nl) serial {
+            startNonLocalEes(myGSpaceObj->iteration);
+          }
+
+          //! Wait for both the VKS and the NL force computations to complete.
+          overlap {
+            if (!_SDAG_DEBUG_SFNL_OFF_) {
+              when doneNLForces() {}
+            }
+            if (!_SDAG_DEBUG_VKS_OFF_) {
+              when donePsiFandVKS() {}
+            }
+          }
+
+          serial { myGSpaceObj->combineForcesGetEke(); }
+        }  // end if !_SDAG_DEBUG_PSI_OFF_
+
+        serial { myGSpaceObj->launchAtoms(); }
+
+        if (!_SDAG_DEBUG_PSI_OFF_) {
+          serial { myGSpaceObj->computeLambdaAndCg(); }
+          when doneLambdaAndCg() {}
+
+          serial { myGSpaceObj->computeRedPsi(); }
+          when doneRedPsi() {}
+        }  // end if !_SDAG_DEBUG_PSI_OFF_
+
+        //! Compute the Psi for the next iteration
+        if (!_SDAG_DEBUG_PSI_OFF_) {
+          serial { myGSpaceObj->computeNewPsi(); }
+          when doneNewPsi() {}
+
+          //! Dump to file every ndump_frq iterations and the final iteration.
+          //! Skip the first iteration because nothing moves before iter 2.
+          if (config.stateOutput && myGSpaceObj->iteration > 1 &&
+              (myGSpaceObj->iteration % ndump_frq ||
+               myGSpaceObj->iteration == config.maxIter ||
+               myGSpaceObj->exitFlag == 1)) {
             serial { myGSpaceObj->doOutput(); }
             when doneOutput() {}
           }
 
-          if (isPsiVupdateNeeded && cp_min_opt==0 && myGSpaceObj->iteration > 1) {
+          if (isPsiVupdateNeeded) {
 #ifdef GSP_USE_PRIMITIVE_ROTATION
             serial { myGSpaceObj->computeNewPsiV(); }
 #else
@@ -136,36 +251,37 @@ module gSpaceDriver
 
         //! Wait for both the energy computation, and the atoms to be moved
         //! before going to the next iteration.
-        if ((cp_min_opt==1 && gen_wave==0) || isFirstStep==false) {
-          overlap {
-            if (!_SDAG_DEBUG_PSI_OFF_) {
-              when doneComputingEnergy(const int AtomGrpIter) {}
-            }
-            when doneMovingAtoms(const int AtomsGrpIter) {}
+        overlap {
+          if (!_SDAG_DEBUG_PSI_OFF_) {
+            when doneComputingEnergy(const int AtomGrpIter) {}
           }
+          when doneMovingAtoms(const int AtomsGrpIter) {}
         }
 
-        //! Print out the iteration times and set isFirstStep to false.
+        //! Print out the iteration times.
         serial {
           myGSpaceObj->screenPrintWallTimes();
-          isFirstStep = false;
         }
       }  // end while simulation is running
 
-      serial {
-#ifdef _CP_SUBSTEP_TIMING_
-#if USE_HPM
-        // Print additional timing information
-        (TimeKeeperProxy.ckLocalBranch())->printHPM();
-#endif
-#endif
-        // Contribute to a reduction to let the instance controller know
-        // that the computation is complete.
-        CkCallback cb(CkIndex_InstanceController::cleanExit(NULL),
-            CkArrayIndex1D(thisInstance.proxyOffset),
-            instControllerProxy);
-        contribute(cb);
+      serial { thisProxy[thisIndex].dynamicsDone(myGSpaceObj->exitFlag); }
+    };
+
+    // Born-Oppenheimer Molecular Dynamics
+    entry void computeBOMD() {
+      while (myGSpaceObj->bomd_step < myGSpaceObj->num_steps) {
+        serial {
+          myGSpaceObj->bomd_step++;
+          computeMinimization();
+        }
+        when minimizationDone(bool success) serial {
+          if (!success) {
+            thisProxy[thisIndex].bomdDone(false);
+            return;
+          }
+        }
       }
+      serial { thisProxy[thisIndex].bomdDone(true); }
     };
   };
 };
