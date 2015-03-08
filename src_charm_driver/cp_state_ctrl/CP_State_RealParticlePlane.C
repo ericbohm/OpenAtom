@@ -66,7 +66,9 @@ void CP_State_RealParticlePlane::printEnlR(CkReductionMsg *m){
   //output and save the data
   FILE *temperScreenFile = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
   int iteration= UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration;
-  fprintf(temperScreenFile,"Iter [%d] ENL(EES)    = %5.8lf\n", iteration,d);
+  if (doOutput) {
+    fprintf(temperScreenFile,"Iter [%d] ENL(EES)    = %5.8lf\n", iteration-1,d);
+  }
   UgSpacePlaneProxy[thisInstance.proxyOffset](0,0).computeEnergies(ENERGY_ENL, d);  
 }
 //============================================================================
@@ -98,7 +100,9 @@ void CP_State_RealParticlePlane::printEnlRSimp(double cp_enl_loc,int index,int i
 
   // output and save the data
   if(countEnl==nstates){
-    CkPrintf("{%d} ENL(EES)    = %5.8lf\n", thisInstance.proxyOffset, cp_enlTot);
+    if (doOutput) {
+      CkPrintf("{%d} ENL(EES)    = %5.8lf\n", thisInstance.proxyOffset, cp_enlTot);
+    }
     UgSpacePlaneProxy[thisInstance.proxyOffset](0,0).computeEnergies(ENERGY_ENL,cp_enlTot);  
     countEnl  = 0;
     cp_enlTot = 0.0;
@@ -429,6 +433,8 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
   int iterNLNow          = msg->step; 
   int Index              = msg->senderIndex; // which g-space chare sent the data
   complex *partiallyFFTd = msg->data;
+
+  doOutput = msg->doOutput;
 
   CPcharmParaInfo *sim   = CPcharmParaInfo::get();
   int nchareG            = sim->nchareG;

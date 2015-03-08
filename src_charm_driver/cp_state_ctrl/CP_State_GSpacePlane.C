@@ -1138,27 +1138,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //============================================================================
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   //============================================================================
-  void CP_State_GSpacePlane::startNewMinIter ()  {
-    min_iteration++;
-
-    if (min_only) {
-      startNewIter();
-    } else {
-      finishedCpIntegrate = 0;
-      iRecvRedPsi      = 1;   if(numRecvRedPsi>0){iRecvRedPsi  = 0;}
-      iRecvRedPsiV     = 1;
-      iSentRedPsi      = 0;
-      iSentRedPsiV     = 1;
-    }
-  }
-
-  //============================================================================
-  //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  //============================================================================
   void CP_State_GSpacePlane::startNewIter ()  {
-    //============================================================================
-
-    // Check for flow of control errors :
+  //============================================================================
 
 #ifdef _CP_DEBUG_SF_CACHE_
     CkPrintf("GSP [%d,%d] StartNewIter\n",thisIndex.x, thisIndex.y);
@@ -1166,7 +1147,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #if CMK_TRACE_ENABLED
     traceUserSuppliedData(iteration);
 #endif 
-    /*if(iteration>0){
+    // Check for flow of control errors :
+    if(iteration>0){
       if(UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp != iteration || 
           UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration  != iteration){
         CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);
@@ -1181,7 +1163,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);
         CkExit();
       }//endif
-    } //endif*/
+    } //endif
 
     if(!acceptedVPsi){
       CkPrintf("GSpace[%d,%d] Error: Flow of Control. Starting new iter (%d) before finishing Vpsi.\n",thisIndex.x,thisIndex.y,iteration+1);
@@ -1190,11 +1172,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     doneNewIter = true;
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
-    if(thisIndex.x==0 && thisIndex.y==0 ){
+    if(thisIndex.x==0 && thisIndex.y==0 && (!sim->cp_bomd_opt || min_step == 0)){
       if(!(sim->cp_min_opt==1)){
         fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
         int iii = iteration;
-        if(!sim->gen_wave){iii+=1;}
         fprintf(temperScreenFile,"Iteration %d done\n",iii);
         fprintf(temperScreenFile,"===============================================================================\n");
         fprintf(temperScreenFile,"===============================================================================\n");
@@ -1300,8 +1281,13 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
           CkPrintf("-------------------------------------------------------------------------------\n");
         }
       } else if(iteration>0) {
-        CkPrintf("Iteration time (GSP) : %g\n", 
-            wallTimeArr[itime] - wallTimeArr[itime-1]);
+        if (!sim->cp_bomd_opt) {
+          CkPrintf("Iteration time (GSP) : %g\n", 
+              wallTimeArr[itime] - wallTimeArr[itime-1]);
+        } else if (exitFlag) {
+          CkPrintf("BOMD step time (GSP) : %g\n", 
+              wallTimeArr[itime] - wallTimeArr[itime-min_step]);
+        }
       }//endif
     }//endif
   }
@@ -3169,9 +3155,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //=============================================================================
     // (B) Generate some screen output of orthogonal psi
 
-    if (thisIndex.x == 0 && thisIndex.y == 0) {
-      CkPrintf("Iteration is %d, if > 0 printing out Psi\n", iteration);
-    }
     if(iteration>0){screenOutputPsi(iteration);}
 
     //=============================================================================
@@ -3743,6 +3726,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     int ntime = config.maxIter;
     if(cp_min_opt==0){ntime-=1;}
+    if (cp_min_opt == 1) { iprintout-=1; }
 
     //==============================================================================
 

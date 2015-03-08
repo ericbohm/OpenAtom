@@ -431,7 +431,6 @@ module gStatePlane
     entry void acceptRedPsiV(GSRedPsiMsg *msg);
 
     entry void makePCproxies();
-    entry [local] void startNewMinIter();
     entry [local] void startNewIter();
 
     entry void computeEnergies(int p, double d);

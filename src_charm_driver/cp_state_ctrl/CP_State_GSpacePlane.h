@@ -173,10 +173,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
     void launchAtoms();
     void launchOrthoT();
     void doFFT();
-<<<<<<< HEAD
-=======
-    void startNewMinIter();
->>>>>>> 876f8c0e069bb8d285c1d760c48c74d7c6b63d43
     void startNewIter();
     void sendPsi();
     void sendPsiV();

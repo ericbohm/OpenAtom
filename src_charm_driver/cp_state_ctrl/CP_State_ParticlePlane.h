@@ -35,6 +35,7 @@ class NLFFTMsg: public CMessage_NLFFTMsg
     int size;
     int senderIndex;
     int step;
+    int doOutput;
     complex *data;
 };
 

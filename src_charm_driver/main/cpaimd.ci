@@ -141,12 +141,11 @@ module instanceController
     entry InstanceController();
     entry void acceptNewTemperature(double t);
     entry void useNewTemperature(double t);
+    entry [reductiontarget] void allDoneCPForcesAllKPoint(int);
     entry void printEnergyEexc(CkReductionMsg *msg);
     entry void printEnergyHart(CkReductionMsg *msg);
     entry void printFictEke(CkReductionMsg *msg);
-    entry [reductiontarget] void allDoneCPForces(int);
     entry void printEnergyEke(CkReductionMsg *m);
-    entry [reductiontarget] void allDoneCPForcesAllKPoint(int);
     entry [nokeep] void initCookie(ICCookieMsg *msg);
     entry void doneInit(CkReductionMsg *msg);
     entry void cleanExit(CkReductionMsg *m);
@@ -154,6 +153,26 @@ module instanceController
     entry void gspDoneNewTemp(CkReductionMsg *m);
     entry void atomsDoneNewTemp(CkReductionMsg *m);
     entry void fmagMinTest(CkReductionMsg *m);
+
+    // Makes sure output is only done after we know whether or not we've
+    // minimized the wave function first. This is mainly for BOMD.
+    entry [reductiontarget] void allDoneCPForces(int tol_reached) {
+      serial { callAllDoneCPForces(tol_reached); }
+      overlap {
+        when printEnergyEexc(CkReductionMsg *msg) serial {
+          callPrintEnergyEexc(msg);
+        }
+        when printEnergyHart(CkReductionMsg *msg) serial {
+          callPrintEnergyHart(msg);
+        }
+        when printFictEke(CkReductionMsg *msg) serial {
+          callPrintFictEke(msg);
+        }
+        when printEnergyEke(CkReductionMsg *msg) serial {
+          callPrintEnergyEke(msg);
+        }
+      }
+    };
   };
 };
 

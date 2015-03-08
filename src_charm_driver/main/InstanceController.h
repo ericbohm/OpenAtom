@@ -14,6 +14,7 @@ class ICCookieMsg : public CkMcastBaseMsg, public CMessage_ICCookieMsg {
  ****************************************************************************/
 class InstanceController: public CBase_InstanceController {
   public:
+    InstanceController_SDAG_CODE
     double Timer;
     InstanceController();
     ~InstanceController(){}
@@ -21,12 +22,12 @@ class InstanceController: public CBase_InstanceController {
     void init();
     void doneInit(CkReductionMsg *msg);
     void initCookie(ICCookieMsg *msg);
-    void printEnergyHart(CkReductionMsg *msg);
-    void printEnergyEexc(CkReductionMsg *msg);
-    void printFictEke(CkReductionMsg *msg);
-    void allDoneCPForces(int);
+    void callPrintEnergyHart(CkReductionMsg *msg);
+    void callPrintEnergyEexc(CkReductionMsg *msg);
+    void callPrintFictEke(CkReductionMsg *msg);
+    void callPrintEnergyEke(CkReductionMsg *m);
+    void callAllDoneCPForces(int);
     void allDoneCPForcesAllKPoint(int);
-    void printEnergyEke(CkReductionMsg *m);
     void cleanExit(CkReductionMsg *m);
     void cleanExitAll(CkReductionMsg *m);
     void acceptNewTemperature(double temp);

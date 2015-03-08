@@ -1088,12 +1088,16 @@ void CP_State_ParticlePlane::sendToEesRPP(){
   //============================================================================
   // Send your (x,y,z) to processors z.
 
+  CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal();
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  bool doOutput = (!sim->cp_bomd_opt || gsp->exitFlag);
   for(int z=0; z < ngridcNL; z++) {
 
     NLFFTMsg *msg    = new (numLines,8*sizeof(int)) NLFFTMsg;
     msg->size        = numLines;
     msg->senderIndex = thisIndex.y;  // planenumber
     msg->step        = iterNL;
+    msg->doOutput    = doOutput;
 
     if(config.prioNLFFTMsg){
       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
