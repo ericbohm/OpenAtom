@@ -151,11 +151,6 @@ module gSpaceDriver
             serial { myGSpaceObj->doOutput(); }
             when doneOutput() {}
           }
-
-          if (isPsiVupdateNeeded) {
-            serial { myGSpaceObj->computeNewPsiV(); }
-            when donePsiV() serial { isPsiVupdateNeeded = false; }
-          }
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
         //! Wait for both the energy computation, and the atoms to be moved
@@ -242,6 +237,11 @@ module gSpaceDriver
                myGSpaceObj->exitFlag == 1)) {
             serial { myGSpaceObj->doOutput(); }
             when doneOutput() {}
+          }
+
+          if (isPsiVupdateNeeded) {
+            serial { myGSpaceObj->computeNewPsiV(); }
+            when donePsiV() serial { isPsiVupdateNeeded = false; }
           }
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
