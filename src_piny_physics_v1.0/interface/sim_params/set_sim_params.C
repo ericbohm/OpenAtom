@@ -1661,7 +1661,7 @@ void set_sim_params_run(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 #include "../class_defs/allclass_strip_cp.h"
 
   int ifound,index,pimd_on;
-  int iii;
+  int iii,int_key_arg;
   double real_key_arg;
 
   pimd_on = gensimopts->pimd + gensimopts->cp_pimd 
@@ -2107,6 +2107,28 @@ void set_sim_params_run(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   if(ifound == 0){
     keyarg_barf(dict,filename_parse->input_name,fun_key,index);
   }/*endif*/
+  /*-----------------------------------------------------------------------*/ 
+  /* 35)\norb_fin_diff_order */
+  ifound = 0;
+  sscanf(dict[35].keyarg,"%d",&int_key_arg);
+  cpopts->norb_fin_diff_order = int_key_arg;
+  index=35;
+  if(int_key_arg<0 || int_key_arg>2){
+    keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+  }/*endif*/
+
+  /*-----------------------------------------------------------------------*/ 
+  /* 36)\cp_min_diagonalize */
+  ifound = 0;
+  if(strcasecmp(dict[36].keyarg,"on")==0)   {
+    cpopts->cp_min_diagonalize = 1; ifound++;}
+  if(strcasecmp(dict[36].keyarg,"off")==0)  {
+    cpopts->cp_min_diagonalize = 0; ifound++;}
+  index=36;
+  if(ifound == 0){
+    keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+  }/*endif*/
+
   /*========================================================================*/
 }/*end routine*/ 
 /*========================================================================*/

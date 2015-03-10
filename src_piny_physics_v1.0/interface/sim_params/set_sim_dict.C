@@ -1033,7 +1033,7 @@ void set_sim_dict_run(int *num_dict,DICT_WORD *dict[])
   /*========================================================================*/
   /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 34;
+  *num_dict = 36;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_run")-1;
 
   /*========================================================================*/
@@ -1217,6 +1217,16 @@ void set_sim_dict_run(int *num_dict,DICT_WORD *dict[])
   strcpy((*dict)[34].error_mes,"off or on ");
   strcpy((*dict)[34].keyword,"cp_norb_rot_kescal");
   strcpy((*dict)[34].keyarg,"off");
+  /*-----------------------------------------------------------------------*/ 
+  /* 35)\norb_fin_diff_order */
+  strcpy((*dict)[35].error_mes,"0,1,2");
+  strcpy((*dict)[35].keyword,"norb_fin_diff_order");
+  strcpy((*dict)[35].keyarg,"0");
+  /*-----------------------------------------------------------------------*/ 
+  /* 36)\cp_min_diagonalize */
+  strcpy((*dict)[36].error_mes,"off or on ");
+  strcpy((*dict)[36].keyword,"cp_min_diagonalize");
+  strcpy((*dict)[36].keyarg,"off");
   /*========================================================================*/
   /*------------------------------------------------------------------------*/
   /*========================================================================*/

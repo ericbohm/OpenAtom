@@ -59,8 +59,10 @@ class GStateSlab {
     double degfreeNHC;         // Degrees of freedom (num_nhc-1)*len_nhc
 
     complex *packedPlaneData;   // Non-zero data pts [numPoints]
-    complex *packedPlaneDataTemp2; 
     complex *packedPlaneDataTemp; 
+    complex *packedPlaneDataTemp1; 
+    complex *packedPlaneDataTemp2; 
+    complex *packedPlaneDataTemp3; 
     complex *packedPlaneDataScr; 
     complex *packedForceData; 
     complex *packedVelData; 

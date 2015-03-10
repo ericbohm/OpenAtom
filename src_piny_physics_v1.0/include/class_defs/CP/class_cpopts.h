@@ -18,7 +18,9 @@ class CPOPTS{
     int cp_gga;                 // Opt: Gga opt                           
     int cp_nonint;              // Opt: Non-interacting elec opt       
     int cp_norb;                // Opt: Norb integration               
-    int cp_norb_rot_kescal;
+    int cp_norb_rot_kescal;     // Opt: Upon norb rotation, scale the KE.
+    int norb_fin_diff_order;    // Opt: Upon norb rotation, compute vel with finite diff
+    int cp_min_diagonalize;     // opt: rotate to KS basis in minimization
     int cp_ptens_calc;          // Opt: Calculate CP pressure tensor   
     int cp_init_orthog;         // Opt: Initially orthogonalize WFs    
     int cp_gs,cp_low,cp_normalize;
@@ -84,7 +86,9 @@ class CPOPTS{
       cp_gga          = 0;               
       cp_nonint       = 0;            
       cp_norb         = 0;              
-      cp_norb_rot_kescal = 0;
+      cp_norb_rot_kescal  = 0;
+      norb_fin_diff_order = 0;
+      cp_min_diagonalize  = 0;
       cp_ptens_calc   = 0;        
       cp_init_orthog  = 0;       
       cp_gs           = 0;
@@ -138,6 +142,8 @@ class CPOPTS{
       p | cp_nonint;
       p | cp_norb;
       p | cp_norb_rot_kescal;
+      p | norb_fin_diff_order;
+      p | cp_min_diagonalize;
       p | cp_ptens_calc;
       p | cp_init_orthog;
       p | cp_gs;
@@ -203,6 +209,8 @@ class CPOPTS{
       fprintf(fp,"cp_nonint %d\n",cp_nonint);
       fprintf(fp,"cp_norb %d\n",cp_norb);
       fprintf(fp,"cp_norb_rot_kescal %d\n",cp_norb_rot_kescal);
+      fprintf(fp,"norb_fin_diff_order %d\n",norb_fin_diff_order);
+      fprintf(fp,"cp_min_diagonalize %d\n",cp_min_diagonalize);
       fprintf(fp,"cp_ptens_calc %d\n",cp_ptens_calc);
       fprintf(fp,"cp_init_orthog %d\n",cp_init_orthog);
       fprintf(fp,"cp_gs %d\n",cp_gs);
