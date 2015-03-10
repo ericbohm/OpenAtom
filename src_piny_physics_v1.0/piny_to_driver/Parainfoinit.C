@@ -161,12 +161,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   sim->cp_grad_corr_on= cp_grad_corr_on;
   sim->cp_force_complex_psi = cp_force_complex_psi;
 
-  // TODO: What if we are in BOMD?
-  if(cp_min_opt==0){
-    sim->ntime          = ntime+1;
-  }else{
-    sim->ntime          = ntime;
-  }//endif
+  sim->ntime = ntime;
   sim->btime = btime;
 
   sim->gen_wave=gen_wave; 

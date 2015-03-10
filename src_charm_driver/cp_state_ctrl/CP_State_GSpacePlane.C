@@ -142,12 +142,6 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
   // Output the mag force, send to the energy group, set the exit flag 
 
   if(thisIndex.x==0 && thisIndex.y==0){
-    int iprintout   = iteration-1;
-
-    if (!sim->cp_bomd_opt || fmagPsi_total <= tol_cp_min) {
-      fprintf(temperScreenFile, "Iter [%d] MagForPsi   =  %5.8lf | %5.8lf per entity\n", iprintout,d1,d1/rnatm);
-      fprintf(temperScreenFile,"Iter [%d] Memory      =  %ld\n",iprintout,CmiMemoryUsage());
-    }
     computeEnergies(ENERGY_FMAG, d1);
   }//endif
 
@@ -217,10 +211,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 #endif
     double cpuTimeOld = cpuTimeNow;
     cpuTimeNow        = CkWallTimer();
-    if(iteration>1){
-      if (!sim->cp_bomd_opt || exitFlag) {
-        fprintf(temperScreenFile, "Iter [%d] CpuTime(GSP)= %g\n",iteration-1,cpuTimeNow-cpuTimeOld);
-      }
+    if(iteration>0){
       if(cp_min_opt==0){
         int heavyside = 1-(iteration-iterRotation >= 1 ? 1 : 0);
         fprintf(temperScreenFile, "Iter [%d] Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d : %d\n",iteration,
@@ -301,13 +292,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   int cp_bomd_opt = sim->cp_bomd_opt;
   int gen_wave    = sim->gen_wave;
   wallTimeArr=NULL;
-  if(thisIndex.x==0 && thisIndex.y==0 && config.maxIter<30){
-    wallTimeArr = new double[config.maxIter+2];
-  }else{
-    wallTimeArr = new double[30];
-  }//endif
-  wallTimeArr[0]=0.0;
-  wallTimeArr[1]=0.0;
 
   myBeadIndex    = thisInstance.idxU.x;
   myKptIndex     = thisInstance.idxU.y;
@@ -320,6 +304,16 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   min_step      = 0;
   bomd_step     = 0;
   num_steps     = sim->ntime;
+
+  // Wall time array
+  if(thisIndex.x==0 && thisIndex.y==0 && num_steps<30){
+    wallTimeArr = new double[num_steps+2];
+  }else{
+    wallTimeArr = new double[2];
+  }//endif
+  wallTimeArr[0]=0.0;
+  wallTimeArr[1]=0.0;
+
 
   // Used to stay synchronized with the atoms cache, instance controller, etc.
   iteration     = 0;
@@ -1171,46 +1165,43 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       CkAbort("Error: GSpace cannot startNewIter() before finishing the PsiV loop\n");
     }//endif
 
-    doneNewIter = true;
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
-    if(thisIndex.x==0 && thisIndex.y==0 && (!sim->cp_bomd_opt || min_step == 0)){
-      if(!(sim->cp_min_opt==1)){
-        fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
-        int iii = iteration;
-        fprintf(temperScreenFile,"Iteration %d done\n",iii);
-        fprintf(temperScreenFile,"===============================================================================\n");
-        fprintf(temperScreenFile,"===============================================================================\n");
-      }else{
-        if(iteration>0){
-          fprintf(temperScreenFile,"===============================================================================\n");
-          fprintf(temperScreenFile,"===============================================================================\n");
-        }//endif
-        if(iteration<config.maxIter){
-          fprintf(temperScreenFile,"Beginning Iteration %d \n", iteration);
-        }else{
-          fprintf(temperScreenFile,"Completing Iteration %d \n", iteration-1);
-        }//endif
-        fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
-      }//endif
+    int cp_min_opt = sim->cp_min_opt;
+    int cp_bomd_opt = sim->cp_bomd_opt;
+
+    // If we are doing BOMD, we only want output once for each BOMD step
+    bool doOutput = (!cp_bomd_opt || min_step == 0);
+
+    // Output psi at start of minimization for debugging
+    if(iteration==0 && cp_min_opt==1){screenOutputPsi();}
+
+    // Incremenet iteration counter
+    doneNewIter = true;
+    iteration++;
+
+    if(thisIndex.x==0 && thisIndex.y==0 && doOutput){
+      fprintf(temperScreenFile,"===============================================================================\n");
+      fprintf(temperScreenFile,"===============================================================================\n");
+      fprintf(temperScreenFile,"Beginning Iteration %d\n", iteration);
+      fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
     }//endif
     //============================================================================
     // Reset all the counters that need to be reset (not more not less)
     // otherwise race conditions can leak in.  Rely on the constructor
-    // for initialization.  Reset set your flags as soon as you are done
+    // for initialization.  Reset your flags as soon as you are done
     // with the tests that require them.
-
-    int cp_min_opt = sim->cp_min_opt;
 
     // Finished integrate and red psi are safe.
     // You can't get to these until you get passed through this routine
     finishedCpIntegrate = 0;
-    iRecvRedPsi      = 1;   if(numRecvRedPsi>0){iRecvRedPsi  = 0;}
-    iRecvRedPsiV     = 1;   if(cp_min_opt==0 && numRecvRedPsi>0){iRecvRedPsiV = 0;}
+    iRecvRedPsi      = 1;
+    iRecvRedPsiV     = 1;
     iSentRedPsi      = 0;
-    iSentRedPsiV     = 1;   if(cp_min_opt==0){iSentRedPsiV = 0;}
+    iSentRedPsiV     = 1;
 
-    iteration++;   // my iteration # : not exactly in sync with other chares
-    //                  but should agree when chares meet.
+    if(numRecvRedPsi>0) { iRecvRedPsi = 0; }
+    if(cp_min_opt==0 && numRecvRedPsi>0) { iRecvRedPsiV = 0; }
+    if(cp_min_opt==0) {iSentRedPsiV = 0;}
 
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
     CkPrintf("GSP [%d,%d] StartNewIter : %d\n",thisIndex.x, thisIndex.y,iteration);
@@ -1218,16 +1209,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     //============================================================================
 
-    // Check Load Balancing, Increment counter, set done flags equal to false.
-    /*  if(iteration=3)
-        {
-        CmiMemoryMark();
-        }
-        if(iteration=4)
-        {
-        CmiMemorySweep("GSP");
-        }
-     */
 #if CMK_TRACE_ENABLED
     if(iteration==TRACE_ON_STEP ){(TimeKeeperProxy.ckLocalBranch())->startTrace();}
     if(iteration==TRACE_OFF_STEP){(TimeKeeperProxy.ckLocalBranch())->stopTrace();}
@@ -1241,9 +1222,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     }//endif
 
     //============================================================================
-    // Output psi at start of minimization for debugging
 
-    if(iteration==1 && cp_min_opt==1){screenOutputPsi(0);}
 #ifdef _CP_SUBSTEP_TIMING_
     if(forwardTimeKeep>0){
       double gstart=CmiWallTimer();
@@ -1259,35 +1238,45 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //---------------------------------------------------------------------------
   }//end routine
 
+  // If we are in the middle of a run, print out the time took for the current
+  // step. If we have hit the last iteration, then print out the wall time of
+  // each iteration as well as the total time.
   void CP_State_GSpacePlane::screenPrintWallTimes()
   {
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
+    int cp_bomd_opt = sim->cp_bomd_opt;
+    int time_array_idx;
+
     // do new iteration output once globally from the 0th instance
     if (thisIndex.x==0 && thisIndex.y==0 &&
         thisInstance.idxU.x==0 && thisInstance.idxU.y==0 &&
         thisInstance.idxU.z==0 && thisInstance.idxU.s==0 ) {
-      int iprintout   = config.maxIter;
-      if(!(sim->cp_min_opt==1) && !sim->gen_wave){iprintout-=1;}
-      int itime       = iteration;
-      if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
-      wallTimeArr[itime] = CkWallTimer();
-      if (iteration == iprintout && config.maxIter<30) {
+      if (num_steps >= 30) {
+        time_array_idx = 1;
+        wallTimeArr[0] = wallTimeArr[1];
+      } else if (cp_bomd_opt) {
+        time_array_idx = bomd_step;
+      } else {
+        time_array_idx = iteration;
+      }
+      wallTimeArr[time_array_idx] = CkWallTimer();
+      // If we've reached the end of the simulation, print a list of the
+      // iteration times. Otherwise just print the current iteration time.
+      if (num_steps < 30 && (exitFlag || time_array_idx == num_steps)) {
         CkPrintf("-------------------------------------------------------------------------------\n");
         CkPrintf("Wall Times from within GSP\n\n");
-        for (int t = 1; t < iprintout; t++) {
+        for (int t = 1; t <= time_array_idx; t++) {
           CkPrintf("%g\n",wallTimeArr[t] - wallTimeArr[t-1]);
         }//endfor
-        if(itime>0) {
-          CkPrintf("%g\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
-          CkPrintf("-------------------------------------------------------------------------------\n");
-        }
+        CkPrintf("Total Wall Time: %g\n", wallTimeArr[time_array_idx] - wallTimeArr[0]);
+        CkPrintf("-------------------------------------------------------------------------------\n");
       } else if(iteration>0) {
-        if (!sim->cp_bomd_opt) {
+        if (!cp_bomd_opt) {
           CkPrintf("Iteration time (GSP) : %g\n", 
-              wallTimeArr[itime] - wallTimeArr[itime-1]);
+              wallTimeArr[time_array_idx] - wallTimeArr[time_array_idx-1]);
         } else if (exitFlag) {
           CkPrintf("BOMD step time (GSP) : %g\n", 
-              wallTimeArr[itime] - wallTimeArr[itime-min_step]);
+              wallTimeArr[time_array_idx] - wallTimeArr[time_array_idx-1]);
         }
       }//endif
     }//endif
@@ -3157,7 +3146,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //=============================================================================
     // (B) Generate some screen output of orthogonal psi
 
-    if(iteration>0){screenOutputPsi(iteration);}
+    if(iteration>0){screenOutputPsi();}
 
     //=============================================================================
     // (E) Debug psi
@@ -3770,7 +3759,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   //==============================================================================
   /** \brief output a few select psi values for post processing validation */
-  void CP_State_GSpacePlane::screenOutputPsi(int iprintout){
+  void CP_State_GSpacePlane::screenOutputPsi(){
     //==============================================================================
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
     if(thisIndex.x==0){CkPrintf("output %d %d\n",thisIndex.y,cleanExitCalled);}
@@ -3790,28 +3779,27 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     complex *psi      = gs.packedPlaneData;       //orthogonal psi
     if(cp_min_opt==0){psi=gs.packedPlaneDataScr;} //non-orthogonal psi
 
-    int ntime = config.maxIter;
-    if(cp_min_opt==0){ntime-=1;}
-    if (cp_min_opt == 1) { iprintout-=1; }
+    bool doOutput = (!cp_bomd_opt || exitFlag);
 
     //==============================================================================
-
     /// Screen Output
-
 #ifdef _CP_DEBUG_COEF_SCREEN_
-    if(iteration<=ntime && (!cp_bomd_opt || exitFlag)){
+    if (thisIndex.x == 0 && thisIndex.y == 0 && doOutput) {
+      fprintf(temperScreenFile,"GSpacePlane printing Psi values computed in iteration %d\n",iteration);
+    }
+    if(doOutput){
       if(gs.istate_ind==0 || gs.istate_ind==nstates-1){
         for(int i = 0; i < gs.numPoints; i++){
           if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){
             fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
             fprintf(temperScreenFile,"Iter [%d] Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-                iprintout,
+                iteration,
                 gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
             if(cp_min_opt==0){
               double vre=vpsi[i].re;
               double vim=vpsi[i].im;
               fprintf(temperScreenFile,"Iter [%d] VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-                  iprintout,
+                  iteration,
                   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
             }//endif
             fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
@@ -3821,11 +3809,11 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
             double vim=vpsi[i].im;
             fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
             fprintf(temperScreenFile,"Iter [%d] Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-                iprintout,
+                iteration,
                 gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
             if(cp_min_opt==0){
               fprintf(temperScreenFile,"Iter [%d] VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-                  iprintout,
+                  iteration,
                   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
             }//endif
             fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
@@ -3977,6 +3965,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     CkPrintf("ecount %d %d %d\n",ecount,NUM_ENERGIES-isub,myid);
 #endif
     if(ecount == NUM_ENERGIES-isub){
+      if (!sim->cp_bomd_opt || exitFlag) {
+        outputEnergies();
+      }
       EnergyStruct estruct;
       estruct.enl             = enl_total;
       estruct.eke             = eke_total;
@@ -4001,6 +3992,30 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     //-----------------------------------------------------------------------------
   }// end routine : computenergies
+  //==============================================================================
+
+  //==============================================================================
+  /** \brief Once we've received all of the energies, output them to the screen */
+  //==============================================================================
+  //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  //==============================================================================
+  void CP_State_GSpacePlane::outputEnergies(){
+  //==============================================================================
+    AtomsCache *ag  = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
+    double rnatm    = ((double)(ag->natm))/96.0;  // relative to 32 waters
+
+    fprintf(temperScreenFile,"GSpacePlane printing energies computed in iteration %d\n",iteration);
+    fprintf(temperScreenFile,"Iter [%d] EHART       = %5.8lf\n", iteration, ehart_total);
+    fprintf(temperScreenFile,"Iter [%d] EExt        = %5.8lf\n", iteration, eext_total);
+    fprintf(temperScreenFile,"Iter [%d] EWALD_recip = %5.8lf\n", iteration, ewd_total);
+    fprintf(temperScreenFile,"Iter [%d] EEXC        = %5.8lf\n", iteration, eexc_total);
+    fprintf(temperScreenFile,"Iter [%d] EGGA        = %5.8lf\n", iteration, egga_total);
+    fprintf(temperScreenFile,"Iter [%d] EEXC+EGGA   = %5.8lf\n", iteration, eexc_total+egga_total);
+    fprintf(temperScreenFile,"Iter [%d] EKE         = %5.8lf\n", iteration, eke_total);
+    fprintf(temperScreenFile,"Iter [%d] ENL(EES)    = %5.8lf\n", iteration, enl_total);
+    fprintf(temperScreenFile,"Iter [%d] MagForPsi   = %5.8lf | %5.8lf per entity\n", iteration,fmagPsi_total0,fmagPsi_total0/rnatm);
+  //-----------------------------------------------------------------------------
+  }// end routine : outputEnergies
   //==============================================================================
 
 

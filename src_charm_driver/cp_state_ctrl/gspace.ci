@@ -173,6 +173,11 @@ module gSpaceDriver
 
     //! \brief SDAG method for flow control while doing dynamics
     entry void computeDynamics() {
+      serial {
+        if (thisIndex.x == 0 && thisIndex.y == 0) {
+          CkPrintf("Starting dynamics for %d steps\n", myGSpaceObj->num_steps);
+        }
+      }
       //! Compute our initial psi
       if (!_SDAG_DEBUG_PSI_OFF_) {
         serial { myGSpaceObj->computeNewPsi(); }

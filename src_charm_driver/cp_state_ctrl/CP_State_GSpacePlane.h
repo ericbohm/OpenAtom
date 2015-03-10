@@ -176,7 +176,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
     void startNewIter();
     void sendPsi();
     void sendPsiV();
-    void screenOutputPsi(int);
+    void screenOutputPsi();
     void sendLambda();
     void makePCproxies();
     void doneRedPsiIntegrate();
@@ -210,6 +210,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
     void setExitFlag();
     void readFile();
     void computeEnergies(int p, double d);
+    void outputEnergies();
     void startFFT(CkReductionMsg *msg);
     void sendRedPsiV();
     void unpackRedPsiV(GSRedPsiMsg *msg);

@@ -22,11 +22,11 @@ class InstanceController: public CBase_InstanceController {
     void init();
     void doneInit(CkReductionMsg *msg);
     void initCookie(ICCookieMsg *msg);
-    void callPrintEnergyHart(CkReductionMsg *msg);
-    void callPrintEnergyEexc(CkReductionMsg *msg);
-    void callPrintFictEke(CkReductionMsg *msg);
-    void callPrintEnergyEke(CkReductionMsg *m);
-    void callAllDoneCPForces(int);
+    void printEnergyHart(CkReductionMsg *msg);
+    void printEnergyEexc(CkReductionMsg *msg);
+    void printFictEke(CkReductionMsg *msg);
+    void printEnergyEke(CkReductionMsg *m);
+    void allDoneCPForces(int);
     void allDoneCPForcesAllKPoint(int);
     void cleanExit(CkReductionMsg *m);
     void cleanExitAll(CkReductionMsg *m);

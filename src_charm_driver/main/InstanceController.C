@@ -267,22 +267,13 @@ void InstanceController::initCookie(ICCookieMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void InstanceController::callPrintEnergyHart(CkReductionMsg *msg){
+void InstanceController::printEnergyHart(CkReductionMsg *msg){
   //============================================================================
   //  double ehart = 0, eext = 0.0, ewd = 0.0;
   void *data=msg->getData();
   double ehart = ((double *)data)[0];
   double eext = ((double *)data)[1];
   double ewd  = ((double *)data)[2];
-  FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
-  int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
-  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
-
-  if (printToScreen) {
-    fprintf(temperScreenFile,"Iter [%d] EHART       = %5.8lf\n", iteration, ehart);
-    fprintf(temperScreenFile,"Iter [%d] EExt        = %5.8lf\n", iteration, eext);
-    fprintf(temperScreenFile, "Iter [%d] EWALD_recip = %5.8lf\n", iteration, ewd);
-  }
 
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EHART, ehart);
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EEXT, eext);
@@ -298,7 +289,7 @@ void InstanceController::callPrintEnergyHart(CkReductionMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void InstanceController::callPrintEnergyEexc(CkReductionMsg *msg){
+void InstanceController::printEnergyEexc(CkReductionMsg *msg){
   //============================================================================
 
   double eexc = 0;
@@ -306,14 +297,6 @@ void InstanceController::callPrintEnergyEexc(CkReductionMsg *msg){
   void *data=msg->getData();
   eexc += ((double *)data)[0];
   egga += ((double *)data)[1];
-  FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
-  int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
-
-  if (printToScreen) {
-    fprintf(temperScreenFile,"Iter [%d] EEXC        = %5.8lf\n", iteration, eexc);
-    fprintf(temperScreenFile,"Iter [%d] EGGA        = %5.8lf\n", iteration, egga);
-    fprintf(temperScreenFile,"Iter [%d] EEXC+EGGA   = %5.8lf\n", iteration, eexc+egga);
-  }
 
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EEXC, eexc);
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EGGA, egga);
@@ -333,7 +316,7 @@ void InstanceController::callPrintEnergyEexc(CkReductionMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void InstanceController::callPrintEnergyEke(CkReductionMsg *m){
+void InstanceController::printEnergyEke(CkReductionMsg *m){
   //============================================================================  
   double d = ((double *)m->getData())[0];
   delete m;
@@ -343,13 +326,6 @@ void InstanceController::callPrintEnergyEke(CkReductionMsg *m){
   UberCollection thisInstance(thisIndex);
   if(config.UberKmax>1) // report to temper master
     ENLEKECollectorProxy[thisInstance.idxU.z].acceptEKE(d);
-  FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
-  int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
-
-  if (printToScreen) {
-    fprintf(temperScreenFile,"Iter [%d] EKE         = %5.8lf\n", iteration, d);
-  }
-  fflush(temperScreenFile);
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_EKE, d);
 }
 
@@ -360,7 +336,7 @@ void InstanceController::callPrintEnergyEke(CkReductionMsg *m){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void InstanceController::callPrintFictEke(CkReductionMsg *m){
+void InstanceController::printFictEke(CkReductionMsg *m){
   //============================================================================  
   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
   double d0   = ((double *)m->getData())[0];
@@ -374,12 +350,13 @@ void InstanceController::callPrintFictEke(CkReductionMsg *m){
     FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
     int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
 
-    fprintf(temperScreenFile,"Iter [%d] Fict Temp   =  %.10g K\n", iteration-1, d0); // per g-chare temp
-    fprintf(temperScreenFile,"Iter [%d] Fict Eke    =  %.10g K\n", iteration-1, d2); // total kinetic energy
-    fprintf(temperScreenFile,"Iter [%d] Fict TempNHC=  %.10g K\n", iteration-1, d1); // per g-chare tempNHC
-    fprintf(temperScreenFile,"Iter [%d] Fict EkeNHC =  %.10g K\n", iteration-1, d3); // total NHC kinetic energy
-    fprintf(temperScreenFile,"Iter [%d] Fict PotNHC =  %.10g K\n", iteration-1, d4); // total potNHC
-    fprintf(temperScreenFile,"Iter [%d] Fict EConv  =  %.10g K\n", iteration-1, d2+d3+d4);
+    fprintf(temperScreenFile,"InstanceController printing Fict stats computed in iteration %d\n",iteration);
+    fprintf(temperScreenFile,"Iter [%d] Fict Temp   =  %.10g K\n", iteration, d0); // per g-chare temp
+    fprintf(temperScreenFile,"Iter [%d] Fict Eke    =  %.10g K\n", iteration, d2); // total kinetic energy
+    fprintf(temperScreenFile,"Iter [%d] Fict TempNHC=  %.10g K\n", iteration, d1); // per g-chare tempNHC
+    fprintf(temperScreenFile,"Iter [%d] Fict EkeNHC =  %.10g K\n", iteration, d3); // total NHC kinetic energy
+    fprintf(temperScreenFile,"Iter [%d] Fict PotNHC =  %.10g K\n", iteration, d4); // total potNHC
+    fprintf(temperScreenFile,"Iter [%d] Fict EConv  =  %.10g K\n", iteration, d2+d3+d4);
   }//endif
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_FICTEKE, d0);  
 
@@ -404,7 +381,7 @@ void InstanceController::callPrintFictEke(CkReductionMsg *m){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void InstanceController::callAllDoneCPForces(int tol_reached){
+void InstanceController::allDoneCPForces(int tol_reached){
   //============================================================================
   // only the 0th instance of each k-point and spin is allowed to do this 
 
@@ -428,8 +405,11 @@ void InstanceController::callAllDoneCPForces(int tol_reached){
     FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
     int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
 
+    // The atoms cache iteration gets incremented at the end of iterations, but
+    // the GSpace iteration is incremented at the beginning. Add 1 to make
+    // output from the two consistent.
     if (printToScreen) {
-      fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration,thisInstance.idxU.x);  
+      fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration+1,thisInstance.idxU.x);  
     }
     UatomsComputeProxy[thisIndex].startRealSpaceForces(tol_reached);
   }
@@ -447,6 +427,9 @@ void InstanceController::allDoneCPForcesAllKPoint(int tol_reached){
   FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
   int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
 
+  // The atoms cache iteration gets incremented at the end of iterations, but
+  // the GSpace iteration is incremented at the beginning. Add 1 to make
+  // output from the two consistent.
   if (printToScreen) {
     fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration,thisInstance.idxU.x);  
   }

@@ -696,38 +696,47 @@ void AtomsCompute::outputAtmEnergy() {
   //==========================================================================
 
   EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-  CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
-  int myid              = CkMyPe();  
   double eKinetic       = eg->estruct.eKinetic_atm;
   double eKineticNhc    = eg->estruct.eKineticNhc_atm;
   double fmag           = eg->estruct.fmag_atm;
   double pot_ewd_rs_now = eg->estruct.eewald_real;
   double potNhc         = eg->estruct.potNhc_atm;
   double free_atm       = 3*((double)natm);
+
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
   int iperd             = sim->iperd;
+
+  // Atoms cache increments it's iteration counter at the end of it's work
+  // where as GSpace increments it at the beginning of an iteration. So we
+  // add 1 to keep output consistent with the output from GSpace.
+  AtomsCache *ag        = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
+  int iteration         = ag->iteration + 1;
+
   int move_atoms=0;
   int do_output = 0;
   if (cp_min_opt==0 && cp_wave_opt==0) { move_atoms = 1; }
   if (cp_bomd_opt==1 && tol_reached==1) { move_atoms = 1; }
   if (cp_bomd_opt==0 || tol_reached==1) { do_output = 1; }
 
+  int myid = CkMyPe();  
   if(myid==0 && do_output){
+    fprintf(temperScreenFile,"AtomsCompute printing energies computed in iteration %d\n",iteration);
     if(iperd!=0){
-      fprintf(temperScreenFile,"Iter [%d] EWALD_REAL  = %5.8lf\n", *iteration, pot_ewd_rs_now);
-      fprintf(temperScreenFile,"Iter [%d] EWALD_SELF  = %5.8lf\n",*iteration, vself);
-      fprintf(temperScreenFile,"Iter [%d] EWALD_BGR   = %5.8lf\n",*iteration, vbgr);
+      fprintf(temperScreenFile,"Iter [%d] EWALD_REAL  = %5.8lf\n",iteration, pot_ewd_rs_now);
+      fprintf(temperScreenFile,"Iter [%d] EWALD_SELF  = %5.8lf\n",iteration, vself);
+      fprintf(temperScreenFile,"Iter [%d] EWALD_BGR   = %5.8lf\n",iteration, vbgr);
       if(iperd!=3){
-        fprintf(temperScreenFile,"Iter [%d] EWALD_Perd  = %5.8lf\n",*iteration, potPerdCorr);
+        fprintf(temperScreenFile,"Iter [%d] EWALD_Perd  = %5.8lf\n",iteration, potPerdCorr);
       }//endif
     }else{
-      fprintf(temperScreenFile,"Iter [%d] ATM_COUL    = %5.8lf\n",*iteration, pot_ewd_rs_now);
+      fprintf(temperScreenFile,"Iter [%d] ATM_COUL    = %5.8lf\n",iteration, pot_ewd_rs_now);
     }//endif
     if(move_atoms==1){
-      fprintf(temperScreenFile,"Iter [%d] atm eKin    = %5.8lf\n",*iteration, eKinetic);
-      fprintf(temperScreenFile,"Iter [%d] atm Temp    = %5.8lf\n",*iteration, (2.0*eKinetic*BOLTZ/free_atm));
-      fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",*iteration, fmag);
+      fprintf(temperScreenFile,"Iter [%d] atm eKin    = %5.8lf\n",iteration, eKinetic);
+      fprintf(temperScreenFile,"Iter [%d] atm Temp    = %5.8lf\n",iteration, (2.0*eKinetic*BOLTZ/free_atm));
+      fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",iteration, fmag);
       if(numPIMDBeads>1){
-        fprintf(temperScreenFile,"Iter [%d] Bead Chain  = %5.8lf\n",*iteration, potPIMDChain);
+        fprintf(temperScreenFile,"Iter [%d] Bead Chain  = %5.8lf\n",iteration, potPIMDChain);
       }//endif
       if(iextended_on==1){
         double free_Nhc;
@@ -736,12 +745,12 @@ void AtomsCompute::outputAtmEnergy() {
         }else{
           free_Nhc    = free_atm*((double)(len_nhc-1));
         }//endif
-        fprintf(temperScreenFile,"Iter [%d] atm eKinNhc = %5.8lf\n",*iteration, eKineticNhc);
-        fprintf(temperScreenFile,"Iter [%d] atm TempNHC = %5.8lf\n",*iteration, (2.0*eKineticNhc*BOLTZ/free_Nhc));
-        fprintf(temperScreenFile,"Iter [%d] atm potNHC  = %5.8lf\n",*iteration, potNhc);
+        fprintf(temperScreenFile,"Iter [%d] atm eKinNhc = %5.8lf\n",iteration, eKineticNhc);
+        fprintf(temperScreenFile,"Iter [%d] atm TempNHC = %5.8lf\n",iteration, (2.0*eKineticNhc*BOLTZ/free_Nhc));
+        fprintf(temperScreenFile,"Iter [%d] atm potNHC  = %5.8lf\n",iteration, potNhc);
       }//endif
     }else{
-      fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",*iteration, fmag);
+      fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",iteration, fmag);
     }//endif
   }//endif
 
