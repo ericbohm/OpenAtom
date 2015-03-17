@@ -236,8 +236,8 @@ module gSpaceDriver
 
           //! Dump to file every ndump_frq iterations and the final iteration.
           //! Skip the first iteration because nothing moves before iter 2.
-          if (config.stateOutput && myGSpaceObj->iteration > 1 &&
-              (myGSpaceObj->iteration % ndump_frq ||
+          if (config.stateOutput &&
+              (myGSpaceObj->iteration % ndump_frq==0 ||
                myGSpaceObj->iteration == config.maxIter ||
                myGSpaceObj->exitFlag == 1)) {
             serial { myGSpaceObj->doOutput(); }
