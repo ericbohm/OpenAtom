@@ -14,18 +14,18 @@
  * This is the description of the "life" of a CP_Rho_RealSpacePlane object.
  *
  * At the start of the program, the constructor CP_Rho_RealSpacePlane() is called.
- * 
- * The CP_State_RealSpacePlanes send the squared magnitudes of the psi_r values 
+ *
+ * The CP_State_RealSpacePlanes send the squared magnitudes of the psi_r values
  * using the acceptData() method. The squared magnitudes are summed across states.
- * A copy of this data is made, inverse fft is done in the z and x directions 
- * and sent to rhoGDensity. The other copy is processed using CP_exc_calc. 
- * Then the CP_Rho_RealSpacePlane object waits for a reply from the RhoGDensity 
+ * A copy of this data is made, inverse fft is done in the z and x directions
+ * and sent to rhoGDensity. The other copy is processed using CP_exc_calc.
+ * Then the CP_Rho_RealSpacePlane object waits for a reply from the RhoGDensity
  * object.
  *
- * The reply from RhoGDensity comes in the form of the method 
+ * The reply from RhoGDensity comes in the form of the method
  * acceptDensityForSumming(). The data obtained from this reply is taken and
- * forward fft in z and x directions is performed. The resulting data is 
- * summed with the result of CP_exc_calc. The sum is sent to the 
+ * forward fft in z and x directions is performed. The resulting data is
+ * summed with the result of CP_exc_calc. The sum is sent to the
  * CP_State_RealSpacePlane objects.
  */
 //============================================================================
@@ -82,9 +82,9 @@ bool is_pow2(int );
 // Performs lots of operations to get exc, eext energies and vks
 //
 //============================================================================
-CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib, 
+CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib,
     int _ees_eext_on,int _ngridcEext,
-    int _rhokeeperid, 
+    int _rhokeeperid,
     UberCollection _instance) :
   thisInstance(_instance)
   //============================================================================
@@ -104,7 +104,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib,
   ngrida               = sim->sizeX;     // FFT sizes for rho
   ngridb               = sim->sizeY;
   ngridc               = sim->sizeZ;
-  nplane_rho_x         = sim->nplane_rho_x; // gx_max 
+  nplane_rho_x         = sim->nplane_rho_x; // gx_max
   listSubFlag          = sim->listSubFlag;
 
   iplane_ind           = thisIndex.y*ngridc + thisIndex.x;
@@ -124,7 +124,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib,
   redCount =0;
   RedMsg=NULL;
   //============================================================================
-  // Compute number of messages to be received 
+  // Compute number of messages to be received
 
   int nchareRhoG=sim->nchareRhoG;
   if(rhoRsubplanes>1){
@@ -147,14 +147,14 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib,
   }//endif
 
   //============================================================================
-  // Parallelization 
+  // Parallelization
 
   // Before transpose : rho(x,y,z) : parallelize y and z
-  int div      = (ngridb/rhoRsubplanes); 
+  int div      = (ngridb/rhoRsubplanes);
   int rem      = (ngridb % rhoRsubplanes);
   int max      = (thisIndex.y < rem ? thisIndex.y : rem);
   myNgridb     = (thisIndex.y<rem ? div+1 : div);  // number of y values/lines of x
-  myBoff       = div*thisIndex.y + max;            // offset into y 
+  myBoff       = div*thisIndex.y + max;            // offset into y
   nptsB        =  ngrida*myNgridb;                 // size of plane without extra room
   nptsExpndB   = (ngrida+2)*myNgridb;              // extra memory for RealToComplex FFT
 
@@ -167,7 +167,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib,
   nptsA        = 2*myNplane_rho*ngridb;            // memory size fft in doubles
   nptsExpndA   = 2*myNplane_rho*ngridb;            // memory size fft in doubles
 
-  //============================================================================    
+  //============================================================================
   // Set up the data class : mallocs rho,gradrho, etc.
 
   initRhoRealSlab(&rho_rs,ngrida,myNgridb,ngridc,myNplane_rho,ngridb,
@@ -214,14 +214,14 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib,
 //============================================================================
 void CP_Rho_RealSpacePlane::init(){
 
-  // make sections in the realSpacePlane array. These will be used when 
-  // computing real-space densities and multicasting v_ks values 
+  // make sections in the realSpacePlane array. These will be used when
+  // computing real-space densities and multicasting v_ks values
 
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
   CkArrayIndexMax *elems   = new CkArrayIndexMax[nstates];
 
   int j;
-  // section i has al the portions with all 
+  // section i has al the portions with all
   CkArrayIndex2D idx(0, thisIndex.x);
   if(is_pow2(nstates)){
     for (j = 0; j < nstates; j++) {
@@ -258,26 +258,26 @@ void CP_Rho_RealSpacePlane::init(){
 #ifdef USE_COMLIB
     ComlibAssociateProxy(mcastInstance[kp],realSpaceSectionCProxyA[kp]);
 #endif
-    ProductMsg *dummyProductMessage = new (0) ProductMsg;    
+    ProductMsg *dummyProductMessage = new (0) ProductMsg;
     // inform realspace element of this section proxy.
     dummyProductMessage->subplane=thisIndex.y;
     realSpaceSectionProxyA[kp].init(dummyProductMessage);
   }
-  delete [] elems;   
+  delete [] elems;
   rhoGProxy_com    = UrhoGProxy[thisInstance.proxyOffset];
   rhoGProxyIGX_com = UrhoGProxy[thisInstance.proxyOffset];
   rhoGProxyIGY_com = UrhoGProxy[thisInstance.proxyOffset];
   rhoGProxyIGZ_com = UrhoGProxy[thisInstance.proxyOffset];
 
 #ifdef USE_COMLIB
-  if (config.useRInsRhoGP) 
-    ComlibAssociateProxy(commRealInstance,rhoGProxy_com);          
-  if (config.useRInsIGXRhoGP) 
-    ComlibAssociateProxy(commRealIGXInstance,rhoGProxyIGX_com);          
-  if (config.useRInsIGYRhoGP) 
-    ComlibAssociateProxy(commRealIGYInstance,rhoGProxyIGY_com);          
-  if (config.useRInsIGZRhoGP) 
-    ComlibAssociateProxy(commRealIGZInstance,rhoGProxyIGZ_com);          
+  if (config.useRInsRhoGP)
+    ComlibAssociateProxy(commRealInstance,rhoGProxy_com);
+  if (config.useRInsIGXRhoGP)
+    ComlibAssociateProxy(commRealIGXInstance,rhoGProxyIGX_com);
+  if (config.useRInsIGYRhoGP)
+    ComlibAssociateProxy(commRealIGYInstance,rhoGProxyIGY_com);
+  if (config.useRInsIGZRhoGP)
+    ComlibAssociateProxy(commRealIGZInstance,rhoGProxyIGZ_com);
 #endif
 
 }
@@ -315,9 +315,9 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
   p|ees_eext_on;
   p|ngridcEext;
   p|cp_grad_corr_on;
-  p|FFTscale;        
-  p|volumeFactor;        
-  p|probScale;             
+  p|FFTscale;
+  p|volumeFactor;
+  p|probScale;
   p|rhoGHelpers;
   p|doneGradRhoVks;
   p|countWhiteByrd;
@@ -342,14 +342,14 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
     rhoGProxyIGZ_com = UrhoGProxy[thisInstance.proxyOffset];
 
 #ifdef USE_COMLIB
-    if (config.useRInsRhoGP) 
-      ComlibAssociateProxy(commRealInstance,rhoGProxy_com);          
-    if (config.useRInsIGXRhoGP) 
-      ComlibAssociateProxy(commRealIGXInstance,rhoGProxyIGX_com);          
-    if (config.useRInsIGYRhoGP) 
-      ComlibAssociateProxy(commRealIGYInstance,rhoGProxyIGY_com);          
-    if (config.useRInsIGZRhoGP) 
-      ComlibAssociateProxy(commRealIGZInstance,rhoGProxyIGZ_com);          
+    if (config.useRInsRhoGP)
+      ComlibAssociateProxy(commRealInstance,rhoGProxy_com);
+    if (config.useRInsIGXRhoGP)
+      ComlibAssociateProxy(commRealIGXInstance,rhoGProxyIGX_com);
+    if (config.useRInsIGYRhoGP)
+      ComlibAssociateProxy(commRealIGYInstance,rhoGProxyIGY_com);
+    if (config.useRInsIGZRhoGP)
+      ComlibAssociateProxy(commRealIGZInstance,rhoGProxyIGZ_com);
 #endif
 
   }//endif
@@ -364,7 +364,7 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
 //============================================================================
 //
 //  Data comes from StateRspacePlane once an algorithm step.
-/** 
+/**
  * Here the density from all the states is added up. The data from all the
  * states is received via an array section reduction. Nothing happens in this
  * chare until the density arrives.
@@ -392,7 +392,7 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
   }else{
     if(redCount<=config.UberJmax){
       // there is one per k-point we'll sum them into the first
-      // message we receive 
+      // message we receive
       double *indata=(double*) msg->getData();
       double *outdata=(double*) RedMsg->getData();
       int size=msg->getSize()/sizeof(double);
@@ -446,7 +446,7 @@ void CP_Rho_RealSpacePlane::handleDensityReduction() {
   //============================================================================
   // Unpack into spread out form and delete the message
 
-  double *realValues = (double *) RedMsg->getData(); 
+  double *realValues = (double *) RedMsg->getData();
   double *density    = rho_rs.density;
   CkAssert(RedMsg->getSize() == nptsB * sizeof(double));
 
@@ -530,11 +530,11 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
 
   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
 
-  if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==1 && sim->natm_nl>0){ 
+  if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==1 && sim->natm_nl>0){
 
     CkAssert(rho_rs.sizeZ>=config.nchareG);
     if(thisIndex.x<config.nchareG){
-      int nstates = config.nstates; 
+      int nstates = config.nstates;
       int div     = (nstates/rhoRsubplanes);
       int rem     = (nstates % rhoRsubplanes);
       int add     = (thisIndex.y < rem ? 1 : 0);
@@ -561,14 +561,14 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
   }//endif : launch the non-local ees
 
   //----------------------------------------------------------------------------
-}//end routine 
+}//end routine
 //============================================================================
 
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/** 
+/**
  * Compute one part of the EXC energy using PINY CP_exc_calc.
  * This is done once an algorithm step
  */
@@ -577,7 +577,7 @@ void CP_Rho_RealSpacePlane::energyComputation(){
   //============================================================================
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("In RhoRealSpacePlane[%d] energyComp %d %d\n",thisIndex.x, 
+  CkPrintf("In RhoRealSpacePlane[%d] energyComp %d %d\n",thisIndex.x,
       CkMyPe(),CmiMemoryUsage());
 #endif
 
@@ -596,6 +596,21 @@ void CP_Rho_RealSpacePlane::energyComputation(){
   // Perform exchange correlation computation (no grad corr here).
 
   CPXCFNCTS::CP_exc_calc(npts,nf1,nf2,nf3,density,Vks,exc_ret,muxc_ret,config.nfreq_xcfnctl);
+
+#ifdef  _CP_DEBUG_RHOR_VERBOSE_
+  double sum = 0.0;
+  int off = 0;
+  for(int y=0 ; y < nf2; y++) {
+    for(int x = 0; x < nf1+2; x++, off++) {
+      sum += Vks[off];
+      if(thisIndex.x + thisIndex.y == 0) {
+        CkPrintf("%lf\n", Vks[off]);
+      }
+    }
+  }//endfor
+  CkPrintf("[%d] RhoR[%d,%d] Sum_Vks %lf\n", CkMyPe(), thisIndex.x, thisIndex.y,
+      sum);
+#endif
 
   if(cp_grad_corr_on==0){
     double exc[2];
@@ -617,11 +632,11 @@ void CP_Rho_RealSpacePlane::energyComputation(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/** 
+/**
  *   1) Perform FFT of density: Single Transpose method rho(x,y,z) ---> rho(gx,gy,z)
  *                              Double Transpose method rho(x,y,z) ---> rho(gx,y,z)
  *
- *   2) launch the real space part of the non-local 
+ *   2) launch the real space part of the non-local
  *
  *      Routine invoked once an algorithm step.
  **/
@@ -630,14 +645,14 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
   //============================================================================
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("In RhoRealSpacePlane[%d %d] FFT_RSpacetoGSpace %d %d\n",thisIndex.x, 
+  CkPrintf("In RhoRealSpacePlane[%d %d] FFT_RSpacetoGSpace %d %d\n",thisIndex.x,
       thisIndex.y, CkMyPe(),CmiMemoryUsage());
 #endif
 
   //============================================================================
   // FFT myself back to G-space part way
 
-  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
+  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
   double  *density   = rho_rs.density;  // we need to save the density and vks.
   double  *dataR     = rho_rs.rhoIRX;   // rhoirx is around doing nothing now
   complex *dataC     = rho_rs.rhoIRXC;  // so we can use it to store the FFT
@@ -654,7 +669,7 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
   }//endif
 
 #if CMK_TRACE_ENABLED
-  traceUserBracketEvent(RhoRtoGFFT_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(RhoRtoGFFT_, StartTime, CmiWallTimer());
 #endif
 
   //============================================================================
@@ -665,7 +680,7 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
   int iopt = 0;
   if(rhoRsubplanes>1){
     sendPartlyFFTRyToGy(iopt);    // double transpose method (yz ---> gx,z)
-  }else{ 
+  }else{
 #ifndef DEBUG_INT_TRANS_FWD
     sendPartlyFFTtoRhoG(iopt);    // single transpose method (z ---> gx,gy)
 #else
@@ -697,7 +712,7 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/** 
+/**
  *  Launch ees-nonlocal real here. This routine can be called from any
  *  other routine except gradCorr(). GradCorr comp is optional (PINY option)
  *  e.g. it is not always computed.
@@ -709,10 +724,10 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
   //   Spread the launch over all the RhoR chares
 
   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
-  if(sim->ees_nloc_on==1){ 
+  if(sim->ees_nloc_on==1){
     CkAssert(rho_rs.sizeZ>=sim->ngrid_nloc_c);;
     if(thisIndex.x < sim->ngrid_nloc_c){
-      int nstates =  config.nstates; 
+      int nstates =  config.nstates;
       int div     = (nstates/rhoRsubplanes);
       int rem     = (nstates % rhoRsubplanes);
       int add     = (thisIndex.y < rem ? 1 : 0);
@@ -743,9 +758,9 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
 //============================================================================
 /**
  *  Double Transpose Fwd Send : A(gx,y,z) on the way to A(gx,gy,z)
- *                              Send so that (y,z) parallelism is 
+ *                              Send so that (y,z) parallelism is
  *                              switched to (gx,z)
- * 
+ *
  *  Invoked 4 times per algorithm step : case 0   density(gx,y,z)
  *                                     : cast 1-3 gradients(gx,y,z)
  **/
@@ -759,7 +774,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
 
   CkAssert(rhoRsubplanes>1);
   complex *FFTresult;
-  switch(iopt){   
+  switch(iopt){
     case 0 : FFTresult = rho_rs.rhoIRXC;  break; //Scr variable for rho send
     case 1 : FFTresult = rho_rs.rhoIRXC;  break;
     case 2 : FFTresult = rho_rs.rhoIRYC;  break;
@@ -771,7 +786,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
   // Launch the communication
 
   //-----------------------------------------------------------------------------
-  // Commlib launch : 
+  // Commlib launch :
 
 #ifdef USE_COMLIB
 #ifdef _ERIC_SETS_UP_COMMLIB_
@@ -796,11 +811,11 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
     int size  = num*myNgridb; // num*(all the y's i have)
 
     int sendFFTDataSize = size;
-    RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg; 
+    RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg;
     msg->size        = size;
     msg->iopt        = iopt;
     msg->offset      = myBoff;      // where the myNgridB y-lines start.
-    msg->num         = myNgridb;    // number of y-lines I have. 
+    msg->num         = myNgridb;    // number of y-lines I have.
     complex *data    = msg->data;   // data
 
     if(config.prioFFTMsg){
@@ -865,7 +880,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
 /**
  *  Double Transpose Fwd Recv : A(gx,y,z) on the way to A(gx,gy,z)
  *                              Recv so that (y,z) parallel switched to (gx,z)
- * 
+ *
  *  Invoked 4 times per algorithm step : case 0   rho(gx,y,z)
  *                                     : cast 1-3 gradRho(gx,y,z)
  **/
@@ -916,8 +931,8 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksRyToGy(RhoGSFFTMsg *msg){
 //============================================================================
 /**
  *  Double Transpose Fwd FFT : A(gx,y,z) -> A(gx,gy,z)
- * 
- *  Invoked 4 times per algorithm step : 
+ *
+ *  Invoked 4 times per algorithm step :
  *               case 0   rho(gx,y,z)    -> rho(gx,gy,z)
  *               cast 1-3 gradRho(gx,y,z)-> gradRho(gx,gy,z)
  **/
@@ -937,17 +952,17 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
     default: CkAbort("Impossible option\n"); break;
   }//endif
 
-  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
+  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
 #if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
   fftcache->doRhoFFTRyToGy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb,iplane_ind);
 #if CMK_TRACE_ENABLED
-  traceUserBracketEvent(doRhoFFTRytoGy_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(doRhoFFTRytoGy_, StartTime, CmiWallTimer());
 #endif
 
   //============================================================================
-  // Send chunk to RhoGDensity 
+  // Send chunk to RhoGDensity
 
   int igo=0;
   if(iopt>=1 && iopt <= 3){countFFTRyToGy++; igo=1;}
@@ -990,11 +1005,11 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
  *                           Change parallel by gx,z to parallel by {gx,gy}
  *                           We switch chare arrays here from RhoR to RhoG
  *
- *  Invoked 4 times per algorithm step : 
+ *  Invoked 4 times per algorithm step :
  *               case 0   send rho(gx,gy,z)     -> rho(gx,gy,z) in Rhog
  *               cast 1-3 send gradRho(gx,gy,z) -> gradRho(gx,gy,z) in Rhog
  *
- * Send the partly FFTed array A(gx,gy,z), to rhoGSpacePlane :  
+ * Send the partly FFTed array A(gx,gy,z), to rhoGSpacePlane :
  * You then wait while RHOG works, sends back RhoIRalpha which you whitebyrdize
  * You send back the whitebyrdized RhoIRalpha puppies to RhoGspacePlane.
  * Whilst all this is going on, HartG is churning and will send you another
@@ -1015,7 +1030,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 
   complex *FFTresult;
   if(rhoRsubplanes==1){
-    switch(iopt){   
+    switch(iopt){
       case 0 : FFTresult = rho_rs.rhoIRXC;  break; //Scr variable for rho send
       case 1 : FFTresult = rho_rs.rhoIRXC;  break;
       case 2 : FFTresult = rho_rs.rhoIRYC;  break;
@@ -1023,7 +1038,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
       default: CkAbort("impossible iopt");  break;
     }//end switch
   }else{
-    switch(iopt){   
+    switch(iopt){
       case 0 : FFTresult = rho_rs.rhoIRXCint;  break; //Scr variable for rho send
       case 1 : FFTresult = rho_rs.rhoIRXCint;  break;
       case 2 : FFTresult = rho_rs.rhoIRYCint;  break;
@@ -1066,7 +1081,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
     if(rhoRsubplanes!=1){sendFFTDataSize = nlines_per_chareRhoGY[ic][iy];}
     if(sendFFTDataSize>0)
     {
-      RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg; 
+      RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg;
 
       //---------------------------
       //Pack the message
@@ -1180,7 +1195,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoGall(){
     if(sendFFTDataSize>0){
       //---------------------------
       //Pack the message
-      RhoGSFFTMsg *msg = new (3*sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg; 
+      RhoGSFFTMsg *msg = new (3*sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg;
       msg->size        = sendFFTDataSize;
       msg->iopt        = 1;
       msg->offset      = thisIndex.x;    // z-index
@@ -1225,7 +1240,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoGall(){
  * Accept transpose data from RhoG : receive grad_rho(gy,gx,z)
  *
  * Invoked 3 times per algorithm step : once for each grad_rho
- * 
+ *
  * Memory required is : rho_igx,rho_igy,rho_igz so stuff can come in any order
  *                    : density and vks are needed later so no reusing for you.
  *                    : VksHart can also arrive at any time and cannot be used
@@ -1244,7 +1259,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
   int **nlines_per_chareRhoGY = sim->nline_send_rho_y;
   int iy                      = thisIndex.y;
 
-  int size               = msg->size; 
+  int size               = msg->size;
   int Index              = msg->senderIndex;
   int iopt               = msg->iopt;
   complex *partiallyFFTd = msg->data;
@@ -1322,7 +1337,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
   if(countGradVks[iopt]==1){bzero(dataR,sizeof(double)*nptsExpnd);}
 
   if(rhoRsubplanes==1){
-    for(int i=0;i<size;i++){ 
+    for(int i=0;i<size;i++){
       dataC[tranUnpack[Index][i]] = partiallyFFTd[i]*probScale;
     }//endfor
   }else{
@@ -1345,7 +1360,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
     double StartTime=CmiWallTimer();
 #endif
 
-    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     if(rhoRsubplanes==1){
       fftcache->doRhoFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
     }else{
@@ -1354,7 +1369,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
     }//endif
 
 #if CMK_TRACE_ENABLED
-    traceUserBracketEvent(fwFFTGtoRnot0_, StartTime, CmiWallTimer());    
+    traceUserBracketEvent(fwFFTGtoRnot0_, StartTime, CmiWallTimer());
 #endif
 
   }//endif : I captured a divRho
@@ -1362,9 +1377,9 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
   //============================================================================
   // When you have rhoiRX,rhoiRY,rhoiRZ and Vks invoke gradient correction
 
-  if(doneGradRhoVks==3 && rhoRsubplanes==1){ 
+  if(doneGradRhoVks==3 && rhoRsubplanes==1){
     doneGradRhoVks = 0;
-    GradCorr();         // if rhosubplanes>1 you have a transpose 
+    GradCorr();         // if rhosubplanes>1 you have a transpose
     // and another fft to do before you can GradCorr);
   }//endif
 
@@ -1381,7 +1396,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
  * Accept transpose data from RhoG : receive grad_rho(gy,gx,z)
  *
  * Invoked 1 time per algorithm step : all grad_rho packed up
- * 
+ *
  * Memory required is : rho_igx,rho_igy,rho_igz so stuff can come in any order
  *                    : density and vks are needed later so no reusing for you.
  *                    : VksHart can also arrive at any time and cannot be used
@@ -1400,7 +1415,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
   int **nlines_per_chareRhoGY = sim->nline_send_rho_y;
   int iy                      = thisIndex.y;
 
-  int size               = msg->size; 
+  int size               = msg->size;
   int Index              = msg->senderIndex;
   int iopt               = msg->iopt;
   complex *partiallyFFTd = msg->data;
@@ -1478,14 +1493,14 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
   }//endif
 
   if(rhoRsubplanes==1){
-    for(int i=0,ii=0;ii<size;i+=3,ii++){ 
+    for(int i=0,ii=0;ii<size;i+=3,ii++){
       int j = tranUnpack[Index][ii];
       dataCX[j] = partiallyFFTd[i]*probScale;
       dataCY[j] = partiallyFFTd[i+1]*probScale;
       dataCZ[j] = partiallyFFTd[i+2]*probScale;
     }//endfor
   }else{
-    for(int i=0,ii=0;ii<size;i+=3,ii++){ 
+    for(int i=0,ii=0;ii<size;i+=3,ii++){
       int j = tranupack_rhoY[Index][iy][ii];
       dataCX[j] = partiallyFFTd[i]*probScale;
       dataCY[j] = partiallyFFTd[i+1]*probScale;
@@ -1507,7 +1522,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
     double StartTime=CmiWallTimer();
 #endif
 
-    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     if(rhoRsubplanes==1){
       fftcache->doRhoFFTGtoR_Rchare(dataCX,dataRX,nplane_rho_x,ngrida,ngridb,iplane_ind);
       fftcache->doRhoFFTGtoR_Rchare(dataCY,dataRY,nplane_rho_x,ngrida,ngridb,iplane_ind);
@@ -1522,7 +1537,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
     }//endif
 
 #if CMK_TRACE_ENABLED
-    traceUserBracketEvent(fwFFTGtoRnot0_, StartTime, CmiWallTimer());    
+    traceUserBracketEvent(fwFFTGtoRnot0_, StartTime, CmiWallTimer());
 #endif
 
   }//endif : I captured a divRho
@@ -1530,9 +1545,9 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
   //============================================================================
   // When you have rhoiRX,rhoiRY,rhoiRZ and Vks invoke gradient correction
 
-  if(doneGradRhoVks==3 && rhoRsubplanes==1){ 
+  if(doneGradRhoVks==3 && rhoRsubplanes==1){
     doneGradRhoVks = 0;
-    GradCorr();         // if rhosubplanes>1 you have a transpose 
+    GradCorr();         // if rhosubplanes>1 you have a transpose
     // and another fft to do before you can GradCorr);
   }//endif
 
@@ -1546,7 +1561,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
 //============================================================================
 /**
  * Double Transpose Bck Send :  A(gx,y,z) on the way to A(x,y,z)
- *                              Send so (gx,z) parallel -> (y,z) parallel 
+ *                              Send so (gx,z) parallel -> (y,z) parallel
  *
  * Invoked 5 times an algorithm step:
  *             case 1-3: Gradients
@@ -1559,7 +1574,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
   CkAssert(rhoRsubplanes>1);
 
   complex *FFTresult;
-  switch(iopt){   
+  switch(iopt){
     case 0 : FFTresult = rho_rs.rhoIRXCint; break;
     case 1 : FFTresult = rho_rs.rhoIRXCint; break;
     case 2 : FFTresult = rho_rs.rhoIRYCint; break;
@@ -1572,7 +1587,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
   // Launch the communication
 
   //-----------------------------------------------------------------------------
-  // Commlib launch : 
+  // Commlib launch :
 
 #ifdef _ERIC_SETS_UP_COMMLIB_
   switch(iopt){
@@ -1599,11 +1614,11 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
     int size    = (iend-ist)*myNplane_rho; // data size : send all the gx I have
 
     int sendFFTDataSize = size;
-    RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg; 
+    RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg;
     msg->size        = size;
     msg->iopt        = iopt;
     msg->offset      = thisIndex.y;   // my chare index
-    msg->num         = myNplane_rho;  // number of gx-lines I have. 
+    msg->num         = myNplane_rho;  // number of gx-lines I have.
     complex *data    = msg->data;     // data
 
     if(config.prioFFTMsg){
@@ -1611,9 +1626,9 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
       *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.y;
     }//endif
 
-    for(int i=ist,koff=0;i<iend;i++,koff+=myNplane_rho){ 
+    for(int i=ist,koff=0;i<iend;i++,koff+=myNplane_rho){
       for(int k=koff,ii=i;k<myNplane_rho+koff;k++,ii+=ngridb){
-        data[k] = FFTresult[ii]; 
+        data[k] = FFTresult[ii];
       }//endfor
     }//endfor
 
@@ -1662,7 +1677,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
 //============================================================================
 /**
  * Double Transpose Bck Recv :  A(gx,y,z) on the way to A(x,y,z)
- *                              Recv (gx,z) parallel -> (y,z) parallel 
+ *                              Recv (gx,z) parallel -> (y,z) parallel
  *
  * Invoked 5 times an algorithm step:
  *             case 1-3: Gradients
@@ -1678,7 +1693,7 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
   int  *numSubGx       = sim->numSubGx;
 
   int size         = msg->size;  // msg size
-  int iopt         = msg->iopt;  
+  int iopt         = msg->iopt;
   int num          = msg->num;    // number of lines along `a' sent
   int offset       = msg->offset; // chare array that sent the data
   complex *msgData = msg->data;
@@ -1698,7 +1713,7 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
   }//endif
 
   //============================================================================
-  // Unpack the message 
+  // Unpack the message
 
   countIntGtoR[iopt]++;
   if(countIntGtoR[iopt]==1){bzero(dataR,sizeof(double)*nptsExpndB);}
@@ -1730,13 +1745,13 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
   if(countIntGtoR[iopt]==rhoRsubplanes){
     done = 1;
     countIntGtoR[iopt]=0;
-    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
 #if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
     fftcache->doRhoFFTGxToRx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
 #if CMK_TRACE_ENABLED
-    traceUserBracketEvent(doRhoFFTGxtoRx_, StartTime, CmiWallTimer());    
+    traceUserBracketEvent(doRhoFFTGxtoRx_, StartTime, CmiWallTimer());
 #endif
 
   }//endif
@@ -1744,7 +1759,7 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
   //============================================================================
   // When you have completed an FFT, you have some choices of what to do next
 
-  if(done == 1){ 
+  if(done == 1){
 
     //---------------------------------------------------
     // If you have finished a gradient, increment counter.
@@ -1781,7 +1796,7 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
- * The gradient of the density is now completed. You can compute the 
+ * The gradient of the density is now completed. You can compute the
  * GGA-DFT functional now. Density is now available to be used as scratch.
  *
  * Invoked once per algorithm step
@@ -1812,6 +1827,18 @@ void CP_Rho_RealSpacePlane::GradCorr(){
 
   //============================================================================
 
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  double sumVks = 0, sumX = 0, sumY = 0, sumZ = 0;
+  for(int i = 0; i < ngridb*(ngrida+2); i++) {
+    sumX += rhoIRX[i];
+    sumY += rhoIRY[i];
+    sumZ += rhoIRZ[i];
+    sumVks += Vks[i];
+  }
+  CkPrintf("[%d] RhoR[%d,%d] %d div_sums %lf %lf %lf %lf\n", CkMyPe(), thisIndex.x,
+      thisIndex.y, doneHartVks, sumX, sumY, sumZ, sumVks);
+#endif
+
 #ifdef _CP_DEBUG_RHOR_VKSC_
   char myFileName[MAX_CHAR_ARRAY_LENGTH];
   sprintf(myFileName, "BGradRho_Real_%d_%d.out", thisIndex.x,thisIndex.y);
@@ -1836,10 +1863,22 @@ void CP_Rho_RealSpacePlane::GradCorr(){
   CPXCFNCTS::CP_getGGAFunctional(npts,nf1,nf2,nf3,density,rhoIRX,rhoIRY,rhoIRZ,
       Vks,thisIndex.x,exc_gga_ret,config.nfreq_xcfnctl);
 #if CMK_TRACE_ENABLED
-  traceUserBracketEvent(GradCorrGGA_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(GradCorrGGA_, StartTime, CmiWallTimer());
 #endif
 
 #endif // GGA ON
+
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  double sumVks2 = 0, sumX2 = 0, sumY2 = 0, sumZ2 = 0;
+  for(int i = 0; i < ngridb*(ngrida+2); i++) {
+    sumX2 += rhoIRX[i];
+    sumY2 += rhoIRY[i];
+    sumZ2 += rhoIRZ[i];
+    sumVks2 += Vks[i];
+  }
+  CkPrintf("[%d] RhoR[%d,%d] %d after_gga %lf %lf %lf %lf\n", CkMyPe(), thisIndex.x,
+      thisIndex.y, doneHartVks, sumX2, sumY2, sumZ2, sumVks2);
+#endif
 
   //============================================================================
   // Reduce the exchange correlation energy
@@ -1889,7 +1928,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
   //============================================================================
   // Constants and pointers
 
-  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
+  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
   double  *rhoIRX    = rho_rs.rhoIRX;
   double  *rhoIRY    = rho_rs.rhoIRY;
   double  *rhoIRZ    = rho_rs.rhoIRZ;
@@ -1919,7 +1958,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
   }//endif
 
 #if CMK_TRACE_ENABLED
-  traceUserBracketEvent(WhiteByrdFFTX_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(WhiteByrdFFTX_, StartTime, CmiWallTimer());
 #endif
 
   //============================================================================
@@ -1930,7 +1969,6 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 #endif
 
   rho_rs.scale(rhoIRY,FFTscale);
-
   if(rhoRsubplanes==1){
     fftcache->doRhoFFTRtoG_Rchare(rhoIRYC,rhoIRY,nplane_rho_x,ngrida,ngridb,iplane_ind);
     if(config.rhoGToRhoRMsgComb==0){sendPartlyFFTtoRhoG(iopty);}
@@ -1940,7 +1978,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
   }//endif
 
 #if CMK_TRACE_ENABLED
-  traceUserBracketEvent(WhiteByrdFFTY_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(WhiteByrdFFTY_, StartTime, CmiWallTimer());
 #endif
 
   //============================================================================
@@ -1960,7 +1998,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
   }//endif
 
 #if CMK_TRACE_ENABLED
-  traceUserBracketEvent(WhiteByrdFFTZ_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(WhiteByrdFFTZ_, StartTime, CmiWallTimer());
 #endif
 
   //============================================================================
@@ -1969,6 +2007,23 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
   if(rhoRsubplanes==1 && config.rhoGToRhoRMsgComb==1){
     sendPartlyFFTtoRhoGall();
   }//endif
+
+#ifdef  _CP_DEBUG_RHOR_VERBOSE_
+  double sumVks2 = 0, sumX2 = 0, sumY2 = 0, sumZ2 = 0;
+  double *Vks                = rho_rs.Vks;
+  for(int i = 0; i < ngridb*(ngrida+2); i++) {
+    sumX2 += rhoIRX[i];
+    sumY2 += rhoIRY[i];
+    sumZ2 += rhoIRZ[i];
+    sumVks2 += Vks[i];
+    if(thisIndex.x + thisIndex.y == 0) {
+      CkPrintf("%lf\n", Vks[i]);
+    }
+  }
+  CkPrintf("[%d] RhoR[%d,%d] %d before white_fft %lf %lf %lf %lf\n", CkMyPe(), thisIndex.x,
+      thisIndex.y, doneHartVks, sumX2, sumY2, sumZ2, sumVks2);
+#endif
+
 
   //============================================================================
 }//end routine
@@ -2007,7 +2062,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
   int **nlines_per_chareRhoGY = sim->nline_send_rho_y;
   int iy                      = thisIndex.y;
 
-  int size               = msg->size; 
+  int size               = msg->size;
   int Index              = msg->senderIndex;
   int iopt               = msg->iopt;
   complex *partiallyFFTd = msg->data;
@@ -2048,8 +2103,8 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
   double *dataR;
   complex *dataC;
   if(rhoRsubplanes==1){
-    dataR = rho_rs.density; 
-    dataC = rho_rs.densityC; 
+    dataR = rho_rs.density;
+    dataC = rho_rs.densityC;
   }else{
     dataR = rho_rs.rhoIRXint;
     dataC = rho_rs.rhoIRXCint;
@@ -2059,7 +2114,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
   if(countWhiteByrd==1){bzero(dataR,sizeof(double)*nptsExpnd);}
 
   if(rhoRsubplanes==1){
-    for(int i=0;i<size;i++){ 
+    for(int i=0;i<size;i++){
       dataC[tranUnpack[Index][i]] = partiallyFFTd[i];
     }//endfor
   }else{
@@ -2079,7 +2134,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 #if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
-    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     if(rhoRsubplanes==1){
       fftcache->doRhoFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
       addWhiteByrdVks();
@@ -2088,7 +2143,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
       sendPartlyFFTGxToRx(0);
     }
 #if CMK_TRACE_ENABLED
-    traceUserBracketEvent(PostByrdfwFFTGtoR_, StartTime, CmiWallTimer());    
+    traceUserBracketEvent(PostByrdfwFFTGtoR_, StartTime, CmiWallTimer());
 #endif
 
   }//endif : communication from rhog has all arrived safely
@@ -2113,6 +2168,25 @@ void CP_Rho_RealSpacePlane::addWhiteByrdVks(){
   int nptsExpnd  = nptsExpndB;
   double *dataR  = rho_rs.density;  // whitebyrd correction stored in density
   double *Vks    = rho_rs.Vks;
+
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  double sum = 0.0;
+  int off = 0;
+  int nf1          = ngrida;
+  int nf2          = myNgridb;
+  int nf3          = ngridc;
+  for(int y=0 ; y < nf2; y++) {
+    for(int x = 0; x < nf1+2; x++, off++) {
+      sum += dataR[off];
+      if(thisIndex.x + thisIndex.y == 0) {
+        CkPrintf("%lf\n", dataR[off]);
+      }
+    }
+  }//endfor
+  CkPrintf("[%d] RhoR[%d,%d] Sum_Vks acceptWhiteByrd %lf\n", CkMyPe(), thisIndex.x,
+      thisIndex.y, sum);
+#endif
+
   for(int i=0;i<nptsExpnd;i++){Vks[i] -= dataR[i];}
 
   //============================================================================
@@ -2155,7 +2229,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
   int **nlines_per_chareRhoGY = sim->nline_send_eext_y;
   int iy                      = thisIndex.y;
 
-  int size               = msg->size; 
+  int size               = msg->size;
   int IndexS             = msg->index;
   int Index              = msg->senderBigIndex;
   int istrt_lines        = msg->senderStrtLine;
@@ -2199,7 +2273,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
   //============================================================================
   // Copy out the hart-eext contrib to vks : iopt==0
 
-  countGradVks[iopt]++; 
+  countGradVks[iopt]++;
   if(countGradVks[iopt]==1){bzero(dataR,sizeof(double)*nptsExpnd);}
 
   if(rhoRsubplanes==1){
@@ -2212,7 +2286,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
     }//endfor
   }//endif
 
-  delete msg;  
+  delete msg;
 
   //============================================================================
   // fft the puppy if you've got it all : only atmtyp index=1 of ghart sends rho_real
@@ -2220,7 +2294,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
   if (countGradVks[iopt] == recvCountFromGHartExt){
     countGradVks[iopt]=0;
 
-    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
 #if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
@@ -2233,13 +2307,13 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
     }//endif
 
 #if CMK_TRACE_ENABLED
-    traceUserBracketEvent(fwFFTGtoR0_, StartTime, CmiWallTimer());    
+    traceUserBracketEvent(fwFFTGtoR0_, StartTime, CmiWallTimer());
 #endif
-  }//endif : communication from rhog 
+  }//endif : communication from rhog
 
 
   //============================================================================
-}//end routine 
+}//end routine
 //============================================================================
 
 
@@ -2255,8 +2329,26 @@ void CP_Rho_RealSpacePlane::addHartEextVks(){
   // Add the whitebyrd contrib to vks
 
   int nptsExpnd  = nptsExpndB;
-  double *dataR  = rho_rs.VksHart; 
+  double *dataR  = rho_rs.VksHart;
   double *Vks    = rho_rs.Vks;
+#ifdef  _CP_DEBUG_RHOR_VERBOSE_
+  double sum = 0.0;
+  int off = 0;
+  int nf1          = ngrida;
+  int nf2          = myNgridb;
+  int nf3          = ngridc;
+  for(int y=0 ; y < nf2; y++) {
+    for(int x = 0; x < nf1+2; x++, off++) {
+      sum += dataR[off];
+      if(thisIndex.x + thisIndex.y == 0) {
+        CkPrintf("%lf\n", dataR[off]);
+      }
+    }
+  }//endfor
+  CkPrintf("[%d] RhoR[%d,%d] Sum_Vks acceptHartVks %lf\n", CkMyPe(), thisIndex.x,
+      thisIndex.y, sum);
+#endif
+
   for(int i=0;i<nptsExpnd;i++){Vks[i]+=dataR[i];}
 
   //============================================================================
@@ -2298,7 +2390,29 @@ void CP_Rho_RealSpacePlane::RHartReport(){
 void CP_Rho_RealSpacePlane::doMulticastCheck(){
   //============================================================================
 
-  if(doneWhiteByrd && doneRHart && doneHartVks){doMulticast();}
+  if(doneWhiteByrd && doneRHart && doneHartVks){
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+    char myFileName[MAX_CHAR_ARRAY_LENGTH];
+    sprintf(myFileName, "vks_final_%d_%d.out", thisIndex.x,thisIndex.y);
+    FILE *fp = fopen(myFileName,"w");
+    double sum = 0.0;
+    int off = 0;
+    double *Vks    = rho_rs.Vks;
+    int nf1          = ngrida;
+    int nf2          = myNgridb;
+    int nf3          = ngridc;
+    for(int y=0 ; y < nf2; y++) {
+      for(int x = 0; x < nf1+2; x++, off++) {
+        sum += Vks[off];
+        fprintf(fp,"%lf\n", Vks[off]);
+      }
+    }//endfor
+    CkPrintf("[%d] RhoR[%d,%d] Sum_Vks final %lf\n", CkMyPe(), thisIndex.x,
+        thisIndex.y, sum);
+    fclose(fp);
+#endif
+    doMulticast();
+  }
 
   //============================================================================
 }//end routine
@@ -2309,7 +2423,7 @@ void CP_Rho_RealSpacePlane::doMulticastCheck(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/**  
+/**
   Send vks back to the states
  **/
 //============================================================================
@@ -2421,12 +2535,12 @@ if(config.useCommlibMulticast){ComlibEnd(realSpaceSectionCProxy);}
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/**  
+/**
   Glenn's RhoReal exit for debugging
  **/
 //============================================================================
 void CP_Rho_RealSpacePlane::exitForDebugging(){
-  countDebug++;  
+  countDebug++;
   if(countDebug==(rhoRsubplanes*ngridc)){
     countDebug=0;
     CkPrintf("I am in the exitfordebuging rhoreal puppy. Bye-bye\n");

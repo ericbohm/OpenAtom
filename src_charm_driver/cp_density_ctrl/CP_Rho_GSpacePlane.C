@@ -475,12 +475,12 @@ void CP_Rho_GSpacePlane::doRhoFFT() {
 
 #ifdef _CP_DEBUG_RHOG_RHOG_
   char myFileName[100];
-  sprintf(myFileName, "Rho_Gspace_%d%d.out", thisIndex.x,thisIndex.y);
+  sprintf(myFileName, "Rho_Gspace_%d.out", thisIndex.x);
   FILE *fp = fopen(myFileName,"w");
   for (int i = 0; i < rho_gs.numPoints; i++){ 
     fprintf(fp," %d %d %d : %g %g\n",
         rho_gs.k_x[i],rho_gs.k_y[i],rho_gs.k_z[i],
-        rho_gs.packedRho[i].re,rho_gs.packedRho[i].im);
+        data_out[i].re,data_out[i].im);
   }//endfor
   fclose(fp);
 #endif

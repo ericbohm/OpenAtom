@@ -422,6 +422,16 @@ void CP_Rho_RHartExt::computeAtmSF(){
       mySubplane,igrid,mn,
       plane_index,nSub,myNgridb);
 
+#ifdef _CP_RHART_VERBOSE_
+  int off = 0;
+  for(int b = 0; b < myNgridb; b++) {
+    for(int a = 0; a < 2*(ngrida/2+1); a++) {
+      CkPrintf("%d %d %d %lf\n", myPlane, b, a, atmSFR[off]);
+      off++;
+    }
+  }
+#endif
+
   //============================================================================
   // FFT the result to G-space
 
@@ -1212,6 +1222,19 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 #if CMK_TRACE_ENABLED
   double  StartTime=CmiWallTimer();
 #endif    
+#ifdef _CP_RHART_VERBOSE_
+  int off = 0;
+  char myFileName[MAX_CHAR_ARRAY_LENGTH];
+  sprintf(myFileName, "atmsf_%d_%d_%d.out", thisIndex.x, thisIndex.y, nAtmTypRecv);
+  FILE *fp = fopen(myFileName,"w");
+  for(int b = 0; b < myNgridb; b++) {
+    for(int a = 0; a < 2*(ngrida/2+1); a++) {
+      fprintf(fp, "%d %d %d %lf\n", myPlane, b, a, data[off]);
+      off++;
+    }
+  }
+  fclose(fp);
+#endif
 
   CPLOCAL::eesAtmForceRchare(natm,fastAtoms,iterAtmTypFull,igrid,
       dmn_x,dmn_y,dmn_z, plane_index,nSub,data,

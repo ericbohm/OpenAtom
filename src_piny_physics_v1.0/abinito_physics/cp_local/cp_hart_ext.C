@@ -1122,20 +1122,18 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
       //------------------------------------------------------
       // c)electron force
       vks[i] += vext.conj();
-#ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
-      //       fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g : %g\n",
-      //               k_x[i],k_y[i],k_z[i],
-      //	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart,vtemp);
-      fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g \n",
-          k_x[i],k_y[i],k_z[i],rho[i].re,rho[i].im,
-          sfAtmTypG[i].re,sfAtmTypG[i].im,b_re[i],b_im[i]);
-#endif
       //------------------------------------------------------
       // d)atom force : set up backtransform
       temp_r          =  (rho[i].re*b_re[i]-rho[i].im*b_im[i]);
       temp_i          = -(rho[i].re*b_im[i]+rho[i].im*b_re[i]);
       sfAtmTypG[i].re = vtemp*temp_r;
       sfAtmTypG[i].im = vtemp*temp_i;
+#ifdef  _CP_DEBUG_VKS_HART_EEXT_FOO_
+      fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g \n",
+          k_x[i],k_y[i],k_z[i],rho[i].re,rho[i].im,
+          sfAtmTypG[i].re,sfAtmTypG[i].im,b_re[i],b_im[i],
+          sfAtmTotG[i].re, sfAtmTotG[i].im);
+#endif
     }else{
       if(g2!=0.0){
         sfAtmTypG[i].re = 0.0;
@@ -1175,9 +1173,10 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
     temp_r          = rho[i].re*b_re[i];
     sfAtmTypG[i].re = vtemp*temp_r;
     sfAtmTypG[i].im = 0.0;
-#ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
+#ifdef  _CP_DEBUG_VKS_HART_EEXT_FOO_
     fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g : %g %g \n",
-        rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart);
+        rho[i].re,rho[i].im, sfAtmTypG[i].re,sfAtmTypG[i].im,b_re[i],b_im[i],
+        sfAtmTotG[i].re, sfAtmTotG[i].im);
 #endif
   }//endif
 

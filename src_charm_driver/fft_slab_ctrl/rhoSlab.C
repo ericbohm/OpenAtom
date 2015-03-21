@@ -270,6 +270,7 @@ void RhoGSlab::divRhoGdot(double *hmati, double tpi,complex *tmpRho){
   double gx,gy,gz;
 
   int koff = 0;
+  double sumX = 0, sumY = 0, sumZ = 0;
   for (int r = 0,l=0; r < numRuns; r+=2,l++) {
 
     int joff = l*nfftz + runs[r].z;
@@ -281,6 +282,12 @@ void RhoGSlab::divRhoGdot(double *hmati, double tpi,complex *tmpRho){
       divRhoX[j] = tmp*gx;
       divRhoY[j] = tmp*gy;
       divRhoZ[j] = tmp*gz;
+#ifdef _CP_DEBUG_RHOG_VERBOSE_
+      sumX += divRhoX[j].re + divRhoX[j].im;
+      sumY += divRhoY[j].re + divRhoY[j].im;
+      sumZ += divRhoZ[j].re + divRhoZ[j].im;
+#endif
+
     }//endfor
     koff += runs[r].length;
 
@@ -294,10 +301,19 @@ void RhoGSlab::divRhoGdot(double *hmati, double tpi,complex *tmpRho){
       divRhoX[j] = tmp*gx;
       divRhoY[j] = tmp*gy;
       divRhoZ[j] = tmp*gz;
+#ifdef _CP_DEBUG_RHOG_VERBOSE_
+      sumX += divRhoX[j].re + divRhoX[j].im;
+      sumY += divRhoY[j].re + divRhoY[j].im;
+      sumZ += divRhoZ[j].re + divRhoZ[j].im;
+#endif
     }//endfor
     koff += runs[r1].length;
 
   }//endfor
+#ifdef _CP_DEBUG_RHOG_VERBOSE_
+  CkPrintf("[%d] Rho GS [%d] divSums %g %g %g\n", CkMyPe(), 0,
+    sumX, sumY, sumZ);
+#endif
 
   CkAssert(numPoints == koff);
 
@@ -322,6 +338,7 @@ void RhoGSlab::createWhiteByrd(double *hmati, double tpi){
 
   //==============================================================================
 
+  double sum_me = 0, sum = 0, sum_else = 0;
   complex *whitebyrd = divRhoX; // zeroing done carefully inside loop
   // so that we can save memory by reusing divRhoX
   int koff = 0;
@@ -349,7 +366,9 @@ void RhoGSlab::createWhiteByrd(double *hmati, double tpi){
     koff += runs[r1].length;
 
     int joff3 = joff2+runs[r1].length;
-    for(int j=joff3;j<joff1;j++){whitebyrd[j]=0.0;}
+    for(int j=joff3;j<joff1;j++) {
+      whitebyrd[j]=0.0;
+    }
 
   }//endfor
 
