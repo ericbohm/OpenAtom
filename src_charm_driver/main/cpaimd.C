@@ -1864,8 +1864,10 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
     }
   else
     {
-      if(nlexcludePes!=NULL)
+      if(nlexcludePes!=NULL) {
 	delete nlexcludePes;
+        nlexcludePes = NULL;
+      }
     }
   if(config.excludePE0 &&  !config.loadMapFiles)
     {
