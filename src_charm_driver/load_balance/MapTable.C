@@ -1652,7 +1652,7 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
       }
       if(thisStateBox->count() == 0)
       {  // the sublist scheme failed 
-        CkPrintf("Ortho %d %d ignoring SubList\n", state1, state2);
+        //CkPrintf("Ortho %d %d ignoring SubList\n", state1, state2);
         if(thisStateBox!=availprocs)
           delete thisStateBox;
         thisStateBox = availprocs;
@@ -1663,7 +1663,7 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
 
       if(thisStateBox->count() == 0)
       {
-        CkPrintf("Ortho %d %d ignoring exclusion\n", state1, state2);
+        //CkPrintf("Ortho %d %d ignoring exclusion\n", state1, state2);
         if(thisStateBox!=availprocs)
           delete thisStateBox;
         thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);

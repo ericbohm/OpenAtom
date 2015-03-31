@@ -18,33 +18,24 @@ FFT_HOME      = /soft/libraries/alcf/current/xl/FFTW2/
 
 #---------------------------------------------------------------
 #--------- Flags for the whole code ---------#
-               # Optimization level and debug (Dont add other flags to OPT)
-               OPT       = -O3
-               # What flags do we use when compiling the fragile portions of piny
-               OPT_CARE  = -O2 -DFORTRANUNDERSCORE_OFF
-               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF -I$(FFT_HOME)/include
-               FFLAGS   += $(OPT)
-               CFLAGS   += $(OPT)
-               CXXFLAGS += $(OPT) 
-               # Just to remove dcmf.h (which gets tacked on somewhere) from the list of dependencies
-               INCDIRS  += /bgsys/drivers/ppcfloor/comm/sys-fast/include
-               INCDIRS += /bgsys/drivers/ppcfloor/spi/include/kernel/cnk
-               DEPSTRIPDIRS += /bgsys/drivers/ppcfloor/comm/sys-fast/include
-               DEPSTRIPDIRS  += /bgsys/drivers/ppcfloor
-               DEPSTRIPDIRS  += spi/include/kernel
-               DEPSTRIPDIRS  += /bgsys/drivers/ppcfloor/spi
-               DEPSTRIPDIRS += /bgsys/drivers/ppcfloor/spi/include/kernel/cnk
-               DEPSTRIPILES += kernel_impl.h
-
-
+# Optimization level and debug (Dont add other flags to OPT)
+OPT       = -O3
+# What flags do we use when compiling the fragile portions of piny
+OPT_CARE  = -O2 -DFORTRANUNDERSCORE_OFF
+CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF -I$(FFT_HOME)/include
+FFLAGS   += $(OPT)
+CFLAGS   += $(OPT)
+CXXFLAGS += $(OPT) 
+# Just to remove dcmf.h (which gets tacked on somewhere) from the list of dependencies
 
 #---------------------------------------------------------------
 #--------- Flags for linking ---------#
-              LDFLAGS  += -L$(FFT_HOME)/lib -L/soft/libraries/alcf/current/xl/ZLIB/lib \
-                        -L/soft/compilers/ibmcmp-may2014/xlf/bg/14.1/bglib64 \
-                         -L/bgsys/drivers/ppcfloor/gnu-linux/powerpc64-bgq-linux/lib \
-                         -L/soft/libraries/essl/5.1.1-1/essl/5.1/lib64
-              LDLIBS   += -module CkMulticast -module comlib -lconv-util -lz -lesslbg -lesslsmpbg -lm -lxlfmath -lxlf90_r -lxl -lpthread -lrt -ldl
+LDFLAGS  += -L$(FFT_HOME)/lib -L/soft/libraries/alcf/current/xl/ZLIB/lib \
+          -L/soft/compilers/ibmcmp-feb2015/xlf/bg/14.1/bglib64 \
+           -L/bgsys/drivers/ppcfloor/gnu-linux/powerpc64-bgq-linux/lib \
+           -L/soft/libraries/essl/current/essl/5.1/lib64
+LDLIBS   += -module CkMulticast -module comlib -lconv-util -lz -lesslbg -lesslsmpbg \
+	    -lm -lxlfmath -lxlf90_r -lxl -lpthread -lrt -ldl
 
 # @note: Empty target specific appends (+=) hide previous global values for
 #        make version 3.80 on bgp. Hence uncomment any of the following 
@@ -89,9 +80,9 @@ fastadd.o:     CXXFLAGS += -O3
 # Should we pass -D_IBM_ESSL_ as a preprocessor flag when building ibm_essl_dummy.o
 ibm_essl_dummy.o: CPPFLAGS  += -D_IBM_ESSL_
 # The fft (and other) math libraries to link based on whether DUAL_FFTW is turned on or off
-          ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
-               LDLIBS   += -lrfftw -lfftw
-          else
-               LDLIBS   += -ldrfftw -ldfftw
-          endif
+ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
+     LDLIBS   += -lrfftw -lfftw
+else
+     LDLIBS   += -ldrfftw -ldfftw
+endif
 
