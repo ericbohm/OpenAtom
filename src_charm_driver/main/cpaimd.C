@@ -740,7 +740,7 @@ main::main(CkArgMsg *msg) {
   PRINT_LINE_STAR; CkPrintf("\n");
   PRINT_LINE_STAR; 
   PRINT_LINE_DASH;CkPrintf("\n");
-  CkPrintf("user mem %d\n",CmiMemoryUsage());
+  CkPrintf("user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
   Timer=newtime;
   /**@}*/
   //============================================================================

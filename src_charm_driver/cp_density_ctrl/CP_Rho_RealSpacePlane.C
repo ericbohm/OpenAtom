@@ -577,8 +577,8 @@ void CP_Rho_RealSpacePlane::energyComputation(){
   //============================================================================
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("In RhoRealSpacePlane[%d] energyComp %d %d\n",thisIndex.x,
-      CkMyPe(),CmiMemoryUsage());
+  CkPrintf("In RhoRealSpacePlane[%d] energyComp %d Memory %lf MB\n",thisIndex.x,
+      CkMyPe(),CmiMemoryUsage()/ (1024.0 * 1024));
 #endif
 
   //============================================================================
@@ -645,8 +645,8 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
   //============================================================================
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("In RhoRealSpacePlane[%d %d] FFT_RSpacetoGSpace %d %d\n",thisIndex.x,
-      thisIndex.y, CkMyPe(),CmiMemoryUsage());
+  CkPrintf("In RhoRealSpacePlane[%d %d] FFT_RSpacetoGSpace %d %lf MB\n",thisIndex.x,
+      thisIndex.y, CkMyPe(),CmiMemoryUsage()/ (1024.0 * 1024));
 #endif
 
   //============================================================================

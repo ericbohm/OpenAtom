@@ -399,7 +399,6 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
     {
       int *Pecount= new int[config.numPesPerInstance];
       bzero(Pecount, config.numPesPerInstance *sizeof(int));
-      PeList *exclusionList = NULL;
 
       // here we require that nchareG tiles
       if(config.numPesPerInstance % nchareG != 0)
@@ -451,21 +450,11 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
               Pecount[destpe]++;
               if(Pecount[destpe]>=charesperpe)
               {
-                if(exclusionList==NULL)
-                {
-                  exclusionList=new PeList(1);
-                  exclusionList->TheList[0]=destpe;
-                  exclusionList->sortIdx[0]=0;
-                }
-                else
-                {
-                  exclusionList->mergeOne(destpe);
-                  PeList one(1);
-                  one.TheList[0]=destpe;
-                  *planeProcs - one;
-                  planeProcs->reindex();
-                  planeProcs->reset();
-                }
+                PeList one(1);
+                one.TheList[0]=destpe;
+                *planeProcs - one;
+                planeProcs->reindex();
+                planeProcs->reset();
               }
               if(((stateperpe+1<workingGsPerPe)&&((state+stateperpe+1)<nstates)) || state+workingGsPerPe<nstates)
               {
@@ -486,20 +475,10 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
               planeProcs->reset();
             destpe=planeProcs->findNext();
           }
-          /*if(availprocs->count()==0)
-            {
-            CkPrintf("GSMap created on processor %d\n", CkMyPe());
-            dump();
-            CkPrintf("GSMap ran out of nodes on plane %d state %d\n", plane, state);
-            CkExit();
-            }
-           */
         }
         delete planeProcs;
       }
       delete [] Pecount;
-      if(exclusionList!=NULL)
-        delete exclusionList;
     }
     else
     {
@@ -935,8 +914,7 @@ PeList * rebuildExclusion(int *Pecount, int rsobjs_per_pe)
 RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availprocs,
     int _nstates, int _sizeZ, int _Rstates_per_pe, bool useCuboidMap, MapType2 *gsmap, 
     int nchareG, int numInst, int offsetX, int offsetY, int offsetZ):
-  nstates(_nstates), sizeZ(_sizeZ),
-  Rstates_per_pe(_Rstates_per_pe)
+  nstates(_nstates), sizeZ(_sizeZ), Rstates_per_pe(_Rstates_per_pe)
 {
   reverseMap = NULL;
   maptable = _tomap;
@@ -974,9 +952,6 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
     m = sizeZ / pm;
     rem = sizeZ % pm;
 
-    //CkPrintf("nstates %d sizeZ %d Pes %d rsobjs_per_pe %d\n", nstates, sizeZ, availprocs->count(), rsobjs_per_pe);	
-    //CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
-    //	   pl, pm, srem, rem);
     int srcpe=0;
     int destpe=availprocs->findNext();
 
@@ -1014,17 +989,14 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
           thisStateBox->reindex();
           thisStateBox->reset();
         }
-        //CkPrintf("RS state %d box has %d procs after exclusion\n",state,thisStateBox->count());
-        // CkPrintf("RS state %d pe list after exclude \n",state);
-        //	  thisStateBox->dump();
-        if(thisStateBox->count()<=0)
+        if(thisStateBox->count() <= 0)
         {
           if(config.useStrictCuboid)
           {
             // use old scheme of bumping srsobjs_per_pe 
             while(thisStateBox->count()<=0 && srsobjs_per_pe<=sizeZ*nstates)
             {
-              CkPrintf("State %d  Ran out of procs in RS centroid map increasing rs objects per proc to %d\n",state,srsobjs_per_pe);
+              //CkPrintf("State %d  Ran out of procs in RS centroid map increasing rs objects per proc to %d\n",state,srsobjs_per_pe);
               srsobjs_per_pe++;
               if(exclusionList!=NULL)
                 delete exclusionList;
@@ -1038,11 +1010,8 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
               }
 
             }
-          }
-          else
-
-          {
-            CkPrintf("State %d  Ran out of procs in RS centroid map scheme, spilling over to master list\n",state,srsobjs_per_pe);
+          } else {
+            //CkPrintf("State %d  Ran out of procs in RS centroid map scheme, spilling over to master list\n",state,srsobjs_per_pe);
             //	      *myavail - *exclusionList;
             delete thisStateBox;
             thisStateBox=new PeList(*myavail);
@@ -1072,7 +1041,7 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
               while(thisStateBox->count()<=0 && srsobjs_per_pe<=sizeZ*nstates)
               {
                 srsobjs_per_pe++;
-                CkPrintf("State %d Plane %d Ran out of procs in RS centroid map increasing rs objects per proc to %d\n",state,plane,srsobjs_per_pe);
+                //CkPrintf("State %d Plane %d Ran out of procs in RS centroid map increasing rs objects per proc to %d\n",state,plane,srsobjs_per_pe);
                 if(exclusionList!=NULL)
                   delete exclusionList;
                 exclusionList=rebuildExclusion(Pecount, srsobjs_per_pe);
@@ -1088,11 +1057,11 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
             }
             else
             {
-              CkPrintf("State %d  Ran out of procs in RS centroid map scheme, spilling over to master list\n",state,srsobjs_per_pe);
+              //CkPrintf("State %d  Ran out of procs in RS centroid map scheme, spilling over to master list\n",state,srsobjs_per_pe);
               if(myavail->count()<=0)
               {
                 srsobjs_per_pe++;
-                CkPrintf("State %d  Ran out of procs in master, bumping srsobjs_per_pe\n",state,srsobjs_per_pe);
+                //CkPrintf("State %d  Ran out of procs in master, bumping srsobjs_per_pe\n",state,srsobjs_per_pe);
                 delete thisStateBox;
                 delete myavail;
                 myavail= new PeList(*availprocs);
@@ -1371,7 +1340,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
       {
         if(config.useStrictCuboid)
         {
-          CkPrintf("State %d  Ran out of procs in RPP centroid map increasing rpp objects per proc to %d\n",state,maxcharesperpe);
+          //CkPrintf("State %d  Ran out of procs in RPP centroid map increasing rpp objects per proc to %d\n",state,maxcharesperpe);
           maxcharesperpe++;
           if(usedbyRPP!=NULL)
             delete usedbyRPP;
@@ -1388,7 +1357,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
         {
           // ditch topo scheme for overflow
           // use the RPPlist
-          CkPrintf("State %d  Ran out of procs in RPP centroid using full RPPlist\n",state);
+          //CkPrintf("State %d  Ran out of procs in RPP centroid using full RPPlist\n",state);
           delete state_map;
           if(!neednewexc && excludedBigmap!=NULL)
           {
@@ -1409,7 +1378,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
           if(state_map->count()<=0)
           {
             maxcharesperpe++;
-            CkPrintf("plane %d  Ran out of procs in RPP centroid using full RPPlist and bumping maxcharesperpe to %d\n",state, maxcharesperpe);
+            //CkPrintf("plane %d  Ran out of procs in RPP centroid using full RPPlist and bumping maxcharesperpe to %d\n",state, maxcharesperpe);
             if(usedbyRPP!=NULL)
               delete usedbyRPP;
             usedbyRPP=rebuildExclusion(usedPes, maxcharesperpe);
@@ -1439,7 +1408,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
           {
             while(state_map->count()<=0 && maxcharesperpe<=sizeZNL*nstates)
             {
-              CkPrintf("State %d  Ran out of procs in RPP centroid map increasing rpp objects per proc to %d\n",state,maxcharesperpe);
+              //CkPrintf("State %d  Ran out of procs in RPP centroid map increasing rpp objects per proc to %d\n",state,maxcharesperpe);
               maxcharesperpe++;
               if(usedbyRPP!=NULL)
                 delete usedbyRPP;
@@ -1457,7 +1426,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
           else
           {
 
-            CkPrintf("State %d  Ran out of procs in RPP centroid using full RPPlist\n",state);
+            //CkPrintf("State %d  Ran out of procs in RPP centroid using full RPPlist\n",state);
             delete state_map;
             if(!neednewexc && excludedBigmap!=NULL&& excludedBigmap->count()>0)
             {
@@ -1487,7 +1456,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
             if(state_map->count()<=0)
             {
               maxcharesperpe++;
-              CkPrintf("plane %d  Ran out of procs in RPP centroid using full RPPlist and bumping maxcharesperpe to %d\n",state, maxcharesperpe);
+              //CkPrintf("plane %d  Ran out of procs in RPP centroid using full RPPlist and bumping maxcharesperpe to %d\n",state, maxcharesperpe);
 
               if(usedbyRPP!=NULL)
                 delete usedbyRPP;
@@ -1503,7 +1472,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
               if(state_map->count()==0)
               { // man we're totally dry here.
                 // reboot
-                CkPrintf("plane %d  Ran out of procs in RPP centroid using full RPPlist after bumping maxcharesperpe to %d, clearing used list, resetting maxcharesperpe to  %d\n",state, maxcharesperpe, origmaxcharesperpe);
+                //CkPrintf("plane %d  Ran out of procs in RPP centroid using full RPPlist after bumping maxcharesperpe to %d, clearing used list, resetting maxcharesperpe to  %d\n",state, maxcharesperpe, origmaxcharesperpe);
 
 
                 maxcharesperpe=origmaxcharesperpe;

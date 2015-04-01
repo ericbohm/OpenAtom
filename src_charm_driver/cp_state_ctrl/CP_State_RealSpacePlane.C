@@ -422,8 +422,8 @@ void CP_State_RealSpacePlane::doReduction(){
   double *data        = fftcache->tmpDataR;
 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
-  CkPrintf("In StateRSpacePlane[%d %d] doReduction %d\n", thisIndex.x, thisIndex.y,
-      CmiMemoryUsage());
+  CkPrintf("In StateRSpacePlane[%d %d] doReduction Memory: %lf MB\n", thisIndex.x, thisIndex.y,
+      CmiMemoryUsage()/ (1024.0 * 1024));
 #endif
 
 #ifdef _NAN_CHECK_
@@ -582,8 +582,8 @@ void CP_State_RealSpacePlane::doVksFFT() {
   // A little output under some circumstances
 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
-  CkPrintf("In RealSpacePlane[%d %d] doProduct %d\n",
-      thisIndex.x, thisIndex.y,CmiMemoryUsage());
+  CkPrintf("In RealSpacePlane[%d %d] doProduct Memory %lf MB\n",
+      thisIndex.x, thisIndex.y,CmiMemoryUsage()/ (1024.0 * 1024));
 #endif
 
 #ifndef _CP_DEBUG_RHO_OFF_  

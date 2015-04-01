@@ -316,7 +316,7 @@ PairCalculator::pup(PUP::er &p)
 #ifdef _PAIRCALC_DEBUG_
   if (p.isUnpacking())
   {
-    CkPrintf("[%d,%d,%d,%d,%d] pup unpacking on %d resumed=%d memory %d\n",thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z,cfg.isSymmetric,CkMyPe(),resumed, CmiMemoryUsage());
+    CkPrintf("[%d,%d,%d,%d,%d] pup unpacking on %d resumed=%d memory %lf MB\n",thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z,cfg.isSymmetric,CkMyPe(),resumed, CmiMemoryUsage()/(1024.0 * 1024.0));
     CkPrintf("[%d,%d,%d,%d,%d] pupped : %d,%d,%d,%d,%d %d %d %d %d  %d %d cb cb_aid %d %d %d cb_lb inDataLeft inDataRight outData  %d \n",thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, numRecd, numExpected, cfg.grainSize, cfg.numStates, cfg.numChunks, numPoints, cfg.isSymmetric, cfg.conserveMemory, cfg.isLBon, cfg.reduce, cb_ep, existsLeft, existsRight,  resumed);
 
   }
