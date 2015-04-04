@@ -23,6 +23,20 @@
 #include "StreamingStrategy.h"
 #include "ckhashtable.h"
 
+#ifdef CMK_BALANCED_INJECTION_API
+#include "ckBIconfig.h"
+#endif
+
+#include "PlatformSpecific.decl.h"
+
+class PlatformSpecific : public CBase_PlatformSpecific
+{
+ public:
+  PlatformSpecific(){}
+  void reset_BI();
+};
+
+
 #undef OLD_COMMLIB 
 #define USE_INT_MAP
 #ifndef USE_INT_MAP
@@ -51,7 +65,7 @@ typedef IntMap2 IntMap4;
 
 #if CMK_TRACE_ENABLED
 #define TRACE_ON_STEP 4
-#define TRACE_OFF_STEP 5
+#define TRACE_OFF_STEP 6
 #endif
 #ifdef CMK_BLUEGENEP
 #define HPM_ON_STEP 4
@@ -133,10 +147,7 @@ class CkArrayMapTable1 : public CkArrayMap
       int proc;
       proc=maptable->get(index[0]);
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
+      return(proc);
 
     }
     void pup(PUP::er &p)
@@ -166,10 +177,7 @@ class CkArrayMapTable2 : public CkArrayMap
       proc=maptable->get(intdual(index[0],index[1]));
 #endif
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
+      return(proc);
 
     }
     void pup(PUP::er &p)
@@ -198,11 +206,7 @@ class CkArrayMapTable3 : public CkArrayMap
       proc=maptable->get(inttriple(index[0],index[1],index[2]));
 #endif
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
-
+      return(proc);
 
     }
     void pup(PUP::er &p)
@@ -232,10 +236,7 @@ class CkArrayMapTable4 : public CkArrayMap
       proc=maptable->get(intdual(index[0], index[1]));
 #endif
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
+      return(proc);
 
     }
     void pup(PUP::er &p)
@@ -279,10 +280,7 @@ class AtomComputeMap : public CkArrayMapTable1 {
       int proc;
       proc=maptable->get(index[0]);
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
+      return(proc);
     }
 
 };
@@ -325,15 +323,10 @@ class GSMap: public CkArrayMapTable2 {
       proc=maptable->get(intdual(index[0],index[1]));
 #endif
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
+      return(proc);
     }
 
-    //  int procNum(int, const CkArrayIndex &);
-    ~GSMap(){
-    }
+    ~GSMap(){ }
 };
 //============================================================================
 
@@ -367,7 +360,6 @@ class RSMap: public CkArrayMapTable2 {
       maptable= &RSmaptable;
 #endif
     }
-    //  int procNum(int, const CkArrayIndex &);
     inline int procNum(int, const CkArrayIndex &iIndex){
       int *index=(int *) iIndex.data();
       int proc;
@@ -378,10 +370,7 @@ class RSMap: public CkArrayMapTable2 {
       proc=maptable->get(intdual(index[0],index[1]));
 #endif
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
+      return(proc);
 
     }
 
@@ -412,7 +401,6 @@ class RPPMap: public CkArrayMapTable2 {
 #endif
 
     }
-    //  int procNum(int, const CkArrayIndex &);
     ~RPPMap(){
 
     }
@@ -426,11 +414,7 @@ class RPPMap: public CkArrayMapTable2 {
       proc=maptable->get(intdual(index[0],index[1]));
 #endif
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
-
+      return(proc);
 
     }
 
@@ -468,7 +452,6 @@ class RhoRSMap : public CkArrayMapTable2 {
 #endif
     }
 
-    //    int procNum(int arrayHdl, const CkArrayIndex &idx);
     inline int procNum(int, const CkArrayIndex &iIndex){
       int *index=(int *) iIndex.data();
       int proc;
@@ -479,10 +462,7 @@ class RhoRSMap : public CkArrayMapTable2 {
       proc=maptable->get(intdual(index[0],index[1]));
 #endif
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
+      return(proc);
     }
 
 };
@@ -506,7 +486,6 @@ class RhoGSMap : public CkArrayMapTable2 {
     ~RhoGSMap() {
     }
 
-    //    int procNum(int arrayHdl, const CkArrayIndex &idx);
     inline int procNum(int, const CkArrayIndex &iIndex){
       int *index=(int *) iIndex.data();
       int proc;
@@ -517,10 +496,7 @@ class RhoGSMap : public CkArrayMapTable2 {
       proc=maptable->get(intdual(index[0],index[1]));
 #endif
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
+      return(proc);
 
     }
 
@@ -543,11 +519,7 @@ class RhoGHartMap : public CkArrayMapTable2 {
 #endif
     }
 
-    ~RhoGHartMap()
-    {
-    }
-
-    //  int procNum(int arrayHdl, const CkArrayIndex &idx);
+    ~RhoGHartMap() { }
 
     void pup(PUP::er &p)
     {
@@ -567,10 +539,7 @@ class RhoGHartMap : public CkArrayMapTable2 {
       proc=maptable->get(intdual(index[0],index[1]));
 #endif
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
+      return(proc);
 
     }
 
@@ -589,11 +558,7 @@ class RhoRHartMap : public CkArrayMapTable3 {
 #endif
     }
 
-    ~RhoRHartMap()
-    {
-    }
-
-    //  int procNum(int arrayHdl, const CkArrayIndex &idx);
+    ~RhoRHartMap() { }
 
     void pup(PUP::er &p)
     {
@@ -614,10 +579,7 @@ class RhoRHartMap : public CkArrayMapTable3 {
       proc=maptable->get(inttriple(index[0],index[1],index[2]));
 #endif
       CkAssert(proc>=0);
-      if(numPes!=CkNumPes())
-        return(proc%CkNumPes());
-      else
-        return(proc);
+      return(proc);
     }
 
 };
@@ -709,7 +671,6 @@ void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
 int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp, 
     int dup, int planeIndex);
 int gsprocNum(CPcharmParaInfo *sim,int state, int plane, int numInst);
-bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ, int maxT, int volume, int vn);
 void create_Rho_fft_numbers(int ,int ,int , int, int, int, int *,int *,int *,int *, int *);
 void setTraceUserEvents();
 void computeMapOffsets();

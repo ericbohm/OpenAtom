@@ -355,6 +355,7 @@ class IntMap3 {
       Map[X][Y][Z]=value;
     }
     int getCentroid(int torusMap);
+    void getCentroid(int torusMap, int *dims);
     void dump()
     {
       for(int x=0;x<keyXmax;x++)
@@ -466,6 +467,7 @@ class IntMap2on2 {
     inline int getXmax(){return(keyXmax);}
     inline int getYmax(){return(keyYmax);}
     int getCentroid(int torusMap);
+    void getCentroid(int torusMap, int *dims);
     inline int get(int X, int Y)  {
       /*
          CkAssert(X<keyXmax);
@@ -606,6 +608,7 @@ class IntMap1 {
       Map[X]=value;
     }
     int getCentroid(int torusMap);
+    void getCentroid(int torusMap, int *dims);
     void dump()
     {
       for(int x=0;x<keyXmax;x++)

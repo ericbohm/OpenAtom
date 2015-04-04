@@ -7,7 +7,7 @@
 extern FILE *openScreenfWrite(const char *dirnameBase, const char *fname, int temper, int bead, bool beadfile);
 ENL_EKE_Collector::ENL_EKE_Collector(int _numEnergyInputs, int _numInstance)
 {
-  if(_numInstance>1)
+  if(0 && (_numInstance>1))
     temperScreenFile=openScreenfWrite("TEMPER_OUT", "screen", thisIndex, 0, false);
   else
     temperScreenFile=stdout;

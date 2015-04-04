@@ -50,11 +50,10 @@ namespace cp {
 
       MapType2 orthoMapTable;
       int success = 0;
-      if(cfg.instanceIndex == 0) {
+      if(cfg.instanceIndex == 0 || config.simpleTopo) {
         avail = mapCfg.getPeList();
         avail->reset();
-        excludePes= new PeList(1);
-        excludePes->TheList[0] = config.numPes;
+        excludePes= new PeList(1, 0, 0);
         orthoMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
 
         if(config.loadMapFiles)
@@ -110,7 +109,7 @@ namespace cp {
       CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(orthoMapTable);
       CkArrayOptions orthoOpts;
       orthoOpts.setMap(orthoMap);
-      orthoOpts.setStaticInsertion(true);
+      orthoOpts.setStaticInsertion(false);
       orthoOpts.setAnytimeMigration(false);
       CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
 
@@ -119,7 +118,7 @@ namespace cp {
       {
         double Timer=CmiWallTimer();
 
-        if (cfg.instanceIndex == 0)
+        if (cfg.instanceIndex == 0 || config.simpleTopo)
         {
           helperMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
           int success = 0;

@@ -78,7 +78,7 @@ AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstan
     fastAtoms.fy[i] = a[i].fy;
     fastAtoms.fz[i] = a[i].fz;
   }//endfor
-  if(config.UberKmax>1 || config.UberImax>1 )
+  if(0 && (config.UberKmax>1 || config.UberImax>1 ))
   {
     // we will do the file output
     temperScreenFile = openScreenfWrite("TEMPER_OUT", "screen", thisInstance.idxU.z,thisInstance.idxU.x, true);

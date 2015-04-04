@@ -2,6 +2,16 @@
  *
  */
 
+module PlatformSpecific
+{
+   nodegroup PlatformSpecific
+   {
+       entry PlatformSpecific();
+       entry void reset_BI();
+   }
+}
+
+
 module CPcharmParaInfo
 {
   class CPcharmParaInfo;
@@ -155,6 +165,7 @@ module instanceController
     entry void gspDoneNewTemp(CkReductionMsg *m);
     entry void atomsDoneNewTemp(CkReductionMsg *m);
     entry void fmagMinTest(CkReductionMsg *m);
+    entry void instancesReady(CkReductionMsg *m);
   };
 };
 
@@ -187,6 +198,11 @@ mainmodule cpaimd {
   readonly CProxy_TimeKeeper TimeKeeperProxy;
   initnode registersumFastDouble(void);
 
+#ifdef CMK_BALANCED_INJECTION_API
+  readonly uint16_t lowBIValue;
+  readonly uint16_t origBIValue;
+#endif
+  initnode set_GNI_LOW_BI(void);
   extern module CPcharmParaInfo;
   extern module PhysScratchCache;
   extern module gSpaceDriver;
@@ -205,7 +221,9 @@ mainmodule cpaimd {
   extern module ENL_EKE_Collector;
   extern module instanceController;
   extern module temperController;
+  extern module PlatformSpecific;
 
+  readonly CProxy_PlatformSpecific platformSpecificProxy;
 
   readonly CPcharmParaInfo simReadOnly;
   readonly CkVec < CkVec <int> > UplaneUsedByNLZ;

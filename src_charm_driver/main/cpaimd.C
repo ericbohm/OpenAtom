@@ -193,7 +193,7 @@ extern CP           readonly_cp;
 
 
 #include "mapvariables.h"
-
+CProxy_PlatformSpecific platformSpecificProxy;
 
 //============================================================================
 // readonly globals
@@ -328,6 +328,7 @@ main::main(CkArgMsg *msg) {
   /**@{*/
 
   /* Invoke PINY input class */
+  CkPrintf("At the beginning of the run user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
 
   CkCallback piny_callback (CkCallback::ignore);
   Interface_ctrl piny_interface (msg->argv[2],piny_callback);
@@ -372,17 +373,15 @@ main::main(CkArgMsg *msg) {
 
   fakeTorus        = config.fakeTorus>0;
 
-  if(fakeTorus)
-    {
-      numPes=config.torusDimNX * config.torusDimNY * config.torusDimNZ * config.torusDimNT;
-      CkPrintf("numpes set to %d by faketorus\n",numPes);
-    }
-  else if (CkNumPes() != config.numPes)
-    {
-      numPes=config.numPes;
-      CkPrintf("numpes set to %d by config file\n",numPes);
-    }
+  if(fakeTorus) {
+    CkAbort("Fake torus based runs are no longer supported\n");
+  } else if (CkNumPes() != config.numPes) {
+    numPes=config.numPes;
+    CkPrintf("numpes set to %d by config file\n",numPes);
+  }
+
   CkPrintf("for numInstances %d numPes %d numPesPerInstance is %d \n",config.numInstances, config.numPes, config.numPesPerInstance);
+
   mapOffsets=new inttriple[config.numInstances];
   int numSfGrps    = config.numSfGrps;  // local copies are nice
   int doublePack   = config.doublePack;
@@ -426,13 +425,22 @@ main::main(CkArgMsg *msg) {
 				      &natm_nl_grp_max);
   sim->natm_nl_grp_max = natm_nl_grp_max;
   /* @} */
+
+  CkPrintf("Before create_line_decomp_descriptor user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
+
   create_line_decomp_descriptor(sim);
 
+  CkPrintf("Before control_new_mapping_function user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
+
   PhysicsParamTransfer::control_new_mapping_function(sim,doublePack);
+
+  CkPrintf("Before make_rho_runs user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
 
   make_rho_runs(sim);
 
 #include "initializeUber.C"
+
+  CkPrintf("Before PhysScratchCache user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
 
   pScratchProxy = CProxy_PhysScratchCache::ckNew();
 
@@ -443,13 +451,12 @@ main::main(CkArgMsg *msg) {
   instControllerProxy.doneInserting();
 
   // make one controller temper
-  if(sim->ntemper>1)
-    {
+  if(sim->ntemper>1) {
       double faketemplist[sim->ntemper];
       long seed=1888381834e3l;
       temperControllerProxy= CProxy_TemperController::ckNew(1,faketemplist,sim->ntemper, seed, 1);
       temperControllerProxy.doneInserting();
-    }
+  }
   // make one collector per uberKmax
   CkArrayOptions enlopts(config.UberKmax);
   ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, config.UberKmax, enlopts);
@@ -465,34 +472,23 @@ main::main(CkArgMsg *msg) {
       3) Topological map setup : we initialize several structures which will be useful for using network topology for more optimal chare placement */
   /**@{*/
 
-  CkPrintf("Initializing TopoManager\n");
-  if(config.fakeTorus) {
-    CkPrintf("Initializing TopoManager with fakeTorus\n");
-    topoMgr = new TopoManager(config.torusDimNX, config.torusDimNY, 
-			      config.torusDimNZ, config.torusDimNT);
-  }
-  else {
-    topoMgr = new TopoManager();
-  }
-  CkPrintf("         Torus %d x %d x %d nodes %d x %d x %d VN %d DimNT %d .........\n", 
-	   topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
-	   topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
-	   topoMgr->hasMultipleProcsPerNode(), topoMgr->getDimNT());
-  if(config.torusMap==1) {
-    PRINT_LINE_STAR; CkPrintf("\n");
-    CkPrintf("         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
-    CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
-    PRINT_LINE_STAR; CkPrintf("\n");
-  }
+  platformSpecificProxy=CProxy_PlatformSpecific::ckNew();
 
-  int l=config.Gstates_per_pe;
+  CkPrintf("Initializing TopoManager\n");
+  topoMgr = new TopoManager();
+
+  if(config.torusMap==1) {
+    CkAbort("Specialized torusMap are no longer supported. use simpleTopo and simpleTopoCentroid\n");
+  }
+  
+  int l = config.Gstates_per_pe;
   int m, pl, pm;
   pl = nstates / l;
   pm = config.numPesPerInstance / pl;
   if(pm == 0) {
     CkPrintf("Choose a larger Gstates_per_pe than %d such that { (no. of processors [%d] / no. of Instances [%d]) / (no. of states [%d] / Gstates_per_pe [%d]) } is > 0 \n", 
 	     l, config.numPes, config.numInstances, nstates, l);
-    CkAssert( pm > 0);
+    assert( pm > 0);
   }
   m = config.nchareG / pm;
 
@@ -500,105 +496,34 @@ main::main(CkArgMsg *msg) {
   if(planes_per_pe <= 0) {
     CkPrintf("Choose a smaller Gstates_per_pe than %d such that { (no. of processors [%d] / no. of Instances [%d]) / (no. of states [%d] / Gstates_per_pe [%d]) } is > 0 and config.nchareG [%d] / pm [%d] {where pm = config.numPesPerInstance [%d]/ pl [%d] }  > 0\n", 
 	     l, config.numPes, config.numInstances, nstates, l, config.nchareG, pm, config.numPesPerInstance, pl);
-    CkAssert( m > 0);
+    assert( m > 0);
   }
 
-  // multiple instance mapping breaks if there isn't a topomanager
   CkPrintf("Initializing PeList\n");
 
   PeList *gfoo=NULL;
   PeList *rfoo=NULL;
   int x, y, z;
   PeListFactory *peList4PCmapping;
-  if(!config.loadMapFiles && config.useCuboidMap)
-    {
-      if( config.numPesPerInstance % config.nchareG != 0)
-	{
-	  CkPrintf("To use CuboidMap nchareG %d should be chosen as a factor of numprocs %d / numInstances %d = %d\n",config.nchareG, config.numPes, config.numInstances, config.numPesPerInstance);
-	  CkExit();
-	}
-      int procsPerPlane = config.numPesPerInstance / nchareG;
-      int bx, by, bz;
-      if(config.torusMap == 1) {
-	boxSize = procsPerPlane;
-	int order;
 
-	// correction to accomodate multiple instances
-	int dimNX, dimNY, dimNZ, dimNT;
-	int longDim = -1, maxD;
+  if(config.simpleTopo) {
+    boxSize = config.numPesPerInstance / nchareG;
+  } else {
+    gfoo = new PeList(1, 0, config.numPesPerInstance);				// heap it
+    peList4PCmapping = new PeListFactory(config.numPesPerInstance);
+  }
 
-	dimNX = topoMgr->getDimNX();
-	dimNY = topoMgr->getDimNY();
-	dimNZ = topoMgr->getDimNZ();
-	dimNT = topoMgr->getDimNT();
-	int  x1 = dimNX, y1 = dimNY, z1 = dimNZ;
-
-	maxD = dimNX;
-	longDim = 1;
-
-	if (dimNY > maxD) { maxD = dimNY; longDim = 2; }
-	if (dimNZ > maxD) { maxD = dimNZ; longDim = 3; }
-
-	for(int i=0; i<config.numInstances; i++) {
-	  switch(longDim) {
-	  case 1:
-	    x = i*(maxD/config.numInstances); y = 0; z = 0;
-	    x1 = dimNX / config.numInstances;
-	    break;
-	  case 2:
-	    x = 0; y = i*(maxD/config.numInstances); z = 0;
-	    y1 = dimNY / config.numInstances;
-	    break;
-	  case 3:
-	    x = 0; y = 0; z = i*(maxD/config.numInstances);
-	    z1 = dimNZ / config.numInstances;
-	    break;
-	  }
-	  // printf("Origin %d %d %d Size %d %d %d\n", x, y, z, x1, y1, z1);
-	}
-
-	CkPrintf("         Box per Instance: nodes %d x %d x %d .........\n", x1, y1, z1);
-	if(findCuboid(bx, by, bz, order, x1, y1, z1, topoMgr->getDimNT(), boxSize, topoMgr->hasMultipleProcsPerNode()))
-	  {
-	    CkPrintf("Using %d, %d, %d dimensions for box %d mapping order %d\n", bx, by, bz, boxSize, order);
-	    gfoo = new PeList(bx, by, bz, order, x1, y1, z1, dimNT);	// heap it
-	    peList4PCmapping = new PeListFactory(bx,by,bz,order,x1,y1,z1,dimNT);
-	  }
-	else
-	  {
-	    peList4PCmapping = new PeListFactory(config.numPes);
-	    CkPrintf("no box for %d\n", boxSize);
-	    config.useCuboidMap = 0;
-	    gfoo = new PeList(config.numPesPerInstance);				// heap it
-	  }
-      }
-      else
-	{
-	  peList4PCmapping = new PeListFactory(config.numPesPerInstance);
-	  // just split by numInstances
-	  x=numInst*config.numPesPerInstance;
-	  y=0;
-	  z=0;
-	  gfoo = new PeList(config.numPesPerInstance);				// heap it
-	}
-    }
-  else
-    {
-      gfoo = new PeList(config.numPesPerInstance);				// heap it
-      peList4PCmapping = new PeListFactory(config.numPesPerInstance);
-    }
-  if(!config.loadMapFiles && config.useCuboidMapRS)
-    rfoo = new PeList(*gfoo);
-  else
-    rfoo = new PeList(config.numPesPerInstance);				// heap it
-
+  if(!config.simpleTopo)
+    rfoo = new PeList(1, 0, config.numPesPerInstance);				// heap it
+  
   computeMapOffsets();
   /* these really don't need to be different */
-  availGlobG = rfoo;
-  availGlobR = gfoo;
+  if(!config.simpleTopo) {
+    availGlobG = rfoo;
+    availGlobR = gfoo;
+    CkPrintf("Pelist initialized in %g with %d elements\n", newtime-Timer, availGlobG->count());
+  }
   newtime = CmiWallTimer();
-  CkPrintf("Pelist initialized in %g with %d elements\n", newtime-Timer, availGlobG->count());
-  // availGlobG->dump();
   Timer = newtime;
   /**@}*/    
   /*
@@ -627,97 +552,133 @@ main::main(CkArgMsg *msg) {
   */
   /**@{*/
   CkPrintf("NumInstances %d: Beads %d  * Kpoints %d * Tempers %d * Spin %d\n",config.numInstances, config.UberImax, config.UberJmax, config.UberKmax,config.UberMmax);
-  for(int integral=0; integral< config.UberImax; integral++)
-    {
-      for(int kpoint=0; kpoint< config.UberJmax; kpoint++)
-	{
-	  for(int temper=0; temper< config.UberKmax; temper++)
-	    {
-	      for(int spin=0; spin< config.UberMmax; spin++) {
-		// for each new instance we need a new Uber Index
-		CkVec  <int>  peUsedBySF;
-		CkVec  <int>  peUsedByNLZ;
-		CkVec  <int>  planeUsedByNLZ;
+  for(int integral=0; integral< config.UberImax; integral++){
+    for(int kpoint=0; kpoint< config.UberJmax; kpoint++) {
+      for(int temper=0; temper< config.UberKmax; temper++) {
+        for(int spin=0; spin< config.UberMmax; spin++) {
 
-		UberIndex thisInstanceIndex(integral, kpoint, temper, spin); // Internal labels{x,y,z,s}
-		thisInstance=UberCollection(thisInstanceIndex);
-		UberAlles.push_back(thisInstance);// collection of proxies for all instances
+          if(config.simpleTopo) {
+            int ndims;
+            TopoManager_getDimCount(&ndims);
+            int bdims[10];
+            bdims[0] = bdims[1] = bdims[2] = bdims[3] = bdims[4] = 4;
+            gfoo = new PeList(ndims, bdims, numInst);
+            peList4PCmapping = new PeListFactory(ndims, bdims, numInst);
+            rfoo = new PeList(1, 0, *gfoo);
+            availGlobG = rfoo;
+            availGlobR = gfoo;
+          }
 
-		//============================================================================    
-		// We will need a different one of these per instance
-		// Transfer parameters from physics to driver
-		//    read in atoms : create atoms group 
-		control_physics_to_driver(thisInstance);
+          // for each new instance we need a new Uber Index
+          CkVec  <int>  peUsedBySF;
+          CkVec  <int>  peUsedByNLZ;
+          CkVec  <int>  planeUsedByNLZ;
 
-		//============================================================================ 
+          UberIndex thisInstanceIndex(integral, kpoint, temper, spin); // Internal labels{x,y,z,s}
+          thisInstance=UberCollection(thisInstanceIndex);
+          UberAlles.push_back(thisInstance);// collection of proxies for all instances
 
-		if(config.UberImax>1)	      // handle Path Integrals
-		  init_PIBeads(sim, thisInstance);
+          //============================================================================    
+          // We will need a different one of these per instance
+          // Transfer parameters from physics to driver
+          //    read in atoms : create atoms group 
+          control_physics_to_driver(thisInstance);
 
-		// and then we make the usual set of chares to which we pass
-		// the Uber Index.
-		init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
+          //============================================================================ 
 
-		//============================================================================
-		// Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
+          if(config.UberImax>1)	      // handle Path Integrals
+            init_PIBeads(sim, thisInstance);
 
-		orthostartup(&orthoCfg, &cfgSymmPC, &cfgAsymmPC, sim, peList4PCmapping);
+          // and then we make the usual set of chares to which we pass
+          // the Uber Index.
+          init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
+          CkPrintf("After Init state chares  user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
 
+          //============================================================================
+          // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
 
-		//============================================================================
-		// compute the location for the non-local Z reduction roots for each plane
-		// this can then be used in exclusion mapping to avoid overloading them
-		int *usedProc= new int[config.numPesPerInstance];
-		memset(usedProc, 0, sizeof(int)*config.numPesPerInstance);
-		int charperpe = nstates/(config.numPesPerInstance);
-		if(nstates % config.numPesPerInstance != 0)  charperpe++;
-		if(charperpe<1) charperpe=1;
-		for(int state=0; state<nstates; state++) {
-		  int plane = nchareG-1;
-		  while(plane >= 0) {
-		    bool used = false;
-		    int thisstateplaneproc = GSImaptable[thisInstance.getPO()].get(state,plane) % config.numPesPerInstance;
-		    if(usedProc[thisstateplaneproc]>charperpe) {
-		      used=true;
-		    }
-		    if(!used || plane==0) {
-		      peUsedByNLZ.push_back(thisstateplaneproc);
-		      planeUsedByNLZ.push_back(plane);
-		      usedProc[thisstateplaneproc]++;
-		      plane=-1;
-		    }
-		    plane--;
-		  }
-		}
-		peUsedByNLZ.quickSort();
-		delete [] usedProc;
-		UpeUsedByNLZ.push_back(peUsedByNLZ);	   
-		UplaneUsedByNLZ.push_back(planeUsedByNLZ);
-		// CkPrintf("UplaneUsedByNLZ length now %d\n",UplaneUsedByNLZ.length());
-		// Create mapping classes for Paircalcular
+          orthostartup(&orthoCfg, &cfgSymmPC, &cfgAsymmPC, sim, peList4PCmapping);
 
-		//============================================================================ 
-		// Initialize the density chare arrays
-		init_rho_chares(sim, thisInstance);
+          CkPrintf("After Ortho startup  user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
 
-		//============================================================================ 
-		// Initialize commlib strategies for later association and delegation
-		if(sim->ees_nloc_on)
-		  init_eesNL_chares( natm_nl, natm_nl_grp_max, doublePack, excludePes, sim, thisInstance);
-		firstInstance=false;
-		numInst++;
-	      }
-	    } 
-	}
-      // now safe to init atom bead commanders
-      UatomsComputeProxy[thisInstance.getPO()].init();
-    } // end of per instance init
+          //============================================================================
+          // compute the location for the non-local Z reduction roots for each plane
+          // this can then be used in exclusion mapping to avoid overloading them
+          int *usedProc= new int[config.numPes];
+          memset(usedProc, 0, sizeof(int)*config.numPes);
+          int charperpe = nstates/(config.numPesPerInstance);
+          if(charperpe<1) {
+            charperpe=1;
+          } else {
+            if(nstates % config.numPesPerInstance != 0)  charperpe++;
+          }
+          for(int state=0; state<nstates; state++) {
+            int plane = nchareG-1;
+            while(plane >= 0) {
+              bool used = false;
+              int thisstateplaneproc = GSImaptable[thisInstance.getPO()].get(state,plane);
+              if(usedProc[thisstateplaneproc]>=charperpe) 
+              {
+                used=true;
+                if(plane==0) {
+                  peUsedByNLZ.push_back(thisstateplaneproc);
+                  planeUsedByNLZ.push_back(plane);
+                  usedProc[thisstateplaneproc]++;
+                  plane=-1;
+                }
+              }
+              else
+              {
+                peUsedByNLZ.push_back(thisstateplaneproc);
+                planeUsedByNLZ.push_back(plane);
+                usedProc[thisstateplaneproc]++;
+                plane=-1;
+              }
+              plane--;
+            }
+          }
+          peUsedByNLZ.quickSort();
+          delete [] usedProc;
+          UpeUsedByNLZ.push_back(peUsedByNLZ);	   
+          UplaneUsedByNLZ.push_back(planeUsedByNLZ);
+          // CkPrintf("UplaneUsedByNLZ length now %d\n",UplaneUsedByNLZ.length());
+          // Create mapping classes for Paircalcular
+          CkPrintf("After used by NLZ user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
+
+          //============================================================================ 
+          // Initialize the density chare arrays
+          init_rho_chares(sim, thisInstance);
+          CkPrintf("After init_rho_chares user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
+
+          //============================================================================ 
+          // Initialize commlib strategies for later association and delegation
+          if(sim->ees_nloc_on)
+            init_eesNL_chares( natm_nl, natm_nl_grp_max, doublePack, excludePes, sim, thisInstance);
+          
+          firstInstance=false;
+          numInst++;
+
+          if(config.simpleTopo) {
+            delete rfoo;
+            delete gfoo;
+            delete excludePes;
+          }
+        }
+      }
+    }
+    // now safe to init atom bead commanders
+    UatomsComputeProxy[thisInstance.getPO()].init();
+    CkPrintf("After UatomsComputeProxy init  user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
+  } // end of per instance init
   //============================================================================ 
   // Initialize commlib strategies for later association and delegation
   if(config.numInstances>1)
     CkPrintf("WARNING!!! Commlib does not work for multiple instances\n");
 
   init_commlib_strategies(sim->nchareRhoG, sim->sizeZ,nchareRhoRHart, thisInstance);
+  
+  CkPrintf("After init_commlib_strategies init  user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
+
 
   TimeKeeperProxy.init();
 
@@ -725,14 +686,14 @@ main::main(CkArgMsg *msg) {
   // clean up
 
   delete msg;
-  //    delete sim;
-  delete rfoo;
-  delete gfoo;
-  delete excludePes;
-  //    delete availGlobR;
-  //    delete availGlobG;
+  if(!config.simpleTopo) {
+    delete rfoo;
+    delete gfoo;
+    delete excludePes;
+  }
 
   //============================================================================
+  CkPrintf("After all deletes  user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
 
   newtime=CmiWallTimer();
   PRINT_LINE_DASH;
@@ -1345,14 +1306,14 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
       int nplane_x_use     = sim->nplane_x;
       if(!config.doublePack){nplane_x_use = (nplane_x_use+1)/2;}
       for(int i=0;i<nchareR;i++){
-	numRXState[i]      = sim->sizeY;
-	numRYState[i]      = nplane_x_use;
-	numRYStateLower[i] = nplane_x_use - 1;
+        numRXState[i]      = sim->sizeY;
+        numRYState[i]      = nplane_x_use;
+        numRYStateLower[i] = nplane_x_use - 1;
       }//endif
       for(int i=0;i<nchareRPP;i++){
-	numRXNL[i]         = ngridbNl;
-	numRYNL[i]         = nplane_x_use;
-	numRYNLLower[i]    = nplane_x_use - 1;
+        numRXNL[i]         = ngridbNl;
+        numRYNL[i]         = nplane_x_use;
+        numRYNLLower[i]    = nplane_x_use - 1;
       }//endfor
       int *numRXRho      = new int [nchareRRhoTot];
       int *numRYRho      = new int [nchareRRhoTot];
@@ -1412,7 +1373,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   /** addtogroup mapping */
   /**@{*/
-  if (firstInstance) {
+  if (firstInstance || config.simpleTopo) {
     GSImaptable[numInst].buildMap(nstates, nchareG);
     int success = 0;
     if(config.loadMapFiles) {
@@ -1523,7 +1484,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   /**@}*/
   /** addtogroup mapping */
   /**@{*/
-  if(firstInstance) {
+  if(firstInstance || config.simpleTopo) {
     RSImaptable[numInst].buildMap(nstates, nchareR);
     Timer=CmiWallTimer();
     availGlobR->reset();
@@ -1544,7 +1505,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 #ifdef USE_INT_MAP
       RSMapTable RStable= RSMapTable(&RSImaptable[0], &RSImaptable[numInst], availGlobR, 
 				     nstates, nchareR, Rstates_per_pe, config.useCuboidMapRS, 
-				     &GSImaptable[0], config.nchareG, numInst, x, y, z);
+				     &GSImaptable[numInst], config.nchareG, numInst, x, y, z);
 #else
       RSMapTable RStable= RSMapTable(&RSmaptable, availGlobR, nstates, nchareR, 
 				     Rstates_per_pe, config.useCuboidMapRS, &GSmaptable, config.nchareG);
@@ -1616,18 +1577,18 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
       for(int i =0;i<numproc;i++){gspace_proc[i]=0;}
       for(int j=0;j<nchareG;j++){   
-	listpe[j]= new int[nstates];
-	nsend[j]=0;
-	for(int i=0;i<nstates;i++){
-	  listpe[j][i] = gsprocNum(sim, i, j, thisInstance.getPO());
-	  gspace_proc[listpe[j][i]]+=1;
-	}//endfor
-	lst_sort_clean(nstates, &nsend[j], listpe[j]);
+        listpe[j]= new int[nstates];
+        nsend[j]=0;
+        for(int i=0;i<nstates;i++){
+          listpe[j][i] = gsprocNum(sim, i, j, thisInstance.getPO());
+          gspace_proc[listpe[j][i]]+=1;
+        }//endfor
+        lst_sort_clean(nstates, &nsend[j], listpe[j]);
       }//endfor
 
       FILE *fp = fopen("gspplane_proc_distrib.out","w");
       for(int i=0;i<numproc;i++){
-	fprintf(fp,"%d %d\n",i,gspace_proc[i]);
+        fprintf(fp,"%d %d\n",i,gspace_proc[i]);
       }//endfor
       fclose(fp);
       delete [] gspace_proc;
@@ -1641,17 +1602,17 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
       CkPrintf("Number of g-space chares : %d\n",nchareG);    
       PRINT_LINE_DASH;
       for(int lsi=0;lsi<nchareG;lsi++){
-	chareG_use++;
-	CkPrintf("chareG [%d] nsend %d\n",lsi,nsend[lsi]);
-	if(nsend[lsi]>maxsend)
-	  maxsend=nsend[lsi];
-	if(nsend[lsi]<minsend)
-	  minsend=nsend[lsi];
-	avgsend+=(double) nsend[lsi];
+        chareG_use++;
+        CkPrintf("chareG [%d] nsend %d\n",lsi,nsend[lsi]);
+        if(nsend[lsi]>maxsend)
+          maxsend=nsend[lsi];
+        if(nsend[lsi]<minsend)
+          minsend=nsend[lsi];
+        avgsend+=(double) nsend[lsi];
 #ifdef SF_SEND_LIST_OUT
-	for(int lsj=0;lsj<nsend[lsi];lsj++){
-	  CkPrintf("[%d %d] pe %d\n",lsi,lsj,listpe[lsi][lsj]);
-	}//endfor
+        for(int lsj=0;lsj<nsend[lsi];lsj++){
+          CkPrintf("[%d %d] pe %d\n",lsi,lsj,listpe[lsi][lsj]);
+        }//endfor
 #endif
       }//endfor
       PRINT_LINE_DASH;
@@ -1668,22 +1629,22 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
       CkPrintf("real numSfdups is %d based on maxsend of %d\n",numSfDups, maxsend);
       CkVec  <int>  peUsedBySF;
       for (int dup=0; dup<dupmax; dup++){
-	for (int x = 0; x < nchareG; x += 1){
-	  int num_dup, istart, iend;
-	  get_grp_params( nsend[x],  numSfDups,  dup, x ,&num_dup,  &istart, &iend);
-	  int pe_ind=istart;
-	  if(x%2==0)
-	    pe_ind=iend;
-	  for (int AtmGrp=0; AtmGrp<numSfGrps; AtmGrp++){
-	    UsfCompProxy[thisInstance.proxyOffset](AtmGrp, x, dup).insert(numSfGrps,numSfDups, 
-									  natm_nl_grp_max,  num_dup, &(listpe[x][istart]),
-									  thisInstance,atmGrpMap(istart, num_dup, nsend[x], listpe[x],AtmGrp,dup,x));
-	    peUsedBySF.push_back(atmGrpMap(istart, num_dup, nsend[x], listpe[x],   AtmGrp, dup,x));	      
+        for (int x = 0; x < nchareG; x += 1){
+          int num_dup, istart, iend;
+          get_grp_params( nsend[x],  numSfDups,  dup, x ,&num_dup,  &istart, &iend);
+          int pe_ind=istart;
+          if(x%2==0)
+            pe_ind=iend;
+          for (int AtmGrp=0; AtmGrp<numSfGrps; AtmGrp++){
+            UsfCompProxy[thisInstance.proxyOffset](AtmGrp, x, dup).insert(numSfGrps,numSfDups, 
+                natm_nl_grp_max,  num_dup, &(listpe[x][istart]),
+                thisInstance,atmGrpMap(istart, num_dup, nsend[x], listpe[x],AtmGrp,dup,x));
+            peUsedBySF.push_back(atmGrpMap(istart, num_dup, nsend[x], listpe[x],   AtmGrp, dup,x));	      
 
 	    pe_ind++;
-	    if(pe_ind>nsend[x]){ pe_ind=0;}
-	  }//endfor : AtmGrp
-	}//endfor : chareG
+      if(pe_ind>nsend[x]){ pe_ind=0;}
+          }//endfor : AtmGrp
+        }//endfor : chareG
       }//endfor : Dups
       UsfCompProxy[thisInstance.proxyOffset].doneInserting();
       UpeUsedBySF.push_back(peUsedBySF);
@@ -1694,49 +1655,49 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   //============================================================================
   // Set some com strategy of Sameer
-  if(firstInstance) {
+if(firstInstance) {
 
 #ifdef USE_COMLIB
-    if(config.useCommlib) {
-      // TODO: do we need to do this for each Uber instance?
-      // technically they are operating on mutually exclusive process
-      // sets, so modulo insane commlib global state, it should be
-      // safe to reuse these across ubers
+  if(config.useCommlib) {
+    // TODO: do we need to do this for each Uber instance?
+    // technically they are operating on mutually exclusive process
+    // sets, so modulo insane commlib global state, it should be
+    // safe to reuse these across ubers
 
-      CkPrintf("Making State streaming strats useGssRP = %d, useMssGP = %d,  useGssRPP = %d,  useMssGPP = %d\n",(int)config.useGssInsRealP,(int)config.useMssInsGP,(int)config.useGssInsRealPP,(int)config.useMssInsGPP);
-      //mstrat->enableShortArrayMessagePacking();
-      //rspaceState to gspaceState : gspaceState to rspaceState 
+    CkPrintf("Making State streaming strats useGssRP = %d, useMssGP = %d,  useGssRPP = %d,  useMssGPP = %d\n",(int)config.useGssInsRealP,(int)config.useMssInsGP,(int)config.useGssInsRealPP,(int)config.useMssInsGPP);
+    //mstrat->enableShortArrayMessagePacking();
+    //rspaceState to gspaceState : gspaceState to rspaceState 
 
-      if(config.useGssInsRealP)
-	{
-	  StreamingStrategy *gmstrat = new StreamingStrategy(config.gStreamPeriod,
-							     config.gBucketSize);
-	  gssInstance= ComlibRegister(gmstrat);    
-	}
-      //mstrat->enableShortArrayMessagePacking();
-      //rPPState to gPPState : gPPState to rPPState 
-      if(config.useMssInsGP){
-	StreamingStrategy *mstrat = new StreamingStrategy(config.rStreamPeriod,
-							  config.rBucketSize);
+    if(config.useGssInsRealP)
+    {
+      StreamingStrategy *gmstrat = new StreamingStrategy(config.gStreamPeriod,
+          config.gBucketSize);
+      gssInstance= ComlibRegister(gmstrat);    
+    }
+    //mstrat->enableShortArrayMessagePacking();
+    //rPPState to gPPState : gPPState to rPPState 
+    if(config.useMssInsGP){
+      StreamingStrategy *mstrat = new StreamingStrategy(config.rStreamPeriod,
+          config.rBucketSize);
 
-	mssInstance= ComlibRegister(mstrat);    
-      }
-      if (config.useMssInsGPP){
-	StreamingStrategy *rpmstrat = new StreamingStrategy(config.rStreamPeriod,
-							    config.rBucketSize);
+      mssInstance= ComlibRegister(mstrat);    
+    }
+    if (config.useMssInsGPP){
+      StreamingStrategy *rpmstrat = new StreamingStrategy(config.rStreamPeriod,
+          config.rBucketSize);
 
-	mssPInstance= ComlibRegister(rpmstrat);    
-      }
-      if (config.useGssInsRealPP){
-	StreamingStrategy *gpmstrat = new StreamingStrategy(config.gStreamPeriod,
-							    config.gBucketSize);
-	gssPInstance= ComlibRegister(gpmstrat);    
-      }
-    }//endif
+      mssPInstance= ComlibRegister(rpmstrat);    
+    }
+    if (config.useGssInsRealPP){
+      StreamingStrategy *gpmstrat = new StreamingStrategy(config.gStreamPeriod,
+          config.gBucketSize);
+      gssPInstance= ComlibRegister(gpmstrat);    
+    }
+  }//endif
 #endif
 
-  }
-  //============================================================================
+}
+//============================================================================
 
   printf("\n");
 
@@ -1781,51 +1742,52 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
   int zmatSizeMax     = sim->nmem_zmat_max;
 
   PeList *nlexcludePes;
+  exclusion->reset();
   if(config.useRhoExclusionMap)
     nlexcludePes=exclusion;
   else if(config.useReductionExclusionMap)
-    nlexcludePes= new PeList(UpeUsedByNLZ[thisInstance.proxyOffset]);   
+    nlexcludePes= new PeList(1, 1, UpeUsedByNLZ[thisInstance.proxyOffset]);   
   else
-    nlexcludePes= new PeList(0);
+    nlexcludePes= new PeList(1, 1, 0);
   if(config.excludePE0 && ! config.loadMapFiles)
-    nlexcludePes->appendOne(0);
+    nlexcludePes->checkAndAdd(0);
   int Rstates_per_pe  = config.Rstates_per_pe;
   availGlobG->reset();
   double newtime=CmiWallTimer();
 #ifdef USE_INT_MAP
   RPPImaptable[thisInstance.getPO()].buildMap(nstates, nchareRPP);
 #endif
-  if(firstInstance)
+  if(firstInstance || config.simpleTopo)
     {
       int success = 0;
       if(config.loadMapFiles) {
-	int size[2];
-	size[0] = nstates; size[1] = nchareRPP;
-	MapFile *mf = new MapFile("RPPMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+        int size[2];
+        size[0] = nstates; size[1] = nchareRPP;
+        MapFile *mf = new MapFile("RPPMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
-	success = mf->loadMap("RPPMap", &RPPImaptable[thisInstance.getPO()]);
+        success = mf->loadMap("RPPMap", &RPPImaptable[thisInstance.getPO()]);
 #else
-	success = mf->loadMap("RPPMap", &RPPmaptable);
+        success = mf->loadMap("RPPMap", &RPPmaptable);
 #endif
-	delete mf;
+        delete mf;
       }
 
       if(success == 0) {
 #ifdef USE_INT_MAP
-	RPPMapTable RPPtable= RPPMapTable(&RPPImaptable[thisInstance.getPO()], availGlobG, nlexcludePes, 
-					  nstates,  nchareRPP, Rstates_per_pe,
-					  boxSize, config.useCuboidMap, 
-					  config.nchareG, &GSImaptable[thisInstance.getPO()]);
+        RPPMapTable RPPtable= RPPMapTable(&RPPImaptable[thisInstance.getPO()], availGlobG, nlexcludePes, 
+            nstates,  nchareRPP, Rstates_per_pe,
+            boxSize, config.useCuboidMap, 
+            config.nchareG, &GSImaptable[thisInstance.getPO()]);
 #else
-	RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, nlexcludePes, 
-					  nstates,  nchareRPP, Rstates_per_pe,
-					  boxSize, config.useCuboidMap, 
-					  config.nchareG, &GSmaptable);
+        RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, nlexcludePes, 
+            nstates,  nchareRPP, Rstates_per_pe,
+            boxSize, config.useCuboidMap, 
+            config.nchareG, &GSmaptable);
 #endif
       }
     }
   else
-    {
+  {
       int x=mapOffsets[numInst].getx();
       int y=mapOffsets[numInst].gety();
       int z=mapOffsets[numInst].getz();
@@ -1863,19 +1825,19 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
       nlexcludePes=NULL;
     }
   else
-    {
-      if(nlexcludePes!=NULL) {
-	delete nlexcludePes;
-        nlexcludePes = NULL;
-      }
+  {
+    if(nlexcludePes!=NULL) {
+      delete nlexcludePes;
+      nlexcludePes = NULL;
     }
+  }
   if(config.excludePE0 &&  !config.loadMapFiles)
-    {
-      if(nlexcludePes!=NULL) {
-	delete nlexcludePes;
-        nlexcludePes = NULL;
-      }
+  {
+    if(nlexcludePes!=NULL) {
+      delete nlexcludePes;
+      nlexcludePes = NULL;
     }
+  }
   Timer=newtime;
   CkArrayOptions pRealSpaceOpts(nstates,ngridcNl);
   pRealSpaceOpts.setMap(rspMap);
@@ -1968,43 +1930,41 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     {
       availGlobR->reset();
       // make RhoAvail based on the pes used by RS
-      RhoAvail=new PeList(*availGlobR);
+      RhoAvail=new PeList(1, 1, *availGlobR);
     }
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (i.e., non local reduceZ)
-  excludePes= new PeList(0);   
+  excludePes= new PeList(1, 1, 0);   
   if(config.excludePE0 && !config.loadMapFiles)
-    excludePes->appendOne(0);
+    excludePes->checkAndAdd(0);
 
   // avoid co-mapping with the particle plane non-local reduction roots
   if(config.useReductionExclusionMap && !config.loadMapFiles)
-    {
-      if( nchareRhoR*config.rhoRsubplanes+UpeUsedByNLZ[thisInstance.proxyOffset].size() <
-	  RhoAvail->count()){
+  {
+    if( nchareRhoR*config.rhoRsubplanes+UpeUsedByNLZ[thisInstance.proxyOffset].size() <
+        RhoAvail->count()){
 
-	CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
-		 UpeUsedByNLZ[thisInstance.proxyOffset].size(),RhoAvail->count());
-	//       nlz.dump();
-	PeList nlz(UpeUsedByNLZ[thisInstance.proxyOffset]);
-	*RhoAvail-nlz; //unary minus operator defined in PeList.h
-	RhoAvail->reindex();
-	CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
-      }//endif
+      CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
+          UpeUsedByNLZ[thisInstance.proxyOffset].size(),RhoAvail->count());
+      //       nlz.dump();
+      PeList nlz(0, 0, UpeUsedByNLZ[thisInstance.proxyOffset]);
+      RhoAvail->deleteList(nlz, 0, 1); //unary minus operator defined in PeList.h
+      CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
+    }//endif
 
       //------------------------------------------------------------------------
       // subtract processors used by other nonscaling chares
 
-      if(ees_nonlocal_on==0){
-	if( nchareRhoR*config.rhoRsubplanes+UpeUsedBySF[thisInstance.proxyOffset].size()<RhoAvail->count()){
-	  CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
-		   UpeUsedBySF[thisInstance.proxyOffset].size(),RhoAvail->count());
-	  PeList sf(UpeUsedBySF[thisInstance.proxyOffset]);
-	  *RhoAvail-sf;
-	  RhoAvail->reindex();
-	}//endif
+    if(ees_nonlocal_on==0){
+      if( nchareRhoR*config.rhoRsubplanes+UpeUsedBySF[thisInstance.proxyOffset].size()<RhoAvail->count()){
+        CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
+            UpeUsedBySF[thisInstance.proxyOffset].size(),RhoAvail->count());
+        PeList sf(0, 0, UpeUsedBySF[thisInstance.proxyOffset]);
+        RhoAvail->deleteList(sf, 0, 1);
       }//endif
-    }
-  if(!config.loadMapFiles && RhoAvail->count()>2 ) { RhoAvail->reindex(); }
+    }//endif
+  }
+  if(!config.loadMapFiles && RhoAvail->count()>2 ) { RhoAvail->reset(); }
 
   //============================================================================
   // Maps and options
@@ -2012,28 +1972,26 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 
   //---------------------------------------------------------------------------
   // rho RS 
-  if(firstInstance)
-    {
-      RhoRSImaptable[thisInstance.getPO()].buildMap(nchareRhoR, config.rhoRsubplanes);
-      int success = 0;
-      if(config.loadMapFiles) {
-	int size[2];
-	size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
-	MapFile *mf = new MapFile("RhoRSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-	success = mf->loadMap("RhoRSMap", &RhoRSImaptable[thisInstance.getPO()]);
-	delete mf;
-      }
-      if(success == 0) {
-	RhoRSMapTable RhoRStable(&RhoRSImaptable[thisInstance.getPO()], RhoAvail, nchareRhoR, config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSImaptable[thisInstance.getPO()], excludePes);
-      }
+  if(firstInstance || config.simpleTopo)
+  {
+    RhoRSImaptable[thisInstance.getPO()].buildMap(nchareRhoR, config.rhoRsubplanes);
+    int success = 0;
+    if(config.loadMapFiles) {
+      int size[2];
+      size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
+      MapFile *mf = new MapFile("RhoRSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+      success = mf->loadMap("RhoRSMap", &RhoRSImaptable[thisInstance.getPO()]);
+      delete mf;
     }
-  else
-    {
+    if(success == 0) {
+      RhoRSMapTable RhoRStable(&RhoRSImaptable[thisInstance.getPO()], RhoAvail, nchareRhoR, config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSImaptable[thisInstance.getPO()], excludePes);
+    }
+  } else {
       int x=mapOffsets[numInst].getx();
       int y=mapOffsets[numInst].gety();
       int z=mapOffsets[numInst].getz();
       RhoRSImaptable[numInst].translate(&RhoRSImaptable[0], x,y,z, config.torusMap==1);
-    }
+  }
 
   CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(thisInstance);
   CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
@@ -2071,22 +2029,22 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
       CkPrintf("refreshing avail list count %d less than rhog %d\n",RhoAvail->count(), nchareRhoG);
       RhoAvail->reset();
     }
-  if(firstInstance)
-    {
-      RhoGSImaptable[thisInstance.getPO()].buildMap(nchareRhoG, 1);
-      int success = 0;
-      if(config.loadMapFiles) {
-	int size[2];
-	size[0] = nchareRhoG; size[1] = 1;
-	MapFile *mf = new MapFile("RhoGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-	success = mf->loadMap("RhoGSMap", &RhoGSImaptable[thisInstance.getPO()]);
-	delete mf;
-      }
-      if(success == 0) {
-	RhoGSMapTable RhoGStable(&RhoGSImaptable[thisInstance.getPO()], RhoAvail,nchareRhoG, config.useCentroidMapRho, &RhoRSImaptable[thisInstance.getPO()], excludePes);
-
-      }
+  if(firstInstance || config.simpleTopo)
+  {
+    RhoGSImaptable[thisInstance.getPO()].buildMap(nchareRhoG, 1);
+    int success = 0;
+    if(config.loadMapFiles) {
+      int size[2];
+      size[0] = nchareRhoG; size[1] = 1;
+      MapFile *mf = new MapFile("RhoGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+      success = mf->loadMap("RhoGSMap", &RhoGSImaptable[thisInstance.getPO()]);
+      delete mf;
     }
+    if(success == 0) {
+      RhoGSMapTable RhoGStable(&RhoGSImaptable[thisInstance.getPO()], RhoAvail,nchareRhoG, config.useCentroidMapRho, &RhoRSImaptable[thisInstance.getPO()], excludePes);
+
+    }
+  }
   else
     {
       int x=mapOffsets[numInst].getx();
@@ -2136,31 +2094,31 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   rhorhartOpts.setAnytimeMigration(false);
   rhorhartOpts.setStaticInsertion(true);    
   if(ees_eext_on) {
-    if(firstInstance)
-      {
-	RhoRHartImaptable[thisInstance.getPO()].buildMap(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
-	int success = 0;
-	if(config.loadMapFiles) {
-	  int size[3];
-	  size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes;
-	  size[2] = nchareHartAtmT;
-	  MapFile *mf = new MapFile("RhoRHartMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-	  success = mf->loadMap("RhoRHartMap", &RhoRHartImaptable[thisInstance.getPO()]);
-	  delete mf;
-	}
-	if(success == 0) {
-	  RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable[thisInstance.getPO()], RhoAvail, 
-					 nchareRhoRHart, config.rhoRsubplanes, 
-					 config.nchareHartAtmT, excludePes);
-	}
+    if(firstInstance || config.simpleTopo)
+    {
+      RhoRHartImaptable[thisInstance.getPO()].buildMap(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
+      int success = 0;
+      if(config.loadMapFiles) {
+        int size[3];
+        size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes;
+        size[2] = nchareHartAtmT;
+        MapFile *mf = new MapFile("RhoRHartMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+        success = mf->loadMap("RhoRHartMap", &RhoRHartImaptable[thisInstance.getPO()]);
+        delete mf;
       }
+      if(success == 0) {
+        RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable[thisInstance.getPO()], RhoAvail, 
+            nchareRhoRHart, config.rhoRsubplanes, 
+            config.nchareHartAtmT, excludePes);
+      }
+    }
     else
-      {
-	int x=mapOffsets[numInst].getx();
-	int y=mapOffsets[numInst].gety();
-	int z=mapOffsets[numInst].getz();
-	RhoRHartImaptable[numInst].translate(&RhoRHartImaptable[0], x,y,z, config.torusMap==1);
-      }
+    {
+      int x=mapOffsets[numInst].getx();
+      int y=mapOffsets[numInst].gety();
+      int z=mapOffsets[numInst].getz();
+      RhoRHartImaptable[numInst].translate(&RhoRHartImaptable[0], x,y,z, config.torusMap==1);
+    }
 
 
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew(thisInstance);
@@ -2197,29 +2155,29 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   // if there aren't enough free procs refresh the avail list;
   if(!config.loadMapFiles && nchareRhoGHart>RhoAvail->count())
     RhoAvail->reset();
-  if(firstInstance)
-    {
-      RhoGHartImaptable[thisInstance.getPO()].buildMap(nchareRhoGHart, nchareHartAtmT);
-      int success = 0;
-      if(config.loadMapFiles) {
-	int size[2];
-	size[0] = nchareRhoGHart; size[1] = nchareHartAtmT;
-	MapFile *mf = new MapFile("RhoGHartMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-	success = mf->loadMap("RhoGHartMap", &RhoGHartImaptable[thisInstance.getPO()]);
-	delete mf;
-      }
-      if(success == 0) {
-
-	MapType3 *RhoRHartImaptablep=NULL;
-	if(ees_eext_on)
-	  RhoRHartImaptablep=&RhoRHartImaptable[thisInstance.getPO()];
-	RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable[thisInstance.getPO()], RhoAvail, 
-				       nchareRhoGHart, config.nchareHartAtmT,
-				       config.useCentroidMapRho, 
-				       RhoRHartImaptablep, excludePes);
-
-      }
+  if(firstInstance || config.simpleTopo)
+  {
+    RhoGHartImaptable[thisInstance.getPO()].buildMap(nchareRhoGHart, nchareHartAtmT);
+    int success = 0;
+    if(config.loadMapFiles) {
+      int size[2];
+      size[0] = nchareRhoGHart; size[1] = nchareHartAtmT;
+      MapFile *mf = new MapFile("RhoGHartMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+      success = mf->loadMap("RhoGHartMap", &RhoGHartImaptable[thisInstance.getPO()]);
+      delete mf;
     }
+    if(success == 0) {
+
+      MapType3 *RhoRHartImaptablep=NULL;
+      if(ees_eext_on)
+        RhoRHartImaptablep=&RhoRHartImaptable[thisInstance.getPO()];
+      RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable[thisInstance.getPO()], RhoAvail, 
+          nchareRhoGHart, config.nchareHartAtmT,
+          config.useCentroidMapRho, 
+          RhoRHartImaptablep, excludePes);
+
+    }
+  }
   else
     {
       int x=mapOffsets[numInst].getx();
@@ -2403,19 +2361,19 @@ void control_physics_to_driver(UberCollection thisInstance){
       // can do better.
       int nChareAtoms=(config.numPesPerInstance<natm) ? config.numPesPerInstance : natm;
 
-      if (firstInstance) {
-	// build the base atom map
-	AtomImaptable[numInst].buildMap(nChareAtoms);
-	availGlobG->reset();
-	AtomMapTable aTable = AtomMapTable(&AtomImaptable[numInst], availGlobG, 
-					   numInst,nChareAtoms);
+      if (firstInstance || config.simpleTopo) {
+        // build the base atom map
+        AtomImaptable[numInst].buildMap(nChareAtoms);
+        availGlobG->reset();
+        AtomMapTable aTable = AtomMapTable(&AtomImaptable[numInst], availGlobG, 
+            numInst,nChareAtoms);
 
 
       } else {
-	int x=mapOffsets[numInst].getx();
-	int y=mapOffsets[numInst].gety();
-	int z=mapOffsets[numInst].getz();
-	AtomImaptable[numInst].translate(&AtomImaptable[0], x,y,z, config.torusMap==1);
+        int x=mapOffsets[numInst].getx();
+        int y=mapOffsets[numInst].gety();
+        int z=mapOffsets[numInst].getz();
+        AtomImaptable[numInst].translate(&AtomImaptable[0], x,y,z, config.torusMap==1);
       }
       CProxy_AtomComputeMap aMap = CProxy_AtomComputeMap::ckNew(thisInstance);
       CkArrayOptions atomOpts(nChareAtoms);
@@ -2562,337 +2520,41 @@ void mapOutput()
 }//end routine
 //============================================================================
 
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-// return the cuboid x,y,z of a subpartition exactly matching that volume
-//============================================================================
-bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ, int maxT, int volume, int vn){
-  //============================================================================
-  int maxD=maxX;
-  int minD=maxX;
-  int minX=maxX;
-  int minY=maxY;
-  int minZ=maxZ;
-  //  vn=0;
-  if(config.forceMappingAxis>-1)
-    {
-      order=config.forceMappingAxis;
-      if (config.forceMappingAxis==0) 
-	minD=minX;
-      if (config.forceMappingAxis==1) 
-	minD=maxY;
-      if (config.forceMappingAxis==2) 
-	minD=maxZ;
-    }
-  else
-    { 
-      order=0;
-      maxD = (maxY>maxD) ? maxY : maxD;
-      maxD = (maxZ>maxD) ? maxZ : maxD;
-      if(vn)
-	{  // using Y as the prism axis seems to suck
-	  maxD = (maxY>maxD) ? maxY : maxD;
-	  maxD = (maxZ>maxD) ? maxZ : maxD;
-	  minD = (maxY<minD) ? maxY : minD;
-	  minD = (maxZ<maxD) ? maxZ : minD;
-
-	}
-      else
-	{
-	  maxD = (maxY>maxD) ? maxY : maxD;
-	  maxD = (maxZ>maxD) ? maxZ : maxD;
-	  minD = (maxY<minD) ? maxY : minD;
-	  minD = (maxZ<minD) ? maxZ : minD;
-
-	}
-    }
-  // CkPrintf("minD %d maxD %d\n",minD, maxD);
-  if(config.useCuboidMapRS)
-    {
-      CkPrintf("Using long prisms for useCuboidMapRS\n");
-    }
-
-  // We were reducing the volume by maxT and then finding the dimensions of the
-  // box in terms of the no. of nodes and not processors
-
-  // That worked ok on BG/L, but BG/P maxT of 4 distorts the long axis logic.
-  // in TXYZ you have a 32x8x16 for 1 Rack or 32x8x32 for 2 Rack
-  // in XYZT you have 8x8x64 for 1 Rack or 8x8x128 for 2 Rack
-
-  // The latter case makes clear the bizarre and unreal distortion created by
-  // pretending that maxT is just a multiplier along one dimension when
-  // considering actual box size.  What was merely odd on BG/L is now
-  // seriously peculiar.  Also default TXYZ mappings and default Order 0
-  // mappings to use the X as long axis for prisms fail to work right because
-  // we aren't really spanning the X*maxT dimension with these long prisms.
-
-  int redVol = volume / maxT;
-  double cubert= cbrt((double) redVol);
-  int cubetrunc= (int) cubert;
-  x=y=z=cubetrunc;
-  if(cubetrunc>minD)
-    cubetrunc=minD;
-  if(cubetrunc>maxY)
-    cubetrunc=maxY;
-  if(cubetrunc>maxZ)
-    cubetrunc=maxZ;
-  if(redVol==x*y*z && !config.useCuboidMapRS)
-    return true;
-  bool switchSet=false;
-  CkAssert(redVol>0);
-  switch (redVol) // for the common values we just pick cuboids we like
-    {
-    case 1: 
-      x=1; y=1; z=1; switchSet=true; break;
-    case 2: 
-      x=2; y=1; z=1; switchSet=true; break;
-    case 3:
-      x=3; y=1; z=1; switchSet=true; break;
-    case 4:
-      x=2; y=2; z=1; switchSet=true; break;
-    case 5:
-      x=5; y=1; z=1; switchSet=true; break;
-    case 6:
-      x=3; y=2; z=1; switchSet=true; break;
-    case 7:
-      x=7; y=1; z=1; switchSet=true; break;
-    case 8:
-      if(config.useCuboidMapRS)
-	{
-	  if(minD>=2)
-
-	    { x=2; y=2; z=2; switchSet=true; break;}
-	  /* no evidence that these other schemes help
-	     if(minD==4)
-	     { x=4; y=2; z=1; switchSet=true; break;}
-	     if(minD>=8)
-	     { x=8; y=1; z=1; switchSet=true; break;}
-	  */
-	}
-    case 9:
-      x=3; y=3; z=1; switchSet=true; break;
-    case 10:
-      x=5; y=2; z=1; switchSet=true; break;
-    case 12:
-      x=2; y=3; z=2; switchSet=true; break;
-    case 14:
-      x=7; y=2; z=1; switchSet=true; break;
-    case 15:
-      x=5; y=3; z=1; switchSet=true; break;
-    case 16:
-      if(config.useCuboidMapRS)
-	{
-	  if(minD>=8)
-	    { x=8; y=2; z=1; switchSet=true; break;}
-	}
-      x=4; y=2; z=2; switchSet=true; break;
-    case 18:
-      x=3; y=3; z=2; switchSet=true; break;
-    case 20:
-      x=5; y=2; z=2; switchSet=true; break;
-    case 21:
-      x=7; y=3; z=1; switchSet=true; break;
-    case 24:
-      x=4; y=3; z=2; switchSet=true; break;
-    case 25:
-      x=5; y=5; z=1; switchSet=true; break;
-    case 27:
-      x=3; y=3; z=3; switchSet=true; break;
-    case 28:
-      x=7; y=2; z=2; switchSet=true; break;
-    case 30:
-      x=5; y=2; z=2; switchSet=true; break;
-    case 32:
-      if(config.useCuboidMapRS)
-	{
-	  if(minD==8)
-	    { x=8; y=2; z=2; switchSet=true; break;}
-	  if(minD==16)
-	    { x=16; y=2; z=1; switchSet=true; break;}
-	  if(minD>=32)
-	    { x=32; y=1; z=1; switchSet=true; break;}
-
-	}
-      x=4; y=2; z=4; switchSet=true; break;
-    case 35:
-      x=7; y=5; z=1; switchSet=true; break;
-    case 36:
-      x=4; y=3; z=3; switchSet=true; break;
-    case 40:
-      x=5; y=4; z=2; switchSet=true; break;
-    case 42:
-      x=7; y=3; z=2; switchSet=true; break;
-    case 43:
-      x=7; y=3; z=2; switchSet=true; break;
-    case 45:
-      x=5; y=3; y=3; switchSet=true; break;
-    case 48:
-      x=4; y=3; z=4; switchSet=true; break;
-    case 50:
-      x=5; y=5; z=2; switchSet=true; break;
-    case 54:
-      x=6; y=3; z=3; switchSet=true; break;
-    case 56:
-      x=7; y=4; z=2; switchSet=true; break;
-    case 60:
-      x=5; y= 4; z=3; switchSet=true; break;
-    case 64:
-      if(config.useCuboidMapRS)
-	{
-	  if(minD==8)
-	    { x=8; y=4; z=2; switchSet=true; break;}
-	  if(minD==16)
-	    { x=16; y=2; z=2; switchSet=true; break;}
-	  if(minD==32)
-	    { x=32; y=2; z=1; switchSet=true; break;}
-	  if(minD>=64)
-	    { x=64; y=1; z=1; switchSet=true; break;}
-	}
-      x=4; y=4; z=4; switchSet=true; break;
-    case 128:
-      if(config.useCuboidMapRS)
-	{
-	  if(minD==8)
-	    { x=8; y=4; z=4; switchSet=true; break;}
-	  if(minD==16)
-	    {x=16; y=4; z=2; switchSet=true; break;}
-	  if(minD==32)
-	    {  x=32; y=2; z=2; switchSet=true; break;	}
-	  if(minD==64)
-	    {  x=64; y=2; z=1; switchSet=true; break;	}
-	  if(minD>=128)
-	    {  x=128; y=1; z=1; switchSet=true; break;	}
-	}
-      x=8; y=4; z=4; switchSet=true; break;
-    case 256:
-      if(config.useCuboidMapRS)
-	{
-	  if(minD==8)
-	    { x=8; y=8; z=4; switchSet=true; break;}
-	  if(minD==16)
-	    { x=16; y=4; z=4; switchSet=true; break;}
-	  if(minD==32)
-	    { x=32; y=4; z=2; switchSet=true; break;}
-	  if(minD==64)
-	    { x=64; y=2; z=2; switchSet=true; break;}
-	  if(minD>=128)
-	    { x=64; y=2; z=1; switchSet=true; break;}
-	}
-      x=8; y=8; z=4; switchSet=true; break;
-    case 512:
-      if(config.useCuboidMapRS)
-	{
-	  if(minD==8)
-	    { x=8; y=8; z=8; switchSet=true; break;}
-	  if(minD==16)
-	    { x=16; y=4; z=8; switchSet=true; break;}
-	  if(minD==32)
-	    { x=32; y=4; z=4; switchSet=true; break;}
-	  if(minD==64)
-	    { x=64; y=4; z=2; switchSet=true; break;}
-	  if(minD==128)
-	    { x=128; y=2; z=2; switchSet=true; break;}
-	  if(minD>=256)
-	    { x=256; y=2; z=1; switchSet=true; break;}
-	}
-      x=8; y=8; z=8; switchSet=true; break;
-
-    default:
-      break;
-    }
-  if(switchSet && config.forceMappingAxis>-1)
-    {
-
-      switch(config.forceMappingAxis)
-	{
-	case 0:
-	  return true; 	  //no change
-	case 1:
-	  {
-	    order=1; //YXZ
-	    int swap=x;
-	    x=y;
-	    y=swap;
-	    return true;
-	  }
-	case 2:
-	  {
-	    order=2; //ZXY
-	    int swap=x;
-	    x=z;
-	    z=swap;
-	    return true;
-	  }
-	}
-    }
-  else if (switchSet)
-    {
-      // now correct the x,y,z to put long prism axis along the
-      // smallest torus dimension which will fit.
-      if(x==maxX)
-	return true;
-      if(x==maxY)
-	{ // change to Y
-	  order=1; //YXZ
-	  int swap=x;
-	  x=y;
-	  y=swap;
-	  return true;
-	}
-      if(x==maxZ)
-	{ // change to Z
-	  order=2; //ZXY
-	  int swap=x;
-	  x=z;
-	  z=swap;
-	  return true;
-	}
-      // if we're here then we don't have a spanning prism
-      // just pick the smallest which will fit.
-      if(x<maxX)
-	return true;
-      if(x<maxY)
-	{ // change to Y
-	  order=1; //YXZ
-	  int swap=x;
-	  x=y;
-	  y=swap;
-	  return true;
-	}
-      if(x<maxZ)
-	{ // change to Z
-	  order=2; //ZXY
-	  int swap=x;
-	  x=z;
-	  z=swap;
-	  return true;
-	}
-    }
-  // its something weird so try a best fit
-  int start=cubetrunc-1;
-  if(config.useCuboidMapRS)
-    x = (redVol>=maxX) ? maxX : cubetrunc;
-  else
-    x=cubetrunc;
-  for(; x<=maxX;x++)
-    {
-      for(y=start; y<=maxY;y++)
-	{
-	  for(z=start; z<=maxZ;z++)
-	    {
-	      if(redVol==x*y*z)
-		return true;
-	    }
-	}
-    }
-  return false;
-
-
-}
 //============================================================================
 /**@}*/
+
+#ifdef CMK_BALANCED_INJECTION_API
+#define DEFAULT_LOW_BI_VALUE 32;
+uint16_t lowBIValue=DEFAULT_LOW_BI_VALUE;
+uint16_t origBIValue;
+#endif
+
+void set_GNI_LOW_BI()
+{
+
+/* because gemini dies like a fish on a hot beach if you overuse the
+   network */
+#ifdef CMK_BALANCED_INJECTION_API
+  uint16_t currval =ck_get_GNI_BIConfig();
+  if(currval!=lowBIValue)
+    {
+      origBIValue=currval;
+      ck_set_GNI_BIConfig(lowBIValue);
+    }
+  if(CmiMyNode()==0)
+    CkPrintf("Balanced Injection initial value was %d, is now %d\n",origBIValue,lowBIValue);
+
+
+
+#endif
+}
+
+void  PlatformSpecific::reset_BI(){
+#ifdef CMK_BALANCED_INJECTION_API
+    ck_set_GNI_BIConfig(origBIValue);
+#endif
+  }
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -3079,46 +2741,12 @@ void computeMapOffsets()
 {
   int x, y, z, x1, y1, z1;
   // correction to accomodate multiple instances
-  for(int thisInst=1; thisInst<config.numInstances; thisInst++)
-    {
-      if(config.torusMap == 1) {
-	int dimNX, dimNY, dimNZ;
-	int longDim = -1, maxD;
-
-	x1 = dimNX = topoMgr->getDimNX();
-	y1 = dimNY = topoMgr->getDimNY();
-	z1 = dimNZ = topoMgr->getDimNZ();
-
-	maxD = dimNX;
-	longDim = 1;
-
-	if (dimNY > maxD) { maxD = dimNY; longDim = 2; }
-	if (dimNZ > maxD) { maxD = dimNZ; longDim = 3; }
-
-	switch(longDim) {
-        case 1:
-          x = thisInst*(maxD/config.numInstances); y = 0; z = 0;
-          x1 = dimNX / config.numInstances;
-          break;
-        case 2:
-          x = 0; y = thisInst*(maxD/config.numInstances); z = 0;
-          y1 = dimNY / config.numInstances;
-          break;
-        case 3:
-          x = 0; y = 0; z = thisInst*(maxD/config.numInstances);
-          z1 = dimNZ / config.numInstances;
-          break;
-	}
-      }
-      else
-	{
-	  // just split by numInstances
-	  x=thisInst*config.numPesPerInstance;
-	  y=0;
-	  z=0;
-	}
-      mapOffsets[thisInst]=inttriple(x,y,z);
-    }
+  for(int thisInst=1; thisInst<config.numInstances; thisInst++) {
+    x=thisInst*config.numPesPerInstance;
+    y=0;
+    z=0;
+    mapOffsets[thisInst]=inttriple(x,y,z);
+  }
 }
 
 
@@ -3251,6 +2879,7 @@ void orthostartup( cp::ortho::orthoConfig *orthoCfg,  pc::pcConfig *cfgSymmPC, p
 
 //============================================================================
 #include "CPcharmParaInfo.def.h"
+#include "PlatformSpecific.def.h"
 #include "timeKeeper.def.h"
 #include "startupMessages.def.h"
 #include "cp_state_ctrl/CP_State_GSpacePlane.h"

@@ -408,12 +408,12 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   {
     contribute(sizeof(int), &numRecd , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
     numRecd=0;
-  }
-  if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)
-  {
+    if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)
+    {
 
-    //      CkPrintf("[%d,%d,%d,%d,%d] phantom trigger\n");
-    thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).phantomDone();
+      //      CkPrintf("[%d,%d,%d,%d,%d] phantom trigger\n");
+      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).phantomDone();
+    }
   }
 
   //  do not delete nokeep msg

@@ -80,7 +80,7 @@ namespace cp {
       double mapCreationTime = CmiWallTimer();
 
       MapType4 mapTable;
-      if (cfg.instanceIndex == 0)
+      if (cfg.instanceIndex == 0 || config.simpleTopo)
       {
         /// Get an appropriately constructed PeList from the supplied factory functor
         PeList *availGlobG = mapCfg.getPeList();
@@ -167,6 +167,7 @@ namespace cp {
       // Create an empty array but specify element locations using the map
       paircalcOpts.setMap(pcHandle.mapperGID);
       paircalcOpts.setAnytimeMigration(false);
+      paircalcOpts.setStaticInsertion(false);
       pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, cfg, paircalcOpts);
 
 #ifdef DEBUG_CP_PAIRCALC_CREATION

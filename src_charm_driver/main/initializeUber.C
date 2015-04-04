@@ -15,6 +15,7 @@ RhoGHartImaptable.resize(config.numInstances);
 RhoRHartImaptable.resize(config.numInstances);
 
 // bump all our proxy vecs to the right size
+UPIBeadAtomsProxy.reserve(config.numInstances);
 UgSpacePlaneProxy.reserve(config.numInstances);
 UgSpaceDriverProxy.reserve(config.numInstances);
 UparticlePlaneProxy.reserve(config.numInstances);

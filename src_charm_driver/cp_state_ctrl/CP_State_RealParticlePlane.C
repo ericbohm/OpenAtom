@@ -159,6 +159,9 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   fftDataDone      = false;
   launchFFT        = false;
   countZ           = 0;      // Zmat communication counter
+  reductionPlaneNum = -1;
+  state0ReductionPlaneNum = -1;
+  initDone = false;
 
   //============================================================================
   // No migration: No atSync load-balancing act
@@ -190,6 +193,7 @@ void CP_State_RealParticlePlane::init(){
 
   //============================================================================
   // Malloc the projector memory, non-local matrix and register with your cache
+  if(initDone) return;
 
   if(ees_nonlocal==1){
     //--------
@@ -221,26 +225,42 @@ void CP_State_RealParticlePlane::init(){
   memset(usedProc,0,sizeof(int)*CkNumPes());
   int charperpe=nstates/CkNumPes();
   if(nstates%CkNumPes()!=0)  charperpe++;
-  if(charperpe<1) charperpe=1;
+
+  if(charperpe<1)
+    {charperpe=1;}
+  else
+    {
+      if(nstates%CkNumPes()!=0)  charperpe++;
+    }
   for(int state=0; state<nstates;state++){
     int plane=0;
     while(plane<nChareR){
-      bool used=false;
-      int thisstateplaneproc=RPPImaptable[thisInstance.proxyOffset].get(state,plane)%CkNumPes();
-      if(usedProc[thisstateplaneproc]>=charperpe);
-      {
-        used=true;
-      }
-      if(!used || (plane+1==nChareR)){
-        usedProc[thisstateplaneproc]++;
-        red_pl[state]=plane;
-        plane=nChareR;
-      }//endif
-      plane++;
+        int thisstateplaneproc=RPPImaptable[thisInstance.proxyOffset].get(state,plane)%CkNumPes();
+	if(usedProc[thisstateplaneproc]>=charperpe)
+	{
+	  if(plane+1==nChareR){
+	    usedProc[thisstateplaneproc]++;
+            red_pl[state]=plane;
+	    //	    if(thisIndex.x==0 && thisIndex.y==0)
+	      //	      CkPrintf("[%d][%d] exhausted options for charperpe %d, using proc %d\n",state,plane,charperpe,thisstateplaneproc);
+            plane=nChareR;
+	  }//endif
+	}
+        else{
+	    usedProc[thisstateplaneproc]++;
+	    //	    if(thisIndex.x==0 && thisIndex.y==0)
+	    //CkPrintf("[%d][%d] redplane is on proc %d\n",state,plane,thisstateplaneproc);
+            red_pl[state]=plane;
+	    //	    if(thisIndex.x==0 && thisIndex.y==0)
+	    //CkPrintf("[%d][%d] using proc %d\n",state,plane,thisstateplaneproc);
+            plane=nChareR;
+	}
+        ++plane;
     }//end while : plane < nchareR
   }//end for : i
   reductionPlaneNum = red_pl[thisIndex.x];
-
+  state0ReductionPlaneNum = red_pl[0];
+  
   delete [] usedProc;
 
 
@@ -293,13 +313,7 @@ void CP_State_RealParticlePlane::init(){
   }//endif
   else
   { // if not part of enl, setup complete
-    bool inEnl=false;
-    for (int j = 0; j < nstates; j++) {
-      if(thisIndex.x ==j && thisIndex.y== red_pl[j])
-        inEnl=true;
-    }//endfor
-    if(!inEnl)
-      enlSectionComplete=true;
+    enlSectionComplete=true;
   }
   initComplete();
   delete [] red_pl;
@@ -314,6 +328,7 @@ void CP_State_RealParticlePlane::init(){
   }//endif
 #endif
 
+  initDone = true;
 }
 
 //============================================================================
@@ -1031,7 +1046,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg){
     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
     //     CkCallback cb=CkCallback(printEnlR, NULL);
     CkCallback cb(CkIndex_CP_State_RealParticlePlane::printEnlR(NULL),
-        CkArrayIndex2D(0,reductionPlaneNum),
+        CkArrayIndex2D(0,state0ReductionPlaneNum),
         UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
     mcastGrp->contribute(sizeof(double),(void*) &cp_enl, 
         CkReduction::sum_double,rEnlCookie, cb, itime);
@@ -1326,6 +1341,10 @@ void CP_State_RealParticlePlane::setPlaneRedCookie(EnlCookieMsg *m){
     CkPrintf("RPP[%d %d] gets rPlaneRedCookie\n",thisIndex.x, thisIndex.y);
 #endif
 
+  if(initDone == false) {
+    init();
+  }
+
   CkGetSectionInfo(rPlaneRedCookie,m);
   int cookiedone=1;
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
@@ -1337,8 +1356,8 @@ void CP_State_RealParticlePlane::setPlaneRedCookie(EnlCookieMsg *m){
   // if not root, we are set up
   if(thisIndex.y!=reductionPlaneNum)
   {
-    planeRedSectionComplete=true;
-    initComplete();
+    //planeRedSectionComplete=true;
+    //initComplete();
   }
 }
 //============================================================================
@@ -1357,18 +1376,23 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
   if(thisIndex.x==0)
     CkPrintf("RPP[%d %d] gets rEnlCookie\n",thisIndex.x, thisIndex.y);
 #endif
+  
+  if(initDone == false) {
+    init();
+  }
+
   CkGetSectionInfo(rEnlCookie,m);
   int cookiedone=1;
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
   CkCallback cb(CkIndex_CP_State_RealParticlePlane::enlSectDone(NULL),
-      CkArrayIndex2D(0,reductionPlaneNum),
+      CkArrayIndex2D(0,state0ReductionPlaneNum),
       UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
   mcastGrp->contribute(sizeof(int), &cookiedone, 
       CkReduction::sum_int,rEnlCookie, cb);
   // if not root, we are set up
   if(thisIndex.y!=reductionPlaneNum || thisIndex.x!=0){     
-    enlSectionComplete=true;
-    initComplete();
+    //enlSectionComplete=true;
+    //initComplete();
   }
 }
 //============================================================================
@@ -1434,6 +1458,7 @@ void CP_State_RealParticlePlane::pup(PUP::er &p) {
   p|csize;
   p|zmatSizeMax;
   p|reductionPlaneNum;
+  p|state0ReductionPlaneNum;
   p|cp_enl; 
   p|cp_enlTot; 
 

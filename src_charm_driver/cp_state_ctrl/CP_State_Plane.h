@@ -564,6 +564,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
     int csize;             // complex variable size for FFT
     int zmatSizeMax;       // zmatrix size for projector
     int reductionPlaneNum; // Reduction Plane number
+    int state0ReductionPlaneNum;
     int itimeRed;
 
     int registrationFlag;
@@ -573,6 +574,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
     bool fftDataDone;
     bool planeRedSectionComplete;
     bool enlSectionComplete;
+    bool initDone;
 
     double cp_enl;         // Non-local energy
     double cp_enlTot;      // Reduced Non-local energy

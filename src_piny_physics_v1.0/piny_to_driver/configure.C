@@ -1786,7 +1786,7 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
   //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 21;
+  num_dict[0] = 23;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_atm")-1;
 
   //=================================================================================
@@ -1926,6 +1926,17 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
   sprintf((*dict)[ind].keyarg,"%d",CkNumPes());  
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //----------------------------------------------------------------------------
+  // 22)\simpleTopo{}
+  ind = 22;
+  strcpy((*dict)[ind].keyword,"simpleTopo");
+  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].error_mes,"on/off");
+  //----------------------------------------------------------------------------
+  // 23)\simpleTopoCentroid{}
+  ind = 23;
+  strcpy((*dict)[ind].keyword,"simpleTopoCentroid");
+  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].error_mes,"on/off");
 
 }//end routine
 //===================================================================================
@@ -2053,8 +2064,15 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
   sscanf(dict[ind].keyarg,"%d",&numPes);
   if(numPes<1){keyarg_barf(dict,input_name,fun_key,ind);}
 
+  //  22)\simpleTopo{}
+  ind = 22;
+  parse_on_off(dict[ind].keyarg, &simpleTopo, &ierr);
+  if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 
-
+  //  23)\simpleTopoCentroid{}
+  ind = 23;
+  parse_on_off(dict[ind].keyarg, &simpleTopoCentroid, &ierr);
+  if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 }//end routine
 //===================================================================================
 

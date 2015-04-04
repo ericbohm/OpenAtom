@@ -81,7 +81,7 @@ extern int    nchareG;
 extern Config config;
 
 //#define _CP_DEBUG_STATE_GPP_VERBOSE_
-
+//#define BARRIER_CP_PARTICLEPLANE_NONLOCAL
 //=========================================================================
 
 
@@ -228,45 +228,61 @@ void CP_State_ParticlePlane::initKVectors()
   int *usedProc= new int[numProcs];
   memset(usedProc,0,sizeof(int)*numProcs);
   int charperpe=nstates/numProcs;
-  if(nstates%numProcs!=0)  charperpe++;
-  if(charperpe<1) charperpe=1;
+    if(charperpe<1)
+    {charperpe=1;}
+  else
+    {
+      if(nstates%numProcs!=0)  charperpe++;
+    }
   for(int state=0; state<nstates;state++){
     int plane=nchareG-1;
     while(plane>=0)
-    {
-      bool used=false;
-      int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%numProcs;
-      if(usedProc[thisstateplaneproc]>=charperpe);
       {
-        used=true;
+	bool used=false;
+	int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%numProcs;
+	if(usedProc[thisstateplaneproc]>=charperpe)
+	{
+	  used=true;
+	  if(plane==0)
+	    {
+	      red_pl[state]=plane;
+	      (usedProc[thisstateplaneproc])++;
+	      plane=-1;
+	    }
+	}
+	else
+	  {
+	    red_pl[state]=plane;
+	    (usedProc[thisstateplaneproc])++;
+	    plane=-1;
+	  }
+	plane--;
       }
-      if(!used || plane==0)
-      {
-        red_pl[state]=plane;
-        (usedProc[thisstateplaneproc])++;
-        plane=-1;
-      }
-      plane--;
-    }
   }
   for(int state=0; state<nstates;state++){
     int plane=0;
     while(plane<nchareG)
-    {
-      bool used=false;
-      int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%CkNumPes();
-      if(usedProc[thisstateplaneproc]>=charperpe);
       {
-        used=true;
+        bool used=false;
+        int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%CkNumPes();
+	if(usedProc[thisstateplaneproc]>=charperpe)
+	{
+	  used=true;
+	  if(plane+1==nchareG)
+	    {
+	      usedProc[thisstateplaneproc]++;
+	      red_pl[state]=plane;
+	      plane=nchareG;
+	    }
+	}
+	else
+	  {
+	    usedProc[thisstateplaneproc]++;
+            red_pl[state]=plane;
+            plane=nchareG;
+          }
+        plane++;
       }
-      if(!used || (plane+1==nchareG))
-      {
-        usedProc[thisstateplaneproc]++;
-        red_pl[state]=plane;
-        plane=nchareG;
-      }
-      plane++;
-    }
   }
   reductionPlaneNum = red_pl[thisIndex.x];
   delete [] usedProc;

@@ -184,6 +184,8 @@ class Config {
    int useStrictCuboid;
    int useCentroidMap;
    int useCentroidMapRho;
+   int simpleTopo;
+   int simpleTopoCentroid;
    int Gstates_per_pe;
    int Rstates_per_pe;
    int loadMapFiles;

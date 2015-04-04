@@ -132,6 +132,7 @@ class MapTable1
 
     //! return processor at topological center of this list
     int getCentroid(int torusMap);
+    void getCentroid(int torusMap, int *dims);
 
 };
 
@@ -178,6 +179,7 @@ class MapTable2
 
     //! return processor at topological center of this list
     int getCentroid(int torusMap);
+    void getCentroid(int torusMap, int *dims);
 
 };
 
@@ -219,6 +221,7 @@ class MapTable3
 
     //! return processor at topological center of this list
     int getCentroid(int torusMap);
+    void getCentroid(int torusMap, int *dims);
 
 };
 

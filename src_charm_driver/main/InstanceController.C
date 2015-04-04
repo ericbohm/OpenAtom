@@ -29,6 +29,10 @@ extern CkVec <CProxy_StructureFactor>            UsfCompProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 extern CkVec <CProxy_OrthoHelper>                UorthoHelperProxy;
 extern CProxy_TimeKeeper                         TimeKeeperProxy;
+#ifdef CMK_BALANCED_INJECTION_API
+extern CProxy_PlatformSpecific                   platformSpecificProxy;
+extern uint16_t                                  origBIValue;
+#endif
 extern CkGroupID                                 mCastGrpId;
 extern CkVec <UberCollection>                    UberAlles;
 extern CProxy_ENL_EKE_Collector                  ENLEKECollectorProxy;
@@ -120,6 +124,19 @@ void InstanceController::fmagMinTest(CkReductionMsg *m){
   gTemperBeadProxy.minimizeSync(out);
 
 }
+
+
+void InstanceController::instancesReady(CkReductionMsg *m){
+  
+  int result=( (int *) (m->getData()) )[0];
+  delete m;
+  CkPrintf("Starting all %d instances\n", result);
+  for(int i=0;i<config.numInstances; i++)  UgSpaceDriverProxy[i].startControl();  
+#ifdef CMK_BALANCED_INJECTION_API
+  CkPrintf("Reseting Balanced Injection to %d \n", origBIValue);
+  platformSpecificProxy.reset_BI();
+#endif
+}
 //============================================================================
 
 //============================================================================
@@ -135,53 +152,56 @@ proxy creation in main.  Object construction will occur
 in this order + all readonlies will be initialized.  + all groups
 will be constructed + all arrays will be constructed
 
-The ordering within those phases is non-deterministic, so we don't
-expect to have control over the ordering of chare array
-construction.  The upshot of this is that in order to safely make
-array sections we wait until the objects are constructed and then
-call a second phase of initialization.  In practice this means
-that arrays will contribute to reductions during construction and
-the completion of those reductions will trigger a chain of section
-creation which will eventually feed back into a reduction that
-reports to the global startup phase ordering in
-InstanceController.
-2. Phase 2 and 3 are automatically triggered during the construction
-process.  These phases are ortho constructing proxies to sections
-of the paircalculators.  In each case they construct a section and
-send a message on that section to its elements to initialize a
-cookie.  Receipt of that cookie increments a counter and when each
-PC element has received all the cookies it expects, it contributes
-to a reduction which reports to InstanceController::doneInit().
-There is a phase for symmetric and asymmetric calculator, they
-could complete in either order.
-3.  Phase 4 triggers the post construction initialization of section
-proxies and cache registrations in RhoReal RhoG RhoGHartExt.  The
-big ticket item here is the sections of RealSpace made by RhoReal.
-These operate in the previously described fashion wherein you make
-a section, initialize the cookies with a dummy message and report
-on completion via a reduction along the section. When realspace
-has received as many cookies as there are rhoreal subplanes, it
-contributes to a reduction reporting to
-InstanceController::doneInit.
-4.  Phase 5 is triggered by the completion of the RS sections. When
-EES is enabled, phase 5 will launch the section construction and
-registration process in RealParticlePlane.  The coalesced
-completion of eesCache, enlSection, and planeRedSection
-initialization contributes to a single reduction reporting to
-InstanceController::doneInit.  This phase always triggers the
-loading and multicasting of the gspace state data from the
-statefiles. When all elements of gspace are initialized with that
-data they contribute to a reduction which reports to
-InstanceController::doneInit.
-5.  Phase 6 happens only if EES is enabled, it broadcasts
-registrationDone to all RealParticlePlane elements.
-6.  Phase 7 (or 6 if no realparticleplane) means that all
-initialization is complete and startup is effectively over.
-Control is then turned over to the gSpaceDriver::startControl.
-Some chares will do a little local first iteration initialization
-after this.  Semantically it should now be safe to engage in any
-operation as the previous phases should have taken care of any
-synchronized initialization issues.  */
+The ordering within those phases is non-deterministic, so we don't expect to
+have control over the ordering of chare array construction.  The upshot of
+this is that in order to safely make array sections we wait until the objects
+are constructed and then call a second phase of initialization.  In practice
+this means that arrays will contribute to reductions during construction and
+the completion of those reductions will trigger a chain of section creation
+which will eventually feed back into a reduction that reports to the global
+startup phase ordering in InstanceController.  
+
+2. Phase 2 and 3 are automatically triggered during the construction process.
+These phases are ortho constructing proxies to sections of the
+paircalculators.  In each case they construct a section and send a message on
+that section to its elements to initialize a cookie.  Receipt of that cookie
+increments a counter and when each PC element has received all the cookies it
+expects, it contributes to a reduction which reports to
+InstanceController::doneInit().  There is a phase for symmetric and asymmetric
+calculator, they could complete in either order.
+
+3.  Phase 4 triggers the post construction initialization of section proxies
+and cache registrations in RhoReal RhoG RhoGHartExt.  The big ticket item here
+is the sections of RealSpace made by RhoReal.  These operate in the previously
+described fashion wherein you make a section, initialize the cookies with a
+dummy message and report on completion via a reduction along the section. When
+realspace has received as many cookies as there are rhoreal subplanes, it
+contributes to a reduction reporting to InstanceController::doneInit.  
+
+4.  Phase 5 is triggered by the completion of the RS sections. When EES is
+enabled, phase 5 will launch the section construction and registration process
+in RealParticlePlane.  The coalesced completion of eesCache, enlSection, and
+planeRedSection initialization contributes to a single reduction reporting to
+InstanceController::doneInit.  This phase always triggers the loading and
+multicasting of the gspace state data from the statefiles. When all elements
+of gspace are initialized with that data they contribute to a reduction which
+reports to InstanceController::doneInit.  
+
+5.  Phase 6 happens only if EES is enabled, it broadcasts registrationDone to
+all RealParticlePlane elements.  
+
+6.  Phase 7 (or 6 if no realparticleplane) means that all initialization is
+complete and startup is effectively over.  Control is then turned over to the
+gSpaceDriver::startControl.  Some chares will do a little local first
+iteration initialization after this.  Semantically it should now be safe to
+engage in any operation as the previous phases should have taken care of any
+synchronized initialization issues.
+
+7. Phase 8( or 7) if more than one instance is in play, then we barrier for
+all intances to be ready.  If on Cray, we then reset the BALANCED_INJECTION to
+a normal behavior value.
+
+ */
 /**@{*/
 void InstanceController::doneInit(CkReductionMsg *msg){
   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
@@ -193,6 +213,7 @@ void InstanceController::doneInit(CkReductionMsg *msg){
   int numPhases=5;
   if(CPcharmParaInfo::get()->ees_nloc_on==1)
     numPhases++;
+
   delete msg;
   double newtime=CmiWallTimer();
   CkAssert(done_init<numPhases+1);
@@ -215,8 +236,8 @@ void InstanceController::doneInit(CkReductionMsg *msg){
   }
   if (done_init == 4){
     // We do this after we know gsp, pp, rp, rpp exist
-    if(CPcharmParaInfo::get()->ees_nloc_on==1)
-    {UrealParticlePlaneProxy[thisIndex].init();}
+    //if(CPcharmParaInfo::get()->ees_nloc_on==1)
+    //{UrealParticlePlaneProxy[thisIndex].init();}
     // kick off file reading in gspace
     CkPrintf("{%d} Initiating import of states\n",thisIndex);
     CkPrintf("{%d} IC uGSpacePlaneProxy[%d] is %d\n",thisIndex,thisIndex, CkGroupID(UgSpacePlaneProxy[thisIndex].ckGetArrayID()).idx);
@@ -227,7 +248,7 @@ void InstanceController::doneInit(CkReductionMsg *msg){
   }//endif
   if (done_init == 5 && CPcharmParaInfo::get()->ees_nloc_on==1){
     CkPrintf("{%d} Completed chare data acquisition phase %d in %g\n",thisIndex, done_init+1,newtime-Timer);
-    UrealParticlePlaneProxy[thisIndex].registrationDone();
+    UrealParticlePlaneProxy[thisIndex].init();
   }
 
   if (done_init >= numPhases) {
@@ -245,7 +266,34 @@ void InstanceController::doneInit(CkReductionMsg *msg){
       }//endif
       //          PRINT_LINE_STAR; CkPrintf("\n");
       //          PRINT_LINE_STAR;
-      UgSpaceDriverProxy[thisIndex].startControl();
+
+      if (CPcharmParaInfo::get()->ees_nloc_on==1){
+        UrealParticlePlaneProxy[thisIndex].registrationDone();
+      }
+
+      if(config.numInstances>1) 
+	{
+	  /* 
+	     barrier for all instances to be ready.  Not semantically
+	     required, but does make output less weird and avoid some startup
+	     related issues on some platforms.
+	  */
+	  int num=1;
+	  contribute(sizeof(int), &num, CkReduction::sum_int, 
+		     CkCallback(CkIndex_InstanceController::instancesReady(NULL),CkArrayIndex1D(0),thisProxy), 0);
+	  
+	}
+      else
+	{
+	  UgSpaceDriverProxy[thisIndex].startControl();
+#ifdef CMK_BALANCED_INJECTION_API
+	  CkPrintf("Reseting Balanced Injection to %d\n", origBIValue);
+	  if(thisIndex==0)  platformSpecificProxy.reset_BI();
+#endif
+	}
+      
+
+
     }//endif
   }
   Timer=newtime;

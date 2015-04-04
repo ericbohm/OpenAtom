@@ -2494,8 +2494,9 @@ FILE *openScreenfWrite(const char *dirnameBase, const char *fname, int temper, i
   }
   strncat(dirPath,lfname,1023);
   FILE *file=fopen(dirPath,"a");
-  //  CkPrintf("opened temper file %s for screen output \n",dirPath);
-  assert(file!=NULL);
+  //CkPrintf("opened temper file %s for screen output \n",dirPath);
+  if(file == NULL)
+    file = stdout;
   return file;
   //============================================================================
 }//end routine
