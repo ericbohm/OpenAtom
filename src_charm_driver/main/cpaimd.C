@@ -1871,9 +1871,10 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
     }
   if(config.excludePE0 &&  !config.loadMapFiles)
     {
-      if(nlexcludePes==NULL)
-	nlexcludePes=new PeList(0);
-      nlexcludePes->appendOne(0);
+      if(nlexcludePes!=NULL) {
+	delete nlexcludePes;
+        nlexcludePes = NULL;
+      }
     }
   Timer=newtime;
   CkArrayOptions pRealSpaceOpts(nstates,ngridcNl);
@@ -1984,7 +1985,8 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 	CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
 		 UpeUsedByNLZ[thisInstance.proxyOffset].size(),RhoAvail->count());
 	//       nlz.dump();
-	*RhoAvail-*excludePes; //unary minus operator defined in PeList.h
+	PeList nlz(UpeUsedByNLZ[thisInstance.proxyOffset]);
+	*RhoAvail-nlz; //unary minus operator defined in PeList.h
 	RhoAvail->reindex();
 	CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
       }//endif

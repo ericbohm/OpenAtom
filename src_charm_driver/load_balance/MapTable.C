@@ -979,9 +979,8 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
 
         int srsobjs_per_pe=rsobjs_per_pe;
         PeList *thisStateBox = subListState(state, nchareG, gsmap);
+        thisStateBox->reset();
         int samplePe=thisStateBox->TheList[0];
-        //  CkPrintf("RS state %d box has %d procs rsobjs_per_pe %d\n",state,thisStateBox->count(), rsobjs_per_pe);
-        //	  bool useExclude=false;
         bool useExclude=true;
         if(exclusionList!=NULL && useExclude)
         {
@@ -1011,8 +1010,6 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
 
             }
           } else {
-            //CkPrintf("State %d  Ran out of procs in RS centroid map scheme, spilling over to master list\n",state,srsobjs_per_pe);
-            //	      *myavail - *exclusionList;
             delete thisStateBox;
             thisStateBox=new PeList(*myavail);
             thisStateBox->reindex();
@@ -1023,7 +1020,6 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
         if(thisStateBox->count()==0)
         {
           useExclude=false;
-          CkPrintf("RS state %d excluded to nil, ignoring exclusions\n",state);
           delete thisStateBox;
           thisStateBox = subListState(state, nchareG, gsmap);
         }
@@ -1292,18 +1288,19 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
       //maps[state]= subListState( state, nchareG, pp_map);
       PeList *state_map=subListState( state, nchareG, pp_map);
       CkAssert(state_map->count()>0);
+      state_map->reset();
+      int cur_count = state_map->count();
       if(useExclusion)
       {
         *state_map-*exclusion;
         state_map->reindex();
         if(state_map->count()==0 || sizeZNL/state_map->count() > states_per_pe)
         { //not enough for exclusion
-          delete state_map;
-          state_map=subListState( state, nchareG, pp_map);
           useExclude[state]=false;
         }
         else
         {
+          cur_count = state_map->count();
           useExclude[state]=true;
         }
       }
@@ -1311,7 +1308,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
       {
         useExclude[state]=false;
       }
-      int thischaresperpe=sizeZNL/state_map->count() + 1;
+      int thischaresperpe=sizeZNL/cur_count + 1;
       //	  CkPrintf("state %d has %d charesperpe in %d pemap \n",state,thischaresperpe,state_map->count());
 
 
@@ -1768,6 +1765,7 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
       if(thisPlaneBox->count()==0)
       {	
         CkPrintf("Rho RS %d ignoring plane sublist\n",chunk);
+        delete thisPlaneBox;
         thisPlaneBox = new PeList(*availprocs);
         if(exclusionList!=NULL) {
           *thisPlaneBox - *exclusionList;
@@ -1776,7 +1774,9 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
         if(thisPlaneBox->count()==0)
         {
           CkPrintf("Rho RS %d ignoring plane sublist and exclusion\n",chunk);
+          delete thisPlaneBox;
           thisPlaneBox = new PeList(*availprocs);
+          useExclude = false;
         }
       }
       sortByCentroid(thisPlaneBox, chunk, max_states, rsmap);

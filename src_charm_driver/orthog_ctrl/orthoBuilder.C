@@ -39,19 +39,18 @@ namespace cp {
       /// The step 2 helper map logic object
       MapType2 helperMapTable;
 
-      PeList *availGlobR = mapCfg.getPeList();
 
       //-------------------------------------------------------------------------
       // Create maps for placing the Ortho chare array elements
 
+      PeList *avail = mapCfg.getPeList();
+      avail->reset();
       PeList *excludePes= new PeList(1);
       excludePes->TheList[0]=config.numPes;
       int nOrtho= (cfg.numStates/cfg.grainSize);
       nOrtho *= nOrtho;
       double Timer=CmiWallTimer();
 
-      availGlobR->reset();
-      PeList *avail= new PeList();
       MapType2 orthoMapTable;
       orthoMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
       int success = 0;
