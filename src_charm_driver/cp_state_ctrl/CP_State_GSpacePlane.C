@@ -1888,14 +1888,23 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     if(cp_min_opt==0){
       double rad2i = 1.0/sqrt(2.0);
       double rad2  = sqrt(2.0);
-      if(gs.ihave_kx0==1 && config.doublePack==1){
-        for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i]   *= rad2i;}
-        for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2;}
-      }else{
-        for(int i=0; i<gs.numPoints; i++){
-          psi[i]   *= rad2i; 
-          force[i] *= rad2;
-        }//endfor
+      if(config.doublePack==1){
+	if(gs.ihave_kx0==1)
+	  {
+	    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i]   *= rad2i;}
+	    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2;}
+	  }
+	else
+	  {
+	    // do nothing, seriously if you put something in this
+	    // block I will hit you with a dead mackeral
+	  }
+      }
+      else{  // non-gamma points need the scaling
+	for(int i=0; i<gs.numPoints; i++){
+	  psi[i]   *= rad2i; 
+	  force[i] *= rad2;
+	}//endfor
       }//endif
     }//endif
 #endif
