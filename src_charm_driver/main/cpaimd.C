@@ -569,28 +569,28 @@ main::main(CkArgMsg *msg) {
 	    peList4PCmapping = new PeListFactory(config.numPes);
 	    CkPrintf("no box for %d\n", boxSize);
 	    config.useCuboidMap = 0;
-	    gfoo = new PeList(config.numPes);				// heap it
+	    gfoo = new PeList(config.numPesPerInstance);				// heap it
 	  }
       }
       else
 	{
-	  peList4PCmapping = new PeListFactory(config.numPes);
+	  peList4PCmapping = new PeListFactory(config.numPesPerInstance);
 	  // just split by numInstances
 	  x=numInst*config.numPesPerInstance;
 	  y=0;
 	  z=0;
-	  gfoo = new PeList(config.numPes);				// heap it
+	  gfoo = new PeList(config.numPesPerInstance);				// heap it
 	}
     }
   else
     {
-      gfoo = new PeList(config.numPes);				// heap it
-      peList4PCmapping = new PeListFactory(config.numPes);
+      gfoo = new PeList(config.numPesPerInstance);				// heap it
+      peList4PCmapping = new PeListFactory(config.numPesPerInstance);
     }
   if(!config.loadMapFiles && config.useCuboidMapRS)
     rfoo = new PeList(*gfoo);
   else
-    rfoo = new PeList(config.numPes);				// heap it
+    rfoo = new PeList(config.numPesPerInstance);				// heap it
 
   computeMapOffsets();
   /* these really don't need to be different */

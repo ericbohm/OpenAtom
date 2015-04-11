@@ -43,18 +43,21 @@ namespace cp {
       //-------------------------------------------------------------------------
       // Create maps for placing the Ortho chare array elements
 
-      PeList *avail = mapCfg.getPeList();
-      avail->reset();
-      PeList *excludePes= new PeList(1);
-      excludePes->TheList[0]=config.numPes;
+      PeList *avail = NULL, *excludePes = NULL;
       int nOrtho= (cfg.numStates/cfg.grainSize);
       nOrtho *= nOrtho;
       double Timer=CmiWallTimer();
 
       MapType2 orthoMapTable;
-      orthoMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
       int success = 0;
-      if(config.loadMapFiles)
+      if(cfg.instanceIndex == 0) {
+        avail = mapCfg.getPeList();
+        avail->reset();
+        excludePes= new PeList(1);
+        excludePes->TheList[0] = config.numPes;
+        orthoMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
+
+        if(config.loadMapFiles)
         {
           int size[2];
           size[0] = size[1] = cfg.numStates/cfg.grainSize;
@@ -62,22 +65,22 @@ namespace cp {
           success = mf->loadMap("OrthoMap", &orthoMapTable);
           delete mf;
         }
-      if(success == 0)
-	{
+
+        if(success == 0)
+        {
           SCalcMap *asymmMap = CProxy_SCalcMap(asymmHandle.mapperGID).ckLocalBranch();
           MapType4 *maptable = asymmMap->getMapTable();
           OrthoMapTable Otable = OrthoMapTable(&orthoMapTable, avail, cfg.numStates, cfg.grainSize, maptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
         }
-      if (cfg.instanceIndex > 0)
-      {
+        impl::dirtyGlobalMapTable4Ortho = new MapType2(orthoMapTable);
+      } else {
         int x = mapCfg.mapOffset.getx();
         int y = mapCfg.mapOffset.gety();
         int z = mapCfg.mapOffset.getz();
         if((CkNumPes()>1) || mapCfg.isTorusFake)
-	  {
-	    MapType2 orthoMapTableCopy(orthoMapTable);
-	    orthoMapTable.translate(&orthoMapTableCopy, x, y, z, mapCfg.isTorusMap);
-	  }
+        {
+          orthoMapTable.translate(impl::dirtyGlobalMapTable4Ortho, x, y, z, mapCfg.isTorusMap);
+        }
       }
 
       double newtime=CmiWallTimer();
@@ -88,7 +91,7 @@ namespace cp {
       {
         int size[2];
         size[0] = size[1] = cfg.numStates/cfg.grainSize;
-        MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+        MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPesPerInstance, "TXYZ", 2, 1, 1, 1);
         mf->dumpMap(&orthoMapTable, cfg.instanceIndex);
         delete mf;
       }
@@ -98,7 +101,7 @@ namespace cp {
       {
         int size[2];
         size[0] = size[1] = cfg.numStates/cfg.grainSize;
-        MapFile *mf = new MapFile("OrthoMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+        MapFile *mf = new MapFile("OrthoMap_coord", 2, size, config.numPesPerInstance, "TXYZ", 2, 1, 1, 1);
         mf->dumpMapCoords(&orthoMapTable, cfg.instanceIndex);
         delete mf;
       }
@@ -134,7 +137,7 @@ namespace cp {
             OrthoHelperMapTable OHtable = OrthoHelperMapTable(&helperMapTable, cfg.numStates, cfg.grainSize, &orthoMapTable, avail, excludePes);
           }
           // Save a globally visible handle to the mapTable that builders of other ortho instances can access
-          impl::dirtyGlobalMapTable4OrthoHelper = new MapType2(orthoMapTable);
+          impl::dirtyGlobalMapTable4OrthoHelper = new MapType2(helperMapTable);
         }
         else
         {
@@ -159,7 +162,7 @@ namespace cp {
         {
           int size[2];
           size[0] = size[1] = cfg.numStates/cfg.grainSize;
-          MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+          MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPesPerInstance, "TXYZ", 2, 1, 1, 1);
           mf->dumpMap(&helperMapTable, cfg.instanceIndex);
           delete mf;
         }
@@ -168,7 +171,7 @@ namespace cp {
         {
           int size[2];
           size[0] = size[1] = cfg.numStates/cfg.grainSize;
-          MapFile *mf = new MapFile("OrthoHelperMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+          MapFile *mf = new MapFile("OrthoHelperMap_coord", 2, size, config.numPesPerInstance, "TXYZ", 2, 1, 1, 1);
           mf->dumpMapCoords(&helperMapTable, cfg.instanceIndex);
           delete mf;
         }
@@ -291,8 +294,8 @@ namespace cp {
       if(config.useOrthoHelpers)
         orthoHelperProxy.doneInserting();
 
-      delete avail;
-      delete excludePes;
+      if(avail != NULL) delete avail;
+      if(excludePes != NULL) delete excludePes;
 
       return orthoProxy.ckGetArrayID();
     }

@@ -60,9 +60,6 @@ namespace cp {
       MapType4 **inst0MapTable = cfg.isSymmetric ? &impl::dirtyGlobalMapTable4PCsym : &impl::dirtyGlobalMapTable4PCasym;
       // Generate a map name
       std::string mapName = cfg.isSymmetric ? "SymScalcMap" : "AsymScalcMap";
-      /// Get an appropriately constructed PeList from the supplied factory functor
-      PeList *availGlobG = mapCfg.getPeList();
-      availGlobG->reset();
 
       // Compute num PEs along the states dimension of GSpace
       int pl = cfg.numStates / config.Gstates_per_pe;
@@ -85,6 +82,9 @@ namespace cp {
       MapType4 mapTable;
       if (cfg.instanceIndex == 0)
       {
+        /// Get an appropriately constructed PeList from the supplied factory functor
+        PeList *availGlobG = mapCfg.getPeList();
+        availGlobG->reset();
         mapTable.buildMap(cfg.numPlanes, cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize, achunks, cfg.grainSize);
 
         int success = 0;
@@ -104,6 +104,7 @@ namespace cp {
 
         // Save a globally visible handle to the mapTable that builders of other PC instances can access
         *inst0MapTable = new MapType4(mapTable);
+        delete availGlobG;
       }
       // else, this is not the first instance. Simply translate the 0th instance
       else
@@ -141,7 +142,6 @@ namespace cp {
 
       // Record the group that will provide the procNum mapping function
       pcHandle.mapperGID  = pcMapGrp.ckGetGroupID();
-      delete availGlobG;
     }
 
 
