@@ -369,10 +369,6 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
       srem = 0;			// remainder states
     else
     {
-      while(pow(2.0, (double)i) < pl)
-        i++;
-      // make it same as the nearest smaller power of 2
-      pl = (int) pow(2.0, (double)(i-1));
       srem = nstates % pl;
     }
     pm = availprocs->count() / pl;		// no of procs on x axis
@@ -491,10 +487,12 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
       // done
       //
       //else old way 
+      int orig_l=l;
       for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
       {
         if(ychunk==(pm-rem)*m)
           m=m+1;
+	l=orig_l;
         for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
         {
           if(xchunk==(pl-srem)*l)
@@ -936,9 +934,6 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
       srem = 0;
     else
     {
-      while(pow(2.0, (double)i) < pl)
-        i++;
-      pl = (int) pow(2.0, (double)(i-1));		// make it same as the nearest smaller power of 2
       srem = nstates % pl;
     }
     pm = availprocs->count() / pl;
@@ -1133,10 +1128,12 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
       // this remainder scheme is odd, creates imbalance.
       // doesn't use all processors
       //destpe=availprocs->findNext();
-      for(int ychunk=0; ychunk<sizeZ-rem; ychunk=ychunk+m)
+      int orig_l=l;
+      for(int ychunk=0; ychunk<sizeZ; ychunk=ychunk+m)
       {
-        /*if(ychunk==(pm-rem)*m)
-          m=m+1;*/
+	l=orig_l;
+        if(ychunk==(pm-rem)*m)
+          m=m+1;
         for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
         {
           if(xchunk==(pl-srem)*l)
@@ -1158,6 +1155,7 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
 
         }
       }
+      /*
       if(rem!=0)
         for(int state=0; state<nstates; state++)
         {
@@ -1173,6 +1171,7 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
 #endif
           }
         }
+      */
     }
     delete [] Pecount;
 #ifdef _MAP_DEBUG_
