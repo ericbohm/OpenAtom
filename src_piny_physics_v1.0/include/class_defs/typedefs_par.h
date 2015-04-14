@@ -111,6 +111,8 @@ typedef struct FILENAME_PARSE{
   NAME user_inter_name;        /* Chr: user defined one               */
   NAME def_surf_name;          /* Chr: Default surface lib file       */      
   NAME user_surf_name;         /* Chr: user defined one               */
+  NAME def_grimme_name;        /* Chr: Default grimme lib file        */      
+  NAME user_grimme_name;       /* Chr: user grimme one                */
 
   NAME *def_intra_name;        /* Chr: Default intramol lib file    
 Lst: Bondfile,Bendfile,

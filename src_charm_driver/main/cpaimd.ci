@@ -58,7 +58,7 @@ module Atoms
 
   array [1D] AtomsCompute {
     entry AtomsCompute(int natm, int natm_nl, int len_nhc, int iextended_on,
-        int cp_min_opt, int cp_wave_opt, int cp_bomd_opt, int isokin_opt, double kT,
+        int cp_min_opt, int cp_wave_opt, int cp_bomd_opt, int isokin_opt, int cp_grimme, double kT,
         Atom atoms[natm],AtomNHC atomsNHC[natm], int nChareAtoms, UberCollection);
     entry void init();
     entry void acceptAtoms(AtomMsg *);

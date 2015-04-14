@@ -13,6 +13,9 @@ void atmlst_not_found(int ,CATM_LAB *,int *,int ,char *);
 void search_base_vps(char [],CVPS *,DICT_WORD [],int ,
     DICT_WORD *[],DICT_WORD [],int ,int *);
 
+void search_base_grimme(char [],CVPS *,DICT_WORD [],int ,
+    DICT_WORD *[],DICT_WORD [],int ,int *);
+
 
 /*---------------------------------------------------------------------*/
 /*     Search_base_explicit_lj.c                                       */

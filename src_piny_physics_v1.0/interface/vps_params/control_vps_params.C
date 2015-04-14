@@ -2043,5 +2043,155 @@ PSSCRATCH::PSSCRATCH(PSNONLOCAL *_psnonlocal, CPATOM_MAPS *cpatom_maps)
     dmn_b   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
     dmn_c   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
   }//endif
+//----------------------------------------------------------------------------
+  }
+//============================================================================
 
-}
+
+//============================================================================
+//****************************************************************************
+//============================================================================
+void control_grimme_params(FILENAME_PARSE *filename_parse,
+            int *iatm_atm_typ, int natm_typ,NAME *atm_typ,
+ 	    double *tot_memory,int natm_tot,double *c6Grimme,double *r0Grimme)
+//============================================================================
+  {// begin routine
+//============================================================================
+  char *filename;              /* Char: temp file name                */
+  CVPS *cgrimme_typ;
+  char *fun_key;
+  DICT_WORD *word;
+  DICT_WORD *fun_dict;
+  int num_fun_dict;
+  DICT_WORD *grimme_dict,*grimme_dict_tmp;
+  int num_grimme_dict;
+  double *r0, *c6;
+//============================================================================
+// Tell the user your looking up the Grimme parameters
+  PRINTF("\n");
+  PRINT_LINE_STAR
+  PRINTF("Searching the data bases both user defined and default\n");
+  PRINTF("for the Grimme parameters\n");
+  PRINT_LINE_DASH;PRINTF("\n");
+//============================================================================
+// Malloc the memory
+  fun_key     = (char *)cmalloc(MAXWORD*sizeof(char),"control_grimme_params");  
+  filename    = (char *)cmalloc(MAXWORD*sizeof(char),"control_grimme_params");  
+  word        = (DICT_WORD *)cmalloc(sizeof(DICT_WORD),"control_grimme_params")-1;
+  cgrimme_typ = (CVPS *)cmalloc(sizeof(CVPS),"control_vps_params");  
+//============================================================================
+// set up the dictionary
+
+  int ifirst    = 1;
+  set_potfun_dict(&fun_dict,&num_fun_dict,ifirst);
+  set_grimme_dict(&grimme_dict,&num_grimme_dict,ifirst);      
+  set_grimme_dict(&grimme_dict_tmp,&num_grimme_dict,ifirst);      
+
+  c6 = (double *) cmalloc(natm_typ*sizeof(double),"control_vps_params")-1;
+  r0 = (double *) cmalloc(natm_typ*sizeof(double),"control_vps_params")-1;
+
+//============================================================================
+//  Loop over all atom types and find the grimme parameters
+  for(int i=1;i<=natm_typ;i++) {
+//--------------------------------------------------
+    int ifound = 0;
+    strcpy(cgrimme_typ->atm1,atm_typ[i]);
+   //--------------------------------------------------------------
+   // A) Search the user define file if there is one
+    if(strcasecmp(filename_parse->user_grimme_name,"")!=0) {
+      search_base_grimme(filename_parse->user_grimme_name,
+          cgrimme_typ,fun_dict,num_fun_dict,
+          &grimme_dict_tmp,grimme_dict,num_grimme_dict,&ifound);
+      if(ifound==1){
+        set_grimme_params(grimme_dict,filename_parse->user_grimme_name,fun_key,
+                          &c6[i],&r0[i]);
+      }/*endif*/
+    }/*endif*/
+    /*--------------------------------------------------------------------------*/
+    /* B) If you haven't found it search the default data base              */
+    if(ifound == 0) {
+      search_base_grimme(filename_parse->def_grimme_name,
+          cgrimme_typ,fun_dict,num_fun_dict,
+          &grimme_dict_tmp,grimme_dict,num_grimme_dict,&ifound);
+      if(ifound==1){
+        set_grimme_params(grimme_dict,filename_parse->def_grimme_name,fun_key,
+                          &c6[i],&r0[i]);
+      }/*endif*/
+    }/*endif*/
+    /*--------------------------------------------------------------------------*/
+    /*     C) Make sure you have now found this puppy, if not exit              */
+    if(ifound == 0){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Grimme atom type \n"); 
+      PRINTF("%s\n",atm_typ[i]);
+      PRINTF("not found in default data base\n");
+      PRINTF("file: %s\n",filename_parse->def_grimme_name);
+      if(strlen(filename_parse->user_grimme_name) > 0)  {
+        PRINTF("or in user defined pseudopot data base\n");
+        PRINTF("file: %s\n",filename_parse->user_grimme_name);
+        /*endif*/}
+      PRINTF("\n");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
+    }/*endif*/
+//--------------------------------------------------
+  }//endfor : atom types
+//============================================================================
+// Make the grimme parameters a list of length natm_tot
+  for(int i=1;i<=natm_tot;i++){
+    c6Grimme[i] =  c6[iatm_atm_typ[i]];
+    r0Grimme[i] =  r0[iatm_atm_typ[i]];
+  }//endfor
+//============================================================================
+// clean up memory
+  PRINTF("\n");PRINT_LINE_DASH
+  PRINTF("Completed the Grimme data bases searches\n");
+  PRINT_LINE_STAR;PRINTF("\n");
+//============================================================================
+// clean up memory
+  cfree(fun_key, "control_grimme_params");
+  cfree(filename,"control_grimme_params");
+  cfree(&word[1],"control_grimme_params");
+  cfree(&fun_dict[1],"control_grimme_params");
+  cfree(&grimme_dict[1],"control_grimme_params");
+  cfree(&grimme_dict_tmp[1],"control_grimme_params");
+  cfree(cgrimme_typ,"control_grimme_params");
+  cfree(&c6[1],"control_grimme_params");
+  cfree(&r0[1],"control_grimme_params");
+//----------------------------------------------------------------------------
+  }//end routine
+//============================================================================
+
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+void set_grimme_params(DICT_WORD grimme_dict[],char *filename,char *fun_key,
+                       double *c6, double *r0)
+/*==========================================================================*/
+/*               Begin subprogram:                                          */
+  {/*begin routine*/
+  /*--------------------------------------------------------------------------*/
+  int index;
+  double tmp;
+  double Hart_per_J_Mol_m1 = 1.0/2625500.0;
+  double Bohr_per_nm   = 10.0/BOHR;
+  /*--------------------------------------------------------------------------*/
+  /*  0) Set up                                                               */
+  strcpy(fun_key,"grimme_parm");
+  /*--------------------------------------------------------------------------*/
+  /*  2) c6                                                */
+  index=2;
+  sscanf(grimme_dict[index].keyarg,"%lg",&tmp);
+  if(tmp<0.0){keyarg_barf(grimme_dict,filename,fun_key,index);}
+  c6[0] = (tmp*Hart_per_J_Mol_m1)*pow(Bohr_per_nm,6.0);
+  /*--------------------------------------------------------------------------*/
+  /*  3) r0                                                */
+  index=3;
+  sscanf(grimme_dict[index].keyarg,"%lg",&tmp);
+  if(tmp<=0.0){keyarg_barf(grimme_dict,filename,fun_key,index);}
+  r0[0] = tmp/BOHR;
+ /*-----------------------------------------------------------------------*/
+   }/*end routine*/
+/*==========================================================================*/

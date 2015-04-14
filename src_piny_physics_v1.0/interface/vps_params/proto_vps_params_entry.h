@@ -14,6 +14,9 @@ void set_ylm_cons(CPYLM_CONS *);
 
 void nlEesSetIter(CPPSEUDO *);
 
+void control_grimme_params(FILENAME_PARSE *,int *, int ,NAME *,
+  	                   double *,int ,double *, double *);
+
 /*---------------------------------------------------------------*/
 
 

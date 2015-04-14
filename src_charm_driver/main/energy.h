@@ -35,6 +35,7 @@ struct EnergyStruct {
 
   int iteration_atm;       // step upon which energies below computed.
   double eewald_real;     // Real space ewald.
+  double grimmeVdw;       // grimme VdW - 1st image
   double eKinetic_atm;    // classical kinetic energy
   double eKineticNhc_atm; // NHC kinetic energy
   double potNhc_atm;      // NHC pot energy

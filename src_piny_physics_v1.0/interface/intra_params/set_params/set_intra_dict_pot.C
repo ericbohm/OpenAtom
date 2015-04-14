@@ -476,7 +476,7 @@ void set_potfun_dict(DICT_WORD *fun_dict[],int *num_fun_dict,int ifirst)
   /*========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
-    *num_fun_dict=9;
+    *num_fun_dict=10;
     *fun_dict = (DICT_WORD *)
       cmalloc(*num_fun_dict*sizeof(DICT_WORD),"set_potfun_dict")-1;
   }/*endif*/
@@ -540,6 +540,12 @@ void set_potfun_dict(DICT_WORD *fun_dict[],int *num_fun_dict,int ifirst)
   strcpy((*fun_dict)[9].keyarg,"");
   strcpy((*fun_dict)[9].error_mes,"");
   (*fun_dict)[9].key_type = 2; /* specify more than once */
+  /*-----------------------------------------------------------------------*/ 
+  /* 10) ~grimme_parm[] */
+  strcpy((*fun_dict)[10].keyword,"grimme_parm");
+  strcpy((*fun_dict)[10].keyarg,"");
+  strcpy((*fun_dict)[10].error_mes,"");
+  (*fun_dict)[10].key_type = 2; /* specify more than once */
   /*-----------------------------------------------------------------------*/ 
 }/*end routine*/
 /*==========================================================================*/

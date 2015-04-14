@@ -103,6 +103,50 @@ void set_potvps_dict(DICT_WORD *vps_dict[],int *num_vps_dict, int ifirst)
   /*==========================================================================*/
 
 
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+/*  set_grimme_dict:set up the atom  key word dictionary                    */ 
+/*==========================================================================*/
+void set_grimme_dict(DICT_WORD *grimme_dict[],int *num_grimme_dict, int ifirst)
+  /*==========================================================================*/
+{/*begin routine*/
+  int i;
+  /*==========================================================================*/
+  /* 0) Malloc the dictionary */
+  if(ifirst==1){
+    *num_grimme_dict=3;
+    *grimme_dict    = (DICT_WORD *)cmalloc(*num_grimme_dict*sizeof(DICT_WORD),"set_grimme_dict")-1; 
+  } /*endif*/
+  /*==========================================================================*/
+  /* I) Assign the users set flags 0 */
+  for(i=1;i<=*num_grimme_dict;i++){(*grimme_dict)[i].iuset    = 0;}
+  for(i=1;i<=*num_grimme_dict;i++){(*grimme_dict)[i].key_type = 0;}
+  /*==========================================================================*/
+  /* II) Fill the dictionary with words */
+  /*-------------------------------------------------------------------------*/ 
+  /*  1) /atom1{} */
+  strcpy((*grimme_dict)[1].keyword,"atom1");
+  strcpy((*grimme_dict)[1].keyarg,"");
+  strcpy((*grimme_dict)[1].error_mes,"");
+  (*grimme_dict)[1].key_type = 1;  /* must spec*/
+  /*--------------------------------------------------------------------------*/ 
+  /*  2) /c6{} */
+  strcpy((*grimme_dict)[2].keyword,"c6");
+  strcpy((*grimme_dict)[2].keyarg,"1.0");
+  strcpy((*grimme_dict)[2].error_mes,"a number > 0");
+  (*grimme_dict)[2].key_type = 1;  /* must spec*/
+  /*--------------------------------------------------------------------------*/ 
+  /*  3) /r0{} */
+  strcpy((*grimme_dict)[3].keyword,"r0");
+  strcpy((*grimme_dict)[3].keyarg,"1.0");
+  strcpy((*grimme_dict)[3].error_mes,"a number > 0");
+  (*grimme_dict)[3].key_type = 1;  /* must spec*/
+/*--------------------------------------------------------------------------*/ 
+  }/*end routine*/
+/*==========================================================================*/
+
+
 
 
 

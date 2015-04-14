@@ -263,6 +263,11 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
         mdclatoms_info->natm_tot,cpatom_maps->nab_initio,
         cpopts->cp_ptens_calc,cp_dual_grid_opt_on,
         cp_parse.cp_ecut);
+    if(cpopts->cp_grimme==1){
+      control_grimme_params(&filename_parse,mdatom_maps->iatm_atm_typ,
+        mdatom_maps->natm_typ,mdatom_maps->atm_typ,tot_memory,
+        mdclatoms_info->natm_tot,mdclatoms_info->c6Grimme,mdclatoms_info->r0Grimme);
+    }//endif
     //----------------------------------------------------------------------
     // These are obsolete and can be nuked eventually
 

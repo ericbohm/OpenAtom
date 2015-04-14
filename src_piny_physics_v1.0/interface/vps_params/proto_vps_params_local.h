@@ -2,12 +2,15 @@
 /* Set_inter_dict.c  : copy of proto in proto_search_base */
 
 void set_potvps_dict(DICT_WORD *[],int *, int );
+void set_grimme_dict(DICT_WORD *[],int *, int );
 
 /*---------------------------------------------------------------*/
 
 /* control_vps_params.c  */
 void set_vps_params(DICT_WORD [],char *,char *,int *,
     char *,int *,int *,double *,int *,int *,int *,int *,int *);
+
+void set_grimme_params(DICT_WORD [],char *,char *,double *, double *);
 
 void make_vps_splin(char *,int ,int ,
     int ,int ,double ,

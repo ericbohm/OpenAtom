@@ -26,7 +26,7 @@
 //============================================================================
 void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int nproc,
     double *pot_ewd_ret, double *vself_ret, double *vbgr_ret,
-    double *recip_corr, PSSCRATCH *pscratch)
+    double *recip_corr, PSSCRATCH *pscratch, double *pot_GrimmeVdw_ret)
   //============================================================================
 { // Begin Function
   //----------------------------------------------------------------------------
@@ -50,9 +50,16 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
   double de7 = 7.0*e7; double de8 = 8.0*e8; double de9 = 9.0*e9;
 
 
-  int natm_piny  = mdclatoms_info->natm_tot; 
-  double alp_ewd = genewald->alp_ewd;
-  double ecut    = genewald->ecut;
+  int natm_piny     = mdclatoms_info->natm_tot; 
+  int cp_grimme     = mdclatoms_info->cp_grimme; 
+  double dGrimme    = mdclatoms_info->dGrimme; 
+  double s6Grimme   = mdclatoms_info->s6Grimme; 
+  double *c6Grimme  = mdclatoms_info->c6Grimme; 
+  double *r0Grimme  = mdclatoms_info->r0Grimme; 
+  double rheal      = mdclatoms_info->rheal;
+
+  double alp_ewd    = genewald->alp_ewd;
+  double ecut       = genewald->ecut;
 
   double *hmati  = gencell->hmati;
   double *hmat   = gencell->hmat;
@@ -83,7 +90,8 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
   //============================================================================
   // Primitively Parallelize the computation
 
-  double pot_ewd  = 0.0;
+  double pot_ewd        = 0.0;
+  double pot_GrimmeVdw  = 0.0;
   if(natm>1 && myid<natm-1){   
     int natm1 = natm-1;
     int ndiv  = MIN(natm1,nproc);
@@ -102,6 +110,7 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
     if(iperd==3){hmat_min = 0.5*MIN3(alen,blen,clen);}
     if(iperd==2){hmat_min = 0.5*MIN(alen,blen);}
     if(iperd==1){hmat_min = 0.5*alen;}
+    double rmax = hmat_min;
 
     for(int iatm = ist; iatm < iend; iatm++){
       for(int jatm = iatm+1; jatm < natm; jatm++){
@@ -137,7 +146,7 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
         double r2 = dx*dx+dy*dy+dz*dz;
         double r  = sqrt(r2);
         int igo = 0;
-        double vnow=0.0,dvnow=0.0;
+        double vnow=0.0,dvnow=0.0,vnowG=0.0;
         if(r<=hmat_min && iperd!=0){
           igo = 1;
           double qij    = q[iatm]*q[jatm];
@@ -158,8 +167,25 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
           vnow       = qij/r;
           dvnow      = qij/(r*r2);
         }//endif
+        if(cp_grimme==1 && igo==1){
+          double rp      = (r-rmax+rheal)/rheal;
+                 rp      = MIN(rp,1.0);
+                 rp      = MAX(rp,0.0);
+          double sw      = 1.0 + rp*rp*(2.0*rp-3.0);
+          double dsw     = -6.0*(rp/rheal)*(rp-1.0)/r;
+          double C6      = sqrt(c6Grimme[(iatm+1)]*c6Grimme[(jatm+1)]);
+          double R0      = r0Grimme[(iatm+1)]+r0Grimme[(jatm+1)];
+          double r6i     = 1.0/(r2*r2*r2);
+          double eee     = exp(-dGrimme*(r/R0-1.0));
+          double fGrimme = 1.0/(1.0 + eee);
+                 vnowG   = -C6*s6Grimme*fGrimme*r6i;
+          double dvnowG  = vnowG*(sw*6.0/r2 - sw*fGrimme*eee*dGrimme/(R0*r) + dsw);
+          vnowG         *= sw;
+          dvnow    += dvnowG;
+	}//endif
         if(igo==1){
-          pot_ewd += vnow;
+          pot_ewd       += vnow;
+          pot_GrimmeVdw += vnowG;
 #ifdef _CP_DEBUG_ATM_FORC_
           fxt[iatm] += dx*dvnow;
           fyt[iatm] += dy*dvnow;
@@ -180,7 +206,8 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
       }//endfor : jatm
     }//endfor : iatm
   }//endif : there is work to do 
-  pot_ewd_ret[0] = pot_ewd;
+  pot_ewd_ret[0]       = pot_ewd;
+  pot_GrimmeVdw_ret[0] = pot_GrimmeVdw;
 
 
   //============================================================================

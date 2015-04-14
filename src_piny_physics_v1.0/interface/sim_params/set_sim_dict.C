@@ -424,7 +424,7 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
   /*========================================================================*/
   /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 43;
+  *num_dict = 44;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_cp")-1;
 
   /*========================================================================*/
@@ -669,6 +669,13 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
   strcpy((*dict)[i].error_mes,"a real number > 0.0");
   strcpy((*dict)[i].keyword,"cp_bomd_timestep_scale");
   strcpy((*dict)[i].keyarg,"1.0");
+  /*-----------------------------------------------------------------------*/ 
+  /* 44)\cp_grimme_Vdw{on,off} */
+  i = 44;
+  strcpy((*dict)[i].error_mes,"on or off");
+  strcpy((*dict)[i].keyword,"cp_grimme_Vdw");
+  strcpy((*dict)[i].keyarg,"off");
+
   /*========================================================================*/
   /*------------------------------------------------------------------------*/
   /*========================================================================*/
@@ -1091,7 +1098,7 @@ void set_sim_dict_run(int *num_dict,DICT_WORD *dict[])
   /*  8)\respa_rheal{#} */
   strcpy((*dict)[8].error_mes,"a number > 0 ");
   strcpy((*dict)[8].keyword,"respa_rheal");
-  strcpy((*dict)[8].keyarg,"1");
+  strcpy((*dict)[8].keyarg,"0.5");
   /*-----------------------------------------------------------------------*/ 
   /*  9)\shake_tol{#} */
   strcpy((*dict)[9].error_mes,"a number > 0 ");

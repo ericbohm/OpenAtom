@@ -55,6 +55,9 @@ void set_def_base_params(FILENAME_PARSE *filename_parse,
   /*-----------------------------------------------------------------------*/ 
   /* 8) /lj_explicit_file{} */
   strcpy(filename_parse->def_lj_name,def_base_dict[8].keyarg);
+  /*-----------------------------------------------------------------------*/ 
+  /* 9) /grimme_ile{} */
+  strcpy(filename_parse->def_grimme_name,def_base_dict[9].keyarg);
   /*=======================================================================*/
 }/*end routine*/
 /*==========================================================================*/
@@ -92,8 +95,11 @@ void set_user_base_params(FILENAME_PARSE *filename_parse,
   /* 7) /surf_file{} */
   strcpy(filename_parse->user_surf_name,user_base_dict[7].keyarg);
   /*-----------------------------------------------------------------------*/ 
-  /* 7) /lj_explicit_file{} */
+  /* 8) /lj_explicit_file{} */
   strcpy(filename_parse->user_lj_name,user_base_dict[8].keyarg);
+  /*-----------------------------------------------------------------------*/ 
+  /* 9) /grimme_file{} */
+  strcpy(filename_parse->user_grimme_name,user_base_dict[9].keyarg);
   /*=======================================================================*/
 }/*end routine*/
 /*==========================================================================*/

@@ -140,6 +140,13 @@ void close_intra_params(MDCLATOMS_INFO *clatoms_info,
   clatoms_info->ichrg      = (int *)
     cmalloc(natm_mall*sizeof(int),"close_intra_params")-1;
 
+  if(clatoms_info->cp_grimme==1){
+    clatoms_info->c6Grimme     = (double *)
+                cmalloc(natm_mall*sizeof(double),"close_intra_params")-1;
+    clatoms_info->r0Grimme     = (double *)
+                cmalloc(natm_mall*sizeof(double),"close_intra_params")-1;
+  }//endif
+
   clatoms_info->nfree      = 0;
   clatoms_pimd->nfree_pimd = 0;
   for(i=1;i<=atommaps->nmol_typ;i++){

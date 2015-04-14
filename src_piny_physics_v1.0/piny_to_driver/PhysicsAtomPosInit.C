@@ -59,6 +59,7 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
   len_nhc       = (mdtherm_info->len_nhc);
   cp_wave_opt   = (gensimopts->cp_wave);
   isokin_opt    = mdtherm_info->isokin_opt;
+  cp_grimme     = cpopts->cp_grimme;
   ibead         = ibead_in;
   itemper       = itemper_in;
 

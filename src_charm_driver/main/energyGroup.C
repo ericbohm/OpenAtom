@@ -31,7 +31,8 @@ EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInst
 
   //ion-ion
   estruct.eewald_recip = 0;
-  estruct.eewald_real = 0;
+  estruct.eewald_real  = 0;
+  estruct.grimmeVdw    = 0;
 
   //exchange correlation
   estruct.egga = 0;

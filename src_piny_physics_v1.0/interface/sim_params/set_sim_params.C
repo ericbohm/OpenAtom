@@ -1000,16 +1000,33 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   index=42;
   sscanf(dict[index].keyarg,"%lg",&real_key_arg);
   gentimeinfo->btime = (int)real_key_arg;
-  // TODO: Sanity checks here for <= 0.0 > 1000000
+  if(gentimeinfo->btime < 1 || gentimeinfo->btime > 100){
+    keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
   /* 43)\cp_bomd_timestep_scale{#} */
   index=43;
   sscanf(dict[index].keyarg,"%lg",&real_key_arg);
   gentimeinfo->bomd_scale = real_key_arg;
-  // TODO: Sanity checks here for <= 0.0 > 1.0
+  if(gentimeinfo->bomd_scale <= 0.0 || gentimeinfo->bomd_scale > 1.0){
+    keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
+  /*-----------------------------------------------------------------------*/ 
+  /* 44)\cp_grimme_Vdw{on,off} */
+  index=44;
+  ifound = 0;
+  if(strcasecmp(dict[index].keyarg,"on")==0)    {
+    cpopts->cp_grimme = 1; ifound++;}
+  if(strcasecmp(dict[index].keyarg,"off")==0)    {
+    cpopts->cp_grimme = 0; ifound++;}
+  if(ifound != 1){
+    keyarg_barf(dict,filename_parse->input_name,fun_key,index);} 
+  mdclatoms_info->cp_grimme = cpopts->cp_grimme;
+  /*========================================================================*/
+  /* set the rest of Grimme*/
+  mdclatoms_info->dGrimme  = 20.0;
+  mdclatoms_info->s6Grimme = 0.75;
+  if(cpopts->cp_becke==1){mdclatoms_info->s6Grimme = 1.2;}
   /*========================================================================*/
   // CP mass warning messages for the uninitiated
-
   PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
   double cmass_tau_def = cp_parse->cp_mass_tau_def;
   double cmass_cut_def = cp_parse->cp_mass_cut_def;
@@ -1780,6 +1797,7 @@ void set_sim_params_run(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
   }/*endif*/
   mdinteract->rheal_res  /= BOHR;
+  mdclatoms_info->rheal  = mdinteract->rheal_res;
   /*-----------------------------------------------------------------------*/ 
   /* 9)\shake_tol{#} */
   sscanf(dict[9].keyarg,"%lg",&(mdconstrnt->tolshake));
@@ -3687,6 +3705,6 @@ void set_sim_params_finale(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     gensimopts->cp_wave_pimd     = 0;
   }/*endif*/
 
-  /*========================================================================*/
-}/*end routine*/ 
+ /*========================================================================*/
+  }/*end routine*/ 
 /*========================================================================*/

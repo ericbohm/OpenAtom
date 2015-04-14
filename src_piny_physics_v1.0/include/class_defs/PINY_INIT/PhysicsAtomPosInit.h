@@ -36,6 +36,7 @@ class PhysicsAtomPosInit{
     int            isokin_opt;
     int            ibead;
     int            itemper;
+    int            cp_grimme;
     double         kT;
     double       **mass_nhc;
     void DriverAtomInit (int,Atom *,AtomNHC *,int, int);

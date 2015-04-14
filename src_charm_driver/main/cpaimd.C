@@ -2390,6 +2390,7 @@ void control_physics_to_driver(UberCollection thisInstance){
       int cp_wave_opt   = PhysicsAtom->cp_wave_opt;
       int cp_bomd_opt   = PhysicsAtom->cp_bomd_opt;
       int isokin_opt    = PhysicsAtom->isokin_opt;
+      int cp_grimme     = PhysicsAtom->cp_grimme;
       double kT         = PhysicsAtom->kT;
 
       Atom *atoms       = new Atom[natm];
@@ -2426,7 +2427,7 @@ void control_physics_to_driver(UberCollection thisInstance){
       UatomsComputeProxy.push_back( CProxy_AtomsCompute::ckNew(natm,natm_nl,
 							       len_nhc,
 							       iextended_on,
-							       cp_min_opt,cp_wave_opt,cp_bomd_opt,isokin_opt,
+							       cp_min_opt,cp_wave_opt,cp_bomd_opt,isokin_opt,cp_grimme,
 							       kT,atoms,
 							       atomsNHC,
 							       nChareAtoms,

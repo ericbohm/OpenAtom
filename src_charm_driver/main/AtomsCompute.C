@@ -64,8 +64,9 @@ extern CProxy_PhysScratchCache pScratchProxy;
  */
 //==============================================================================
 AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
-    int cp_wave_opt_, int cp_bomd_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC, int nChareAtoms_,
-    UberCollection _thisInstance) : natm(n), natm_nl(n_nl), len_nhc(len_nhc_), iextended_on(iextended_on_), cp_min_opt(cp_min_opt_), cp_wave_opt(cp_wave_opt_), cp_bomd_opt(cp_bomd_opt_), isokin_opt(isokin_opt_), kT(kT_), nChareAtoms(nChareAtoms_), thisInstance(_thisInstance) 
+			   int cp_wave_opt_, int cp_bomd_opt_, int isokin_opt_,int cp_grimme_,
+                           double kT_, Atom* a, AtomNHC *aNHC, int nChareAtoms_,
+			   UberCollection _thisInstance) : natm(n), natm_nl(n_nl), len_nhc(len_nhc_), iextended_on(iextended_on_), cp_min_opt(cp_min_opt_), cp_wave_opt(cp_wave_opt_), cp_bomd_opt(cp_bomd_opt_), isokin_opt(isokin_opt_),cp_grimme(cp_grimme_), kT(kT_), nChareAtoms(nChareAtoms_), thisInstance(_thisInstance) 
                                     //==============================================================================
 {// begin routine
   //==============================================================================
@@ -73,6 +74,7 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
   handleForcesCount=0;
   ktemps          = 0;
   pot_ewd_rs      = 0.0;
+  potGrimmeVdw   = 0.0;
   eKinetic        = 0.0;
   eKineticNhc     = 0.0;
   potNhc          = 0.0;    
@@ -116,7 +118,7 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 
   CmiMemcpy(atoms, a, natm * sizeof(Atom));           // atoms has no vectors
   for(int i=0;i<natm;i++){atomsNHC[i].Init(&aNHC[i]);}
-  ftot           = (double *)fftw_malloc((3*natm+2)*sizeof(double));
+  ftot = (double *)fftw_malloc((3*natm+3)*sizeof(double));
 
   zeroforces();
   if(iextended_on==1 && (cp_min_opt==0 || cp_bomd_opt==1)){
@@ -264,13 +266,15 @@ void AtomsCompute::recvContribute(CkReductionMsg *msg) {
   // Copy out the reduction of energy and forces and nuke msg
   double *ftot    = (double *) msg->getData();
 
-  double pot_ewd_rs_loc = ftot[3*natm];
-  double potPerdCorrLoc = ftot[3*natm+1];
+  double pot_ewd_rs_loc   = ftot[3*natm];
+  double potPerdCorrLoc   = ftot[3*natm+1];
+  double potGrimmeVdwLoc  = ftot[3*natm+2];
 
   //============================================================
   // Tuck things that can be tucked.
 
   eg->estruct.eewald_real = pot_ewd_rs_loc;  
+  eg->estruct.grimmeVdw   = potGrimmeVdwLoc;  
 
 
 #ifdef _CP_DEBUG_ATMS_EXIT_
@@ -650,14 +654,15 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   //==========================================================================
   // Get the real space atom forces plus these 4 quantities
 
-  pot_ewd_rs  = 0.0;
-  vself       = 0.0;
-  vbgr        = 0.0;
-  potPerdCorr = 0.0;
+  pot_ewd_rs   = 0.0;
+  potGrimmeVdw = 0.0;
+  vself        = 0.0;
+  vbgr         = 0.0;
+  potPerdCorr  = 0.0;
 
 #ifndef _CP_DEBUG_PSI_OFF_
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
-  CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr, pScratchProxy.ckLocalBranch()->psscratch);
+  CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr, pScratchProxy.ckLocalBranch()->psscratch,&potGrimmeVdw);
 #endif
 #endif
 
@@ -671,7 +676,7 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   if(thisIndex==0)
     UatomsCacheProxy[thisInstance.proxyOffset].contributeforces();
 
-  double *ftot           = new double[(3*natm+2)];
+  double *ftot           = new double[(3*natm+3)];
   for(int i=0,j=0; i<natm; i++,j+=3){
     ftot[j]   = fastAtoms.fx[i];
     ftot[j+1] = fastAtoms.fy[i];
@@ -679,8 +684,10 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   }//endfor
   ftot[3*natm]  =pot_ewd_rs;
   ftot[3*natm+1]=potPerdCorr;
+  ftot[3*natm+2]=potGrimmeVdw;
+  CkPrintf("Grimme %d %g\n",myid,potGrimmeVdw);
   CkCallback cb(CkIndex_AtomsCompute::recvContribute(NULL), UatomsComputeProxy[thisInstance.proxyOffset]);
-  contribute((3*natm+2)*sizeof(double),ftot,CkReduction::sum_double,cb);
+  contribute((3*natm+3)*sizeof(double),ftot,CkReduction::sum_double,cb);
   delete [] ftot;
   //==========================================================================
 }//end routine
@@ -695,13 +702,14 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
 void AtomsCompute::outputAtmEnergy() {
   //==========================================================================
 
-  EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-  double eKinetic       = eg->estruct.eKinetic_atm;
-  double eKineticNhc    = eg->estruct.eKineticNhc_atm;
-  double fmag           = eg->estruct.fmag_atm;
-  double pot_ewd_rs_now = eg->estruct.eewald_real;
-  double potNhc         = eg->estruct.potNhc_atm;
-  double free_atm       = 3*((double)natm);
+  EnergyGroup *eg         = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
+  double eKinetic         = eg->estruct.eKinetic_atm;
+  double eKineticNhc      = eg->estruct.eKineticNhc_atm;
+  double fmag             = eg->estruct.fmag_atm;
+  double pot_ewd_rs_now   = eg->estruct.eewald_real;
+  double potGrimmeVdw_now = eg->estruct.grimmeVdw;
+  double potNhc           = eg->estruct.potNhc_atm;
+  double free_atm         = 3*((double)natm);
 
   CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
   int iperd             = sim->iperd;
@@ -730,6 +738,9 @@ void AtomsCompute::outputAtmEnergy() {
       }//endif
     }else{
       fprintf(temperScreenFile,"Iter [%d] ATM_COUL    = %5.8lf\n",iteration, pot_ewd_rs_now);
+    }//endif
+    if(cp_grimme==1){
+      fprintf(temperScreenFile,"Iter [%d] Grimme VdW  = %5.8lf\n",iteration,potGrimmeVdw_now);
     }//endif
     if(move_atoms==1){
       fprintf(temperScreenFile,"Iter [%d] atm eKin    = %5.8lf\n",iteration, eKinetic);

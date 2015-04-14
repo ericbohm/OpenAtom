@@ -48,6 +48,7 @@ class AtomsCompute: public CBase_AtomsCompute {
     int cp_min_opt;
     int cp_bomd_opt;
     int cp_wave_opt;
+    int cp_grimme;
     int *iteration;
     int isokin_opt;
     int countAtm;
@@ -61,6 +62,7 @@ class AtomsCompute: public CBase_AtomsCompute {
     unsigned int handleForcesCount;
     double kT;              // temperature
     double pot_ewd_rs;      // total real space ewald energy
+    double potGrimmeVdw;    // Grimme vdw energy
     double potPerdCorr;
     double potPIMDChain;    // Path integral chain energy :computed in u space
     double vself, vbgr;
@@ -88,7 +90,7 @@ class AtomsCompute: public CBase_AtomsCompute {
     FILE *temperScreenFile;
 
     AtomsCompute(CkMigrateMessage *m) {}
-    AtomsCompute(int, int, int, int, int, int, int ,int, double, Atom *, AtomNHC *, int nChareAtoms, UberCollection thisInstance);
+    AtomsCompute(int, int, int, int, int, int, int ,int, int, double, Atom *, AtomNHC *, int nChareAtoms, UberCollection thisInstance);
     void init();
     ~AtomsCompute();
     void integrateAtoms();

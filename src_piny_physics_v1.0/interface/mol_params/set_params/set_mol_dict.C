@@ -80,13 +80,13 @@ void set_molset_fun_dict(DICT_WORD *fun_dict[],int *num_fun_dict)
   strcpy((*fun_dict)[6].keyword,"data_base_def");
   strcpy((*fun_dict)[6].keyarg,"");  
   strcpy((*fun_dict)[6].error_mes,
-      "inter_file,vps_file,bond_file,bend_file,tors_file,onfo_file");
+      "inter_file,vps_file,bond_file,bend_file,tors_file,onfo_file,grimme_file");
   /*-----------------------------------------------------------------------*/ 
   /*  7) ~user_data_base_def[] */
   strcpy((*fun_dict)[7].keyword,"user_data_base_def");
   strcpy((*fun_dict)[7].keyarg,"");  
   strcpy((*fun_dict)[7].error_mes,
-      "inter_file,vps_file,bond_file,bend_file,tors_file,onfo_file,surf_file");
+      "inter_file,vps_file,bond_file,bend_file,tors_file,onfo_file,surf_file,grimme_file");
   /*-----------------------------------------------------------------------*/ 
   /*  8) ~rbar_sig_free_def[] */
   strcpy((*fun_dict)[8].keyword,"rbar_sig_free_def");
@@ -190,7 +190,7 @@ void set_user_base_dict(DICT_WORD *user_base_dict[],int *num_user_base_dict)
   /*=======================================================================*/
   /* 0) Malloc the dictionary */
 
-  *num_user_base_dict = 8;
+  *num_user_base_dict = 9;
   *user_base_dict=(DICT_WORD*)cmalloc(*num_user_base_dict*sizeof(DICT_WORD),"set_user_base_dict")-1;
   /*========================================================================*/
   /* I) Assign the users set flags 0 */
@@ -239,6 +239,11 @@ void set_user_base_dict(DICT_WORD *user_base_dict[],int *num_user_base_dict)
   strcpy((*user_base_dict)[8].keyarg,"");
   strcpy((*user_base_dict)[8].error_mes,"none");
   /*-----------------------------------------------------------------------*/ 
+  /* 9) /grimme_file{} */
+  strcpy((*user_base_dict)[9].keyword,"grimme_file");
+  strcpy((*user_base_dict)[9].keyarg,"");
+  strcpy((*user_base_dict)[9].error_mes,"none");
+  /*-----------------------------------------------------------------------*/ 
 }  /*end routine*/
 /*==========================================================================*/
 
@@ -258,7 +263,7 @@ void set_def_base_dict(DICT_WORD *def_base_dict[],int *num_def_base_dict)
   int i;
   /*========================================================================*/
   /* 0) Malloc the dictionary */
-  *num_def_base_dict =  8;
+  *num_def_base_dict =  9;
   *def_base_dict=(DICT_WORD *)cmalloc(*num_def_base_dict*sizeof(DICT_WORD),"set_def_base_dict")-1;
   /*========================================================================*/
   /* I) Assign the users set flags 0 */
@@ -306,6 +311,11 @@ void set_def_base_dict(DICT_WORD *def_base_dict[],int *num_def_base_dict)
   strcpy((*def_base_dict)[8].keyword,"lj_explicit_file");
   strcpy((*def_base_dict)[8].keyarg,"pi_md.lj_explicit");
   strcpy((*def_base_dict)[8].error_mes,"none");
+  /*-----------------------------------------------------------------------*/ 
+  /* 9) /lj_explicit_file{} */
+  strcpy((*def_base_dict)[9].keyword,"grimme_file");
+  strcpy((*def_base_dict)[9].keyarg,"grimme.input");
+  strcpy((*def_base_dict)[9].error_mes,"none");
   /*-----------------------------------------------------------------------*/ 
 }  /*end routine*/
 /*==========================================================================*/

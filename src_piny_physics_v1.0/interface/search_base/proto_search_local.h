@@ -20,6 +20,8 @@ void check_mult_base(CATM_LAB *,int *,int ,int , int , char *, WILD *);
 
 void set_potvps_dict(DICT_WORD *[],int *, int );
 
+void set_grimme_dict(DICT_WORD *[],int *, int );
+
 void set_pot_explicit_lj_dict(DICT_WORD *[],int *, int );
 
 void set_potinter_dict(DICT_WORD *[],int *, int );
