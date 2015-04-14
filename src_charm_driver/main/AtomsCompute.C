@@ -685,7 +685,6 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   ftot[3*natm]  =pot_ewd_rs;
   ftot[3*natm+1]=potPerdCorr;
   ftot[3*natm+2]=potGrimmeVdw;
-  CkPrintf("Grimme %d %g\n",myid,potGrimmeVdw);
   CkCallback cb(CkIndex_AtomsCompute::recvContribute(NULL), UatomsComputeProxy[thisInstance.proxyOffset]);
   contribute((3*natm+3)*sizeof(double),ftot,CkReduction::sum_double,cb);
   delete [] ftot;
