@@ -1,0 +1,63 @@
+module gw_bse {
+
+  chare GWBSEDriver {
+    entry void run() {
+      serial {
+        kspi.computePsi();
+        qspi.computePsi();
+      }
+      for (l = 0; l < L; l++) {
+        serial {
+          kpsi(*, l).sendPsi(l);
+          qpsi.sendPsi(l);
+        } when done() {}
+      }
+    };
+  };
+
+  array [2D] KPsi {
+    entry void computePsi(int l) {
+    entry void sendPsi(int l);
+
+    entry void run() {
+      when computePsi() serial {
+        psiIFFT();
+      }
+      when sendPsi(int l) serial {
+        if (l != thisIndex.y) { /* throw an error */ } 
+        int k = thisIndex.x;
+        fcalc(k, *, l, *).receivePsi(psi);
+      }
+    };
+  };
+
+  array [2D] QPsi {
+    entry void computePsi();
+    entry void sendPsi(int l);
+
+    entry void run() {
+      when computePsi() serial {
+        psiIFFT();
+      }
+      for (l = 0; l < L; l++) {
+        when sendPsi[l](int l) serial {
+        int k = thisIndex.x;
+        int m = thisIndex.y;
+        fcalc(*, k + q, l, m).receivePsi(psi);
+      }
+    };
+  };
+
+  array [4D] FCalculator {
+    entry void run() {
+      when receivePsi(psi1), receivePsi(psi2) serial {
+        computeF(psi1, psi2);
+        computeAndSendP();
+        driver.done();
+      }
+    };
+  };
+
+  array [1D] PMatrix {
+  };
+};
