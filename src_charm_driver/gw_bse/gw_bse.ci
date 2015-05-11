@@ -1,58 +1,78 @@
-module gw_bse {
+mainmodule gw_bse {
 
-  // TODO: Driver is probably a bottleneck. It could be distributed as an array,
-  // or the pipeline logic could just go in the KPsi chares?
-  chare GWBSEDriver {
-    entry GWBSEDriver();
-    entry void phase1() {
-      // TODO: QPsi could also be pipelined over L, is there a reason we didn't?
-      qpsi.sendPsi();
-      // TODO: The pipeline could be relaxed to have multiple stages at once
-      for (l = 0; l < L; l++) {
-        serial {
-          kpsi(*, l).sendPsi();
-        } when done() {}
-      }
-    };
+  mainchare GWBSEDriver {
+    entry GWBSEDriver(CkArgMsg* msg);
   };
 
+  // Each KPsi computes and stores a Psi for a single k and l
   array [2D] KPsi {
     entry KPsi(); // Constructor computes psi
+    entry void fcalcDone();
     entry void sendPsi() {
-      int k = thisIndex.x;
-      int l = thisIndex.y;
-      fcalc(k, *, l, *).receivePsi(l, psi);
-    };
-  };
-
-  array [2D] QPsi {
-    entry QPsi(); // Constructor computes psi
-    entry void sendPsi() {
-      for (l = 0; l < L; l++) serial {
+      // Send out the initial Psis to the fcalc
+      for (l = 0; l < pipeline_stages; l++) serial {
         int k = thisIndex.x;
-        int m = thisIndex.y;
-        fcalc(*, k + q, l, m).receivePsi(l, psi);
+        if (l == thisIndex.y) {
+          fcalc(k, *, l, *).receivePsi(l, psi);
+        }
+      }
+      // Send out the rest of the Psis as we receive done messages
+      while (l < L) {
+        when fcalcDone() serial {
+          if (l == thisIndex.y) {
+            fcalc(k, *, l, *).receivePsi(psi);
+          }
+          l++;
+        }
+      }
+      // After all Psis have been sent out, wait for the rest of the dones
+      for (l = 0; l < pipeline_stages; l++) {
+        when fcalcDone() {}
       }
     };
   };
 
+  // Each QPsi computes and stores a Psi for a single k+q and m
+  array [2D] QPsi {
+    entry QPsi(); // Constructor computes psi
+    entry void fcalcDone();
+    entry void sendPsi() {
+      // Send out the initial Psis to the fcalc
+      for (l = 0; l < pipeline_stages; l++) serial {
+        int q = thisIndex.x;
+        int m = thisIndex.y;
+        fcalc(*, q, l, m).receivePsi(psi);
+      }
+      // Send out the rest of the Psis as we receive done messages
+      while (l < L) {
+        when fcalcDone() serial {
+          fcalc(*, k + q, l, m).receivePsi(psi);
+          l++;
+        }
+      }
+      // After all Psis have been sent out, wait for the rest of the dones
+      for (l = 0; l < pipeline_stages; l++) {
+        when fcalcDone() {}
+      }
+    };
+  };
+
+  // 4D array for computing f for a particular k q l m
   array [4D] FCalculator {
     entry FCalculator();
-    entry void phase1() {
-      when receivePsi(l1, psi1), receivePsi(l2, psi2) serial {
-        if (l1 != l2) { /* throw an error */ }
+    entry void run() {
+      when receivePsi(psi1), receivePsi(psi2) serial {
         computeF(psi1, psi2);
-        computeAndSendP();  // This function should also deallocate f when done
-        // TODO: This needs to be a section reduction over a single L plane
-        contribute(CkCallback(CkReductionTarget(GWBSEDriver, done), driver));
+        // TODO: Figure out exactly how we are going to compute P from f
+        // TODO: These need to be section reductions over L planes
+        contribute(CkCallback(CkReductionTarget(KPsi, fcalcDone), kpsi));
+        contribute(CkCallback(CkReductionTarget(QPsi, fcalcDone), qpsi));
       }
     };
   };
 
   array [1D] PMatrix {
     entry PMatrix();
-    // TODO: Would this be good as a reduction target or would there be too many
-    // simultaneous reductions going on?
     entry void receiveContribution(row_of_p);
   };
 };
