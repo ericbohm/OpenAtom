@@ -1,63 +1,58 @@
 module gw_bse {
 
+  // TODO: Driver is probably a bottleneck. It could be distributed as an array,
+  // or the pipeline logic could just go in the KPsi chares?
   chare GWBSEDriver {
-    entry void run() {
-      serial {
-        kspi.computePsi();
-        qspi.computePsi();
-      }
+    entry GWBSEDriver();
+    entry void phase1() {
+      // TODO: QPsi could also be pipelined over L, is there a reason we didn't?
+      qpsi.sendPsi();
+      // TODO: The pipeline could be relaxed to have multiple stages at once
       for (l = 0; l < L; l++) {
         serial {
-          kpsi(*, l).sendPsi(l);
-          qpsi.sendPsi(l);
+          kpsi(*, l).sendPsi();
         } when done() {}
       }
     };
   };
 
   array [2D] KPsi {
-    entry void computePsi(int l) {
-    entry void sendPsi(int l);
-
-    entry void run() {
-      when computePsi() serial {
-        psiIFFT();
-      }
-      when sendPsi(int l) serial {
-        if (l != thisIndex.y) { /* throw an error */ } 
-        int k = thisIndex.x;
-        fcalc(k, *, l, *).receivePsi(psi);
-      }
+    entry KPsi(); // Constructor computes psi
+    entry void sendPsi() {
+      int k = thisIndex.x;
+      int l = thisIndex.y;
+      fcalc(k, *, l, *).receivePsi(l, psi);
     };
   };
 
   array [2D] QPsi {
-    entry void computePsi();
-    entry void sendPsi(int l);
-
-    entry void run() {
-      when computePsi() serial {
-        psiIFFT();
-      }
-      for (l = 0; l < L; l++) {
-        when sendPsi[l](int l) serial {
+    entry QPsi(); // Constructor computes psi
+    entry void sendPsi() {
+      for (l = 0; l < L; l++) serial {
         int k = thisIndex.x;
         int m = thisIndex.y;
-        fcalc(*, k + q, l, m).receivePsi(psi);
+        fcalc(*, k + q, l, m).receivePsi(l, psi);
       }
     };
   };
 
   array [4D] FCalculator {
-    entry void run() {
-      when receivePsi(psi1), receivePsi(psi2) serial {
+    entry FCalculator();
+    entry void phase1() {
+      when receivePsi(l1, psi1), receivePsi(l2, psi2) serial {
+        if (l1 != l2) { /* throw an error */ }
         computeF(psi1, psi2);
-        computeAndSendP();
-        driver.done();
+        computeAndSendP();  // This function should also deallocate f when done
+        // TODO: This needs to be a section reduction over a single L plane
+        contribute(CkCallback(CkReductionTarget(GWBSEDriver, done), driver));
       }
     };
   };
 
   array [1D] PMatrix {
+    entry PMatrix();
+    // TODO: Would this be good as a reduction target or would there be too many
+    // simultaneous reductions going on?
+    entry void receiveContribution(row_of_p);
   };
 };
