@@ -151,7 +151,11 @@ namespace cp {
       CProxy_PairCalculator pairCalculatorProxy;
       CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy;
 
+      // Compute the max value of the state dimension indices of the paircalc array
+      int pcMaxStateDimIndex = (cfg.numStates / cfg.grainSize - 1) * cfg.grainSize;
+
       // Create an empty array but specify element locations using the map
+      paircalcOpts.setBounds(cfg.numPlanes, pcMaxStateDimIndex+1, pcMaxStateDimIndex+1, cfg.numChunks);
       paircalcOpts.setMap(pcHandle.mapperGID);
       paircalcOpts.setAnytimeMigration(false);
       paircalcOpts.setStaticInsertion(false);
@@ -174,8 +178,6 @@ namespace cp {
       pcHandle.pcAID = pairCalculatorProxy.ckGetArrayID();
       pcHandle.handlerAID = inputHandlerProxy.ckGetArrayID();
 
-      // Compute the max value of the state dimension indices of the paircalc array
-      int pcMaxStateDimIndex = (cfg.numStates / cfg.grainSize - 1) * cfg.grainSize;
       // Populate the sparse, 4D paircalc array
       for(int numX = 0; numX < cfg.numPlanes; numX ++)
       {
