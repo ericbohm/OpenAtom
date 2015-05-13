@@ -1,5 +1,17 @@
 mainmodule gw_bse {
 
+  readonly int K;
+  readonly int Q;
+  readonly int L;
+  readonly int M;
+
+  readonly int psi_size;
+  readonly int pipeline_stages;
+
+  readonly CProxy_KPsi kpsi;
+  readonly CProxy_QPsi qpsi;
+  readonly CProxy_FCalculator fcalc;
+
   mainchare GWBSEDriver {
     entry GWBSEDriver(CkArgMsg* msg);
   };
@@ -9,18 +21,20 @@ mainmodule gw_bse {
     entry KPsi(); // Constructor computes psi
     entry void fcalcDone();
     entry void sendPsi() {
+      serial { CkPrintf("[%d,%d]: Got message\n", thisIndex.x, thisIndex.y); }
+      serial { createSections(); }
       // Send out the initial Psis to the fcalc
       for (l = 0; l < pipeline_stages; l++) serial {
         int k = thisIndex.x;
         if (l == thisIndex.y) {
-          fcalc(k, *, l, *).receivePsi(l, psi);
+          section.receivePsi(psi_size, psi);
         }
       }
       // Send out the rest of the Psis as we receive done messages
       while (l < L) {
         when fcalcDone() serial {
           if (l == thisIndex.y) {
-            fcalc(k, *, l, *).receivePsi(psi);
+            //section.receivePsi(psi_size, psi);
           }
           l++;
         }
@@ -37,16 +51,17 @@ mainmodule gw_bse {
     entry QPsi(); // Constructor computes psi
     entry void fcalcDone();
     entry void sendPsi() {
+      serial { createSections(); }
       // Send out the initial Psis to the fcalc
       for (l = 0; l < pipeline_stages; l++) serial {
         int q = thisIndex.x;
         int m = thisIndex.y;
-        fcalc(*, q, l, m).receivePsi(psi);
+        //sections[l].receivePsi(psi_size, psi);
       }
       // Send out the rest of the Psis as we receive done messages
       while (l < L) {
         when fcalcDone() serial {
-          fcalc(*, k + q, l, m).receivePsi(psi);
+          //sections[l].receivePsi(psi_size, psi);
           l++;
         }
       }
@@ -60,19 +75,20 @@ mainmodule gw_bse {
   // 4D array for computing f for a particular k q l m
   array [4D] FCalculator {
     entry FCalculator();
+    entry void receivePsi(int length, double psi[length]);
     entry void run() {
-      when receivePsi(psi1), receivePsi(psi2) serial {
+      when  receivePsi(int l1, double psi1[l1]),
+            receivePsi(int l2, double psi2[l2]) serial {
         computeF(psi1, psi2);
         // TODO: Figure out exactly how we are going to compute P from f
         // TODO: These need to be section reductions over L planes
-        contribute(CkCallback(CkReductionTarget(KPsi, fcalcDone), kpsi));
-        contribute(CkCallback(CkReductionTarget(QPsi, fcalcDone), qpsi));
+        //contribute(CkCallback(CkReductionTarget(KPsi, fcalcDone), kpsi));
+        //contribute(CkCallback(CkReductionTarget(QPsi, fcalcDone), qpsi));
       }
     };
   };
 
   array [1D] PMatrix {
     entry PMatrix();
-    entry void receiveContribution(row_of_p);
   };
 };
