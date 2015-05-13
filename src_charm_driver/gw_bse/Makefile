@@ -1,3 +1,5 @@
+CHARMC=~/Programming/ppl/charm/bin/charmc
+
 all: gw_bse.C gw_bse.ci gw_bse.h
 	$(CHARMC) gw_bse.ci
 	$(CHARMC) gw_bse.C

@@ -8,8 +8,8 @@
 /*readonly*/int psi_size;
 /*readonly*/int pipeline_stages;
 
-/*readonly*/CProxy_KPsi kpsi;
-/*readonly*/CProxy_QPsi qpsi;
+/*readonly*/CProxy_Psi kpsi;
+/*readonly*/CProxy_Psi qpsi;
 /*readonly*/CProxy_FCalculator fcalc;
 
 GWBSEDriver::GWBSEDriver(CkArgMsg* msg) {
@@ -17,14 +17,14 @@ GWBSEDriver::GWBSEDriver(CkArgMsg* msg) {
 
   K = 4;
   Q = 4;
-  L = 10;
-  M = 100;
+  L = 8;
+  M = 16;
 
   psi_size = 16;
   pipeline_stages = 1;
 
-  kpsi = CProxy_KPsi::ckNew(K, L);
-  qpsi = CProxy_KPsi::ckNew(Q, M);
+  kpsi = CProxy_Psi::ckNew(true, K, L);
+  qpsi = CProxy_Psi::ckNew(false, Q, M);
 
   fcalc = CProxy_FCalculator::ckNew();
   for (int k = 0; k < K; k++) {
@@ -39,7 +39,7 @@ GWBSEDriver::GWBSEDriver(CkArgMsg* msg) {
   fcalc.doneInserting();
 
   kpsi.sendPsi();
-  //qpsi.sendPsi();
+  qpsi.sendPsi();
   fcalc.run();
 }
 
@@ -47,48 +47,43 @@ GWBSEDriver::GWBSEDriver(CkArgMsg* msg) {
 void GWBSEDriver::readState() {
 }
 
-KPsi::KPsi() {
+Psi::Psi(bool occupied) : occupied(occupied) {
+  psi = new double[psi_size];
   calculatePsiR();
   CkPrintf("[%d,%d]: Constructed\n", thisIndex.x, thisIndex.y);
 }
 
-void KPsi::createSections() {
+void Psi::createSections() {
   CkPrintf("[%d,%d]: Creating sections\n", thisIndex.x, thisIndex.y);
-  int k   = thisIndex.x;
-  int l   = thisIndex.y;
-  section = CProxySection_FCalculator::ckNew( fcalc.ckGetArrayID(),
-                                              k, k, 1,
-                                              0, Q, 1,
-                                              l, l, 1,
-                                              0, M, 1 );
+  CProxySection_FCalculator section;
+  unsigned k_lower = 0, k_upper = K - 1;
+  unsigned q_lower = 0, q_upper = Q - 1;
+  unsigned l_lower = 0, l_upper = L - 1;
+  unsigned m_lower = 0, m_upper = M - 1;
+  if (occupied) {
+    k_lower = k_upper = thisIndex.x;
+    l_lower = l_upper = thisIndex.y;
+  } else {
+    q_lower = q_upper = thisIndex.x;
+    m_lower = m_upper = thisIndex.y;
+  }
+  for (section_index = l_lower; section_index <= l_upper; section_index++) {
+    section = CProxySection_FCalculator::ckNew( fcalc.ckGetArrayID(),
+                                                k_lower, k_upper, 1,
+                                                q_lower, q_upper, 1,
+                                                section_index, section_index, 1,
+                                                m_lower, m_upper, 1 );
+    sections.push_back(std::make_pair(section_index, section));
+  }
+  section_index = 0;
+  CkPrintf("[%d,%d]: Done creating %d sections\n",
+      thisIndex.x, thisIndex.y, sections.size());
 }
 
-void KPsi::calculatePsiR() {
+void Psi::calculatePsiR() {
  // TODO (Yale): Take the psi array in this object and IFFT it to take it to
  // real space
 } 
-
-QPsi::QPsi() {
-  calculatePsiR();
-}
-
-void QPsi::createSections() {
-  sections.resize(L);
-  int q   = thisIndex.x;
-  int m   = thisIndex.y;
-  for (int l = 0; l < L; l++) {
-    sections[l] = CProxySection_FCalculator::ckNew( fcalc.ckGetArrayID(),
-                                                    0, K, 1,
-                                                    q, q, 1,
-                                                    l, l, 1,
-                                                    m, m, 1 );
-  }
-};
-
-void QPsi::calculatePsiR() {
- // TODO (Yale): Take the psi array in this object and IFFT it to take it to
- // real space
-}
 
 FCalculator::FCalculator() {}
 

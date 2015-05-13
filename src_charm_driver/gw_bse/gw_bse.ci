@@ -8,60 +8,32 @@ mainmodule gw_bse {
   readonly int psi_size;
   readonly int pipeline_stages;
 
-  readonly CProxy_KPsi kpsi;
-  readonly CProxy_QPsi qpsi;
+  readonly CProxy_Psi kpsi;
+  readonly CProxy_Psi qpsi;
   readonly CProxy_FCalculator fcalc;
 
   mainchare GWBSEDriver {
     entry GWBSEDriver(CkArgMsg* msg);
   };
 
-  // Each KPsi computes and stores a Psi for a single k and l
-  array [2D] KPsi {
-    entry KPsi(); // Constructor computes psi
+  array [2D] Psi {
+    entry Psi(bool occupied); // Constructor computes psi
     entry void fcalcDone();
     entry void sendPsi() {
       serial { CkPrintf("[%d,%d]: Got message\n", thisIndex.x, thisIndex.y); }
       serial { createSections(); }
       // Send out the initial Psis to the fcalc
       for (l = 0; l < pipeline_stages; l++) serial {
-        int k = thisIndex.x;
-        if (l == thisIndex.y) {
-          section.receivePsi(psi_size, psi);
+        if (sections[section_index].first == l) {
+          sections[section_index++].second.receivePsi(psi_size, psi);
         }
       }
       // Send out the rest of the Psis as we receive done messages
       while (l < L) {
         when fcalcDone() serial {
-          if (l == thisIndex.y) {
-            //section.receivePsi(psi_size, psi);
+          if (sections[section_index].first == l) {
+            sections[section_index++].second.receivePsi(psi_size, psi);
           }
-          l++;
-        }
-      }
-      // After all Psis have been sent out, wait for the rest of the dones
-      for (l = 0; l < pipeline_stages; l++) {
-        when fcalcDone() {}
-      }
-    };
-  };
-
-  // Each QPsi computes and stores a Psi for a single k+q and m
-  array [2D] QPsi {
-    entry QPsi(); // Constructor computes psi
-    entry void fcalcDone();
-    entry void sendPsi() {
-      serial { createSections(); }
-      // Send out the initial Psis to the fcalc
-      for (l = 0; l < pipeline_stages; l++) serial {
-        int q = thisIndex.x;
-        int m = thisIndex.y;
-        //sections[l].receivePsi(psi_size, psi);
-      }
-      // Send out the rest of the Psis as we receive done messages
-      while (l < L) {
-        when fcalcDone() serial {
-          //sections[l].receivePsi(psi_size, psi);
           l++;
         }
       }
@@ -79,6 +51,7 @@ mainmodule gw_bse {
     entry void run() {
       when  receivePsi(int l1, double psi1[l1]),
             receivePsi(int l2, double psi2[l2]) serial {
+        CkPrintf("[%d,%d,%d,%d]: Received both Psis\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
         computeF(psi1, psi2);
         // TODO: Figure out exactly how we are going to compute P from f
         // TODO: These need to be section reductions over L planes
