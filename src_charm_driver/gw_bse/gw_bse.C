@@ -8,6 +8,7 @@
 /*readonly*/int psi_size;
 /*readonly*/int pipeline_stages;
 
+/*readonly*/CkGroupID mcast_ID;
 /*readonly*/CProxy_Psi kpsi;
 /*readonly*/CProxy_Psi qpsi;
 /*readonly*/CProxy_FCalculator fcalc;
@@ -21,8 +22,9 @@ GWBSEDriver::GWBSEDriver(CkArgMsg* msg) {
   M = 16;
 
   psi_size = 16;
-  pipeline_stages = 1;
+  pipeline_stages = 2;
 
+  mcast_ID = CProxy_CkMulticastMgr::ckNew();
   kpsi = CProxy_Psi::ckNew(true, K, L);
   qpsi = CProxy_Psi::ckNew(false, Q, M);
 
@@ -50,11 +52,10 @@ void GWBSEDriver::readState() {
 Psi::Psi(bool occupied) : occupied(occupied) {
   psi = new double[psi_size];
   calculatePsiR();
-  CkPrintf("[%d,%d]: Constructed\n", thisIndex.x, thisIndex.y);
 }
 
 void Psi::createSections() {
-  CkPrintf("[%d,%d]: Creating sections\n", thisIndex.x, thisIndex.y);
+  CkMulticastMgr* mcast_ptr = CProxy_CkMulticastMgr(mcast_ID).ckLocalBranch();
   CProxySection_FCalculator section;
   unsigned k_lower = 0, k_upper = K - 1;
   unsigned q_lower = 0, q_upper = Q - 1;
@@ -73,11 +74,10 @@ void Psi::createSections() {
                                                 q_lower, q_upper, 1,
                                                 section_index, section_index, 1,
                                                 m_lower, m_upper, 1 );
+    section.ckSectionDelegate(mcast_ptr);
     sections.push_back(std::make_pair(section_index, section));
   }
   section_index = 0;
-  CkPrintf("[%d,%d]: Done creating %d sections\n",
-      thisIndex.x, thisIndex.y, sections.size());
 }
 
 void Psi::calculatePsiR() {
@@ -85,7 +85,22 @@ void Psi::calculatePsiR() {
  // real space
 } 
 
-FCalculator::FCalculator() {}
+FCalculator::FCalculator() {
+  mcast_ptr = CProxy_CkMulticastMgr(mcast_ID).ckLocalBranch();
+}
+
+void FCalculator::createSections() {
+  CProxySection_FCalculator red_section;
+  red_section = CProxySection_FCalculator::ckNew( thisProxy.ckGetArrayID(),
+                                                  0, K-1, 1,
+                                                  0, Q-1, 1,
+                                                  thisIndex.y, thisIndex.y, 1,
+                                                  0, M-1, 1 );
+  red_section.ckSectionDelegate(mcast_ptr);
+  PlaneMsg* msg = new PlaneMsg();
+  msg->plane_index = thisIndex.y;
+  red_section.receiveSectionInfo(msg);
+}
 
 void FCalculator::computeF(double* psi1, double* psi2) {
   // TODO (Yale): Take the two psis and compute f and store it in the field

@@ -8,6 +8,7 @@ mainmodule gw_bse {
   readonly int psi_size;
   readonly int pipeline_stages;
 
+  readonly CkGroupID mcast_ID;
   readonly CProxy_Psi kpsi;
   readonly CProxy_Psi qpsi;
   readonly CProxy_FCalculator fcalc;
@@ -18,45 +19,64 @@ mainmodule gw_bse {
 
   array [2D] Psi {
     entry Psi(bool occupied); // Constructor computes psi
-    entry void fcalcDone();
+    entry [nokeep] void fcalcDone(CkReductionMsg*);
     entry void sendPsi() {
-      serial { CkPrintf("[%d,%d]: Got message\n", thisIndex.x, thisIndex.y); }
       serial { createSections(); }
       // Send out the initial Psis to the fcalc
       for (l = 0; l < pipeline_stages; l++) serial {
         if (sections[section_index].first == l) {
-          sections[section_index++].second.receivePsi(psi_size, psi);
+          PsiMsg* psi_msg = new (psi_size) PsiMsg();
+          std::copy(psi, psi+psi_size, psi_msg->psi);
+          sections[section_index++].second.receivePsi(psi_msg);
         }
       }
       // Send out the rest of the Psis as we receive done messages
       while (l < L) {
-        when fcalcDone() serial {
+        when fcalcDone(CkReductionMsg* m) serial {
           if (sections[section_index].first == l) {
-            sections[section_index++].second.receivePsi(psi_size, psi);
+            PsiMsg* psi_msg = new (psi_size) PsiMsg();
+            std::copy(psi, psi+psi_size, psi_msg->psi);
+            sections[section_index++].second.receivePsi(psi_msg);
           }
           l++;
         }
       }
       // After all Psis have been sent out, wait for the rest of the dones
       for (l = 0; l < pipeline_stages; l++) {
-        when fcalcDone() {}
+        when fcalcDone(CkReductionMsg* m) {}
       }
+      serial { CkExit(); }
     };
+  };
+
+  message PlaneMsg;
+
+  message PsiMsg {
+    double psi[];
   };
 
   // 4D array for computing f for a particular k q l m
   array [4D] FCalculator {
     entry FCalculator();
-    entry void receivePsi(int length, double psi[length]);
+    entry [nokeep] void receivePsi(PsiMsg* msg);
+    entry [nokeep] void receiveSectionInfo(PlaneMsg* msg);
     entry void run() {
-      when  receivePsi(int l1, double psi1[l1]),
-            receivePsi(int l2, double psi2[l2]) serial {
-        CkPrintf("[%d,%d,%d,%d]: Received both Psis\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
-        computeF(psi1, psi2);
+      serial {
+        if (thisIndex.w == 0 && thisIndex.x == 0 && thisIndex.z == 0) {
+          createSections();
+        }
+      }
+      when receiveSectionInfo(PlaneMsg* msg) serial {
+        CkGetSectionInfo(sec_info, msg);
+      }
+      when receivePsi(PsiMsg* m1), receivePsi(PsiMsg* m2) serial {
+        computeF(m1->psi, m2->psi);
         // TODO: Figure out exactly how we are going to compute P from f
-        // TODO: These need to be section reductions over L planes
-        //contribute(CkCallback(CkReductionTarget(KPsi, fcalcDone), kpsi));
-        //contribute(CkCallback(CkReductionTarget(QPsi, fcalcDone), qpsi));
+        int l = thisIndex.y;
+        CkCallback cb1(CkIndex_Psi::fcalcDone(NULL), kpsi);
+        CkCallback cb2(CkIndex_Psi::fcalcDone(NULL), qpsi);
+        mcast_ptr->contribute(sizeof(int), &l, CkReduction::min_int, sec_info, cb1);
+        mcast_ptr->contribute(sizeof(int), &l, CkReduction::min_int, sec_info, cb2);
       }
     };
   };
