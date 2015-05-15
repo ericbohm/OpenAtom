@@ -1,38 +1,25 @@
 #include "gw_bse.h"
 
-/*readonly*/int K;
-/*readonly*/int Q;
-/*readonly*/int L;
-/*readonly*/int M;
-
-/*readonly*/int psi_size;
-/*readonly*/int pipeline_stages;
+/*readonly*/GWConfig config;
 
 /*readonly*/CkGroupID mcast_ID;
 /*readonly*/CProxy_Psi kpsi;
 /*readonly*/CProxy_Psi qpsi;
 /*readonly*/CProxy_FCalculator fcalc;
 
-GWBSEDriver::GWBSEDriver(CkArgMsg* msg) {
+GWDriver::GWDriver(CkArgMsg* msg) {
+  readConfig();
   readState();
 
-  K = 4;
-  Q = 4;
-  L = 8;
-  M = 16;
-
-  psi_size = 16;
-  pipeline_stages = 2;
-
   mcast_ID = CProxy_CkMulticastMgr::ckNew();
-  kpsi = CProxy_Psi::ckNew(true, K, L);
-  qpsi = CProxy_Psi::ckNew(false, Q, M);
+  kpsi = CProxy_Psi::ckNew(true, config.K, config.L);
+  qpsi = CProxy_Psi::ckNew(false, config.Q, config.M);
 
   fcalc = CProxy_FCalculator::ckNew();
-  for (int k = 0; k < K; k++) {
-    for (int q = 0; q < Q; q++) {
-      for (int l = 0; l < L; l++) {
-        for (int m = 0; m < M; m++) {
+  for (int k = 0; k < config.K; k++) {
+    for (int q = 0; q < config.Q; q++) {
+      for (int l = 0; l < config.L; l++) {
+        for (int m = 0; m < config.M; m++) {
           fcalc(k,q,l,m).insert();
         }
       }
@@ -45,22 +32,43 @@ GWBSEDriver::GWBSEDriver(CkArgMsg* msg) {
   fcalc.run();
 }
 
-// TODO: This function should maybe be distributed to the Psi chares in some way
-void GWBSEDriver::readState() {
+// Read in configuration data from the file system
+void GWDriver::readConfig() {
+  config.K = 4;
+  config.Q = 4;
+  config.L = 8;
+  config.M = 16;
+
+  config.occupied_size = 32;
+  config.unoccupied_size = 16;
+
+  config.pipeline_stages = 2;
+}
+
+// Read in state date from the file system
+void GWDriver::readState() {
+  // TODO: State input should be parallel
 }
 
 Psi::Psi(bool occupied) : occupied(occupied) {
-  psi = new double[psi_size];
+  mcast_ptr = CProxy_CkMulticastMgr(mcast_ID).ckLocalBranch();
+
+  if (occupied) {
+    size = config.occupied_size;
+  } else {
+    size = config.unoccupied_size;
+  }
+  psi = new double[size];
+  // TODO: Read in the Psi somehow or get it from the driver?
   calculatePsiR();
 }
 
-void Psi::createSections() {
-  CkMulticastMgr* mcast_ptr = CProxy_CkMulticastMgr(mcast_ID).ckLocalBranch();
+void Psi::setupSections() {
   CProxySection_FCalculator section;
-  unsigned k_lower = 0, k_upper = K - 1;
-  unsigned q_lower = 0, q_upper = Q - 1;
-  unsigned l_lower = 0, l_upper = L - 1;
-  unsigned m_lower = 0, m_upper = M - 1;
+  unsigned k_lower = 0, k_upper = config.K - 1;
+  unsigned q_lower = 0, q_upper = config.Q - 1;
+  unsigned l_lower = 0, l_upper = config.L - 1;
+  unsigned m_lower = 0, m_upper = config.M - 1;
   if (occupied) {
     k_lower = k_upper = thisIndex.x;
     l_lower = l_upper = thisIndex.y;
@@ -77,6 +85,7 @@ void Psi::createSections() {
     section.ckSectionDelegate(mcast_ptr);
     sections.push_back(std::make_pair(section_index, section));
   }
+  // Reset section index to 0. It is used in SDAG control flow.
   section_index = 0;
 }
 
@@ -89,21 +98,29 @@ FCalculator::FCalculator() {
   mcast_ptr = CProxy_CkMulticastMgr(mcast_ID).ckLocalBranch();
 }
 
-void FCalculator::createSections() {
-  CProxySection_FCalculator red_section;
-  red_section = CProxySection_FCalculator::ckNew( thisProxy.ckGetArrayID(),
-                                                  0, K-1, 1,
-                                                  0, Q-1, 1,
-                                                  thisIndex.y, thisIndex.y, 1,
-                                                  0, M-1, 1 );
-  red_section.ckSectionDelegate(mcast_ptr);
-  PlaneMsg* msg = new PlaneMsg();
-  msg->plane_index = thisIndex.y;
-  red_section.receiveSectionInfo(msg);
+// Setup the reduction section for our plane and broadcast a message to the
+// section, allowing it to get the section info needed for the reduction.
+// This method should only be called on one member of each l-plane.
+void FCalculator::setupSections() {
+  CkAssert(thisIndex.w == 0 && thisIndex.x == 0 && thisIndex.z == 0);
+
+  PlaneMsg* msg = new PlaneMsg(thisIndex.y);
+  CProxySection_FCalculator section;
+  section = CProxySection_FCalculator::ckNew( thisProxy.ckGetArrayID(),
+                                              0, config.K-1, 1,
+                                              0, config.Q-1, 1,
+                                              thisIndex.y, thisIndex.y, 1,
+                                              0, config.M-1, 1 );
+  section.ckSectionDelegate(mcast_ptr);
+  section.receiveSectionInfo(msg);
 }
 
-void FCalculator::computeF(double* psi1, double* psi2) {
+void FCalculator::computeF(PsiMsg* m1, PsiMsg* m2) {
   // TODO (Yale): Take the two psis and compute f and store it in the field
+}
+
+void FCalculator::sendPContribution() {
+  // TODO: This will probably be called from some more complicated SDAG flow
 }
 
 #include "gw_bse.def.h"

@@ -1,48 +1,44 @@
 mainmodule gw_bse {
 
-  readonly int K;
-  readonly int Q;
-  readonly int L;
-  readonly int M;
+  include "config.h";
 
-  readonly int psi_size;
-  readonly int pipeline_stages;
+  // Global configuration
+  readonly GWConfig config;
 
+  // Global chare proxies/ids
   readonly CkGroupID mcast_ID;
   readonly CProxy_Psi kpsi;
   readonly CProxy_Psi qpsi;
   readonly CProxy_FCalculator fcalc;
 
-  mainchare GWBSEDriver {
-    entry GWBSEDriver(CkArgMsg* msg);
+  mainchare GWDriver {
+    entry GWDriver(CkArgMsg* msg);
   };
 
   array [2D] Psi {
-    entry Psi(bool occupied); // Constructor computes psi
+    entry Psi(bool occupied);
     entry [nokeep] void fcalcDone(CkReductionMsg*);
     entry void sendPsi() {
-      serial { createSections(); }
+      serial { setupSections(); }
       // Send out the initial Psis to the fcalc
-      for (l = 0; l < pipeline_stages; l++) serial {
-        if (sections[section_index].first == l) {
-          PsiMsg* psi_msg = new (psi_size) PsiMsg();
-          std::copy(psi, psi+psi_size, psi_msg->psi);
-          sections[section_index++].second.receivePsi(psi_msg);
+      for (l_index = 0; l_index < config.pipeline_stages; l_index++) serial {
+        if (sections[section_index].first == l_index) {
+          PsiMsg* msg = new (size) PsiMsg(size, psi);
+          sections[section_index++].second.receivePsi(msg);
         }
       }
       // Send out the rest of the Psis as we receive done messages
-      while (l < L) {
+      while (l_index < config.L) {
         when fcalcDone(CkReductionMsg* m) serial {
-          if (sections[section_index].first == l) {
-            PsiMsg* psi_msg = new (psi_size) PsiMsg();
-            std::copy(psi, psi+psi_size, psi_msg->psi);
-            sections[section_index++].second.receivePsi(psi_msg);
+          if (sections[section_index].first == l_index) {
+            PsiMsg* msg = new (size) PsiMsg(size, psi);
+            sections[section_index++].second.receivePsi(msg);
           }
-          l++;
+          l_index++;
         }
       }
       // After all Psis have been sent out, wait for the rest of the dones
-      for (l = 0; l < pipeline_stages; l++) {
+      for (l_index = 0; l_index < config.pipeline_stages; l_index++) {
         when fcalcDone(CkReductionMsg* m) {}
       }
       serial { CkExit(); }
@@ -63,14 +59,15 @@ mainmodule gw_bse {
     entry void run() {
       serial {
         if (thisIndex.w == 0 && thisIndex.x == 0 && thisIndex.z == 0) {
-          createSections();
+          setupSections();
         }
       }
       when receiveSectionInfo(PlaneMsg* msg) serial {
         CkGetSectionInfo(sec_info, msg);
       }
       when receivePsi(PsiMsg* m1), receivePsi(PsiMsg* m2) serial {
-        computeF(m1->psi, m2->psi);
+        computeF(m1, m2);
+        sendPContribution();
         // TODO: Figure out exactly how we are going to compute P from f
         int l = thisIndex.y;
         CkCallback cb1(CkIndex_Psi::fcalcDone(NULL), kpsi);
