@@ -1,9 +1,15 @@
 CHARMC=~/Programming/ppl/charm/bin/charmc
 
-all: gw_bse.C gw_bse.ci gw_bse.h
+OBJS=gw_bse.o psi.o fcalculator.o
+
+all: gw_bse.decl.h $(OBJS)
+	$(CHARMC) -o gw_bse $(OBJS) -module CkMulticast -language charm++
+
+gw_bse.decl.h: gw_bse.ci config.h
 	$(CHARMC) gw_bse.ci
-	$(CHARMC) gw_bse.C
-	$(CHARMC) -o gw_bse gw_bse.o -module CkMulticast -language charm++
+
+%.o: %.C %.h
+	$(CHARMC) $<
 
 clean:
 	rm -rf *.decl.h *.def.h *.o charmrun gw_bse
