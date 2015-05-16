@@ -15,6 +15,8 @@ class PMatrix : public CBase_PMatrix {
   public:
     PMatrix() {}
     PMatrix(CkMigrateMessage* msg) {}
+
+    void receiveRowContribution(int, int, double*) {}
 };
 
 /*readonly*/extern GWConfig config;
@@ -22,5 +24,6 @@ class PMatrix : public CBase_PMatrix {
 /*readonly*/extern CProxy_Psi kpsi;
 /*readonly*/extern CProxy_Psi qpsi;
 /*readonly*/extern CProxy_FCalculator fcalc;
+/*readonly*/extern CProxy_PMatrix pmatrix;
 
 #endif

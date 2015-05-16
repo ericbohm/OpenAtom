@@ -10,6 +10,7 @@ mainmodule gw_bse {
   readonly CProxy_Psi kpsi;
   readonly CProxy_Psi qpsi;
   readonly CProxy_FCalculator fcalc;
+  readonly CProxy_PMatrix pmatrix;
 
   mainchare GWDriver {
     entry GWDriver(CkArgMsg* msg);
@@ -67,18 +68,26 @@ mainmodule gw_bse {
       }
       when receivePsi(PsiMsg* m1), receivePsi(PsiMsg* m2) serial {
         computeF(m1, m2);
-        sendPContribution();
-        // TODO: Figure out exactly how we are going to compute P from f
+
+        // TODO (UIUC): This will probably need some whens to control the mem
+        for (int r = 0; r < size; r++) {
+          computeAndSendRow(rowOffset(r));
+        }
+
+        // Tell the Psi chares we are done with this l-plane
         int l = thisIndex.y;
         CkCallback cb1(CkIndex_Psi::fcalcDone(NULL), kpsi);
         CkCallback cb2(CkIndex_Psi::fcalcDone(NULL), qpsi);
         mcast_ptr->contribute(sizeof(int), &l, CkReduction::min_int, sec_info, cb1);
         mcast_ptr->contribute(sizeof(int), &l, CkReduction::min_int, sec_info, cb2);
+        delete[] f;
       }
     };
   };
 
   array [1D] PMatrix {
     entry PMatrix();
+    // TODO (UIUC): This should use a message instead of marshalling
+    entry void receiveRowContribution(int offset, int size, double row[size]);
   };
 };

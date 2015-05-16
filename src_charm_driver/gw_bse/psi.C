@@ -45,5 +45,3 @@ void Psi::calculatePsiR() {
  // TODO (Yale): Take the psi array in this object and IFFT it to take it to
  // real space
 } 
-
-//#include "gw_bse.def.h"

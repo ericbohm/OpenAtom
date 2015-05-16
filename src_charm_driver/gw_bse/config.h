@@ -4,9 +4,10 @@
 #include "pup.h"
 
 struct GWConfig {
-  unsigned K, Q, L, M;
-  unsigned occupied_size, unoccupied_size;
-  unsigned pipeline_stages;
+  unsigned K, Q, L, M;                      // Number of k points, and psis
+  unsigned occupied_size, unoccupied_size;  // Sizes of psi arrays
+  unsigned pipeline_stages;                 // Number of stages in L pipeline
+  unsigned rows_of_p, rows_per_chare;       // Rows in PMatrix
 };
 PUPbytes(GWConfig);
 

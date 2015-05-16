@@ -1,3 +1,6 @@
+#ifndef FCALCULATOR_H
+#define FCALCULATOR_H
+
 #include "gw_bse.decl.h"
 #include "ckmulticast.h"
 
@@ -24,14 +27,24 @@ class FCalculator : public CBase_FCalculator {
     FCalculator();
     FCalculator(CkMigrateMessage* msg) {}
 
-    void setupSections(); // Setup plane sections for the section reductions
-
-    void computeF(PsiMsg*, PsiMsg*);  // Compute f from the two psis
-    void sendPContribution();         // Compute parts of P and send them
-
   private:
+    // Setup an l-plane section and broadcast with it to get section info
+    void setupSections() const;
+
+    // Transform a row index using chare index to stagger sends to PMatrix
+    unsigned rowOffset(unsigned) const;
+
+    // Computations for f and p
+    void computeF(PsiMsg*, PsiMsg*);
+    void computeAndSendRow(unsigned row) const;
+
+    // Size of f and array pointer for f
+    unsigned size;
     double* f;
 
+    // Section reduction variables
     CkMulticastMgr* mcast_ptr;
     CkSectionInfo sec_info;
 };
+
+#endif

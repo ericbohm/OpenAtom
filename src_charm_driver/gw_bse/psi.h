@@ -1,3 +1,6 @@
+#ifndef PSI_H
+#define PSI_H
+
 #include "gw_bse.decl.h"
 #include "ckmulticast.h"
 
@@ -7,10 +10,10 @@ class Psi : public CBase_Psi {
     Psi(bool occupied);
     Psi(CkMigrateMessage* msg) {}
 
+  private:
     void setupSections(); // Create sections for broadcasting psi to fcalc
     void calculatePsiR(); // Do an IFFT to take PsiG to PsiR
 
-  private:
     // Information about the kind of psi we are
     bool occupied;
     int size;
@@ -23,3 +26,5 @@ class Psi : public CBase_Psi {
     CkMulticastMgr* mcast_ptr;
     std::vector<std::pair<unsigned, CProxySection_FCalculator> > sections;
 };
+
+#endif
