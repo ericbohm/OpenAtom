@@ -85,9 +85,13 @@ mainmodule gw_bse {
     };
   };
 
+  message RowMessage {
+    double row[];
+  };
+
   array [1D] PMatrix {
     entry PMatrix();
     // TODO (UIUC): This should use a message instead of marshalling
-    entry void receiveRowContribution(int offset, int size, double row[size]);
+    entry void receiveRowContribution(RowMessage*);
   };
 };

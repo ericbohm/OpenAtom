@@ -33,12 +33,10 @@ void FCalculator::computeF(PsiMsg* m1, PsiMsg* m2) {
   // TODO (Yale): Take the two psis and compute f and store it in the field
 }
 
-void FCalculator::computeAndSendRow(unsigned r) const {
-  double* row = new double[size];
+void FCalculator::computeAndSendRow(unsigned row_index) const {
+  unsigned chare_index = row_index / config.rows_per_chare;
+  RowMessage* msg = new (size) RowMessage(row_index, size);
+  double* row = msg->row;
   // TODO (Yale): Compute the rth row of P using f
-  // TODO (UIUC): This should be sent as a message
-  unsigned index = r / config.rows_per_chare;
-  int offset = r % config.rows_per_chare;
-  pmatrix[index].receiveRowContribution(offset, size, row);
-  delete[] row;
+  pmatrix[chare_index].receiveRowContribution(msg);
 }

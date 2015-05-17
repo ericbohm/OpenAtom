@@ -11,12 +11,19 @@ class GWDriver : public CBase_GWDriver {
     void readState();
 };
 
+class RowMessage : public CMessage_RowMessage {
+  public:
+    RowMessage(unsigned i, unsigned s) : index(i), size(s) {}
+    unsigned index, size;
+    double* row;
+};
+
 class PMatrix : public CBase_PMatrix {
   public:
     PMatrix() {}
     PMatrix(CkMigrateMessage* msg) {}
 
-    void receiveRowContribution(int, int, double*) {}
+    void receiveRowContribution(RowMessage* msg) { delete msg; }
 };
 
 /*readonly*/extern GWConfig config;
