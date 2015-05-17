@@ -3,7 +3,7 @@
 
 FCalculator::FCalculator() {
   mcast_ptr = CProxy_CkMulticastMgr(mcast_ID).ckLocalBranch();
-  size = config.rows_of_p;
+  size = config.n_elems;
 }
 
 // Setup the reduction section for our plane and broadcast a message to the

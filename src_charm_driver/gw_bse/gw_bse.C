@@ -17,7 +17,7 @@ GWDriver::GWDriver(CkArgMsg* msg) {
   mcast_ID = CProxy_CkMulticastMgr::ckNew();
   kpsi = CProxy_Psi::ckNew(true, config.K, config.L);
   qpsi = CProxy_Psi::ckNew(false, config.Q, config.M);
-  pmatrix = CProxy_PMatrix::ckNew(config.rows_of_p / config.rows_per_chare);
+  pmatrix = CProxy_PMatrix::ckNew(config.n_elems / config.rows_per_chare);
 
   fcalc = CProxy_FCalculator::ckNew();
   for (int k = 0; k < config.K; k++) {
@@ -43,10 +43,7 @@ void GWDriver::readConfig() {
   config.L = 8;
   config.M = 16;
 
-  config.occupied_size = 32;
-  config.unoccupied_size = 16;
-
-  config.rows_of_p = 64;
+  config.n_elems = 32;
   config.rows_per_chare = 8;
 
   config.pipeline_stages = 2;

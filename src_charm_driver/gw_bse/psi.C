@@ -5,11 +5,7 @@
 Psi::Psi(bool occupied) : occupied(occupied), section_index(0) {
   mcast_ptr = CProxy_CkMulticastMgr(mcast_ID).ckLocalBranch();
 
-  if (occupied) {
-    size = config.occupied_size;
-  } else {
-    size = config.unoccupied_size;
-  }
+  size = config.n_elems;
   psi = new double[size];
   // TODO: Read in the Psi somehow or get it from the driver?
   calculatePsiR();
