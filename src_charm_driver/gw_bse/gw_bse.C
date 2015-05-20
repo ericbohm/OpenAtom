@@ -16,20 +16,10 @@ GWDriver::GWDriver(CkArgMsg* msg) {
 
   mcast_ID = CProxy_CkMulticastMgr::ckNew();
   kpsi = CProxy_Psi::ckNew(true, config.K, config.L);
-  qpsi = CProxy_Psi::ckNew(false, config.Q, config.M);
+  qpsi = CProxy_Psi::ckNew(false, config.K, config.M);
   pmatrix = CProxy_PMatrix::ckNew(config.n_elems / config.rows_per_chare);
 
-  fcalc = CProxy_FCalculator::ckNew();
-  for (int k = 0; k < config.K; k++) {
-    for (int q = 0; q < config.Q; q++) {
-      for (int l = 0; l < config.L; l++) {
-        for (int m = 0; m < config.M; m++) {
-          fcalc(k,q,l,m).insert();
-        }
-      }
-    }
-  }
-  fcalc.doneInserting();
+  fcalc = CProxy_FCalculator::ckNew(config.K, config.L, config.M);
 
   kpsi.sendPsi();
   qpsi.sendPsi();
@@ -39,14 +29,13 @@ GWDriver::GWDriver(CkArgMsg* msg) {
 // Read in configuration data from the file system
 void GWDriver::readConfig() {
   config.K = 4;
-  config.Q = 4;
-  config.L = 8;
-  config.M = 16;
+  config.L = 1;
+  config.M = 4;
 
-  config.n_elems = 32;
-  config.rows_per_chare = 8;
+  config.n_elems = 256;
+  config.rows_per_chare = 16;
 
-  config.pipeline_stages = 2;
+  config.pipeline_stages = 1;
 }
 
 // Read in state date from the file system

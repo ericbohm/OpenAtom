@@ -4,7 +4,7 @@
 #include "pup.h"
 
 struct GWConfig {
-  unsigned K, Q, L, M;        // Number of k points, and psis
+  unsigned K, L, M;           // Number of k points, and psis
   unsigned n_elems;           // Number of elements in psi and f
   unsigned pipeline_stages;   // Number of stages in L pipeline
   unsigned rows_per_chare;    // Rows per PMatrix chare

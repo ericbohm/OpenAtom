@@ -11,8 +11,8 @@ class Psi : public CBase_Psi {
     Psi(CkMigrateMessage* msg) {}
 
   private:
-    void setupSections(); // Create sections for broadcasting psi to fcalc
-    void calculatePsiR(); // Do an IFFT to take PsiG to PsiR
+    void setupSections(unsigned); // Create bcast sections for a given q iter
+    void calculatePsiR();         // Do an IFFT to take PsiG to PsiR
 
     // Information about the kind of psi we are
     bool occupied;
@@ -20,7 +20,7 @@ class Psi : public CBase_Psi {
     double* psi;
 
     // Indices used for sdag loops
-    unsigned l_index, section_index;
+    unsigned q_index, l_index, section_index;
 
     // Variables for section management
     CkMulticastMgr* mcast_ptr;

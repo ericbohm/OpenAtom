@@ -20,29 +20,31 @@ mainmodule gw_bse {
     entry Psi(bool occupied);
     entry [nokeep] void fcalcDone(CkReductionMsg*);
     entry void sendPsi() {
-      serial { setupSections(); }
-      // Send out the initial Psis to the fcalc
-      for (l_index = 0; l_index < config.pipeline_stages; l_index++) serial {
-        if (sections[section_index].first == l_index) {
-          PsiMsg* msg = new (size) PsiMsg(size, psi);
-          sections[section_index++].second.receivePsi(msg);
-        }
-      }
-      // Send out the rest of the Psis as we receive done messages
-      while (l_index < config.L) {
-        when fcalcDone(CkReductionMsg* m) serial {
+      for (q_index = 0; q_index < config.K; q_index++) {
+        serial { setupSections(q_index); }
+        // Send out the initial Psis to the fcalc
+        for (l_index = 0; l_index < config.pipeline_stages; l_index++) serial {
           if (sections[section_index].first == l_index) {
             PsiMsg* msg = new (size) PsiMsg(size, psi);
             sections[section_index++].second.receivePsi(msg);
           }
-          l_index++;
         }
+        // Send out the rest of the Psis as we receive done messages
+        while (l_index < config.L) {
+          when fcalcDone(CkReductionMsg* m) serial {
+            if (sections[section_index].first == l_index) {
+              PsiMsg* msg = new (size) PsiMsg(size, psi);
+              sections[section_index++].second.receivePsi(msg);
+            }
+            l_index++;
+          }
+        }
+        // After all Psis have been sent out, wait for the rest of the dones
+        for (l_index = 0; l_index < config.pipeline_stages; l_index++) {
+          when fcalcDone(CkReductionMsg* m) {}
+        }
+        serial { CkExit(); }
       }
-      // After all Psis have been sent out, wait for the rest of the dones
-      for (l_index = 0; l_index < config.pipeline_stages; l_index++) {
-        when fcalcDone(CkReductionMsg* m) {}
-      }
-      serial { CkExit(); }
     };
   };
 
@@ -52,14 +54,14 @@ mainmodule gw_bse {
     double psi[];
   };
 
-  // 4D array for computing f for a particular k q l m
-  array [4D] FCalculator {
+  // 3D array for computing f for a particular k l m
+  array [3D] FCalculator {
     entry FCalculator();
     entry [nokeep] void receivePsi(PsiMsg* msg);
     entry [nokeep] void receiveSectionInfo(PlaneMsg* msg);
     entry void run() {
       serial {
-        if (thisIndex.w == 0 && thisIndex.x == 0 && thisIndex.z == 0) {
+        if (thisIndex.x == 0 && thisIndex.z == 0) {
           setupSections();
         }
       }

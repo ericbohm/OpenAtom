@@ -10,13 +10,12 @@ FCalculator::FCalculator() {
 // section, allowing it to get the section info needed for the reduction.
 // This method should only be called on one member of each l-plane.
 void FCalculator::setupSections() const {
-  CkAssert(thisIndex.w == 0 && thisIndex.x == 0 && thisIndex.z == 0);
+  CkAssert(thisIndex.x == 0 && thisIndex.z == 0);
 
   PlaneMsg* msg = new PlaneMsg(thisIndex.y);
   CProxySection_FCalculator section;
   section = CProxySection_FCalculator::ckNew( thisProxy.ckGetArrayID(),
                                               0, config.K-1, 1,
-                                              0, config.Q-1, 1,
                                               thisIndex.y, thisIndex.y, 1,
                                               0, config.M-1, 1 );
   section.ckSectionDelegate(mcast_ptr);
@@ -31,6 +30,7 @@ unsigned FCalculator::rowOffset(unsigned r) const {
 void FCalculator::computeF(PsiMsg* m1, PsiMsg* m2) {
   f = new double[size];
   // TODO (Yale): Take the two psis and compute f and store it in the field
+  // TODO (UIUC): For the test, just fill f with random doubles
 }
 
 void FCalculator::computeAndSendRow(unsigned row_index) const {
