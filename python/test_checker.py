@@ -10,9 +10,8 @@ def check_result(test_dict):
 	output_temp = output_file+'.temp'
 	snip_iteration(iteration, output_file, output_temp)
 
-	# Compare the output reference to the temporary output, then remove it
+	# Compare the output reference to the temporary output
 	result = compare_iteration(output_temp, out_ref, sig_figs)
-	#os.remove(output_temp)
 
 	return result
 

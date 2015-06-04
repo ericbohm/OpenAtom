@@ -996,14 +996,14 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
   }//endif
   /*-----------------------------------------------------------------------*/ 
-  /* 42)\cp_bomd_max_minimization_steps{#} */
+  /* 42)\bomd_max_min_steps{#} */
   index=42;
   sscanf(dict[index].keyarg,"%lg",&real_key_arg);
   gentimeinfo->btime = (int)real_key_arg;
-  if(gentimeinfo->btime < 1 || gentimeinfo->btime > 100){
+  if(gentimeinfo->btime < 1){
     keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
   /*-----------------------------------------------------------------------*/ 
-  /* 43)\cp_bomd_timestep_scale{#} */
+  /* 43)\bomd_ts_scale{#} */
   index=43;
   sscanf(dict[index].keyarg,"%lg",&real_key_arg);
   gentimeinfo->bomd_scale = real_key_arg;

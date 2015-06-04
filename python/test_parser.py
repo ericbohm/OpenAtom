@@ -52,6 +52,8 @@ def parse_tests(exe_dir, test_args):
 	while counter < test_count:
 		variants = []
 		numpes = []
+		iteration = 1
+		sig_figs = 1
 
 		cfg = config_file[counter]
 
@@ -66,6 +68,12 @@ def parse_tests(exe_dir, test_args):
 		if cfg.has_key('numpes'):
 			numpes = cfg['numpes']
 
+		if cfg.has_key('iteration'):
+			iteration = cfg['iteration']
+
+		if cfg.has_key('sig_figs'):
+			sig_figs = cfg['sig_figs']
+
 		if len(variants) == 0:
 			variants.append('')
 		if len(numpes) == 0:
@@ -76,6 +84,12 @@ def parse_tests(exe_dir, test_args):
 				# Each test starts with all the general info. May be overwritten.
 				test_dict = {}
 				test_dict = dict(test_dict.items() + config_dict.items())
+
+				if cfg.has_key('iteration'):
+					test_dict['iteration'] = cfg['iteration']
+
+				if cfg.has_key('sig_figs'):
+					test_dict['sig_figs'] = cfg['sig_figs']
 
 				output_file = test_name
 				if var != '':

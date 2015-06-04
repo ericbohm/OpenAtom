@@ -661,13 +661,13 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
   /* 42)\cp_bomd_max_minimization_steps{#} */
   i = 42;
   strcpy((*dict)[i].error_mes,"an integer > 0");
-  strcpy((*dict)[i].keyword,"cp_bomd_max_minimization_steps");
+  strcpy((*dict)[i].keyword,"bomd_max_min_steps");
   strcpy((*dict)[i].keyarg,"100");
   /*-----------------------------------------------------------------------*/ 
   /* 43)\cp_bomd_timestep_scale{#} */
   i = 43;
   strcpy((*dict)[i].error_mes,"a real number > 0.0");
-  strcpy((*dict)[i].keyword,"cp_bomd_timestep_scale");
+  strcpy((*dict)[i].keyword,"bomd_ts_scale");
   strcpy((*dict)[i].keyarg,"1.0");
   /*-----------------------------------------------------------------------*/ 
   /* 44)\cp_grimme_Vdw{on,off} */
