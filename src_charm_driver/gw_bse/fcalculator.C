@@ -1,4 +1,5 @@
 #include "fcalculator.h"
+#include "pmatrix.h"
 #include "gw_bse.h"
 
 FCalculator::FCalculator() {

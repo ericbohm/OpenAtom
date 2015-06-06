@@ -1,6 +1,7 @@
 #include "gw_bse.h"
 #include "psi.h"
 #include "fcalculator.h"
+#include "pmatrix.h"
 #include "ckmulticast.h"
 
 /*readonly*/GWConfig config;

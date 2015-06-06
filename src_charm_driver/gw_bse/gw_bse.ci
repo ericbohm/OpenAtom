@@ -93,6 +93,6 @@ mainmodule gw_bse {
 
   array [1D] PMatrix {
     entry PMatrix();
-    entry void receiveRowContribution(RowMessage*);
+    entry [nokeep] void receiveRowContribution(RowMessage*);
   };
 };
