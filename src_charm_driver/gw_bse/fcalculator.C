@@ -29,14 +29,21 @@ unsigned FCalculator::rowOffset(unsigned r) const {
 
 void FCalculator::computeF(PsiMsg* m1, PsiMsg* m2) {
   f = new double[size];
-  // TODO (Yale): Take the two psis and compute f and store it in the field
-  // TODO (UIUC): For the test, just fill f with random doubles
+  for (int i = 0; i < size; i++) {
+    f[i] = m1->psi[i] * m2->psi[i];
+  }
 }
 
 void FCalculator::computeAndSendRow(unsigned row_index) const {
+  // Set up the row message
   unsigned chare_index = row_index / config.rows_per_chare;
   RowMessage* msg = new (size) RowMessage(row_index, size);
-  double* row = msg->row;
-  // TODO (Yale): Compute the rth row of P using f
+
+  // Compute the outer product
+  for (int i = 0; i < size; i++) {
+    msg->row[i] = f[row_index]*f[i];
+  }
+
+  // Send the row to the pmatrix to be reduced
   pmatrix[chare_index].receiveRowContribution(msg);
 }

@@ -8,6 +8,11 @@ Psi::Psi(bool occupied) : occupied(occupied), section_index(0) {
   size = config.n_elems;
   psi = new double[size];
   // TODO: Read in the Psi somehow or get it from the driver?
+  // NOTE: For now, using randomly generated psi for performance impact
+  for (int i = 0; i < size; i++) {
+    psi[i] = ((double) std::rand() / RAND_MAX);
+  }
+
   calculatePsiR();
 }
 
@@ -42,6 +47,6 @@ void Psi::setupSections(unsigned q) {
 }
 
 void Psi::calculatePsiR() {
- // TODO (Yale): Take the psi array in this object and IFFT it to take it to
- // real space
+  // TODO (Yale): Take the psi array in this object and IFFT it to take it to
+  // real space
 } 
