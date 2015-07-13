@@ -2376,7 +2376,22 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       CkPrintf("-----------------------------------\n");
     }//endif
     //------------------------------------------------------------------
-    // Update the velocities into scratch as we are between steps
+
+    // Update the velocities to match psi
+    /* The code computes : 
+     * v+= \delta t / 2 * f
+     * nhc
+     * nhc
+     * v+= \delta t / 2 * f
+     * x+= v * \delta t
+     * To catch the velocities up to psi in time, you need to do a half step
+     * v+= \delta t / 2 * f
+     * nhc
+     * set applyOrder = 2 to accomplish that
+     * set halfStepEvolve = 0 so that applyOrder = 2 is skipped in the 
+     * next call to integrateModForces - because you've already done it.
+     */
+    
     if(cp_min_opt==0 && halfStepEvolve ==1){
       halfStepEvolve = 0;
       CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,

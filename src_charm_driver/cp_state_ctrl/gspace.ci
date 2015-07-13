@@ -225,15 +225,6 @@ module gSpaceDriver
           serial { myGSpaceObj->computeLambdaAndCg(); }
           when doneLambdaAndCg() {}
 
-          serial { myGSpaceObj->computeRedPsi(); }
-          when doneRedPsi() {}
-        }  // end if !_SDAG_DEBUG_PSI_OFF_
-
-        //! Compute the Psi for the next iteration
-        if (!_SDAG_DEBUG_PSI_OFF_) {
-          serial { myGSpaceObj->computeNewPsi(); }
-          when doneNewPsi() {}
-
           //! Dump to file every ndump_frq iterations and the final iteration.
           //! Skip the first iteration because nothing moves before iter 2.
           if (config.stateOutput &&
@@ -243,6 +234,15 @@ module gSpaceDriver
             serial { myGSpaceObj->doOutput(); }
             when doneOutput() {}
           }
+
+          serial { myGSpaceObj->computeRedPsi(); }
+          when doneRedPsi() {}
+        }  // end if !_SDAG_DEBUG_PSI_OFF_
+
+        //! Compute the Psi for the next iteration
+        if (!_SDAG_DEBUG_PSI_OFF_) {
+          serial { myGSpaceObj->computeNewPsi(); }
+          when doneNewPsi() {}
 
           if (isPsiVupdateNeeded) {
 #ifdef GSP_USE_PRIMITIVE_ROTATION
