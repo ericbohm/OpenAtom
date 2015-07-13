@@ -3708,6 +3708,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     norb_fin_diff_order = MIN(norb_fin_diff_order,iteration-1); // make sure you have enough steps
                                                                 // don't overwrite the readonly
     double c0,c1,c2,c3;
+    halfStepEvolve      = 0; // this gives vpsi at the same time step
+			     // as psi, so it is like the first step
+			     // where halfStepEvolve=0
     switch(norb_fin_diff_order){
       case 0:
         for(int i=0;i<ncoef;i++){
@@ -3716,7 +3719,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
           vpsi[i].re = vre;
           vpsi[i].im = vim;
         }//endfor
-        halfStepEvolve      = 1;
         break;
       case 1:
         c0 = 1.5; c1 = -2.0; c2 = 0.5;
@@ -3726,7 +3728,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
           vpsi[i].re = vre;
           vpsi[i].im = vim;
         }//endfor
-        halfStepEvolve      = 1;
         break;
       case 2:
         c0 = 11.0/6.0; c1 = -3.0; c2 = 1.5; c3 = -1.0/3.0;
@@ -3736,7 +3737,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
           vpsi[i].re = vre/dt;
           vpsi[i].im = vim/dt;
         }//endfor
-        halfStepEvolve      = 1;
         break;
       default:
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
