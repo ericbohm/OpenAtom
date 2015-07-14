@@ -1553,6 +1553,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //============================================================================
   void CP_State_GSpacePlane::doIFFT()   {
   //============================================================================
+
+    //    CkPrintf("Starting minimization with a max of %d steps\n", config.maxIter);
+    
+
     // Now do the IFFT in place
 #if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
@@ -1582,7 +1586,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     // Report that you are done
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
-    if(thisIndex.x==0)
       CkPrintf("Done doing Ifft gsp : %d %d\n",thisIndex.x,thisIndex.y);
 #endif
 
@@ -1603,6 +1606,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //============================================================================================
   void CP_State_GSpacePlane::combineForcesGetEke(){
   //==============================================================================================
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+      CkPrintf("combineForcesGetEke: %d %d\n",thisIndex.x,thisIndex.y);
+#endif
 
 #ifdef _CP_DEBUG_VKS_OFF_
     if(thisIndex.x==0 && thisIndex.y==0){
@@ -1966,7 +1972,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     bzero(force,sizeof(complex)*numPoints);
 #endif
 #ifdef _CP_DEBUG_STATEG_VERBOSE_ 
-    if(thisIndex.x==0){CkPrintf("Sent Lambda %d %d\n",thisIndex.y,cleanExitCalled);}
+    CkPrintf("Sent Lambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
 
     //==============================================================================
@@ -2070,7 +2076,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     countLambdaO[offset]++;
     if(countLambda==AllLambdaExpected){ 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
-      if(thisIndex.x==0)
         CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
     }//endif

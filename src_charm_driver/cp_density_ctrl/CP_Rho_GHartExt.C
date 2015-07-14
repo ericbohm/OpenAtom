@@ -546,10 +546,11 @@ void CP_Rho_GHartExt::FFTVks() {
 
 #ifdef _CP_DEBUG_RHOG_VKSA_
   int numFull        = rho_gs.numFull;
+  char myFileName[100];
   sprintf(myFileName, "Vks_GspaceAFFT_%d%d.out", thisIndex.x,thisIndex.y);
-  fp = fopen(myFileName,"w");
+  FILE *fp = fopen(myFileName,"w");
   for(int i = 0; i < numFull; i++){
-    fprintf(fp," %g %g\n",VksExpd[i].re, VksExpd[i].im);
+    fprintf(fp," %g %g\n",vksScr[i].re, vksScr[i].im);
   }//endfor
   fclose(fp);
 #endif
