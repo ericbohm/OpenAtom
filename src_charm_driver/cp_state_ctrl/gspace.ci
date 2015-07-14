@@ -91,8 +91,18 @@ module gSpaceDriver
       }
       // Compute our initial psi unless gen_wave is on
       if (!_SDAG_DEBUG_PSI_OFF_ && gen_wave) {
+ serial {
+      	      if (thisIndex.x == 0 && thisIndex.y == 0) {
+	                      CkPrintf("will call computeNewPsi\n", myGSpaceObj->num_steps);
+								        }		
+          }
         serial { myGSpaceObj->computeNewPsi(); }
         when doneNewPsi() {}
+ serial {
+      	      if (thisIndex.x == 0 && thisIndex.y == 0) {
+	                      CkPrintf("done computeNewPsi\n", myGSpaceObj->num_steps);
+								        }		
+          }
       }
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! that we have met the desired tolerance by setting exitFlag to 1.
@@ -119,7 +129,7 @@ module gSpaceDriver
 
           //! Wait for both the VKS and the NL force computations to complete.
           overlap {
-            if (!_SDAG_DEBUG_SFNL_OFF_) {
+            if (!_SDAG_DEBUG_SFNL_OFF_ && natm_nl!=0) {
               when doneNLForces() {}
             }
             if (!_SDAG_DEBUG_VKS_OFF_) {
@@ -208,7 +218,7 @@ module gSpaceDriver
 
           //! Wait for both the VKS and the NL force computations to complete.
           overlap {
-            if (!_SDAG_DEBUG_SFNL_OFF_) {
+            if (!_SDAG_DEBUG_SFNL_OFF_ && natm_nl!=0)  {
               when doneNLForces() {}
             }
             if (!_SDAG_DEBUG_VKS_OFF_) {
@@ -476,6 +486,7 @@ module gStatePlane
       serial {
         countIFFT = 0;
         // Complete forces from VKS
+
         doIFFT();
       }
 #ifdef BARRIER_CP_GSPACE_IFFT
