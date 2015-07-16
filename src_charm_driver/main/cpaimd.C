@@ -335,7 +335,6 @@ main::main(CkArgMsg *msg) {
 
   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
   PhysicsParamTransfer::ParaInfoInit(sim);
-
   int ibinary_opt    = sim->ibinary_opt;
   int natm_nl        = sim->natm_nl;
   int ees_eext_opt   = sim->ees_eext_on;
@@ -452,9 +451,7 @@ main::main(CkArgMsg *msg) {
 
   // make one controller temper
   if(sim->ntemper>1) {
-      double faketemplist[sim->ntemper];
-      long seed=1888381834e3l;
-      temperControllerProxy= CProxy_TemperController::ckNew(1,faketemplist,sim->ntemper, seed, 1);
+      temperControllerProxy= CProxy_TemperController::ckNew(1,sim->temper_t_ext,sim->ntemper, sim->seed, 1);
       temperControllerProxy.doneInserting();
   }
   // make one collector per uberKmax
@@ -582,7 +579,7 @@ main::main(CkArgMsg *msg) {
           // We will need a different one of these per instance
           // Transfer parameters from physics to driver
           //    read in atoms : create atoms group 
-          control_physics_to_driver(thisInstance);
+          control_physics_to_driver(thisInstance, sim);
 
           //============================================================================ 
 
@@ -2316,7 +2313,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void control_physics_to_driver(UberCollection thisInstance){
+void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim){
   //============================================================================
   // make a group : create a proxy for the atom class and also a reduction client
 
@@ -2349,8 +2346,11 @@ void control_physics_to_driver(UberCollection thisInstance){
       int cp_bomd_opt   = PhysicsAtom->cp_bomd_opt;
       int isokin_opt    = PhysicsAtom->isokin_opt;
       int cp_grimme     = PhysicsAtom->cp_grimme;
+      if(sim->ntemper>1)
+	{
+	  PhysicsAtom->kT=sim->temper_t_ext[itemper];
+	}
       double kT         = PhysicsAtom->kT;
-
       Atom *atoms       = new Atom[natm];
       AtomNHC *atomsNHC = new AtomNHC[natm];
 

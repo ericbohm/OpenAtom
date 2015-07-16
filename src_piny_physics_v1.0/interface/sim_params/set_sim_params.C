@@ -1068,7 +1068,7 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   int ifound,index;
   double real_key_arg;
   int   int_key_arg;
-
+  long long_key_arg;
   /*========================================================================*/
   /*-----------------------------------------------------------------------*/ 
   /*  1)\simulation_typ{md,minimize,pimd,cp,cp_wave,cp_min,cp_wave_min,
@@ -1244,11 +1244,12 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     keyarg_barf(dict,filename_parse->input_name,fun_key,index);
   /*-----------------------------------------------------------------------*/ 
   /* 14)\rndm_seed{#} */
-  sscanf(dict[14].keyarg,"%d",&(int_key_arg));
-  mdvel_samp->iseed = (long) int_key_arg;
-  cpvel_samp->iseed = (long) int_key_arg;
-  mdvel_samp->qseed = (double) mdvel_samp->iseed;
-  cpvel_samp->qseed = (double) cpvel_samp->iseed;
+  sscanf(dict[14].keyarg,"%ld",&(long_key_arg));
+  mdvel_samp->iseed = long_key_arg;
+  cpvel_samp->iseed = long_key_arg;
+  mdvel_samp->qseed = (double) long_key_arg;
+  cpvel_samp->qseed = (double) long_key_arg;
+  gentempering_ctrl->seed = long_key_arg;
   /*-----------------------------------------------------------------------*/ 
   /* 15)\rndm_seed2{#} */
   sscanf(dict[15].keyarg,"%ld",&(mdvel_samp->iseed2));

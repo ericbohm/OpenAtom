@@ -45,6 +45,8 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
   //============================================================================
   // Copy out some useful variables and error check
 
+  ibead         = ibead_in;
+  itemper       = itemper_in;
   pi_beads_true = (mdclatoms_info->pi_beads); //input controled by directory
   pi_beads      = 1;
   ntemper       = gensimopts->ntemper;
@@ -52,6 +54,7 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
   natm_nl       = (cppseudo->nonlocal.natm);
   iextended_on  = (mdtherm_info->iextended_on);
   kT            = (genstatepoint->t_ext)/BOLTZ;
+  if(ntemper>1) kT= gentempering_ctrl->t_ext[(itemper+1)]/BOLTZ;
   cp_min_opt    = (gensimopts->cp_wave_min+gensimopts->cp_min);
   cp_bomd_opt   = gensimopts->cp_bomd;
   istart_typ    = gensimopts->istart;
@@ -60,8 +63,7 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
   cp_wave_opt   = (gensimopts->cp_wave);
   isokin_opt    = mdtherm_info->isokin_opt;
   cp_grimme     = cpopts->cp_grimme;
-  ibead         = ibead_in;
-  itemper       = itemper_in;
+
 
   beta          = 1.0/kT;
   tau           = beta/((double)pi_beads_true);
@@ -224,7 +226,7 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
 
   for(int i=0;i<natm_tot;i++){
     atomsNHC[i].len_nhc = len_nhc;
-    atomsNHC[i].kT      = kT;    // hard wriing massive
+    atomsNHC[i].kT      = kT;    // hard wiring massive
     atomsNHC[i].posKT   = 0.0;
     for(int j=0;j<len_nhc;j++){
       atomsNHC[i].m[j] =1.0;
