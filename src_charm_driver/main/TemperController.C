@@ -4,14 +4,16 @@
 #include "energyGroup.h"
 #include "InstanceController.h"
 #include "TemperController.h"
+#include "main/CPcharmParaInfoGrp.h"
 extern double altRandom(long *);
 
 const double kinv=315777.0; // atomic units, inverse of Boltzmann's constant
 extern CProxy_InstanceController         instControllerProxy;
 
-TemperController::TemperController(int _simtype, double *_temperatures, int numtemperatures, long _seed) : simType(_simtype), seed(_seed)
+TemperController::TemperController(int _simtype, double *_temperatures, int numtemperatures, long _seed, std::string historyfile, std::string dirname) : simType(_simtype), seed(_seed), history(historyfile), output_directory(dirname)
 {
   /* insert initialization here */  
+  first=true;
   reportedIn=0;
   numTempers=config.UberKmax;
   numBeads=config.UberImax;
@@ -49,11 +51,12 @@ void TemperController::acceptData()
 {
   reportedIn=0;
 
-  /* insert temperature manipulation code here*/
-  
   /* switch energies based on a probability. Take into account nearest neighbor temperatures are moving around. 
      Index has the map.
    */
+
+  /* Glenn wants his global crutch */
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   for(int i=switchdir; i<numTempers-switchdir; i+=2)
     {
       double t1=temperatures[i];
@@ -82,7 +85,33 @@ void TemperController::acceptData()
     //      CkPrintf("sending temp to %d,%d,%d,%d\n",index.idxU.x, index.idxU.y, index.idxU.z, index.idxU.s);
     instControllerProxy[uberindex.proxyOffset].acceptNewTemperature(temperatures[i]);
   }
+  output();
 }
+
+void TemperController::output()
+{
+  FILE *tFile =openTemperTrack(output_directory.c_str(),"temperature_order.out","w");
+  FILE *atFile;
+  if(first)
+    {
+      atFile =openTemperTrack(output_directory.c_str() ,history.c_str(),"o");
+      fprintf(atFile,"Temper Index Temperature NTemper %d\n", numTempers);
+      first=false;
+    }
+  else
+    {
+      atFile =openTemperTrack(output_directory.c_str(), history.c_str(), "a");
+    }
+  fprintf(tFile,"Temper Index Temperature NTemper %d\n", numTempers);
+  for(int i=0; i<numTempers; i++)
+    {
+      fprintf(tFile,"%d %d %g\n",i, index[i], temperatures[i]);
+      fprintf(atFile,"%d %d %g\n",i, index[i], temperatures[i]);
+    }
+  fclose(tFile);
+  fclose(atFile);
+}
+
 
 TemperController::~TemperController()
 {

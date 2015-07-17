@@ -60,6 +60,9 @@ class AtomsCompute: public CBase_AtomsCompute {
     int numPIMDBeads;
     int tol_reached;
     unsigned int handleForcesCount;
+    bool switchMoveNow;
+    double new_t_ext;       // temperature post switch
+    double old_t_ext;       // temperature prior to switch
     double kT;              // temperature
     double pot_ewd_rs;      // total real space ewald energy
     double potGrimmeVdw;    // Grimme vdw energy

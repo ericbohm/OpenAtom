@@ -299,6 +299,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #ifdef USE_PERSISTENT
   fftHandler = NULL;
 #endif
+  switchMoveNow=false;
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt  = sim->cp_min_opt;
   int cp_bomd_opt = sim->cp_bomd_opt;
@@ -310,6 +311,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   myTemperIndex  = thisInstance.idxU.z;
   mySpinIndex    = thisInstance.idxU.s;
 
+  // this only works on the first step as the sim copy of the index
+  // list is not updated
+  new_atom_t_ext= sim->temper_t_ext[sim->t_ext_index[myTemperIndex]];
+  old_atom_t_ext=new_atom_t_ext;
   //============================================================================
 
   // Control flow fields
@@ -1124,9 +1129,16 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
  //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
  //============================================================================
   void CP_State_GSpacePlane::acceptNewTemperature(double temp)  {
-    // Hey GLENN do something with your new temperature here
-
-
+    
+    // finish the old time step at the prior temperature
+    // in the integrator:
+    //  1. rescale wavefunction coef velocities 
+    //  2. rescale extended system velocities 
+    //  3. modify all extended system parameters that depend on kT
+    //     to reflect the new temperature 
+    switchMoveNow=true;
+    old_atom_t_ext=new_atom_t_ext;  // soon to be old
+    new_atom_t_ext=temp;        // soon to be current
     // when you're done
     int i=1;
     contribute(sizeof(int), &i, CkReduction::sum_int, 
@@ -2403,7 +2415,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
           len_nhc_cp,num_nhc_cp,nck_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
           gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
           2,iteration,gs.degfree,gs.degfreeNHC,gs.degFreeSplt,
-          gs.istrNHC,gs.iendNHC,1);
+ 	  gs.istrNHC,gs.iendNHC,1,  switchMoveNow, new_atom_t_ext, 
+	  old_atom_t_ext);
     }//endif
     //------------------------------------------------------------------
     // Pack the message and send it to your reduction plane
@@ -2687,9 +2700,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
         mNHC,v0NHC,a2NHC,a4NHC,kTCP,gamma_conj_grad,&fictEke,
         nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,
-        degFreeSplt,istrNHC,iendNHC,halfStepEvolve,config.nfreq_cpintegrate);
+	degFreeSplt,istrNHC,iendNHC,halfStepEvolve,config.nfreq_cpintegrate,
+        switchMoveNow, new_atom_t_ext, old_atom_t_ext);
     halfStepEvolve = 1;
-
+    if(switchMoveNow)
+      {
+	gs.kTCP*=new_atom_t_ext/old_atom_t_ext;
+      }
+    switchMoveNow=false;
 
 #ifdef _GLENN_CHECK_INTEGRATE_
     for(int i=0;i<ncoef;i++){
@@ -3335,7 +3353,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         len_nhc_cp,num_nhc_cp,nck_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
         gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
         2,iteration,gs.degfree,gs.degfreeNHC,gs.degFreeSplt,
-        gs.istrNHC,gs.iendNHC,1);
+        gs.istrNHC,gs.iendNHC,1,  switchMoveNow, new_t_ext, old_t_ext););
 #endif
 
     //=============================================================================

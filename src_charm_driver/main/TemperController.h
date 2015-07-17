@@ -25,12 +25,15 @@
 class TemperController : public CBase_TemperController
 {
   public:
-  TemperController(int simtype, double *temps, int tempsize, long seed);
+  TemperController(int simtype, double *temps, int tempsize, long seed, std::string history, std::string dirname);
     ~TemperController();
     TemperController(CkMigrateMessage *m) {}
+    std::string history;
+    std::string output_directory;
     void sumEnergies(EnergyStruct &inEnergy, int temper);
     void acceptData(int temper, EnergyStruct &energies);
     void acceptData();
+    void output();
   private:
     int simType;
     int numTempers;
@@ -41,6 +44,7 @@ class TemperController : public CBase_TemperController
     int *index;
     int switchdir;
     long seed;
+    bool first;
 };
 
 

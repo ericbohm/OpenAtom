@@ -71,6 +71,9 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 {// begin routine
   //==============================================================================
   // parameters, options and energies
+  switchMoveNow = false;
+  new_t_ext=0.0;
+  old_t_ext=kT * BOLTZ;
   handleForcesCount=0;
   ktemps          = 0;
   pot_ewd_rs      = 0.0;
@@ -572,9 +575,10 @@ void AtomsCompute::integrateAtoms(){
   ATOMINTEGRATE::ctrl_atom_integrate(*iteration,natm,len_nhc,cp_min_opt,
       cp_wave_opt,cp_bomd_opt,tol_reached,iextended_on,atoms,atomsNHC,myid,
       &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
-      myoutput_on,natmNow,natmStr,natmEnd,mybead);
+      myoutput_on,natmNow,natmStr,natmEnd,mybead, switchMoveNow, 
+      new_t_ext, old_t_ext);
 #endif
-
+  switchMoveNow=false;
   //============================================================
   // Path integral :  Rescale to the physical masses
 
@@ -1283,9 +1287,19 @@ void AtomsCompute::send_PIMD_x(){
 
 void AtomsCompute::acceptNewTemperature(double temp)
 {
-  // Hey GLENN do something with your new temperature here
-  // when you're done
+  // finish the old time step at the prior temperature
+  // in the integrator:
+  //  1. rescale particle velocities 
+  //  2. rescale extended system velocities 
+  //  3. modify all extended system parameters that depend on kT
+  //     to reflect the new temperature 
+
+  switchMoveNow=true;
+  old_t_ext=new_t_ext;  // soon to be old
+  new_t_ext=temp;  // soon to be old
+
   int i=1;
+  // when you're done
   contribute(sizeof(int), &i, CkReduction::sum_int, 
       CkCallback(CkIndex_InstanceController::atomsDoneNewTemp(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
   //==============================================================================

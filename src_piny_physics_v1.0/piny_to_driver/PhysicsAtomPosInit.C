@@ -41,7 +41,7 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
 #include "../class_defs/allclass_strip_mdatoms.h"
 
   double beta,tau,omega2PIMD; 
-
+  int *t_ext_index = gentempering_ctrl->t_ext_index;
   //============================================================================
   // Copy out some useful variables and error check
 
@@ -54,7 +54,7 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
   natm_nl       = (cppseudo->nonlocal.natm);
   iextended_on  = (mdtherm_info->iextended_on);
   kT            = (genstatepoint->t_ext)/BOLTZ;
-  if(ntemper>1) kT= gentempering_ctrl->t_ext[(itemper+1)]/BOLTZ;
+  if(ntemper>1) kT= gentempering_ctrl->t_ext[t_ext_index[(itemper+1)]]/BOLTZ;
   cp_min_opt    = (gensimopts->cp_wave_min+gensimopts->cp_min);
   cp_bomd_opt   = gensimopts->cp_bomd;
   istart_typ    = gensimopts->istart;

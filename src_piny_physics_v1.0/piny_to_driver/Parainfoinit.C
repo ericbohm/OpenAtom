@@ -93,6 +93,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int *ioff_zmat      = cppseudo->nonlocal.ioff_zmat;
   long seed           = gentempering_ctrl->seed;
   double *temper_t_ext= gentempering_ctrl->t_ext;
+  int *t_ext_index= gentempering_ctrl->t_ext_index;
   //========================================================================
 
   if(cp_opt==0 && cp_min_opt==0){
@@ -207,15 +208,18 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 
   sim->seed           = seed; 
   sim->temper_t_ext    = new double[ntemper];
+  sim->t_ext_index    = new int[ntemper];
   if(ntemper>1)
     {
       for(int i=0;i<ntemper;i++){
 	sim->temper_t_ext[i] = temper_t_ext[(i+1)];
+	sim->t_ext_index[i] = t_ext_index[(i+1)];
       }//endfor
     }
   else
     {
       sim->temper_t_ext[0] = kT;
+      sim->t_ext_index[0] = 0;
     }
 
   //-----------------------------------------------------------------------

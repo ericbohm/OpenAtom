@@ -50,7 +50,7 @@ extern CProxy_CPcharmParaInfoGrp   scProxy;
  * @{ 
  */
 //==============================================================================
-AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstance) : natm(_natm), natm_nl(n_nl), thisInstance(_thisInstance)
+AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstance, std::string dirname) : natm(_natm), natm_nl(n_nl), thisInstance(_thisInstance), output_directory(dirname)
                                                                                       //==============================================================================
 {// begin routine
   //==============================================================================
@@ -81,7 +81,7 @@ AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstan
   if(0 && (config.UberKmax>1 || config.UberImax>1 ))
   {
     // we will do the file output
-    temperScreenFile = openScreenfWrite("TEMPER_OUT", "screen", thisInstance.idxU.z,thisInstance.idxU.x, true);
+    temperScreenFile = openScreenfWrite(output_directory.c_str(), "screen", thisInstance.idxU.z,thisInstance.idxU.x, true);
   }
   else
   {

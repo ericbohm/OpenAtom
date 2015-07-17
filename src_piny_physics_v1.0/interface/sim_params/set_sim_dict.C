@@ -204,7 +204,7 @@ void set_sim_dict_temper(int *num_dict,DICT_WORD *dict[])
   /*  0) Malloc the dictionary
    */
 
-  *num_dict = 12;
+  *num_dict = 13;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_temper")-1;
 
   /*========================================================================*/
@@ -291,6 +291,13 @@ void set_sim_dict_temper(int *num_dict,DICT_WORD *dict[])
   strcpy((*dict)[i].keyword,"output_directory");
   strcpy((*dict)[i].keyarg,"TEMPER_OUT");
   /*-----------------------------------------------------------------------*/
+  /*  12)\temperature_order_restart{#} */
+  i = 13;
+  strcpy((*dict)[i].error_mes,"a file name");
+  strcpy((*dict)[i].keyword,"t_ext_order_fname");
+  strcpy((*dict)[i].keyarg,"temperature_order.in");
+  /*-----------------------------------------------------------------------*/
+
 }/*end routine
 /*==========================================================================*/
 

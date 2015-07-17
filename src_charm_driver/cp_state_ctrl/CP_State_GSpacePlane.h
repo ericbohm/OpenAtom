@@ -161,6 +161,9 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
     double ake_old;
 
     bool acceptedVPsi;
+    bool switchMoveNow;
+    double new_atom_t_ext;
+    double old_atom_t_ext;
     CP_State_GSpacePlane( int, int, int, int,int, int, UberCollection);
     CP_State_GSpacePlane(CkMigrateMessage *m);
     ~CP_State_GSpacePlane();

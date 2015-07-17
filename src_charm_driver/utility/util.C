@@ -2471,7 +2471,20 @@ void create_gx_decomp(int nktot, int nline, int *kx_line, int *mapl,
 }//end routine
 //============================================================================
 
-
+FILE *openTemperTrack(const char *dirnameBase, const char *fname,  const char *mode)
+{
+  char dirPath[1024];
+  char subdir[1024];
+  char lfname[1024];
+  memset(dirPath, 0 , 1024);
+  memset(lfname, 0 , 1024);
+  snprintf(subdir,1023,"/TemperTrack/");
+  strncpy(dirPath, dirnameBase, 1023);
+  strncpy(lfname, fname, 1023);
+  strncat(dirPath,subdir,1023);
+  FILE *file=fopen(dirPath,mode);
+  return file;
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

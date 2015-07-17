@@ -195,6 +195,7 @@ class CPcharmParaInfo {
    int **index_tran_upackNL; // unpack indicies for each chareG
 
    double *temper_t_ext;     // tempering master list of external temperatures
+   int *t_ext_index;     // tempering master list of external temperatures
 
    int nlines_tot_rho; // total number of lines in rhog-space
    int nlines_max_rho; // maximum number of lines in any rho collection
@@ -329,8 +330,10 @@ class CPcharmParaInfo {
      pts_per_chareRhoG    = new double[nchareRhoG];
 
      temper_t_ext         = new double[ntemper];
+     t_ext_index         = new int[ntemper];
      for(int i=0;i<ntemper;i++){
        temper_t_ext[i]    = s.temper_t_ext[i];
+       t_ext_index[i]    = s.t_ext_index[i];
      }//endfor
 
      if(nplane_rho_x==0 || nplane_rho_x > sizeX){
@@ -567,8 +570,10 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
      pts_per_chareRhoG    = new double[nchareRhoG];
 
      temper_t_ext         = new double[ntemper];
+     t_ext_index          = new int[ntemper];
      for(int i=0;i<ntemper;i++){
        temper_t_ext[i]    = s.temper_t_ext[i];
+       t_ext_index[i]    = s.t_ext_index[i];
      }//endfor
 
      if(nplane_rho_x==0 || nplane_rho_x > sizeX){
@@ -735,6 +740,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
        ioff_zmat = NULL;
        nmem_zmat = NULL;
        temper_t_ext = NULL;
+       t_ext_index = NULL;
        index_tran_upack_rho_y   = NULL;
        index_tran_pack_rho_y    = NULL;
        nline_send_rho_y         = NULL;
@@ -759,6 +765,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       delete [] npts_per_chareG;   npts_per_chareG   = NULL;
       delete [] index_output_off;   index_output_off   = NULL;
       delete [] temper_t_ext; temper_t_ext = NULL;
+      delete [] t_ext_index; t_ext_index = NULL;
       delete []  lines_per_chareRhoG;  lines_per_chareRhoG = NULL;
       delete [] nlines_per_chareRhoG; nlines_per_chareRhoG = NULL;
       delete [] nlines_per_chareRhoGEext; nlines_per_chareRhoGEext = NULL;
@@ -844,6 +851,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
                                              "cpcharmparainfo.h");
         RhosortedRunDescriptors = new CkVec<RunDescriptor> [nchareRhoG];
 	temper_t_ext         = new double[ntemper];
+	t_ext_index         = new int[ntemper];
         if(rhoRsubplanes>1){
           index_tran_upack_rho_y  = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
                                                  0,nlines_max_rho,"cpcharmparainfo.h");
@@ -870,6 +878,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       CkPrintf("CPcharmParaInfo pup 2 \n");
 #endif
       PUParray(p,temper_t_ext, ntemper);
+      PUParray(p,t_ext_index, ntemper);
       PUParray(p,lines_per_chareRhoG, nchareRhoG);
       PUParray(p,nlines_per_chareRhoG, nchareRhoG);
       PUParray(p,nlines_per_chareRhoGEext, nchareRhoGEext);

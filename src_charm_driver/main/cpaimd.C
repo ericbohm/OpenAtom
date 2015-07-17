@@ -446,17 +446,29 @@ main::main(CkArgMsg *msg) {
 
   mainProxy=thishandle;
   // make one controller chare per instance
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  char *output_directory=general_data->gentempering_ctrl.output_directory;
+  if(output_directory==NULL)
+    {
+      output_directory="TEMPER_OUT";
+    }
+  char *historyfile=general_data->gentempering_ctrl.history_name;
+  if(historyfile==NULL)
+    {
+      historyfile="temperature_trace.out";
+    }
   instControllerProxy= CProxy_InstanceController::ckNew(config.numInstances);
   instControllerProxy.doneInserting();
 
   // make one controller temper
   if(sim->ntemper>1) {
-      temperControllerProxy= CProxy_TemperController::ckNew(1,sim->temper_t_ext,sim->ntemper, sim->seed, 1);
-      temperControllerProxy.doneInserting();
+
+    temperControllerProxy= CProxy_TemperController::ckNew(1,sim->temper_t_ext,sim->ntemper, sim->seed, std::string(historyfile), std::string(output_directory),1);
+    temperControllerProxy.doneInserting();
   }
   // make one collector per uberKmax
   CkArrayOptions enlopts(config.UberKmax);
-  ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, config.UberKmax, enlopts);
+  ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, config.UberKmax, std::string(output_directory), enlopts); 
   ENLEKECollectorProxy.doneInserting();
 
   /**@}*/
@@ -2316,7 +2328,12 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim){
   //============================================================================
   // make a group : create a proxy for the atom class and also a reduction client
-
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  char *output_directory=general_data->gentempering_ctrl.output_directory;
+  if(output_directory==NULL)
+    {
+      output_directory="TEMPER_OUT";
+    }
   // Make  groups for the atoms and energies 
   if(thisInstance.idxU.y>0|| thisInstance.idxU.s>0)
     { // the set of chares being created is for a non-zero kpoint
@@ -2348,7 +2365,7 @@ void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim
       int cp_grimme     = PhysicsAtom->cp_grimme;
       if(sim->ntemper>1)
 	{
-	  PhysicsAtom->kT=sim->temper_t_ext[itemper];
+	  PhysicsAtom->kT=sim->temper_t_ext[sim->t_ext_index[itemper]];
 	}
       double kT         = PhysicsAtom->kT;
       Atom *atoms       = new Atom[natm];
@@ -2381,7 +2398,7 @@ void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim
       atomOpts.setAnytimeMigration(false);
       atomOpts.setStaticInsertion(true);
       UatomsCacheProxy.push_back( CProxy_AtomsCache::ckNew(natm,natm_nl,
-							   atoms,thisInstance));
+      							   atoms,thisInstance, std::string(output_directory)) );
       UatomsComputeProxy.push_back( CProxy_AtomsCompute::ckNew(natm,natm_nl,
 							       len_nhc,
 							       iextended_on,

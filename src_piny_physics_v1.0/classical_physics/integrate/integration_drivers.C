@@ -134,7 +134,7 @@ void ATOMINTEGRATE::integrate_nvt_2nd_half(int itime,int natm,int len_nhc,
 //============================================================================
 void ATOMINTEGRATE::integrate_nvt_1st_half(int natm,int len_nhc,
     Atom *atoms,AtomNHC *atomsNHC,
-    int natmNow,int natmStr,int natmEnd)
+    int natmNow,int natmStr,int natmEnd, bool switchMoveNow, double fact)
   //============================================================================
 {//begin routine 
   //============================================================================
@@ -151,8 +151,22 @@ void ATOMINTEGRATE::integrate_nvt_1st_half(int natm,int len_nhc,
   int nyosh  = mdtherm_info->nyosh_nhc;
 
   //============================================================================
+  // change the temperature
+  if(switchMoveNow)
+    {
+      for(int i=natmStr;i<natmEnd;i++){
+	{
+	  atomsNHC[i].kT*=fact*fact;
+	  for(int j=0;j<len_nhc;j++){
+	    atomsNHC[i].vx[j] *= fact;
+	    atomsNHC[i].vy[j] *= fact;
+	    atomsNHC[i].vz[j] *= fact;
+	  }
+	}
+      }
+    }
+  //----------------------------------------------------------------------------
   // Evolve the system : 
-
   applyNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp,natmNow,natmStr,natmEnd);
   for(int i=natmStr;i<natmEnd;i++){
     atoms[i].vx += dt2*atoms[i].fx/atoms[i].m;
@@ -223,7 +237,7 @@ void ATOMINTEGRATE::integrate_isonvt_2nd_half(int itime,int natm,int len_nhc,
 //============================================================================
 void ATOMINTEGRATE::integrate_isonvt_1st_half(int natm,int len_nhc,
     Atom *atoms,AtomNHC *atomsNHC,
-    int natmNow,int natmStr,int natmEnd)
+    int natmNow,int natmStr,int natmEnd, bool switchMoveNow,  double fact)
   //============================================================================
 {//begin routine 
   //============================================================================
@@ -240,7 +254,23 @@ void ATOMINTEGRATE::integrate_isonvt_1st_half(int natm,int len_nhc,
   int nyosh  = mdtherm_info->nyosh_nhc;
 
   //============================================================================
+  // change the temperature
+  if(switchMoveNow)
+    {
+      for(int i=natmStr;i<natmEnd;i++){
+	{
+	  atomsNHC[i].kT*=fact*fact;
+	  for(int j=0;j<len_nhc;j++){
+	    atomsNHC[i].vx[j] *= fact;
+	    atomsNHC[i].vy[j] *= fact;
+	    atomsNHC[i].vz[j] *= fact;
+	  }
+	}
+      }
+    }
+  //============================================================================
   // Evolve the system : 
+
 
   applyIsoNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp,natmNow,natmStr,natmEnd);
   applyIsoVel(natm,atoms,atomsNHC,dt,natmNow,natmStr,natmEnd);

@@ -27,7 +27,8 @@ class CPINTEGRATE{
         double ***,double ***,double***,double ***,
         double *,double *, double *, double *,double ,
         double , double *,int ,int ,int,
-        double *,double*,double,double,double*,int *,int *,int,int nfreq_cmi_update=400);
+        double *,double*,double,double,double*,int *,int *,int,int nfreq_cmi_update=400,
+        bool switchMoveNow=false, double new_t_ext=0.0, double old_t_ext=0.0);
 
     static void CP_create_mass(int ,int *, int *, int *, double *,int);
 
@@ -64,13 +65,14 @@ class CPINTEGRATE{
         double ***,double ***,double ***,double ***,
         double *,double *, double *, double *, double ,
         double *,int ,int ,int , double *, double *,
-        double ,double , double *,int *,int *,int );
+	double ,double , double *,int *,int *,int,  
+        bool switchMoveNow, double new_t_ext, double old_t_ext );
 
     static void cp_evolve_vel(int , complex *, complex *,double *,int , int , int,
         double ***,double ***,double ***,double ***,
         double *,double *, double *, double *, double ,
         int ,int ,int , int ,int ,double ,double,double *,
-        int *, int * ,int);
+			      int *, int * ,int, bool, double, double);
 
     static void get_fictKE(int ,complex *, double *,int , int ,int,
         double ***,double ***,double ***,double *,

@@ -19,7 +19,8 @@ class GENTEMPERING_CTRL {
     double *t_ext;      /* master temperature list */
     double *p_ext;      /* master pressure list    */
     double *s_ext;      /* master surface tension  */
-    
+    int    *t_ext_index;/* master index of temperatures */
+
     long seed;          /* master switch random seed */
 
     char *history_name; /* history file name to be appended        */
@@ -40,6 +41,7 @@ class GENTEMPERING_CTRL {
       t_ext        = NULL;
       p_ext        = NULL;
       s_ext        = NULL;
+      t_ext_index  = NULL;
       history_name = NULL;
       wgt_name     = NULL;
       troyer_name  = NULL;
@@ -63,6 +65,7 @@ class GENTEMPERING_CTRL {
         pup1d_dbl(p,&t_ext,npara_temps);
         pup1d_dbl(p,&p_ext,npara_temps);
         pup1d_dbl(p,&s_ext,npara_temps);
+        pup1d_int(p,&t_ext_index,npara_temps);
         pup1d_char(p,&history_name,MAXWORD);
         pup1d_char(p,&wgt_name,MAXWORD);
         pup1d_char(p,&troyer_name,MAXWORD);

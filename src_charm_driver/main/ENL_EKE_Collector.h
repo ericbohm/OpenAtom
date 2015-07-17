@@ -31,7 +31,7 @@ class ENL_EKE_Collector : public CBase_ENL_EKE_Collector
 {
   public:
     ENL_EKE_Collector(CkMigrateMessage *m) {}
-    ENL_EKE_Collector(int _numEnergyInputs, int _numInstance);
+    ENL_EKE_Collector(int _numEnergyInputs, int _numInstance, std::string dirname);
     void acceptENL(double _enl);
     void acceptEKE(double _eke);
     ~ENL_EKE_Collector(){}

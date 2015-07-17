@@ -5,10 +5,10 @@
 // this stuff is in a C file because multiple includes of .def will
 // give you too many implementations of this tiny thing for linktime joy
 extern FILE *openScreenfWrite(const char *dirnameBase, const char *fname, int temper, int bead, bool beadfile);
-ENL_EKE_Collector::ENL_EKE_Collector(int _numEnergyInputs, int _numInstance)
+ENL_EKE_Collector::ENL_EKE_Collector(int _numEnergyInputs, int _numInstance, std::string output_directory)
 {
   if(0 && (_numInstance>1))
-    temperScreenFile=openScreenfWrite("TEMPER_OUT", "screen", thisIndex, 0, false);
+    temperScreenFile=openScreenfWrite(output_directory.c_str(), "screen", thisIndex, 0, false);
   else
     temperScreenFile=stdout;
   enlIteration=0; // having two of these is silly, but simple

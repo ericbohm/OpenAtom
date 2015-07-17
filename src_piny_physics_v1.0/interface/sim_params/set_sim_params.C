@@ -41,6 +41,7 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
   int npara_temps;
   double real_key_arg;
   double *t_ext,*p_ext,*s_ext;
+  int *t_ext_index;
   FILE *fp;
   char *fname,*directory;
 
@@ -145,12 +146,14 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
     tempering_ctrl->t_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
     tempering_ctrl->p_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
     tempering_ctrl->s_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
+    tempering_ctrl->t_ext_index = (int *)cmalloc(npara_temps*sizeof(int),"set_sim_prms_tmpr")-1;
     fname                 = (char   *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
 
     strcpy(fname,dict[3].keyarg);
     t_ext     = tempering_ctrl->t_ext;
     p_ext     = tempering_ctrl->p_ext;
     s_ext     = tempering_ctrl->s_ext;
+    t_ext_index = tempering_ctrl->t_ext_index;
     directory = tempering_ctrl->output_directory;
 
     PRINTF("     Reading tempering state points from : %s\n",fname);
@@ -177,6 +180,40 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
     PRINTF("     Done reading from file: %s\n",fname);
     fflush(stdout);
 
+    if(tempering_ctrl->ipt_restart==1)
+      {
+	sprintf (fname, "%s",dict[13].keyarg);
+	fp = cfopen((const char *) fname,"r");
+	int in_temper;
+	fscanf(fp,"%*s %*s %*s %*s %d", &in_temper);
+	if(in_temper!=npara_temps)
+	  {
+	    PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	    PRINTF("    Temperature Index Count Mismatch, %d is not %d\n",in_temper, npara_temps);
+	    PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	    EXIT(1);
+	  }
+	for(i=1;i<=npara_temps;i++){
+	  int temperi;
+	  int indexi;
+	  double tempi;
+	  fscanf(fp,"%d %d %lg\n",&temperi, &indexi, &tempi);
+	  t_ext_index[i]=indexi;
+	  if(tempi!=t_ext[indexi])
+	    {
+	      PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	      PRINTF("    Temperature Index Temp Mismatch with master at %d %g is not %g\n",in_temper, tempi, t_ext[indexi]);
+	      PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	      EXIT(1);
+	    }
+	}
+      }
+    else
+      {
+	for(i=1;i<=npara_temps;i++){
+	  t_ext_index[i]=i;
+	}
+      }
     for(i=1;i<=npara_temps;i++){
       sprintf (fname, "%s/Temper.%d/ChkDirExistOAtom",directory,i);
       FILE *fpck = fopen(fname,"w");

@@ -24,7 +24,8 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
     Atom *atoms,AtomNHC *atomsNHC,int myid,
     double *eKinetic,double *eKineticNhc,double *potNhc,
     int *iwrite_atm,int output_on,
-    int natmNow,int natmStr,int natmEnd,int mybead)
+    int natmNow,int natmStr,int natmEnd,int mybead, bool switchMoveNow, 
+    double new_t_ext, double old_t_ext)
   //============================================================================
 {//begin routine 
   //============================================================================
@@ -42,7 +43,12 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
   int move_atoms = 0;
   if (cp_min_opt == 0 && cp_wave_opt == 0) { move_atoms = 1; }
   if (cp_bomd_opt == 1 && tol_reached == 1) { move_atoms = 1; }
- 
+  if (switchMoveNow && move_atoms==0) { 
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("move_atoms must not be zero during a temper switch\n");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+  }
   //============================================================================
   // (I) Evolve to the last 1/2 step of previous step : only changes velocities
 
@@ -53,7 +59,7 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
 
   //============================================================================
   // (II) Save the end step velocities and positions : pos already saved for PIMD
-
+  
   if(move_atoms){
     if(pi_beads==1){
       for(int i=natmStr;i<natmEnd;i++){
@@ -71,11 +77,31 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
   }//endfor
 
   //============================================================================
+  // (IIb) implement parallel tempering
+  //  1. rescale particle velocities 
+  //  2. rescale extended system velocities 
+  //  3. modify all extended system parameters that depend on kT
+  //     to reflect the new temperature 
+  double fact=sqrt(new_t_ext/old_t_ext);
+  if(switchMoveNow)
+    {
+      for(int i=natmStr;i<natmEnd;i++){
+        atoms[i].vx *= fact;
+        atoms[i].vy *= fact; 
+        atoms[i].vz *= fact;
+      }
+      if(iextended_on)
+	{
+	  
+	}
+    }
+
+  //============================================================================
   // (III) Evolve to first 1/2 step of the present step
 
   if(move_atoms){
     integrate_1st_half_step(natm,len_nhc,iextended_on,atoms,atomsNHC,
-        natmNow,natmStr,natmEnd); 
+			    natmNow,natmStr,natmEnd, switchMoveNow, fact); 
   }//endif
 
   //============================================================================
@@ -142,7 +168,7 @@ void ATOMINTEGRATE::integrate_2nd_half_step(int itime,int natm,int len_nhc,
 //============================================================================
 void ATOMINTEGRATE::integrate_1st_half_step(int natm,int len_nhc,int iextended_on,
     Atom *atoms,AtomNHC *atomsNHC,
-    int natmNow,int natmStr,int natmEnd)
+    int natmNow,int natmStr,int natmEnd, bool switchMoveNow, double fact)
   //============================================================================
 {//begin routine 
   //============================================================================
@@ -155,10 +181,10 @@ void ATOMINTEGRATE::integrate_1st_half_step(int natm,int len_nhc,int iextended_o
     case 0 : integrate_nve_1st_half(natm,atoms,natmNow,natmStr,natmEnd); break;
     case 1 : if(isokin_opt==0){
                integrate_nvt_1st_half(natm,len_nhc,atoms,atomsNHC,
-                   natmNow,natmStr,natmEnd); 
+				      natmNow,natmStr,natmEnd, switchMoveNow, fact); 
              }else{
                integrate_isonvt_1st_half(natm,len_nhc,atoms,atomsNHC,
-                   natmNow,natmStr,natmEnd);
+					 natmNow,natmStr,natmEnd, switchMoveNow, fact);
              }//endif
              break;
   }//endif
