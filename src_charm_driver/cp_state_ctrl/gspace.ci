@@ -143,7 +143,7 @@ module gSpaceDriver
         if (!_SDAG_DEBUG_PSI_OFF_) {
           serial { myGSpaceObj->computeLambdaAndCg(); }
           when doneLambdaAndCg() serial { myGSpaceObj->launchAtoms(); }
-
+          serial { myGSpaceObj->IntegrateModForce(); }
           serial { myGSpaceObj->computeRedPsi(); }
           when doneRedPsi() {}
         }  // end if !_SDAG_DEBUG_PSI_OFF_
@@ -244,7 +244,7 @@ module gSpaceDriver
             serial { myGSpaceObj->doOutput(); }
             when doneOutput() {}
           }
-
+          serial { myGSpaceObj->integrateModForce(); }
           serial { myGSpaceObj->computeRedPsi(); }
           when doneRedPsi() {}
         }  // end if !_SDAG_DEBUG_PSI_OFF_
@@ -519,13 +519,17 @@ module gStatePlane
       }
     };
 
-    entry void computeRedPsi() {
-      serial {
+    entry void IntegrateModForce() {
         // Update the Psis using the forces modified by lambda
-        integrateModForce();
-        // At the gamma point synchronize redundant points on Gx = 0
-        sendRedPsi();
+	serial "IntegrateModForce" {
+          integrateModForce();
+        }
       }
+    entry void computeRedPsi() {
+      // At the gamma point synchronize redundant points on Gx = 0
+      serial "sendRedPsi" {
+        sendRedPsi();
+      }		
       while (iRecvRedPsi == 0) {
         when acceptRedPsi(GSRedPsiMsg *msg) serial { unpackRedPsi(msg); }
       }
