@@ -1,9 +1,13 @@
 #===============================================================================
 #------------------------- Path to Charm++ and FFTW ----------------------------
   # Location of the charm installation
-  CHARMBASE	= $(HOME)/charm
+  CHARMBASE     = $(HOME)/charm/gni-crayxe-smp
   # Location of the FFTW library installation
-  FFT_HOME	= $(HOME)/fftw
+  # module load fftw
+  # module load acml
+  FFT3_HOME      = $(FFTW_DIR)/..
+  FFT2_HOME     = /opt/fftw/2.1.5.7
+  CHARMFFT_HOME = $(HOME)/fft
 
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
@@ -21,25 +25,28 @@
   OPT       = -O3
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2
-  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -I$(FFT_HOME)/include
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE  \
+	      -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
+	      -Wl,--allow-multiple-definition
+ 
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
   CXXFLAGS += $(OPT)
-  INCDIRS  +=
-  DEPSTRIPDIRS +=
+  INCDIRS  += 
+  DEPSTRIPDIRS += 
 
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
-  LDFLAGS  += -L$(FFT_HOME)/lib
-  LDLIBS   += -module CkMulticast -module comlib -lrca -lconv-util -lm -lz -lacml
+  LDFLAGS  += -L$(FFT3_HOME)/lib -L$(FFT2_HOME)/lib -L$(CHARMFFT_HOME)
+  LDLIBS   += -module CkMulticast -lrca -lconv-util -lm -lz -lacml
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
 $(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include \
 			   -I$(STANDARD_INC)
-#$(libdriver):  FFLAGS   +=
-#$(libdriver):  CFLAGS   +=
-#$(libdriver):  CXXFLAGS +=
+$(libdriver):  FFLAGS   +=
+$(libdriver):  CFLAGS   +=
+$(libdriver):  CXXFLAGS +=
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the physics code ----------------
@@ -53,8 +60,8 @@ STANDARD_INC             = $(physics)/include/pentium_par
 
 #-------------------------------------------------------------------------------
 #------------------ Flags and settings just for the math libs ------------------
-#$(libmath):    CPPFLAGS +=
-#$(libmath):    FFLAGS   +=
+$(libmath):    CPPFLAGS +=
+$(libmath):    FFLAGS   +=
 $(libmath):    CFLAGS   += -seq
 $(libmath):    CXXFLAGS += -seq
 
@@ -73,8 +80,8 @@ $(libmath):    CXXFLAGS += -seq
   # The fft (and other) math libraries to link based on whether DUAL_FFTW is
   # turned on or off
   ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
-    LDLIBS   += -lrfftw -lfftw
+    LDLIBS   += -lrfftw -lfftw -lfft_charm -lfftw3
   else
-    LDLIBS   += -ldrfftw -ldfftw
+    LDLIBS   += -ldrfftw -ldfftw -lfft_charm -lfftw3
   endif
 

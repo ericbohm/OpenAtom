@@ -39,7 +39,6 @@ namespace cp {
       /// The step 2 helper map logic object
       MapType2 helperMapTable;
 
-
       //-------------------------------------------------------------------------
       // Create maps for placing the Ortho chare array elements
 
@@ -64,7 +63,6 @@ namespace cp {
           success = mf->loadMap("OrthoMap", &orthoMapTable);
           delete mf;
         }
-
         if(success == 0)
         {
           SCalcMap *asymmMap = CProxy_SCalcMap(asymmHandle.mapperGID).ckLocalBranch();
@@ -178,11 +176,6 @@ namespace cp {
 
       //-------------------------------------------------------------------------
       // Delegate collectives within the ortho array
-#ifdef USE_COMLIB
-      Strategy *multistrat = new DirectMulticastStrategy();
-      orthoInstance=ComlibRegister(multistrat);
-      //  ComlibAssociateProxy(orthoInstance, orthoProxy);
-#endif
 
       // Set the root of array reductions within Ortho
       CkCallback ocb= CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));

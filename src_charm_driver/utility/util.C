@@ -9,16 +9,16 @@
 #define CHARM_ON
 #include "src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #include "util.h"
-#include "para_grp_parse.h"
 #include "main/CPcharmParaInfoGrp.h"
 #include "src_piny_physics_v1.0/friend_lib/proto_friend_lib_entry.h"
 #include "src_mathlib/mathlib.h"
 #include "src_piny_physics_v1.0/include/class_defs/allclass_gen.h"
 #include "src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
 #include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
+#include "src_charm_driver/utility/para_grp_parse.h"
 #include <assert.h>
 extern Config config;
-extern int sizeX;
+extern CPcharmParaInfo simReadOnly;
 #if CMK_PROJECTIONS_USE_ZLIB
 #include "zlib.h"
 #endif
@@ -49,8 +49,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
   int *kz;
   int nline_tot; 
   int nPacked;
-  int rhoRsubplanes = config.rhoRsubplanes;
-  int rhoGHelpers   = config.rhoGHelpers;
+  int rhoRsubplanes = 1; //deprecated
+  int rhoGHelpers   = 1; //deprecated
 
   int sizeXEext     = sim->ngrid_eext_a;
   int sizeYEext     = sim->ngrid_eext_b;
@@ -104,8 +104,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
   }//endif
   nplane_x      += 1;
 
-  double temp     = ((double)nplane_x)*config.gExpandFactRho;
-  int nchareRhoG  = (int)temp;
+  int nchareRhoG  = (int)(((double)nplane_x)*config.gExpandFactRho);
+
   int nx          = sim->sizeX;
   int ny          = sim->sizeY;
   int nz          = sim->sizeZ;
@@ -418,9 +418,9 @@ void make_rho_runs(CPcharmParaInfo *sim){
     CkExit(); 
   }//endif
 
-  if(nlines_min<config.rhoGHelpers){
+  if(nlines_min < 1) {
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("RhoGHelper parameter, %d, must be <= minimum number\n",config.rhoGHelpers);
+    CkPrintf("RhoGHelper parameter, %d, must be <= minimum number\n",1);
     CkPrintf("of lines in any RhoG chare array element, %d.\n",nlines_min);
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit(); 
@@ -497,14 +497,14 @@ void make_rho_runs(CPcharmParaInfo *sim){
     }//endfor
     create_subPlane_decomp(nplane_x,listGx,mapGrpGx,nchareRhoGEext,numSubGx,
         nline_lgrp_eext,kx_line,nline_send_eext_y,rhoRsubplanes);
-    if(config.rhoSubPlaneBalance==1){
+    if(0) {
       for(int i=0;i<nplane_x;i++){mapGrpGx[listGx[i]] = i;}
       create_gx_decomp(nline_tot,nplane_x,kx_line,mapGrpGx,rhoRsubplanes,numSubGx);
     }//endfif
 
     listSubFlag=0;
     for(int i=0;i<nplane_x;i++){
-      if(listGx[i]!=i){listSubFlag==1;}
+      if(listGx[i]!=i){listSubFlag=1;}
     }//endif
     if(listSubFlag==0){
       CkPrintf("This is a straight run through gx on the subplanes\n");
@@ -513,14 +513,14 @@ void make_rho_runs(CPcharmParaInfo *sim){
     for(int igrp=0;igrp<rhoRsubplanes;igrp++){
       int num = numSubGx[igrp];
       if(num>1){sort_me(num,&listGx[iii]);}  //order the gx you have
-      CkPrintf("subplane[%d] : %d : Gx { ",igrp,num);
+      //CkPrintf("subplane[%d] : %d : Gx { ",igrp,num);
       for(int jc=0,ic=iii;ic<iii+num;ic++,jc++){
         listSubGx[igrp][jc]  = listGx[ic];
         mapGrpGx[listGx[ic]] = igrp;
         mapMemGx[listGx[ic]] = jc;
-        CkPrintf("%d ",listGx[ic]);
+        //CkPrintf("%d ",listGx[ic]);
       }//endfor
-      CkPrintf("}\n");
+      //CkPrintf("}\n");
       iii += num;
     }//endfor
 
@@ -602,9 +602,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
   // Pack up the stuff
 
   config.nchareRhoG            = nchareRhoG;
-
-  sim->nplane_rho_x            = nplane_x;
   sim->nchareRhoG              = nchareRhoG;
+  sim->nplane_rho_x            = nplane_x;
   sim->nchareRhoGEext          = nchareRhoGEext;
   sim->npts_per_chareRhoG      = npts_lgrp;
   sim->index_tran_upack_rho    = index_tran_upack_rho;
@@ -618,7 +617,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
   sim->lines_per_chareRhoG     = lines_per_chare;
   sim->pts_per_chareRhoG       = pts_per_chare;
 
-  sim->rhoRsubplanes           = config.rhoRsubplanes;
+  sim->rhoRsubplanes           = 1;
   sim->nlines_max_eext         = nlines_max_eext;
   sim->nline_send_eext_y       = nline_send_eext_y;
   sim->nline_send_rho_y        = nline_send_rho_y;
@@ -653,8 +652,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
       Rhart_min=MIN(Rhart_min,recvCountFromRHartExt);
     }//endfor
     total /= (double)nchareRhoGEext;
-    CkPrintf("GHart recv %d min msg %d max msg avg %g from RHart\n",
-        Rhart_min, Rhart_max,total);
+    //CkPrintf("GHart recv %d min msg %d max msg avg %g from RHart\n",
+    //    Rhart_min, Rhart_max,total);
   }//endif
 
   if(rhoRsubplanes>1){
@@ -673,8 +672,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
       Rho_min=MIN(Rho_min,recvCountFromRho);
     }//endfor
     total /= (double)nchareRhoGEext;
-    CkPrintf("GHart recv %d min msg %d max msg avg %g from RRho\n",
-        Rho_min, Rho_max,total);
+    //CkPrintf("GHart recv %d min msg %d max msg avg %g from RRho\n",
+    //    Rho_min, Rho_max,total);
   }//endif
 
   if(rhoRsubplanes>1){
@@ -693,8 +692,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
       RRho_min=MIN(RRho_min,recvCountFromRRho);
     }//endfor
     total /= (double)nchareRhoG;
-    CkPrintf("GRho recv %d min msg %d max msg avg %g from RRho\n",
-        RRho_min,RRho_max,total);
+    //CkPrintf("GRho recv %d min msg %d max msg avg %g from RRho\n",
+    //    RRho_min,RRho_max,total);
   }//endif
 
   if(rhoRsubplanes>1){
@@ -709,7 +708,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
       GRho_max=MAX(GRho_max,recvCountFromGRho);
       GRho_min=MIN(GRho_min,recvCountFromGRho);
     }//endfor
-    CkPrintf("RRho recv %d min msg %d max msg from RhoG\n",GRho_min, GRho_max);
+    //CkPrintf("RRho recv %d min msg %d max msg from RhoG\n",GRho_min, GRho_max);
   }//endif
 
   if(rhoRsubplanes>1){
@@ -724,7 +723,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
       GHart_max=MAX(GHart_max,recvCountFromGHartExt);
       GHart_min=MIN(GHart_min,recvCountFromGHartExt);
     }//endfor
-    CkPrintf("RRho recv %d min msg %d max msg from GHart\n",GHart_min, GHart_max);
+    //CkPrintf("RRho recv %d min msg %d max msg from GHart\n",GHart_min, GHart_max);
   }//endif
 
   if(rhoRsubplanes>1){
@@ -739,7 +738,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
       GHart_max=MAX(GHart_max,recvCountFromGHartExt);
       GHart_min=MIN(GHart_min,recvCountFromGHartExt);
     }//endfor
-    CkPrintf("RHart recv %d min msg %d max msg from GHart\n",GHart_min, GHart_max);
+    //CkPrintf("RHart recv %d min msg %d max msg from GHart\n",GHart_min, GHart_max);
   }//endif
 
   if(rhoRsubplanes>1){
@@ -1660,6 +1659,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 
   int numData        = config.numData;
   int ibinary_opt    = sim->ibinary_opt;
+  int sizeX          = sim->sizeX;
   int sizeY          = sim->sizeY;
   int sizeZ          = sim->sizeZ;
   int nchareG        = sim->nchareG;
@@ -1670,7 +1670,6 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
   int ncoef          = sim->ncoef;
   int doublePack     = config.doublePack;
   double gExpandFact = config.gExpandFact;
-
 
   //============================================================================
   // Get the complex data, Psi(g) and the run descriptor (z-lines in g-space)
@@ -2507,8 +2506,8 @@ FILE *openScreenfWrite(const char *dirnameBase, const char *fname, int temper, i
   }
   strncat(dirPath,lfname,1023);
   FILE *file=fopen(dirPath,"a");
-  //CkPrintf("opened temper file %s for screen output \n",dirPath);
-  if(file == NULL)
+  //  CkPrintf("opened temper file %s for screen output \n",dirPath);
+  if(file == NULL) 
     file = stdout;
   return file;
   //============================================================================

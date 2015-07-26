@@ -25,38 +25,38 @@
 //==========================================================================
 /** \brief Compute hartree and external (local pseudopotentail) energy via
   N^2 method  : Invoked from RhoG
+
+  ============================================================================
+   Function:  Hartree and External potentials
+
+   NOTE FOR RAMKUMAR:  INVERSE BOX MATRIX (hmati) AND VOLUME (vol)
+                       MUST BE PASSED IN AND ehart_ret AND eext_ret
+                       MUST BE SENT OUT.  FOR CUBIC SYSTEMS, HMATI
+                       JUST 1/L ON ITS DIAGONAL, BUT ONE SHOULD ALLOW
+                       FOR A GENERAL 3x3 MATRIX (hmat) AND ITS INVERSE (hmati).
+                       I ALSO ASSUME vks IS ZEROED SOMEWHERE SO THAT I
+                       CAN ACCUMULATE IT.
+                       FINALLY, THE ATOMIC COORDINATES (x,y,z) AND THEIR CHARGES (q)
+                       NEED TO BE PASSED IN
+  ----------------------------------------------------------------------------
+   Expressions for Hartree and external energies:
+
+    ehart = (1/vol) sum_{gx,gy,gz} (4*pi/g**2)|rho_g|**2  (excluding (0,0,0))
+
+    eext  = (1/vol) sum_{gx,gy,gz} (rho_g)^* S_g V_g
+
+           where S_g = sum_{I=1}^{natm} q_I exp[i(gx*x[I] + gy*y[I] + gz*z[I])]
+
+                 V_g = exp(-g^2/4*alpha**2)/(g**2)
+
  */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *atoms,
-    complex *vks, double *ehart_ret,double *eext_ret,
-    double *ewd_ret,int *k_x, int *k_y, int *k_z, 
-    double *perdCorr,int index, PSSCRATCH *pscratch,
-    int nfreq_cmi_update )
-  //============================================================================
-  // Function:  Hartree and External potentials
-  //
-  // NOTE FOR RAMKUMAR:  INVERSE BOX MATRIX (hmati) AND VOLUME (vol) 
-  //                     MUST BE PASSED IN AND ehart_ret AND eext_ret
-  //                     MUST BE SENT OUT.  FOR CUBIC SYSTEMS, HMATI 
-  //                     JUST 1/L ON ITS DIAGONAL, BUT ONE SHOULD ALLOW
-  //                     FOR A GENERAL 3x3 MATRIX (hmat) AND ITS INVERSE (hmati).
-  //                     I ALSO ASSUME vks IS ZEROED SOMEWHERE SO THAT I
-  //                     CAN ACCUMULATE IT.
-  //                     FINALLY, THE ATOMIC COORDINATES (x,y,z) AND THEIR CHARGES (q)
-  //                     NEED TO BE PASSED IN
-  //----------------------------------------------------------------------------
-  // Expressions for Hartree and external energies:
-  //
-  //  ehart = (1/vol) sum_{gx,gy,gz} (4*pi/g**2)|rho_g|**2  (excluding (0,0,0))
-  //
-  //  eext  = (1/vol) sum_{gx,gy,gz} (rho_g)^* S_g V_g
-  //
-  //         where S_g = sum_{I=1}^{natm} q_I exp[i(gx*x[I] + gy*y[I] + gz*z[I])]
-  //
-  //               V_g = exp(-g^2/4*alpha**2)/(g**2)
-  //
+void CPLOCAL::CP_hart_eext_calc(int ncoef, std::vector< gridPoint > & myPoints,
+    complex *rho, int natm, int iperd, FastAtoms *atoms, complex *vks,
+    double *ehart_ret, double *eext_ret, double *ewd_ret, int index,
+    PSSCRATCH *pscratch, int nfreq_cmi_update )
   //============================================================================
 { /* Begin Function */
   //----------------------------------------------------------------------------
@@ -76,7 +76,7 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
 
   /*------------------*/
   /* Atom information */
-  int natm_piny  = mdclatoms_info->natm_tot; 
+  int natm_piny  = mdclatoms_info->natm_tot;
   int natm_typ   = mdatom_maps->natm_typ;
   int *iatm_typ  = mdatom_maps->iatm_atm_typ;
   double *q      = atoms->q;
@@ -89,7 +89,6 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
 
   /*--------------------------------*/
   /* Cell and pressure information  */
-  int iperd         = gencell->iperd;
   double *hmat      = gencell->hmat;
   double *hmati     = gencell->hmati;
   double vol        = gencell->vol;
@@ -116,10 +115,10 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
   double fpi        = 4.0*M_PI;
 
   // -----------------------------------------------------------
-  // Local variables 
+  // Local variables
 
-  double gx,gy,gz,g2,g;
-  double HartreeFact,EwdFact;
+  double gx, gy, gz, g2, g;
+  double HartreeFact, EwdFact;
   complex s;
   complex vext,sewd;
 
@@ -138,7 +137,7 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
   double *fxt_ewd = new double [natm];
   double *fyt_ewd = new double [natm];
   double *fzt_ewd = new double [natm];
-  for(int i =0;i<natm;i++){
+  for(int i = 0; i < natm; i++){
     fxt[i] = 0.0;
     fyt[i] = 0.0;
     fzt[i] = 0.0;
@@ -149,7 +148,7 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
 #endif
 
 #ifdef GJM_DEBUG_SIZE
-  PRINTF(" %d : coefs in CP_hart_eext_calc\n",ncoef);
+  PRINTF(" %d : coefs in CP_hart_eext_calc\n", ncoef);
 #endif
 
   //============================================================================
@@ -177,70 +176,84 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
   int igo           = 0;
   double count      = 0.0;
   double count_slow = 0.0;
-  int kx_old        = k_x[0];
-  int ky_old        = k_y[0];
-  int kz_old        = k_z[0];
+  int kx_old = myPoints[0].d3;
+  int ky_old = myPoints[0].d2;
+  int kz_old = myPoints[0].d1;
 
   // kx moves fastest through memory : see CP_Rho_GSpacePlane::computeK
   for(int iatm = 0; iatm < natm; iatm++){
-    double arg_tmp = tpi*(hmati[3]*x[iatm] + hmati[6]*y[iatm]
-        + hmati[9]*z[iatm]);
+    double arg_tmp = tpi* (hmati[3] * x[iatm] + hmati[6] * y[iatm]
+                          + hmati[9] * z[iatm]);
     ei_inc[iatm] = complex(cos(arg_tmp),sin(arg_tmp));
   }/* endfor */
 
-  for(int itype=1;itype<=natm_typ;itype++){
-    index_atm[itype] =  (itype-1)*nsplin_g*(n_ang_max+1)*n_rad_max
-      +  loc_opt[itype]*nsplin_g*n_rad_max;
+  for(int itype = 1; itype <= natm_typ; itype++) {
+    index_atm[itype] =  (itype-1) * nsplin_g * (n_ang_max + 1) * n_rad_max
+      +  loc_opt[itype] * nsplin_g * n_rad_max;
   }/*endfor*/
 
   //============================================================================
   // Begin loop over FFT grid.
 
   for(int i = 0; i < ncoef; i++){/* Note that the (0,0,0) term is excluded! */
-
     //----------------------------------------------------------------------------
     // I.  Construct the reciprocal space vectors and their square magnitudes
 
-    gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
-    gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
-    gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
+    gx = tpi * (myPoints[i].d3 * hmati[1] + myPoints[i].d2 * hmati[2] +
+              myPoints[i].d1 *hmati[3]);
+    gy = tpi * (myPoints[i].d3 * hmati[4] + myPoints[i].d2 * hmati[5] +
+              myPoints[i].d1 *hmati[6]);
+    gz = tpi * (myPoints[i].d3 * hmati[7] + myPoints[i].d2 * hmati[8] +
+              myPoints[i].d1 *hmati[9]);
 
-    g2 = gx*gx + gy*gy + gz*gz;
+    g2 = gx * gx + gy * gy + gz * gz;
+    //CkPrintf("Total %d, Coord %d %d %d - %lf %lf \n", ncoef,
+    //    myPoints[i].d3, myPoints[i].d2, myPoints[i].d1,
+    //    rho[myPoints[i].offset].re, rho[myPoints[i].offset].im);
 
-    if(g2==0){izero=i;}
-    if(g2 <= ecut4 && g2 != 0){
+    if(g2 == 0) {
+      izero = i;
+    }
+    if(g2 <= ecut4 && g2 != 0) {
 
-      wght_now = (k_x[i]==0 ? 1.0 : wght);
+      wght_now = (myPoints[i].d3 == 0 ? 1.0 : wght);
       //----------------------------------------------------------------------------
       // II. Use these to construct the Hartree energy and its potential
 
-      HartreeFact = fpi/(g2*vol);
-      if(iperd!=3){HartreeFact += perdCorr[i]/vol;}
-      ehart      += HartreeFact*rho[i].getMagSqr()*wght_now;
+      HartreeFact = fpi / (g2 * vol);
+#if 0 && GLENN_PERIODIC_CORRECTION
+      if(iperd != 3) {
+        HartreeFact += perdCorr[i]/vol;
+      }
+#endif
+      ehart      += HartreeFact * rho[myPoints[i].offset].getMagSqr() * wght_now;
 
-      vks[i] = rho[i]*HartreeFact;
-      count+=1.0;
+      vks[myPoints[i].offset] = rho[myPoints[i].offset] * HartreeFact;
+      count += 1.0;
 
       //----------------------------------------------------------------------------
       // III. Get the structure factor:  If condition chosen to ensure we get in first time
 
-      if(kx_old != k_x[i] || ky_old != k_y[i] || kz_old != k_z[i]-1 || igo==0) {
+      if(kx_old != myPoints[i].d3 || ky_old != myPoints[i].d2 || kz_old !=
+        myPoints[i].d1 - 1 || igo == 0) {
         for(int iatm = 0; iatm < natm; iatm++){
-          double arg = x[iatm]*gx + y[iatm]*gy + z[iatm]*gz;
+          double arg = x[iatm] * gx + y[iatm] * gy + z[iatm] * gz;
           h[iatm] = complex(cos(arg),sin(arg));
         } /* endfor */
         count_slow+=1.0;
       }/* endif */
 
       g = sqrt(g2);
-      CP_get_vpsnow(index_atm,nsplin_g,gmin_spl,dg_spl,g,
-          vps0,vps1,vps2,vps3,vtemp,iatm_typ,natm_typ,natm,vol); 
+      CP_get_vpsnow(index_atm, nsplin_g, gmin_spl, dg_spl,g,
+          vps0, vps1, vps2, vps3, vtemp, iatm_typ, natm_typ, natm,vol);
 
       sewd = complex(0.0,0.0);
       vext  = complex(0.0,0.0);
       double vsave = 0;
-      for(int iatm = 0; iatm < natm; iatm++){
+      for(int iatm = 0; iatm < natm; iatm++) {
+#if 0 && GLENN_PERIODIC_CORRECTION
         if(iperd!=3){vtemp[iatm] -= q[iatm]*perdCorr[i]/vol;} // charge on electron is -1
+#endif
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
         if(iatm_typ[(iatm+1)]==2){
           vsave  = vtemp[iatm];
@@ -256,14 +269,16 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
       // IV. Use structure factor to evaluate external potential
 
       EwdFact    = fpi*exp(-g2/falp2)/(g2*vol);
+#if 0 && GLENN_PERIODIC_CORRECTION
       if(iperd!=3){EwdFact += perdCorr[i]/vol;}
+#endif
       if(iperd==0){EwdFact=0.0;}
       EwdEnergy += EwdFact*sewd.getMagSqr()*wght_now;
 
       double sumr   = sewd.re*EwdFact*wght_now;
       double sumi   = sewd.im*EwdFact*wght_now;
-      double rho_r  = rho[i].re*wght_now;
-      double rho_i  = rho[i].im*wght_now;
+      double rho_r  = rho[myPoints[i].offset].re*wght_now;
+      double rho_i  = rho[myPoints[i].offset].im*wght_now;
       for(int iatm=0; iatm < natm; iatm++){
         double rho_temp_r = ( rho_r*vtemp[iatm] + sumr*q[iatm]);
         double rho_temp_i = (-rho_i*vtemp[iatm] + sumi*q[iatm]);
@@ -275,7 +290,7 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
         double siz        = (gz*rho_temp_i);
         fx[iatm]         += (srx*h[iatm].im - six*h[iatm].re);
         fy[iatm]         += (sry*h[iatm].im - siy*h[iatm].re);
-        fz[iatm]         += (srz*h[iatm].im - siz*h[iatm].re); 
+        fz[iatm]         += (srz*h[iatm].im - siz*h[iatm].re);
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
         if(iatm_typ[(iatm+1)]==2){
           rho_temp_r = ( rho_r*vtemp[iatm] );
@@ -304,19 +319,21 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
 #endif
       }/*endfor*/
 
-      vks[i] += vext.conj(); 
-      eext += (rho[i]*vext).re*wght_now;
+      vks[myPoints[i].offset] += vext.conj();
+      eext += (rho[myPoints[i].offset]*vext).re*wght_now;
       for(int iatm=0; iatm < natm; iatm++){h[iatm] = h[iatm]*ei_inc[iatm];}
 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-      fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g : %g\n",k_x[i],k_y[i],k_z[i],
-          rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart,vsave);
-      fprintf(fp2,"%d %d %d : %g %g : %g %g\n",k_x[i],k_y[i],k_z[i],
-          sewd.re,sewd.im,sewd.getMagSqr(),EwdFact);
+      fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g : %g\n",
+      myPoints[i].d3, myPoints[i].d2, myPoints[i].d1, rho[myPoints[i].offset].re,
+      rho[myPoints[i].offset].im, vext.re, vext.im, vks[myPoints[i].offset].re,
+      vks[myPoints[i].offset].im, eext,ehart,vsave);
+      fprintf(fp2,"%d %d %d : %g %g : %g %g\n",myPoints[i].d3, myPoints[i].d2,
+      myPoints[i].d1, sewd.re,sewd.im,sewd.getMagSqr(),EwdFact);
 #endif
-      kx_old = k_x[i];
-      ky_old = k_y[i];
-      kz_old = k_z[i];
+      kx_old = myPoints[i].d3;
+      ky_old = myPoints[i].d2;
+      kz_old = myPoints[i].d1;
       igo    = 1;
     }else{
       igo    = 0;
@@ -331,9 +348,11 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
     vext.re = 0.0;   vext.im = 0.0;
     sewd.re = 0.0;   sewd.im = 0.0;
     for(int iatm=0;iatm< natm; iatm++){
-      sewd.re    += q[iatm];   
+      sewd.re    += q[iatm];
       vtemp[iatm] = gzvps[iatm_typ[(iatm+1)]]/vol;
+#if 0 && GLENN_PERIODIC_CORRECTION
       if(iperd!=3){vtemp[iatm] -= q[iatm]*perdCorr[izero]/vol;} // charge on electron is -1
+#endif
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
       if(iatm_typ[(iatm+1)]==2){
         vext.re += vtemp[iatm];
@@ -343,15 +362,19 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
 #endif
     }/*endfor*/
     int i = izero;
-    vks[i].re  = vext.re;
-    vks[i].im  = 0.0;
-    eext += (vext.re*rho[i].re);
+    vks[myPoints[i].offset].re  = vext.re;
+    vks[myPoints[i].offset].im  = 0.0;
+    eext += (vext.re*rho[myPoints[i].offset].re);
+#if 0 && GLENN_PERIODIC_CORRECTION
     if(iperd!=0 && iperd!=3){
       EwdEnergy += 0.5*sewd.re*sewd.re*perdCorr[izero]/vol;
     }//endif
+#endif
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
     fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g\n",
-        rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
+        rho[myPoints[i].offset].re,rho[myPoints[i].offset].im,
+        vext.re,vext.im,vks[myPoints[i].offset].re,
+        vks[myPoints[i].offset].im);
 #endif
 
   }//endif
@@ -379,7 +402,7 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
   for(int i=0;i<natm;i++){
     fprintf(fp,"%d %g %g %g\n",i,fxt[i],fyt[i],fzt[i]);
   }//endfor
-  fclose(fp);   
+  fclose(fp);
   delete [] fxt;
   delete [] fyt;
   delete [] fzt;
@@ -388,7 +411,7 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
   for(int i=0;i<natm;i++){
     fprintf(fp,"%d %g %g %g\n",i,fxt_ewd[i],fyt_ewd[i],fzt_ewd[i]);
   }//endfor
-  fclose(fp);   
+  fclose(fp);
   delete [] fxt_ewd;
   delete [] fyt_ewd;
   delete [] fzt_ewd;
@@ -401,16 +424,16 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
 
 //==========================================================================
 /** \brief Spline look up the non-local pseudopotential for N^2 method -
-  only invoked by routines local to class. 
+  only invoked by routines local to class.
  */
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 
-void CPLOCAL::CP_get_vpsnow(int *index_atm,int nsplin_g,
-    double gmin_spl,double  dg_spl,double g,
-    double *vps0,double *vps1,double *vps2,double *vps3,
-    double *vtemp,int *iatm_typ,int natm_typ,int npart,double vol)
+void CPLOCAL::CP_get_vpsnow(int *index_atm, int nsplin_g,
+    double gmin_spl, double  dg_spl, double g,
+    double *vps0, double *vps1, double *vps2, double *vps3,
+    double *vtemp, int *iatm_typ, int natm_typ, int npart, double vol)
 
   /*========================================================================*/
 {/*begin routine*/
@@ -459,7 +482,7 @@ void CPLOCAL::CP_get_vpsnow(int *index_atm,int nsplin_g,
 
 
 //==========================================================================
-/** \brief Fetch the local pseudo EES grid size interpolation order and 
+/** \brief Fetch the local pseudo EES grid size interpolation order and
   number of atoms for use in the class from the
   CP->cppseudo readonly class.
  */
@@ -469,7 +492,7 @@ void CPLOCAL::CP_get_vpsnow(int *index_atm,int nsplin_g,
 void CPLOCAL::getEesPrms(int *ngrid_a, int *ngrid_b, int *ngrid_c,
     int *n_interp, int *natm)
   //==========================================================================
-{ // begin routine 
+{ // begin routine
   //==========================================================================
   CP           *cp           = CP::get();
   MDATOMS      *mdatoms      = MDATOMS::get();
@@ -489,17 +512,16 @@ void CPLOCAL::getEesPrms(int *ngrid_a, int *ngrid_b, int *ngrid_c,
 //==========================================================================
 /** \brief  Compute the g-space weights for the set of g-vectors given.
   The weight only depends on g-vectors given.
-  The EESgroup should call the routine ONCE for each collection 
+  The EESgroup should call the routine ONCE for each collection
   it is assigned.
  */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
-    double *b_re, double *b_im, 
-    int nkf1,int nkf2,int nkf3,int n_interp)
+void CPLOCAL::eesSetEesWghtGgrp(int ncoef, std::vector< gridPoint > & myPoints,
+    double *b_re, double *b_im, int nkf1, int nkf2, int nkf3, int n_interp)
   //==========================================================================
-{ // begin routine 
+{ // begin routine
   CP           *cp           = CP::get();
 #include "../class_defs/allclass_strip_cp.h"
   int nkf1_t = cppseudo->ngrid_eext_a;
@@ -518,7 +540,7 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
   // I) Calculate bweight for this set of points
 
   //--------------------------------------------------------------------------
-  //   A) Malloc memory and define constants                                
+  //   A) Malloc memory and define constants
 
   int dim_k;
   int ngrid_a = nkf1;
@@ -548,7 +570,7 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
   double *uk   = (double *)cmalloc(dim_k*sizeof(double),"set_ees_wgt")-1;
 
   //--------------------------------------------------------------------------
-  //   B) Construct the weighting Function                                  
+  //   B) Construct the weighting Function
 
   get_bspline_wght1d(n_interp,ngrid_a,aj,rn,rn1,mn_k,uk,
       bden_a_r,bden_a_i,bweight_a);
@@ -557,10 +579,10 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
   get_bspline_wght1d(n_interp,ngrid_c,aj,rn,rn1,mn_k,uk,
       bden_c_r,bden_c_i,bweight_c);
 
-  for(int i=1;i <=ncoef; ++i){
-    int ka = ka_in[(i-1)];
-    int kb = kb_in[(i-1)];
-    int kc = kc_in[(i-1)];
+  for(int i = 0; i < ncoef; ++i){
+    int ka = myPoints[i].d3;
+    int kb = myPoints[i].d2;
+    int kc = myPoints[i].d1;
     int kap,kbp,kcp;
     if (kc < 0) {kcp = kc + nkf3 + 1;} else {kcp = kc + 1;}
     if (kb < 0) {kbp = kb + nkf2 + 1;} else {kbp = kb + 1;}
@@ -577,30 +599,30 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
     double tmp_ab_r,tmp_ab_i;
     tmp_ab_r    = tmp_a_r*tmp_b_r - tmp_a_i*tmp_b_i;
     tmp_ab_i    = tmp_a_i*tmp_b_r + tmp_a_r*tmp_b_i;
-    b_re[(i-1)] = tmp_ab_r*tmp_c_r - tmp_ab_i*tmp_c_i;
-    b_im[(i-1)] = tmp_ab_i*tmp_c_r + tmp_ab_r*tmp_c_i;
+    b_re[i] = tmp_ab_r*tmp_c_r - tmp_ab_i*tmp_c_i;
+    b_im[i] = tmp_ab_i*tmp_c_r + tmp_ab_r*tmp_c_i;
     if(ka==0&&kb==0&&kc==0){ //safety
-      b_re[(i-1)] = bden_a_r[1]*bden_b_r[1]*bden_c_r[1];
-      b_im[(i-1)] = 0.0;
+      b_re[i] = bden_a_r[1]*bden_b_r[1]*bden_c_r[1];
+      b_im[i] = 0.0;
     }//endfor
   }//endif
 
   //==========================================================================
 
-  cfree(&bden_a_r[1],"set_ees_wgt"); 
-  cfree(&bden_a_i[1],"set_ees_wgt"); 
+  cfree(&bden_a_r[1],"set_ees_wgt");
+  cfree(&bden_a_i[1],"set_ees_wgt");
   cfree(&bweight_a[1],"set_ees_wgt");
-  cfree(&bden_b_r[1],"set_ees_wgt"); 
-  cfree(&bden_b_i[1],"set_ees_wgt"); 
+  cfree(&bden_b_r[1],"set_ees_wgt");
+  cfree(&bden_b_i[1],"set_ees_wgt");
   cfree(&bweight_b[1],"set_ees_wgt");
-  cfree(&bden_c_r[1],"set_ees_wgt"); 
-  cfree(&bden_c_i[1],"set_ees_wgt"); 
+  cfree(&bden_c_r[1],"set_ees_wgt");
+  cfree(&bden_c_i[1],"set_ees_wgt");
   cfree(&bweight_c[1],"set_ees_wgt");
-  cfree(&aj[1],"set_ees_wgt"); 
-  cfree(&rn[1],"set_ees_wgt"); 
-  cfree(&rn1[1],"set_ees_wgt"); 
-  cfree(&uk[1],"set_ees_wgt"); 
-  cfree(&mn_k[1],"set_ees_wgt"); 
+  cfree(&aj[1],"set_ees_wgt");
+  cfree(&rn[1],"set_ees_wgt");
+  cfree(&rn1[1],"set_ees_wgt");
+  cfree(&uk[1],"set_ees_wgt");
+  cfree(&mn_k[1],"set_ees_wgt");
 
   //--------------------------------------------------------------------------
 }//end routine
@@ -611,18 +633,15 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
 /** \brief  Compute in real space, the B-Spline coefficients of the atoms
   for the local pseudo grid.
   Should be invoked by EESgroup members with real space planes at each time step:
-  EESGroup should provide a list of ALL allowed real space planes.
-  allowed_planes[ip] = 1, if I want the Bspline coefs on plane ip
-  allowed_planes[ip] = 0, if I DONT want the Bspline coefs on plane ip
-  where ip=0 ... nfftc-1 or ngrid_c-1. 
+  EESGroup should provide a vector of ALL allowed real space planes.
  */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, 
-    RHORHARTDATA **RhoRHartData, PSSCRATCH *pscratch)
+void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, std::vector<RHORHARTDATA> &
+    RhoRHartData, PSSCRATCH *pscratch)
   //==========================================================================
-{// begin routine 
+{// begin routine
   //==========================================================================
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
@@ -632,6 +651,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
 #include "../class_defs/allclass_strip_cp.h"
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_mdatoms.h"
+
   PSNONLOCAL *non_local = &(cppseudo->nonlocal);
 
   int i,j,ja,jb,jc,kb,n;
@@ -678,7 +698,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
   double cpu1,cpu2;
 
   //==========================================================================
-  // 0) Useful Constants 
+  // 0) Useful Constants
 
   for(j=1;j<=n_interp;j++){
     aj[j] = (double) (j-1);
@@ -692,7 +712,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
   grid_c    = (double) ngrid_c;
 
   //==========================================================================
-  // I) scaled coordinates                                                   
+  // I) scaled coordinates
 
 #ifdef TIME_BSPLINE
   cputime(&cpu1);
@@ -722,7 +742,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
     frac_c[i] = ctemp - (double) (ictemp[i]);
   }//endfor
   //==========================================================================
-  // II) Using current fraction, find the grid points on which M_n is non-zero 
+  // II) Using current fraction, find the grid points on which M_n is non-zero
 
   for(j=1;j<=n_interp;j++){
     for(i=0;i<natm;i++){
@@ -746,9 +766,9 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
   }//endfor
 
   //==========================================================================
-  // III) Initialize M2 and get the Mn's using the recursion relation         
-  //    Note: M_n is defined on 0 to n. Since frac between 0 and 1, the       
-  //          calculation is performed in an order that takes advantage of it 
+  // III) Initialize M2 and get the Mn's using the recursion relation
+  //    Note: M_n is defined on 0 to n. Since frac between 0 and 1, the
+  //          calculation is performed in an order that takes advantage of it
   for(i=0;i<natm;i++){
     mn_a[1][i] = 1.0 - fabs(ua[1][i]-1.0);
     mn_b[1][i] = 1.0 - fabs(ub[1][i]-1.0);
@@ -781,7 +801,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
       mn_a[1][i] = ua[1][i]*mn_a[1][i]*rn1[n];
       mn_b[1][i] = ub[1][i]*mn_b[1][i]*rn1[n];
       mn_c[1][i] = uc[1][i]*mn_c[1][i]*rn1[n];
-    }//endfor 
+    }//endfor
 
     if(n==(n_interp-1)){
       for(i=0;i<natm;i++){
@@ -789,7 +809,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
         dmn_b[1][i] = mn_b[1][i];
         dmn_c[1][i] = mn_c[1][i];
       }//endfor
-      for(j=2;j<=n_interp;j++){    
+      for(j=2;j<=n_interp;j++){
         j1 = j-1;
         for(i=0;i<natm;i++){
           dmn_a[j][i] = mn_a[j][i] - mn_a[j1][i];
@@ -802,87 +822,75 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
   }//end for: n
 
   //==========================================================================
-  // IV) put together the separable bits and store 
+  // IV) put together the separable bits and store
 
   // Zero array mapping plane index, j, to interpolation index, jc.
-  int    rhoRsubplanes;
-  int    *subStr;
-  int    *subEnd;
-  int    *subSiz;
-  int    *plane_index;
-  int    *ntemp;
   int    **itemp;
+  int    **plane_index;
   int    **nSub;
-  int    ***igrid; 
+  int    ***igrid;
   double ***mn,***dmn_x,***dmn_y,***dmn_z;
 
-
   // Zero array mapping plane index, j, to interpolation index, jc.
-  for(j=0;j<ngrid_c;j++){
-    if(allowed_planes[j]==1){
-      rhoRsubplanes = RhoRHartData[j]->rhoRsubplanes;
-      plane_index   = RhoRHartData[j]->plane_index;
-      nSub          = RhoRHartData[j]->nSub;
-      for(i=0;i<natm;i++){plane_index[i] = 0;}
-      for(int s=0;s<rhoRsubplanes;s++){for(i=0;i<natm;i++){nSub[s][i]=0;}}
-    }//endif
+  for(j = 0; j < RhoRHartData.size(); j++) {
+    plane_index   = RhoRHartData[j].plane_index;
+    nSub          = RhoRHartData[j].nSub;
+    for(int c = 0; c < RhoRHartData[j].mygridc; c++) {
+      for(i = 0; i < natm; i++) {
+        nSub[c][i]=0;
+        plane_index[c][i] = 0;
+      }
+    }
   }//endfor
 
-  for(i=0;i<natm;i++){
-    for(jc=1;jc<=n_interp;jc++){
-      int ip = igrid_c[jc][i];
-      // plane decomp
-      if(allowed_planes[ip]==1){ // if the group wants this plane
-
-        rhoRsubplanes = RhoRHartData[ip]->rhoRsubplanes;
-        subStr        = RhoRHartData[ip]->subStr;
-        subEnd        = RhoRHartData[ip]->subEnd;
-        subSiz        = RhoRHartData[ip]->subSiz;
-        ntemp         = RhoRHartData[ip]->ntemp;
-        itemp         = RhoRHartData[ip]->itemp;
-        nSub          = RhoRHartData[ip]->nSub;
-        igrid         = RhoRHartData[ip]->igrid;
-        mn            = RhoRHartData[ip]->mn;
-        dmn_x         = RhoRHartData[ip]->dmn_x;
-        dmn_y         = RhoRHartData[ip]->dmn_y;
-        dmn_z         = RhoRHartData[ip]->dmn_z;
-        plane_index   = RhoRHartData[ip]->plane_index;
-
-        // subplane decomp
-        for(int s=0;s<rhoRsubplanes;s++){
-          ntemp[s] = 0;
-          for(jb=1;jb<=n_interp;jb++){
-            if(subStr[s]<=igrid_b[jb][i] && igrid_b[jb][i]<subEnd[s]){
-              ntemp[s]++;
-              itemp[s][ntemp[s]] = jb;
+  for(int rhoj = 0; rhoj < RhoRHartData.size(); rhoj++) {
+    RHORHARTDATA & rhoD = RhoRHartData[rhoj];
+    itemp         = rhoD.itemp;
+    nSub          = rhoD.nSub;
+    igrid         = rhoD.igrid;
+    mn            = rhoD.mn;
+    dmn_x         = rhoD.dmn_x;
+    dmn_y         = rhoD.dmn_y;
+    dmn_z         = rhoD.dmn_z;
+    plane_index   = rhoD.plane_index;
+    for(i = 0; i < natm; i++) {
+      for(jc = 1; jc <= n_interp; jc++){
+        int c = igrid_c[jc][i];
+        if(rhoD.gridc_start <= c && c < rhoD.gridc_end) {
+          c -= rhoD.gridc_start;
+          int ntemp = 0;
+          for(jb = 1; jb <= n_interp; jb++) {
+            if(rhoD.gridb_start <= igrid_b[jb][i] &&
+                igrid_b[jb][i] < rhoD.gridb_end) {
+              ntemp++;
+              itemp[c][ntemp] = jb;
             }//endif
           }//endfor
-        }//endfor
 
-        // do all the subplanes : only some will be used : fix if too slow later
-        for(int s=0;s<rhoRsubplanes;s++){
           jj = 1;
-          for(kb=1;kb<=ntemp[s];kb++){
-            jb      = itemp[s][kb];
-            int iii = (igrid_b[jb][i]-subStr[s])*(ngrid_a+2);
-            for(ja=1,j=jj;ja<=n_interp;ja++,j++){
-              igrid[s][i][j] = igrid_a[ja][i]+iii; //plane index only
+          int baseOff = c * rhoD.mygridb * 2 * (ngrid_a/2 + 1);
+          for(kb = 1; kb <= ntemp; kb++) {
+            jb      = itemp[c][kb];
+            int iii = baseOff +
+              (igrid_b[jb][i] - rhoD.gridb_start) * 2 * (ngrid_a/2 + 1);
+            for(ja = 1, j = jj; ja <= n_interp; ja++, j++){
+              igrid[c][i][j] = igrid_a[ja][i] + iii; //index only
               atemp          = dmn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i]*grid_a;
               btemp          =  mn_a[ja][i]*dmn_b[jb][i]* mn_c[jc][i]*grid_b;
               ctemp          =  mn_a[ja][i]* mn_b[jb][i]*dmn_c[jc][i]*grid_c;
-              mn[s][i][j]    =  mn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i];
-              dmn_x[s][i][j] = atemp*hmati[1]+btemp*hmati[2]+ctemp*hmati[3];
-              dmn_y[s][i][j] = atemp*hmati[4]+btemp*hmati[5]+ctemp*hmati[6];
-              dmn_z[s][i][j] = atemp*hmati[7]+btemp*hmati[8]+ctemp*hmati[9];
+              mn[c][i][j]    =  mn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i];
+              dmn_x[c][i][j] = atemp*hmati[1]+btemp*hmati[2]+ctemp*hmati[3];
+              dmn_y[c][i][j] = atemp*hmati[4]+btemp*hmati[5]+ctemp*hmati[6];
+              dmn_z[c][i][j] = atemp*hmati[7]+btemp*hmati[8]+ctemp*hmati[9];
             }//endfor : ja
             jj += n_interp;
           }//endfor : jb
-          nSub[s][i] = jj-1;
-        }//endfor : s
-        plane_index[i] = jc; // each jc is a different plane
-
-      }//endif : allowed
-    }}//endfor : iatm and jc
+          nSub[c][i] = jj-1;
+          plane_index[c][i] = jc; // each jc is a different plane
+        }//endif : allowed
+      }//endfor : iatm
+    }//endfor : jc
+  }//endfor : rhoj
 
 
 #ifdef DEBUG_GJM_BSPLINE
@@ -907,18 +915,18 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
 
 
 //==========================================================================
-/** \brief 
+/** \brief
   Use the B-spline coefs to generate sfAtmTypR (real space SF for spec. type)
   Invoked by RhoRHart chare which controls type loop
  */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplane,
-    int sIndex, int ***igrid, double ***mn, int *plane_index, 
-    int **nSub, int ngrid_b)
+void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int
+    gridc_start, int gridc_end, int gridb_start, int gridb_end, int myGrid_size,
+    int ***igrid, double ***mn, int **plane_index, int **nSub)
   //==========================================================================
-{// begin routine 
+{// begin routine
   //==========================================================================
 
   MDATOMS      *mdatoms      = MDATOMS::get();
@@ -929,35 +937,38 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
   int ngrid_a    = cppseudo->ngrid_eext_a;
   int *natm_eext = cppseudo->natm_eext;
   int **map_eext = cppseudo->map_eext;
-  int s          = sIndex;
 
   //==========================================================================
 
   int nroll = 5; // you can't change this without changing the code below
 
-  for(int i=0;i<(ngrid_a+2)*ngrid_b;i++){sfAtmTypR[i]=0.0;}
+  for(int i = 0; i < myGrid_size; i++){
+    sfAtmTypR[i]=0.0;
+  }
 
-  for(int jatm=1;jatm<=natm_eext[ityp];jatm++){
-    int iatm = map_eext[ityp][jatm]-1;
-    int jc   = plane_index[iatm];  // interpolation pt of plane
-    int ngo  = nSub[s][iatm];      // subPlane decomp
-    if(jc>0 && ngo>0){
-      int nrem  = (ngo % nroll);
-      int jstrt = (ngo-nrem+1);
-      int jend  = (ngo-nrem);
-      for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
-          j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
-        sfAtmTypR[igrid[s][iatm][j]]  += mn[s][iatm][j];  // contribute to zmatrix
-        sfAtmTypR[igrid[s][iatm][j1]] += mn[s][iatm][j1]; // contribute to zmatrix
-        sfAtmTypR[igrid[s][iatm][j2]] += mn[s][iatm][j2]; // contribute to zmatrix
-        sfAtmTypR[igrid[s][iatm][j3]] += mn[s][iatm][j3]; // contribute to zmatrix
-        sfAtmTypR[igrid[s][iatm][j4]] += mn[s][iatm][j4]; // contribute to zmatrix
-      }//endfor
-      for(int j=jstrt;j<=ngo;j++){
-        sfAtmTypR[igrid[s][iatm][j]] += mn[s][iatm][j]; // contribute to zmatrix
-      }//endfor
-    }//endif
-  }//endfor
+  for(int c = 0; c < (gridc_end - gridc_start); c++) {
+    for(int jatm = 1; jatm <= natm_eext[ityp]; jatm++) {
+      int iatm = map_eext[ityp][jatm] - 1;
+      int jc   = plane_index[c][iatm];  // interpolation pt of plane
+      int ngo  = nSub[c][iatm];      // subPlane decomp
+      if(jc > 0 && ngo > 0) {
+        int nrem  = (ngo % nroll);
+        int jstrt = (ngo - nrem + 1);
+        int jend  = (ngo - nrem);
+        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
+            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+          sfAtmTypR[igrid[c][iatm][j]]  += mn[c][iatm][j];  // contribute to zmatrix
+          sfAtmTypR[igrid[c][iatm][j1]] += mn[c][iatm][j1]; // contribute to zmatrix
+          sfAtmTypR[igrid[c][iatm][j2]] += mn[c][iatm][j2]; // contribute to zmatrix
+          sfAtmTypR[igrid[c][iatm][j3]] += mn[c][iatm][j3]; // contribute to zmatrix
+          sfAtmTypR[igrid[c][iatm][j4]] += mn[c][iatm][j4]; // contribute to zmatrix
+        }//endfor
+        for(int j=jstrt; j <= ngo; j++) {
+          sfAtmTypR[igrid[c][iatm][j]] += mn[c][iatm][j]; // contribute to zmatrix
+        }//endfor
+      }//endif
+    }//endfor
+  }// endfor plane (c)
 
   //==========================================================================
   // sfatmtypr is ready to be ffted and used to generate eext
@@ -965,9 +976,10 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
 #define _Glenn_DEBUG_KPT_OFF_
 #ifdef _Glenn_DEBUG_KPT_
   char myFileName[100];
-  sprintf(myFileName, "sfAtmTypR_eext.p%d.s%d.t%d",iplane,sIndex,ityp);
+  sprintf(myFileName, "sfAtmTypR_eext.p%d-%d.s%d-%d.t%d", gridc_start,
+      gridc_end, gridb_start, gridb_end, ityp);
   FILE *fp = fopen(myFileName,"w");
-  for(int i=0;i<(ngrid_a+2)*ngrid_b;i++){
+  for(int i = 0; i < myGrid_size; i++) {
     fprintf(fp,"%g\n",sfAtmTypR[i]);
   }//endfor
   fclose(fp);
@@ -980,7 +992,7 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
 
 //==========================================================================
 //==========================================================================
-/** \brief 
+/** \brief
   Invoked from RhoGHart chare : SfatmTypG is result of fft of sfatmtypr
   sfAtomTotG is charged weighted SF that is accumulated
   during the `ityp' control loop along with vks.
@@ -990,14 +1002,13 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks, 
+void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
     complex *sfAtmTypG, complex *sfAtmTotG,
-    double *b_re, double *b_im,
-    double *ehart_ret,double *eext_ret,
-    int *k_x,int *k_y,int *k_z,double *perdCorr,
-    int index,int nfreq_cmi_update)
+    double *b_re, double *b_im, double *ehart_ret, double *eext_ret,
+    std::vector< gridPoint > & myPoints, double *perdCorr, int index,
+    int nfreq_cmi_update)
   //==========================================================================
-{// begin routine 
+{// begin routine
   //==========================================================================
 
   MDATOMS      *mdatoms      = MDATOMS::get();
@@ -1012,7 +1023,7 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
   // Atom look up information : we are already sorted by atm type
 
   //---------------------------------------------
-  // Cell and pressure information  
+  // Cell and pressure information
   int iperd             = gencell->iperd;
   double *hmat          = gencell->hmat;
   double *hmati         = gencell->hmati;
@@ -1041,7 +1052,7 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
   double wght          = 2.0;
 
   // -------------------------------------------
-  // Local variables 
+  // Local variables
 
   double gx,gy,gz,g2,g;
   double HartreeFact;
@@ -1074,23 +1085,31 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
   int izero    = -10;  // deal with g=0
 
   for(int i = 0; i < ncoef; i++){
+    int offset = myPoints[i].offset;
 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
     // I.  Construct the reciprocal space vectors and their square magnitudes
-    gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
-    gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
-    gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
+    gx = tpi*(myPoints[i].d3 * hmati[1] + myPoints[i].d2 * hmati[2] +
+        myPoints[i].d1 * hmati[3]);
+    gy = tpi*(myPoints[i].d3 * hmati[4] + myPoints[i].d2 * hmati[5] +
+        myPoints[i].d1 * hmati[6]);
+    gz = tpi*(myPoints[i].d3 * hmati[7] + myPoints[i].d2 * hmati[8] +
+        myPoints[i].d1 * hmati[9]);
     g2 = gx*gx + gy*gy + gz*gz;
     g  = sqrt(g2);
-    if(g2==0){izero=i;}
+    if(g2 == 0){
+      izero = i;
+    }
     if(g2 <= ecut4 && g2 != 0){
-      wght_now = (k_x[i]==0 ? 1.0 : wght);
+      wght_now = (myPoints[i].d3 == 0 ? 1.0 : wght);
       //----------------------------------------------------------------------------
       // II. Use these to construct the Hartree energy and its potential
-      if(ityp==1){
+      if(ityp == 1){
         HartreeFact = fpi/(g2*vol);
+#if 0 && GLENN_PERIODIC_CORRECTION
         if(iperd!=3){HartreeFact += perdCorr[i]/vol;}
+#endif
         ehart      += HartreeFact*rho[i].getMagSqr()*wght_now;
         vks[i]     += rho[i]*HartreeFact;
       }/*endif*/
@@ -1098,10 +1117,12 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
       // III. Get the structure factor and pseudopotential interaction
       //------------------------------------------------------
       // a)Atm SF : apply ees g-space weight : add to the total SF
-      temp_r           = (sfAtmTypG[i].re*b_re[i]-sfAtmTypG[i].im*b_im[i]);
-      temp_i           = (sfAtmTypG[i].re*b_im[i]+sfAtmTypG[i].im*b_re[i]);
-      sfAtmTotG[i].re += (sfAtmTypG[i].re*q_typ[ityp]); // bweight added later
-      sfAtmTotG[i].im += (sfAtmTypG[i].im*q_typ[ityp]); // bweight added later
+      temp_r           = sfAtmTypG[offset].re * b_re[i] -
+                         sfAtmTypG[offset].im * b_im[i];
+      temp_i           = sfAtmTypG[offset].re * b_im[i] +
+                         sfAtmTypG[offset].im * b_re[i];
+      sfAtmTotG[i].re += (sfAtmTypG[offset].re*q_typ[ityp]); // bweight added later
+      sfAtmTotG[i].im += (sfAtmTypG[offset].im*q_typ[ityp]); // bweight added later
       //------------------------------------------------------
       // b)Atm-electron interaction
       int iii        = (int)((g-gmin_spl)/dg_spl + 1);
@@ -1115,7 +1136,9 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
       double partem3 = vps2[index_now];
       double partem4 = vps3[index_now];
       double vtemp   = (((partem4*h+partem3)*h+partem2)*h + partem1)/vol;
+#if 0 && GLENN_PERIODIC_CORRECTION
       if(iperd!=3){vtemp -= q_typ[ityp]*perdCorr[i]/vol;} // charge on electron is -1
+#endif
       vext.re        = temp_r*vtemp;
       vext.im        = temp_i*vtemp;
       eext          += (rho[i]*vext).re*wght_now;
@@ -1126,18 +1149,18 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
       // d)atom force : set up backtransform
       temp_r          =  (rho[i].re*b_re[i]-rho[i].im*b_im[i]);
       temp_i          = -(rho[i].re*b_im[i]+rho[i].im*b_re[i]);
-      sfAtmTypG[i].re = vtemp*temp_r;
-      sfAtmTypG[i].im = vtemp*temp_i;
-#ifdef  _CP_DEBUG_VKS_HART_EEXT_FOO_
+      sfAtmTypG[offset].re = vtemp*temp_r;
+      sfAtmTypG[offset].im = vtemp*temp_i;
+#ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
       fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g \n",
-          k_x[i],k_y[i],k_z[i],rho[i].re,rho[i].im,
-          sfAtmTypG[i].re,sfAtmTypG[i].im,b_re[i],b_im[i],
+          myPoints[i].d3, myPoints[i].d2, myPoints[i].d1, rho[i].re, rho[i].im,
+          sfAtmTypG[offset].re, sfAtmTypG[offset].im, b_re[i], b_im[i],
           sfAtmTotG[i].re, sfAtmTotG[i].im);
 #endif
     }else{
       if(g2!=0.0){
-        sfAtmTypG[i].re = 0.0;
-        sfAtmTypG[i].im = 0.0;
+        sfAtmTypG[offset].re = 0.0;
+        sfAtmTypG[offset].im = 0.0;
         sfAtmTotG[i].re = 0.0;
         sfAtmTotG[i].im = 0.0;
         vks[i].re       = 0.0;
@@ -1152,15 +1175,18 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 
   if(izero>=0){
     int i = izero;
+    int offset = myPoints[i].offset;
     //------------------------------------------------------
     // Atm SF : apply ees gspace weight : add to the total SF
-    temp_r           = sfAtmTypG[i].re*b_re[i];
-    sfAtmTotG[i].re += (sfAtmTypG[i].re*q_typ[ityp]);
+    temp_r           = sfAtmTypG[offset].re*b_re[i];
+    sfAtmTotG[i].re += (sfAtmTypG[offset].re*q_typ[ityp]);
     sfAtmTotG[i].im  = 0.0;
     //------------------------------------------------------
     // Atm-electron interaction
     double vtemp = gzvps[ityp]/vol;
+#if 0 && GLENN_PERIODIC_CORRECTION
     if(iperd!=3){vtemp -= q_typ[ityp]*perdCorr[i]/vol;} // charge on electron is -1
+#endif
     vext.re      = vtemp*temp_r;
     vext.im      = 0.0;
     eext        += (rho[i].re*vext.re);
@@ -1171,19 +1197,21 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
     //------------------------------------------------------
     // atom force : set up backtransform
     temp_r          = rho[i].re*b_re[i];
-    sfAtmTypG[i].re = vtemp*temp_r;
-    sfAtmTypG[i].im = 0.0;
-#ifdef  _CP_DEBUG_VKS_HART_EEXT_FOO_
-    fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g : %g %g \n",
-        rho[i].re,rho[i].im, sfAtmTypG[i].re,sfAtmTypG[i].im,b_re[i],b_im[i],
-        sfAtmTotG[i].re, sfAtmTotG[i].im);
+    sfAtmTypG[offset].re = vtemp*temp_r;
+    sfAtmTypG[offset].im = 0.0;
+#ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
+    fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g %g %g\n", rho[i].re, rho[i].im,
+        sfAtmTypG[offset].re, sfAtmTypG[offset].im, b_re[i], b_im[i],
+          sfAtmTotG[i].re, sfAtmTotG[i].im);
 #endif
   }//endif
 
   //==========================================================================
   // Set return values
 
-  if(ityp==1){ehart_ret[0] = ehart/2.0;}
+  if(ityp ==1 ){
+    ehart_ret[0] = ehart/2.0;
+  }
   eext_ret[0] += eext;
 
   //==========================================================================
@@ -1203,19 +1231,19 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 
 
 //==========================================================================
-/** \brief 
-  Invoked from RhoGHart chare : sfAtomTotG is charged weighted SF e.g. summed over 
+/** \brief
+  Invoked from RhoGHart chare : sfAtomTotG is charged weighted SF e.g. summed over
   all atm types. It is used to generate ewald energy.
  */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
-    double *b_re, double *b_im,double *ewd_ret,
-    int *k_x, int *k_y, int *k_z,
+    double *b_re, double *b_im, double *ewd_ret,
+    std::vector< gridPoint > & myPoints, int expanded,
     double *perdCorr,int index,int nfreq_cmi_update)
   //==========================================================================
-{// begin routine 
+{// begin routine
   //==========================================================================
   GENERAL_DATA *general_data = GENERAL_DATA::get();
 
@@ -1252,13 +1280,19 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
   // Do the Ewald sum
 
   double vnow = 0.0;
+  int offset;
 
   for(int i=0;i<ncoef;i++) {
+    if(expanded) {
+      offset = myPoints[i].offset;
+    } else {
+      offset = i;
+    }
     //---------------------------------------
     // Compute kvectors form recip lattice puppies
-    aka = tpi*( (double) k_x[i] );
-    akb = tpi*( (double) k_y[i] );
-    akc = tpi*( (double) k_z[i] );
+    aka = tpi*( (double) myPoints[i].d3 );
+    akb = tpi*( (double) myPoints[i].d2 );
+    akc = tpi*( (double) myPoints[i].d1 );
     xk  = (aka*hmati[1] + akb*hmati[2] + akc*hmati[3]);
     yk  = (aka*hmati[4] + akb*hmati[5] + akc*hmati[6]);
     zk  = (aka*hmati[7] + akb*hmati[8] + akc*hmati[9]);
@@ -1266,27 +1300,30 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
     if(g2!=0.0){
       //---------------------------------------
       // Compute Ewald energy
-      wght_now = (k_x[i]==0 ? 1.0 : wght);
+      wght_now = (myPoints[i].d3==0 ? 1.0 : wght);
       preg     = fpi*exp(-g2/falp2)/(g2*vol);
+#if 0 && GLENN_PERIODIC_CORRECTION
       if(iperd!=3){preg += perdCorr[i]/vol;}
       if(iperd==0){preg=0.0;}
-      smag     = sfAtmTotG[i].getMagSqr();
+#endif
+      smag     = sfAtmTotG[offset].getMagSqr();
       bmag     = (b_re[i]*b_re[i]+b_im[i]*b_im[i]);
       vnow    += (bmag*smag*preg*wght_now);
-      temp_r   = (sfAtmTotG[i].re*b_re[i]-sfAtmTotG[i].im*b_im[i]);
-      temp_i   = (sfAtmTotG[i].re*b_im[i]+sfAtmTotG[i].im*b_re[i]);
+      temp_r   = (sfAtmTotG[offset].re*b_re[i]-sfAtmTotG[offset].im*b_im[i]);
+      temp_i   = (sfAtmTotG[offset].re*b_im[i]+sfAtmTotG[offset].im*b_re[i]);
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-      fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g\n",k_x[i],k_y[i],k_z[i],
-          temp_r,temp_i,b_re[i],b_im[i],sfAtmTotG[i].getMagSqr()*bmag,preg);
+      fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g\n", myPoints[i].d3,
+          myPoints[i].d2, myPoints[i].d1, temp_r, temp_i, b_re[i], b_im[i],
+          sfAtmTotG[offset].getMagSqr()*bmag, preg);
 #endif
       //---------------------------------------
       // Ewald force : Setup inverse FFT
       prep     = preg*bmag;      // there is 1/2 below canceling 2x
-      sfAtmTotG[i].re *= prep;
-      sfAtmTotG[i].im *= prep;
+      sfAtmTotG[offset].re *= prep;
+      sfAtmTotG[offset].im *= prep;
     }else{
-      sfAtmTotG[i].re = 0.0;
-      sfAtmTotG[i].im = 0.0;
+      sfAtmTotG[offset].re = 0.0;
+      sfAtmTotG[offset].im = 0.0;
     }//endif
   }//endfor
 
@@ -1317,12 +1354,12 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp, 
-    int ***igrid, double ***dmn_x, double ***dmn_y, double ***dmn_z, 
-    int *plane_index, int **nSub,  double *sfAtmTypR, 
-    int iplane,int sIndex,int flag)
+void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
+    int ***igrid, double ***dmn_x, double ***dmn_y, double ***dmn_z,
+    int **plane_index, int **nSub,  double *sfAtmTypR,
+    int gridc_start, int gridc_end, int gridb_start, int gridb_end, int flag)
   //==========================================================================
-{// begin routine 
+{// begin routine
   //==========================================================================
 
   MDATOMS      *mdatoms      = MDATOMS::get();
@@ -1330,7 +1367,6 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
 #include "../class_defs/allclass_strip_cp.h"
 #include "../class_defs/allclass_strip_mdatoms.h"
 
-  int s          = sIndex;
   int natm_typ   = cppseudo->natm_typ;
   int *natm_eext = cppseudo->natm_eext;
   int **map_eext = cppseudo->map_eext;
@@ -1354,7 +1390,6 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
   }//endfor
 #endif
 
-
   //==========================================================================
   // Compute the Eext forces from the back transformed ityp SF   : flag=0
   // Compute the Ewald forces from the back transformed total SF : flag=1
@@ -1362,53 +1397,55 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
   int nroll = 5; // you can't change this without changing the code
 
   int ityp_use = (flag==0 ? ityp : (natm_typ+1));
-  for(int jatm=1;jatm<=natm_eext[ityp_use];jatm++){
-    int iatm = (flag==0 ? (map_eext[ityp][jatm]-1) : (jatm-1));
-    int jc   = plane_index[iatm];  // interpolation pt of plane
-    int ngo  = nSub[s][iatm];
-    if(jc>0 && ngo>0){
-      int nrem  = (ngo % nroll);
-      int jstrt = (ngo-nrem+1);
-      int jend  = (ngo-nrem);
-      double fxx=0.0, fyy=0.0, fzz=0.0;
-      for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
-          j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
-        double p0  = sfAtmTypR[igrid[s][iatm][j]];
-        double p1  = sfAtmTypR[igrid[s][iatm][j1]];
-        double p2  = sfAtmTypR[igrid[s][iatm][j2]];
-        double p3  = sfAtmTypR[igrid[s][iatm][j3]];
-        double p4  = sfAtmTypR[igrid[s][iatm][j4]];
-        fxx += (dmn_x[s][iatm][j]*p0  + dmn_x[s][iatm][j1]*p1
-            +dmn_x[s][iatm][j2]*p2 + dmn_x[s][iatm][j3]*p3
-            +dmn_x[s][iatm][j4]*p4);
-        fyy += (dmn_y[s][iatm][j]*p0  + dmn_y[s][iatm][j1]*p1
-            +dmn_y[s][iatm][j2]*p2 + dmn_y[s][iatm][j3]*p3
-            +dmn_y[s][iatm][j4]*p4);
-        fzz += (dmn_z[s][iatm][j]*p0  + dmn_z[s][iatm][j1]*p1
-            +dmn_z[s][iatm][j2]*p2 + dmn_z[s][iatm][j3]*p3
-            +dmn_z[s][iatm][j4]*p4);
-      }//endfor
-      for(int j=jstrt;j<=ngo;j++){
-        double p  = sfAtmTypR[igrid[s][iatm][j]];
-        fxx += (dmn_x[s][iatm][j]*p);
-        fyy += (dmn_y[s][iatm][j]*p);
-        fzz += (dmn_z[s][iatm][j]*p);
-      }//endfor
-      double qnow = (flag==1 ? q[iatm] : 1.0);
-      fx[iatm] -= fxx*qnow;
-      fy[iatm] -= fyy*qnow;
-      fz[iatm] -= fzz*qnow;
+  for(int c = 0; c < (gridc_end - gridc_start); c++) {
+    for(int jatm=1;jatm<=natm_eext[ityp_use];jatm++){
+      int iatm = (flag==0 ? (map_eext[ityp][jatm]-1) : (jatm-1));
+      int jc   = plane_index[c][iatm];  // interpolation pt of plane
+      int ngo  = nSub[c][iatm];
+      if(jc>0 && ngo>0){
+        int nrem  = (ngo % nroll);
+        int jstrt = (ngo-nrem+1);
+        int jend  = (ngo-nrem);
+        double fxx=0.0, fyy=0.0, fzz=0.0;
+        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
+            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+          double p0  = sfAtmTypR[igrid[c][iatm][j]];
+          double p1  = sfAtmTypR[igrid[c][iatm][j1]];
+          double p2  = sfAtmTypR[igrid[c][iatm][j2]];
+          double p3  = sfAtmTypR[igrid[c][iatm][j3]];
+          double p4  = sfAtmTypR[igrid[c][iatm][j4]];
+          fxx += (dmn_x[c][iatm][j]*p0  + dmn_x[c][iatm][j1]*p1
+              +dmn_x[c][iatm][j2]*p2 + dmn_x[c][iatm][j3]*p3
+              +dmn_x[c][iatm][j4]*p4);
+          fyy += (dmn_y[c][iatm][j]*p0  + dmn_y[c][iatm][j1]*p1
+              +dmn_y[c][iatm][j2]*p2 + dmn_y[c][iatm][j3]*p3
+              +dmn_y[c][iatm][j4]*p4);
+          fzz += (dmn_z[c][iatm][j]*p0  + dmn_z[c][iatm][j1]*p1
+              +dmn_z[c][iatm][j2]*p2 + dmn_z[c][iatm][j3]*p3
+              +dmn_z[c][iatm][j4]*p4);
+        }//endfor
+        for(int j=jstrt;j<=ngo;j++){
+          double p  = sfAtmTypR[igrid[c][iatm][j]];
+          fxx += (dmn_x[c][iatm][j]*p);
+          fyy += (dmn_y[c][iatm][j]*p);
+          fzz += (dmn_z[c][iatm][j]*p);
+        }//endfor
+        double qnow = (flag==1 ? q[iatm] : 1.0);
+        fx[iatm] -= fxx*qnow;
+        fy[iatm] -= fyy*qnow;
+        fz[iatm] -= fzz*qnow;
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-      for(int j=1;j<=ngo;j++){
-        int ind   = igrid[s][iatm][j];      // index of pt in the plane
-        double p  = sfAtmTypR[ind]*qnow;
-        fxt[iatm] -=(dmn_x[s][iatm][j]*p);
-        fyt[iatm] -=(dmn_y[s][iatm][j]*p);
-        fzt[iatm] -=(dmn_z[s][iatm][j]*p);
-      }//endfor
+        for(int j=1;j<=ngo;j++){
+          int ind   = igrid[c][iatm][j];      // index of pt in the plane
+          double p  = sfAtmTypR[ind]*qnow;
+          fxt[iatm] -=(dmn_x[c][iatm][j]*p);
+          fyt[iatm] -=(dmn_y[c][iatm][j]*p);
+          fzt[iatm] -=(dmn_z[c][iatm][j]*p);
+        }//endfor
 #endif
-    }//endif : plane is allowed
-  }//endfor : atm type is allowed
+      }//endif : plane is allowed
+    }//endfor : atm type is allowed
+  }// endfor plane (c)
 
   //==========================================================================
   // Debug output
@@ -1416,15 +1453,15 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
   char myFileName[100];
   if(flag==0){
-    sprintf(myFileName, "fatm_%d.out.ees.%d",iplane,ityp);
+    sprintf(myFileName, "fatm_%d_%d.out.ees.%d",gridc_start,gridb_start,ityp);
   }else{
-    sprintf(myFileName, "fatm_%d.out.ees.ewd",iplane);
+    sprintf(myFileName, "fatm_%d_%d.out.ees.ewd",gridc_start,gridb_start);
   }//endif
   FILE *fp = fopen(myFileName,"w");
   for(int i=0;i<natm;i++){
     fprintf(fp,"%d %g %g %g\n",i,fxt[i],fyt[i],fzt[i]);
   }//endfor
-  fclose(fp);   
+  fclose(fp);
   delete []fxt;
   delete []fyt;
   delete []fzt;

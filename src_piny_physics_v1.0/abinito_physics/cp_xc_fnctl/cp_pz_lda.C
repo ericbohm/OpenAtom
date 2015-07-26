@@ -20,9 +20,9 @@
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===========================================================================
 
-void CPXCFNCTS::CP_exc_calc(
-    const int numFFT, const int nf1, const int nf2, const int nf3,
-    double *density,double *result,double *exc_ret,double *muxc_ret,int nfreq_cmi_update)
+void CPXCFNCTS::CP_exc_calc(const int numFFT, const int nf1, const int nf2, 
+    const int nf3, double *density, double *result, double *exc_ret, 
+    double *muxc_ret, int nfreq_cmi_update)
 
   //============================================================================
   // Function:  Exchange-correlation functional
@@ -57,14 +57,13 @@ void CPXCFNCTS::CP_exc_calc(
   // Local variables 
 
   double vol            = gencell->vol;
-  double pvx,pvc,vscale;
-  double pi,rho_r_val,power,xfact,cfact,rs,fpin,fpi;
-  double ex,ec,mufact,rat1,rat2,cf1,cf2,sqtrs,vxc;
+  double pvx, pvc, vscale;
+  double pi, rho_r_val, power, xfact, cfact, rs, fpin, fpi;
+  double ex, ec, mufact, rat1, rat2, cf1, cf2, sqtrs, vxc;
   double lnrs;
 
-  double lyp_fact=1.0;
-  if(cp_lyp==1)lyp_fact=0.0;
-
+  double lyp_fact = 1.0;
+  if(cp_lyp == 1) lyp_fact = 0.0;
 
   //=================================================================
   // EVALUATE THE FUNCTIONAL AND ITS DERIVATIVE
@@ -99,74 +98,73 @@ void CPXCFNCTS::CP_exc_calc(
   //-------------------------------------------------------------------------
   // II.  Start loop over FFT grid and evaluate terms in the functional
 
-  for(int y=0 ; y< nf2; y++){
-    int i = y*(nf1+2) + nf1; 
-    result[i]    =0.0;
-    result[(i+1)]=0.0;
+  int x_len = 2 * (nf1/2 + 1);
+  for(int z = 0; z < nf3; z++) {
+    for(int y = 0 ; y < nf2; y++) {
+      int i = z * nf2 * x_len +  y * x_len + nf1; 
+      result[i]     = 0.0;
+      result[(i+1)] = 0.0;
+    }
   }//endfor
 
-  for(int y=0 ; y< nf2; y++){
-    for(int x=0 ; x< nf1; x++){
-      int i = y*(nf1+2) + x;
-      //-------------------------------------------------------------------------
-      // III. Exchange part
-      rho_r_val = density[i];
-      fpin = fpi*rho_r_val;
-      rs   = pow((3.0/fpin),power);
-      sqtrs = sqrt(rs);
-      xfact = -pow(((3.0*rho_r_val/pi)),power);
+  int jump = 2 - (nf1 & 1);
+  int i = 0;
+  for(int z = 0; z < nf3; z++) { 
+    for(int y = 0 ; y < nf2; y++) {
+      for(int x = 0 ; x < nf1; x++) {
+        //-------------------------------------------------------------------------
+        // III. Exchange part
+        rho_r_val = density[i];
+        fpin = fpi * rho_r_val;
+        rs   = pow((3.0/fpin), power);
+        sqtrs = sqrt(rs);
+        xfact = -pow(((3.0*rho_r_val/pi)),power);
 
-      //-------------------------------------------------------------------------
-      // IV. Correlation part
+        //-------------------------------------------------------------------------
+        // IV. Correlation part
 
-      if(rs >= 1.0){  /* rs > 1  */ 
+        if(rs >= 1.0) {  /* rs > 1  */ 
+          cf1 = 1.0 + beta1 * sqtrs + beta2 * rs;
+          cf2 = 1.0 + rat1 * sqtrs + rat2 * rs;
+          cfact = gamma/cf1;
+          mufact = cfact * (cf2/cf1);
+        } else { /* rs < 1  */
+          lnrs = log(rs);
+          cfact = au * lnrs + bu + cu * rs * lnrs + du * rs;
+          mufact = au * lnrs + (bu - power * au) + 2.0 * power * cu * rs * lnrs
+                   + power * (2.0 * du - cu) * rs;
+        }/*endif*/
 
-        cf1 = 1.0 + beta1*sqtrs + beta2*rs;
-        cf2 = 1.0 + rat1*sqtrs + rat2*rs;
-        cfact = gamma/cf1;
-        mufact = cfact*(cf2/cf1);
+        cfact  *= lyp_fact;
+        mufact *= lyp_fact;
 
-      }else{ /* rs < 1  */
+        //-------------------------------------------------------------------------
+        // V. Energies
+        ex += xfact * rho_r_val;
+        ec += cfact * rho_r_val;
 
-        lnrs = log(rs);
-        cfact = au*lnrs + bu + cu*rs*lnrs + du*rs;
-        mufact = au*lnrs + (bu - power*au) + 2.0*power*cu*rs*lnrs
-          + power*(2.0*du - cu)*rs;
+        //-------------------------------------------------------------------------
+        // VI. Potential contributions
 
-      }/*endif*/
-
-      cfact  *= lyp_fact;
-      mufact *= lyp_fact;
-
-      //-------------------------------------------------------------------------
-      // V. Energies
-      ex += xfact*rho_r_val;
-      ec += cfact*rho_r_val;
-
-      //-------------------------------------------------------------------------
-      // VI. Potential contributions
-
-
-      result[i] = (xfact + mufact);
-
-
-      vxc += (xfact + mufact)*rho_r_val;
-
-
-    }}/* endfor */
+        result[i] = (xfact + mufact);
+        vxc += (xfact + mufact) * rho_r_val;
+        i++;
+      }
+      i += jump;
+    }
+  }/* endfor */
 
   //-------------------------------------------------------------------------
   // VII. Finish the energies
 
   ex *= 0.75;
-
-  vscale = vol/((double)numFFT);
+  vscale = vol / ((double)numFFT);
 
   //-------------------------------------------------------------------------
   // VIII.  Return Values
 
-  (*exc_ret)  = (ex+ec)*vscale;
-  (*muxc_ret) = vxc*vscale;
+  (*exc_ret)  = (ex + ec) * vscale;
+  (*muxc_ret) = vxc * vscale;
 
   //============================================================================
 } /* End */

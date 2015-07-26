@@ -32,8 +32,9 @@ class inttriple {
   private:
     int x, y, z;
   public:
-    inttriple(){x=y=z=0;}
-
+    inttriple(){ 
+      x = y = z = 0;
+    }
     inttriple(int _x,int _y,int _z) : x(_x), y(_y), z(_z) {}
     void pup(PUP::er &p)
     {
@@ -58,14 +59,15 @@ class inttriple {
     static int staticCompare(const void *a,const void *b,size_t){
       return ((inttriple *)a)->compare((*(inttriple *)b));
     }
-
 };
 
 class intdual {
   private:
     int x, y;
   public:
-    intdual(){x=y=0;}
+    intdual(){
+      x = y = 0;
+    }
 
     intdual(int _x,int _y) : x(_x), y(_y){}
     void pup(PUP::er &p)
@@ -104,36 +106,16 @@ class MapTable1
       maptable->dump();
     }
   protected:
-    CkVec <int> *reverseMap;
 
     MapTable1()
     {
-      availprocs=NULL;
-      maptable=NULL;
-      reverseMap=NULL;
+      availprocs = NULL;
+      maptable = NULL;
     }
-    ~MapTable1()
-    {
-      if(reverseMap!=NULL)
-        delete [] reverseMap;
-    }
-    void makeReverseMap();
-
-    /**
-     * return ckvec containing the  reverse map of  all elements on
-     *  given proc 
-     */
-    inline CkVec <int>  ProcByArrIndex(int proc) 
-    { 
-      if(reverseMap==NULL)
-        makeReverseMap();
-      return(reverseMap[proc]); 
-    }
+    ~MapTable1() { }
 
     //! return processor at topological center of this list
     int getCentroid(int torusMap);
-    void getCentroid(int torusMap, int *dims);
-
 };
 
 
@@ -151,36 +133,16 @@ class MapTable2
       maptable->dump();
     }
   protected:
-    CkVec <intdual> *reverseMap;
 
     MapTable2()
     {
-      availprocs=NULL;
-      maptable=NULL;
-      reverseMap=NULL;
+      availprocs = NULL;
+      maptable = NULL;
     }
-    ~MapTable2()
-    {
-      if(reverseMap!=NULL)
-        delete [] reverseMap;
-    }
-    void makeReverseMap();
-
-    /**
-     * return ckvec containing the  reverse map of  all elements on
-     *  given proc 
-     */
-    inline CkVec <intdual>  ProcByArrIndex(int proc) 
-    { 
-      if(reverseMap==NULL)
-        makeReverseMap();
-      return(reverseMap[proc]); 
-    }
+    ~MapTable2() { }
 
     //! return processor at topological center of this list
     int getCentroid(int torusMap);
-    void getCentroid(int torusMap, int *dims);
-
 };
 
 class MapTable3
@@ -193,31 +155,12 @@ class MapTable3
       maptable->dump();
     }
   protected:
-    CkVec <inttriple> *reverseMap;
-
     MapTable3()
     {
-      availprocs=NULL;
-      maptable=NULL;
-      reverseMap=NULL;
+      availprocs = NULL;
+      maptable = NULL;
     }
-    ~MapTable3()
-    {
-      if(reverseMap!=NULL)
-        delete [] reverseMap;
-    }
-    void makeReverseMap();
-
-    /**
-     * return ckvec containing the  reverse map of  all elements on
-     *  given proc 
-     */
-    inline CkVec <inttriple>  ProcByArrIndex(int proc) 
-    { 
-      if(reverseMap==NULL)
-        makeReverseMap();
-      return(reverseMap[proc]); 
-    }
+    ~MapTable3() { }
 
     //! return processor at topological center of this list
     int getCentroid(int torusMap);
@@ -241,33 +184,13 @@ class MapTable4
     }
 
   protected:
-    CkVec <intdual> *reverseMap;
 
     MapTable4()
     {
-      availprocs=NULL;
-      maptable=NULL;
-      reverseMap=NULL;
+      availprocs = NULL;
+      maptable = NULL;
     }
-    ~MapTable4()
-    {
-      if(reverseMap!=NULL)
-        delete [] reverseMap;
-    }
-    void makeReverseMap();
-
-    /**
-     * return ckvec containing the  reverse map of  all elements on
-     *  given proc 
-     */
-    inline CkVec <intdual>  ProcByArrIndex(int proc) 
-    { 
-      if(reverseMap==NULL)
-        makeReverseMap();
-      return(reverseMap[proc]); 
-    }
-
-
+    ~MapTable4() { }
 };
 
 PeList *subListPlane(int plane, int nstates, MapType2 *smap);
@@ -281,10 +204,7 @@ class AtomMapTable : public MapTable1
     AtomMapTable( MapType1 *_tomap, PeList *_availprocs,
         int numInst,
         int _nchareAtoms);
-    AtomMapTable()
-    {
-    }
-
+    AtomMapTable() { }
 };
 
 class GSMapTable : public MapTable2
@@ -299,8 +219,7 @@ class GSMapTable : public MapTable2
     int planes_per_pe;
 
     GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs,
-        int _nchareG, int _nstates, int _Gstates_per_pe, bool useCuboidMap, int numInst,
-        int offsetX, int offsetY, int offsetZ);
+	       int _nchareG, int _nstates, int _Gstates_per_pe, bool useCuboidMap, int numInst);
 
     GSMapTable()
     {
@@ -341,7 +260,7 @@ class RSMapTable  : public MapTable2
     int Rstates_per_pe;
     RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availprocs,
         int _nstates, int _sizeZ, int _Rstates_per_pe, bool useCuboidMap, MapType2 *gsmap,
-        int nchareG, int numInst, int offsetX, int offsetY, int offsetZ);
+        int nchareG, int numInst);
 
     RSMapTable(){}
 };
@@ -386,12 +305,33 @@ class OrthoHelperMapTable : public MapTable2
 class RhoRSMapTable  : public MapTable2
 {
   public:
-    int nchareRhoR;
-    int rhoRsubplanes;
-    RhoRSMapTable(MapType2  *_map, PeList *_availprocs,
-        int _nchareRhoR, int _rhoRsubplanes, int maxstates, bool useCentroid, MapType2 *rsmap, PeList *exclude);
+    int nchareRhoR_x, nchareRhoR_y;
+    RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoR_x, 
+        int _nchareRhoR_y, int max_states, bool useCentroid, MapType2 *rsmap, 
+        PeList *exclude);
     void sortByCentroid(PeList *avail, int plane, int nstates, MapType2 *rsmap);
     RhoRSMapTable(){}
+};
+
+class FFTPencilMapTable  : public MapTable3
+{
+  public:
+    int dim[3];
+    bool flat[3];
+    int numFlat;
+    FFTPencilMapTable(MapType3  *_map, PeList *_availprocs, int *dim, 
+        PeList *exclude);
+    FFTPencilMapTable(){}
+};
+
+class RhoYPencilMapTable  : public MapTable2
+{
+  public:
+    int nchareInter_x, nchareInter_z;
+    RhoYPencilMapTable(MapType2  *_tomap, PeList *_availprocs, 
+        int _nchareInterX, int  _nchareInterZ, bool useCentroid, MapType2 *rhorsmap, 
+        PeList *exclude, int offset);
+    RhoYPencilMapTable(){}
 };
 
 class VdWRSMapTable  : public MapTable3
@@ -405,6 +345,35 @@ class VdWRSMapTable  : public MapTable3
     VdWRSMapTable(){}
 };
 
+class RhoGSMapTable  : public MapTable1
+{
+  public:
+    int nchareRhoG;
+    RhoGSMapTable(MapType1  *_map, PeList *_availprocs, int _nchareRhoG,  
+        bool useCentroid, MapType2 *rhorsmap, PeList *exclude);
+    RhoGSMapTable(){}
+};
+
+
+class RhoRHartMapTable  : public MapTable3
+{
+  public:
+    int nchareRhoRHart_x, nchareRhoRHart_y;
+    RhoRHartMapTable(MapType3  *_map, PeList *_availprocs,
+        int _nchareRhoRHart,  int rhoRsubplanes, int _nchareHartAtmT,
+        PeList *exclude);
+    RhoRHartMapTable(){}
+};
+
+class RhoGHartMapTable  : public MapTable2 {
+  public:
+    int nchareRhoGHart;
+    RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoGHart, 
+    int _nchareHartAtmT, int useCentroid, MapType2 *rsmap, MapType3 *rhartmap, 
+    PeList *exclude);
+    RhoGHartMapTable(){}
+};
+
 class VdWGSMapTable  : public MapTable2
 {
   public:
@@ -415,36 +384,6 @@ class VdWGSMapTable  : public MapTable2
     VdWGSMapTable(){}
 };
 
-
-
-class RhoRHartMapTable  : public MapTable3
-{
-  public:
-    int nchareRhoRHart;
-    RhoRHartMapTable(MapType3  *_map, PeList *_availprocs,
-        int _nchareRhoRHart,  int rhoRsubplanes, int _nchareHartAtmT,
-        PeList *exclude);
-    RhoRHartMapTable(){}
-};
-
-class RhoGHartMapTable  : public MapTable2
-{
-  public:
-    int nchareRhoGHart;
-    RhoGHartMapTable(MapType2  *_map, PeList *_availprocs,
-        int _nchareRhoGHart, int _nchareHartAtmT, int useCentroid, 
-        MapType3 *rhartmap, PeList *exclude);
-    RhoGHartMapTable(){}
-};
-
-class RhoGSMapTable  : public MapTable2
-{
-  public:
-    int nchareRhoG;
-    RhoGSMapTable(MapType2  *_map, PeList *_availprocs,
-        int _nchareRhoG,  bool useCentroid, MapType2 *rhorsmap, PeList *exclude);
-    RhoGSMapTable(){}
-};
 
 //@}
 #endif

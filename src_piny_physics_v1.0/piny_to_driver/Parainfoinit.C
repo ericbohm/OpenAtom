@@ -48,6 +48,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int nkf2            = nfft[2];
   int nkf3            = nfft[3];
   int nstates         = cpcoeffs_info->nstate_up;
+  int ecut            = cpcoeffs_info->ecut;
   int ntime           = gentimeinfo->ntime;
   int btime           = gentimeinfo->btime;
   int ibinary_opt     = cpopts->iread_coef_binary;
@@ -166,6 +167,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   sim->cp_grad_corr_on= cp_grad_corr_on;
   sim->cp_force_complex_psi = cp_force_complex_psi;
 
+  sim->ecut                 = ecut;
   sim->ntime = ntime;
   sim->btime = btime;
 

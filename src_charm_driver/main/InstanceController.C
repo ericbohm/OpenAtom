@@ -4,7 +4,6 @@
 #include "AtomsCache.h"
 #include "AtomsCompute.h"
 #include "InstanceController.h"
-extern int nstates;
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -36,13 +35,14 @@ extern uint16_t                                  origBIValue;
 extern CkGroupID                                 mCastGrpId;
 extern CkVec <UberCollection>                    UberAlles;
 extern CProxy_ENL_EKE_Collector                  ENLEKECollectorProxy;
+extern CPcharmParaInfo                          simReadOnly;
 //============================================================================
 
-
-
-InstanceController::InstanceController() {
+InstanceController::InstanceController(int _fft_expected) {
 
   done_init=0;Timer=CmiWallTimer(); numKpointforces=0;
+  fft_expected = _fft_expected;
+  done_fft_creation = false;
   UberCollection instance=UberCollection(thisIndex);
   // 0th k, 0th spin makes this to lockdown everyone so the atoms
   // shared across all k and spin can start sanely
@@ -137,6 +137,28 @@ void InstanceController::instancesReady(CkReductionMsg *m){
   platformSpecificProxy.reset_BI();
 #endif
 }
+
+void InstanceController::doneFFTCreation(idMsg *msg) {
+  delete msg;
+  fft_expected--;
+  CkPrintf("Received FFT completion %d\n", fft_expected);
+  if(fft_expected == 0) {
+    done_fft_creation = true;
+    if(done_init > 3) {
+      initDensity();
+    }
+  }
+}
+
+void InstanceController::initDensity() {
+  UrhoRealProxy[thisIndex].init();
+  UrhoGProxy[thisIndex].init();
+  UrhoGHartExtProxy[thisIndex].init();
+  if(simReadOnly.ees_eext_on) { 
+    UrhoRHartExtProxy[thisIndex].init();
+  }
+}
+
 //============================================================================
 
 //============================================================================
@@ -203,18 +225,14 @@ a normal behavior value.
 
  */
 /**@{*/
-void InstanceController::doneInit(CkReductionMsg *msg){
+void InstanceController::doneInit(){
   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
-  CkPrintf("{%d} Done_init for %d userflag %d\n",thisIndex, (int)((int *)msg->getData())[0],msg->getUserFlag());
-  // This assert should be a formality.
+  CkPrintf("{%d} Done_init \n",thisIndex);
   // Also, when paircalc becomes completely instance unaware, it will fail. This single assert is not enough motivation
   // to provide instance info to the pc/ortho bubble. @todo: remove this assert
-  CkAssert(msg->getUserFlag()==thisIndex);
   int numPhases=5;
   if(CPcharmParaInfo::get()->ees_nloc_on==1)
     numPhases++;
-
-  delete msg;
   double newtime=CmiWallTimer();
   CkAssert(done_init<numPhases+1);
 
@@ -225,13 +243,8 @@ void InstanceController::doneInit(CkReductionMsg *msg){
   { // kick off post constructor inits
     if(thisIndex==0) init();
     UberCollection thisInstance(thisIndex);
-    if(thisInstance.idxU.y==0)
-    {
-      UrhoRealProxy[thisIndex].init();
-      UrhoGProxy[thisIndex].init();
-      UrhoGHartExtProxy[thisIndex].init();
-      if(sim->ees_eext_on)
-      {UrhoRHartExtProxy[thisIndex].init();}
+    if(thisInstance.idxU.y==0 && done_fft_creation) {
+      initDensity();
     }
   }
   if (done_init == 4){
@@ -241,7 +254,7 @@ void InstanceController::doneInit(CkReductionMsg *msg){
     // kick off file reading in gspace
     CkPrintf("{%d} Initiating import of states\n",thisIndex);
     CkPrintf("{%d} IC uGSpacePlaneProxy[%d] is %d\n",thisIndex,thisIndex, CkGroupID(UgSpacePlaneProxy[thisIndex].ckGetArrayID()).idx);
-    for(int s=0;s<nstates;s++) {
+    for(int s=0;s<simReadOnly.nstates;s++) {
       UgSpacePlaneProxy[thisIndex](s,UplaneUsedByNLZ[thisIndex][s]).readFile();
     } //endfor
 
@@ -272,28 +285,25 @@ void InstanceController::doneInit(CkReductionMsg *msg){
       }
 
       if(config.numInstances>1) 
-	{
-	  /* 
-	     barrier for all instances to be ready.  Not semantically
-	     required, but does make output less weird and avoid some startup
-	     related issues on some platforms.
-	  */
-	  int num=1;
-	  contribute(sizeof(int), &num, CkReduction::sum_int, 
-		     CkCallback(CkIndex_InstanceController::instancesReady(NULL),CkArrayIndex1D(0),thisProxy), 0);
-	  
-	}
+       {
+         /* 
+            barrier for all instances to be ready.  Not semantically
+            required, but does make output less weird and avoid some startup
+            related issues on some platforms.
+         */
+         int num=1;
+         contribute(sizeof(int), &num, CkReduction::sum_int, 
+                    CkCallback(CkIndex_InstanceController::instancesReady(NULL),CkArrayIndex1D(0),thisProxy), 0);
+         
+       }
       else
-	{
-	  UgSpaceDriverProxy[thisIndex].startControl();
+       {
+         UgSpaceDriverProxy[thisIndex].startControl();
 #ifdef CMK_BALANCED_INJECTION_API
-	  CkPrintf("Reseting Balanced Injection to %d\n", origBIValue);
-	  if(thisIndex==0)  platformSpecificProxy.reset_BI();
+         CkPrintf("Reseting Balanced Injection to %d\n", origBIValue);
+         if(thisIndex==0)  platformSpecificProxy.reset_BI();
 #endif
-	}
-      
-
-
+       }
     }//endif
   }
   Timer=newtime;

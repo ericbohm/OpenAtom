@@ -298,7 +298,7 @@ void set_sim_dict_temper(int *num_dict,DICT_WORD *dict[])
   strcpy((*dict)[i].keyarg,"temperature_order.in");
   /*-----------------------------------------------------------------------*/
 
-}/*end routine
+}/*end routine*/
 /*==========================================================================*/
 
 

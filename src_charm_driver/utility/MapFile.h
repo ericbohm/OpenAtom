@@ -3,7 +3,7 @@
  *  Date Created: December 28th, 2006
  *
  *  This class is used for dumping maps to a file during a program run
- *  and also for loading them for use in initial mapping. 
+ *  and also for loading them for use in initial mapping.
  */
 
 #ifndef _MAPFILE_H_
@@ -32,20 +32,27 @@ class MapFile
     // each index.
 
   public:
-    MapFile(const char* name, int numpes); 
-    MapFile(const char* name, int num, int* size, int numpes, const char *order, int x, int y, int z, int t, int stride=1); 
+    MapFile(const char* name, int numpes);
+    MapFile(const char* name, int num, int* size, int numpes, const char *order, int x, int y, int z, int t, int stride=1);
     MapFile();		// default constructor
     ~MapFile();		// destructor
 
-    void setSize(int num, int* size); 
+    void setSize(int num, int* size);
     void setAttributes(int num, int* size, char *order, int x, int y, int z, int t, int stride);
+    void dumpMap(MapType1 *map, char c) { }
     void dumpMap(MapType2 *map, char c);
     void dumpMap(MapType3 *map, char c);
     void dumpMap(MapType4 *map, char c);
+
+    void dumpMapCoords(MapType1 *map, char c) { }
     void dumpMapCoords(MapType2 *map, char c);
     void dumpMapCoords(MapType3 *map, char c);
     void dumpMapCoords(MapType4 *map, char c);
 
+    int loadMap(const char *filename, MapType1 *map) {
+      CkAbort("Loading 1D maps not supported yet.\n");
+      return 0;
+    }
     int loadMap(const char *filename, MapType2 *map);
     int loadMap(const char *filename, MapType3 *map);
     int loadMap(const char *filename, MapType4 *map);

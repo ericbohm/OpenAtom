@@ -21,8 +21,6 @@
 extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
 extern Config                    config;
 extern CkVec <CProxy_eesCache>           UeesCacheProxy;
-extern int nstates;
-extern int sizeX;
 
 //==============================================================================
 

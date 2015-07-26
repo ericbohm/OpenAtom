@@ -1,16 +1,16 @@
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-//                                                                          
-//                         PI_MD:                                           
-//             The future of simulation technology                          
-//             ------------------------------------                         
-//                     Module: control_sim_parms.c                          
-//                                                                          
-//                                                                          
-// This subprogram reads in user simulation params and echoes them          
-// and the default parameters to a file                                     
-//                                                                          
+//
+//                         PI_MD:
+//             The future of simulation technology
+//             ------------------------------------
+//                     Module: control_sim_parms.c
+//
+//
+// This subprogram reads in user simulation params and echoes them
+// and the default parameters to a file
+//
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -28,7 +28,7 @@
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int nkf3, 
+void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int nkf3,
     int maxIter_in,int ibinary_opt,int natm_nl_in, int fftopt_in,
     int numPes_in, int natm_typ_in,int ees_eext_opt_in,
     int gen_wave_in,int ncoef, int cp_min_opt, int nchareRhoRHart,
@@ -45,7 +45,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   DICT_WORD *dict_rho, *dict_state, *dict_pc;
   DICT_WORD *dict_nl, *dict_gen, *dict_map;
   DICT_WORD *dict_nfreq;
-  DICT_WORD word;            
+  DICT_WORD word;
 
   int nline;
   int nkey,nfun_key;
@@ -60,8 +60,8 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   //===================================================================================
   // set the Uber parameters
 
-  UberImax = pi_beads; //pi_beads : fixing > 1 implementation now 
-  UberJmax = nkpoint;  //nkpoint  : fixing > 1 implementation now 
+  UberImax = pi_beads; //pi_beads : fixing > 1 implementation now
+  UberJmax = nkpoint;  //nkpoint  : fixing > 1 implementation now
   UberKmax = ntemper;  //ntemper must be 1 for now
   UberMmax = nspin;    //nspin   spin not yet in here
 
@@ -88,7 +88,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   }//endif
 
   //===================================================================================
-  // Tell everyone you are busy 
+  // Tell everyone you are busy
 
   PRINTF("  =============================================================\n");
   PRINTF("  Reading charm parallel input from file : %s\n",input_name);
@@ -104,10 +104,10 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   //===================================================================================
   // set the Uber parameters
   temperCycle=0; // this needs to be set from piny somehow
-  UberImax = pi_beads; //pi_beads : fixing > 1 implementation now 
-  UberJmax = nkpoint;  //nkpoint  : fixing > 1 implementation now 
-  UberKmax = ntemper;  //ntemper 
-  UberMmax = nspin;    //nspin   
+  UberImax = pi_beads; //pi_beads : fixing > 1 implementation now
+  UberJmax = nkpoint;  //nkpoint  : fixing > 1 implementation now
+  UberKmax = ntemper;  //ntemper
+  UberMmax = nspin;    //nspin
 
   // Warn the folks when dicey things are going down
   if(pi_beads>1){
@@ -156,7 +156,6 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   //===================================================================================
   // Set up the dictionaries
 
-  useCommlib = 1;  //default value
   useTimeKeeper = 0;  //default value
   set_config_dict_fun  (&num_dict_fun  ,&dict_fun);
   set_config_dict_rho  (&num_dict_rho  ,&dict_rho);
@@ -194,16 +193,16 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
         case 7 : put_word_dict(&word,dict_nfreq, num_dict_nfreq, fun_key, nline,
                      nkey, nfun_key, input_name); break;
       }//end switch
-    }// end while 
+    }// end while
   }//end while
 
-  fclose(fp);  
+  fclose(fp);
 
   //===================================================================================
   // Take the information out of the dictionary and put it in the class
 
   set_config_params_gen  (dict_gen,  dict_fun[5].keyword,input_name);
-  int iflag = 1; if(useCommlib!=1){iflag=0;}  // change default commlib option
+  int iflag = 1;
 
   set_config_params_rho  (dict_rho,  dict_fun[1].keyword, input_name, iflag);
   set_config_params_state(dict_state,dict_fun[2].keyword, input_name, iflag);
@@ -217,7 +216,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   //===================================================================================
   // Read some info from the state file and check for consistency with PINY
 
-  int sizex,sizey,sizez,nPacked,minx,maxx;
+  int sizex, sizey, sizez, nPacked, minx, maxx;
 
   // check input directories if gen_wave is off
   if(gen_wave==0){
@@ -225,10 +224,12 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
       for(int ikpt=0;ikpt<nkpoint;ikpt++){
         for(int ibead=0;ibead<pi_beads;ibead++){
           for(int itemper=0;itemper<ntemper;itemper++){
-            sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/ChkDirExistOAtom",dataPath,ispin,ikpt,ibead,itemper);
+            sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/ChkDirExistOAtom",
+                dataPath,ispin,ikpt,ibead,itemper);
             FILE *fpck = fopen(fname,"w");
             if(fpck==NULL){
-              sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/ChkDirExistOAtom",dataPath,ispin,ikpt,ibead,itemper);
+              sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/ChkDirExistOAtom",
+                  dataPath,ispin,ikpt,ibead,itemper);
               PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
               PRINTF("   Input directory, %s , is not present\n",fname);
               PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -243,8 +244,8 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
     PRINTF("  Opening state file : %s\n",fname);
   }//endif
 
-  readStateInfo(nPacked,minx,maxx,sizex,sizey,sizez,fname,ibinary_opt,
-      nkf1,nkf2,nkf3,ncoef);
+  readStateInfo(nPacked, minx, maxx, sizex, sizey, sizez, fname, ibinary_opt,
+      nkf1, nkf2, nkf3, ncoef);
 
   if(gen_wave==0){
     sprintf (fname, "%s/Spin.0_Kpt.0_Bead.0_Temper.0/state1.out", dataPath);
@@ -252,14 +253,16 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   }//endif
 
   //Check for the output directories
-  for(int ispin   = 0; ispin   < nspin   ; ispin++   ){
-    for(int ikpt    = 0; ikpt    < nkpoint ; ikpt++    ){
-      for(int ibead   = 0; ibead   < pi_beads; ibead++   ){
-        for(int itemper = 0; itemper < ntemper ; itemper++ ){
-          sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/ChkDirExistOAtom",dataPathOut,ispin,ikpt,ibead,itemper);
+ for(int ispin = 0; ispin < nspin; ispin++){
+  for(int ikpt = 0; ikpt < nkpoint; ikpt++){
+    for(int ibead = 0; ibead < pi_beads; ibead++){
+      for(int itemper = 0; itemper < ntemper; itemper++){
+          sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/ChkDirExistOAtom",
+              dataPathOut,ispin,ikpt,ibead,itemper);
           FILE *fpck = fopen(fname,"w");
           if(fpck==NULL){
-            sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d",dataPathOut,ispin,ikpt,ibead,itemper);
+            sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d",dataPathOut,
+                ispin,ikpt,ibead,itemper);
             PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
             PRINTF("   Output directory, %s , is not present\n",fname);
             PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -269,18 +272,17 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
         }}}}// end fors : directory check
 
   //===================================================================================
-  // FFT sizes 
+  // FFT sizes
 
-  if(sizex!=nkf1 || sizey!=nkf2 || sizez !=nkf3){
+  if(sizex != nkf1 || sizey != nkf2 || sizez != nkf3){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("   Incorrect FFT size in state files.\n");
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
   }//endif
 
-  numFFTPoints = nkf1 * nkf2 * nkf3;
   nRplane_x    = nkf1;
-  nGplane_x    = maxx-minx+1;
+  nGplane_x    = maxx - minx + 1;
   numData      = nPacked;
 
   //===================================================================================
@@ -302,13 +304,13 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   //===================================================================================
   // Improve user parameters and/or try to optimize unset parameters
 
-  guesstimateParmsConfig(sizez,dict_gen,dict_rho,dict_state,dict_pc,dict_nl,dict_map, 
-      nchareRhoRHart, nplane_x_rho, natm_typ);
+  guesstimateParmsConfig(sizez, dict_gen, dict_rho, dict_state, dict_pc, dict_nl,
+      dict_map, nchareRhoRHart, nplane_x_rho, natm_typ);
 
   //===================================================================================
   // Final consistency checks
 
-  Finale(nkf1,nkf2,nkf3,nplane_x,nplane_x_rho,cp_min_opt);
+  Finale(nkf1, nkf2, nkf3, nplane_x, nplane_x_rho, cp_min_opt);
 
   //===================================================================================
   // Output your parameter choices to the screen
@@ -336,10 +338,10 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   fclose(fp);
   delete [] cfgInputName;
   //===================================================================================
-  // Free memory : 
+  // Free memory :
 
-  cfree(fun_key,"Config::readCconfig");  
-  cfree(fname  ,"Config::readCconfig");  
+  cfree(fun_key,"Config::readCconfig");
+  cfree(fname  ,"Config::readCconfig");
 
   cfree(&dict_fun[1]  ,"Config::readCconfig");
   cfree(&dict_rho[1]  ,"Config::readCconfig");
@@ -362,19 +364,18 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 }//end routine
 //===================================================================================
 
-
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
 void Config::set_config_dict_fun  (int *num_dict  ,DICT_WORD **dict){
   //==================================================================================
-  //  I) Malloc the dictionary                                              
+  //  I) Malloc the dictionary
 
   num_dict[0] = 7;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_fun")-1;
 
   //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
+  //  II) Initialize the user set option(did the user set the key word
 
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
@@ -382,46 +383,46 @@ void Config::set_config_dict_fun  (int *num_dict  ,DICT_WORD **dict){
 
   //=================================================================================
   // III) Set up the dictionary
-  int ind;
+  int ind = 0;
   //------------------------------------------------------------------------------
   //  1)~charm_conf_rho_def[ ]
-  ind = 1;
+  ind++;
   strcpy((*dict)[ind].error_mes," ");
   strcpy((*dict)[ind].keyword,"charm_conf_rho_def");
   strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
   //  2)~charm_conf_state_def[ ]
-  ind = 2;
+  ind++;
   strcpy((*dict)[ind].error_mes," ");
   strcpy((*dict)[ind].keyword,"charm_conf_state_def");
   strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
   //  3)~charm_conf_PC_def[ ]
-  ind = 3;
+  ind++;
   strcpy((*dict)[ind].error_mes," ");
   strcpy((*dict)[ind].keyword,"charm_conf_PC_def");
   strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
   //  4)~charm_conf_NL_def[ ]
-  ind = 4;
+  ind++;
   strcpy((*dict)[ind].error_mes," ");
   strcpy((*dict)[ind].keyword,"charm_conf_NL_def");
   strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
   //  5)~charm_conf_gen_def[ ]
-  ind = 5;
+  ind++;
   strcpy((*dict)[ind].error_mes," ");
   strcpy((*dict)[ind].keyword,"charm_conf_gen_def");
   strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
   //  6)~charm_conf_map_def[ ]
-  ind = 6;
+  ind++;
   strcpy((*dict)[ind].error_mes," ");
   strcpy((*dict)[ind].keyword,"charm_conf_map_def");
   strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
   //  6)~charm_conf_nfreq_def[ ]
-  ind = 7;
+  ind++;
   strcpy((*dict)[ind].error_mes," ");
   strcpy((*dict)[ind].keyword,"charm_conf_nfreq_def");
   strcpy((*dict)[ind].keyarg," ");
@@ -435,13 +436,13 @@ void Config::set_config_dict_fun  (int *num_dict  ,DICT_WORD **dict){
 //===================================================================================
 void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
-  //  I) Malloc the dictionary                                              
+  //  I) Malloc the dictionary
 
-  num_dict[0] = 26;
+  num_dict[0] = 36;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_rho")-1;
 
   //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
+  //  II) Initialize the user set option(did the user set the key word
 
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
@@ -449,178 +450,224 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
 
   //=================================================================================
   // III) Set up the dictionary
-  int ind;
+  int ind = 0;
   //-----------------------------------------------------------------------------
   //  1)\rhorHartpriority{}
-  ind =   1;
+  ind++;
   strcpy((*dict)[ind].keyword,"rhorHartpriority");
-  strcpy((*dict)[ind].keyarg,"2000000"); 
+  strcpy((*dict)[ind].keyarg,"2000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   //  2)\rhogHartpriority{}
-  ind =   2;
+  ind++;
   strcpy((*dict)[ind].keyword,"rhogHartpriority");
-  strcpy((*dict)[ind].keyarg,"2000000");    
+  strcpy((*dict)[ind].keyarg,"2000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   //  3)\useGHartInsRhoRP{}
-  ind =   3;
+  ind++;
   strcpy((*dict)[ind].keyword,"useGHartInsRhoRP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   //  4)\useGHartInsRHart{}
-  ind =   4;
+  ind++;
   strcpy((*dict)[ind].keyword,"useGHartInsRHart");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   //  5)\useRHartInsGHart{}
-  ind =   5;
+  ind++;
   strcpy((*dict)[ind].keyword,"useRHartInsGHart");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   //  6)\rhorpriority{}
-  ind =   6;
+  ind++;
   strcpy((*dict)[ind].keyword,"rhorpriority");
-  strcpy((*dict)[ind].keyarg,"2000000");    
+  strcpy((*dict)[ind].keyarg,"2000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   //  7)\rhogpriority{}
-  ind =   7;
+  ind++;
   strcpy((*dict)[ind].keyword,"rhogpriority");
-  strcpy((*dict)[ind].keyarg,"2000000");    
+  strcpy((*dict)[ind].keyarg,"2000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   //  8)\gExpandFactRho{}
-  ind =   8;
+  ind++;
   strcpy((*dict)[ind].keyword,"gExpandFactRho");
-  strcpy((*dict)[ind].keyarg,"1.25");    
+  strcpy((*dict)[ind].keyarg,"1.25");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 9)\lbdensity{}
-  ind =  9;
+  ind++;
   strcpy((*dict)[ind].keyword,"lbdensity");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 10)\rhoGHelpers{}
-  ind =  10;
+  ind++;
   strcpy((*dict)[ind].keyword,"rhoGHelpers");
-  strcpy((*dict)[ind].keyarg,"1");    
+  strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 11)\rhoRsubplanes{}
-  ind =  11;
+  ind++;
   strcpy((*dict)[ind].keyword,"rhoRsubplanes");
-  strcpy((*dict)[ind].keyarg,"1");    
+  strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 12)\useGIns0RhoRP{}
-  ind =  12;
+  ind++;
   strcpy((*dict)[ind].keyword,"useGIns0RhoRP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 13)\useGIns1RhoRP{}
-  ind =  13;
+  ind++;
   strcpy((*dict)[ind].keyword,"useGIns1RhoRP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 14)\useGIns2RhoRP{}
-  ind =  14;
+  ind++;
   strcpy((*dict)[ind].keyword,"useGIns2RhoRP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 15)\useGIns3RhoRP{}
-  ind =  15;
+  ind++;
   strcpy((*dict)[ind].keyword,"useGIns3RhoRP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 16)\useGByrdInsRhoRBP{}
-  ind =  16;
+  ind++;
   strcpy((*dict)[ind].keyword,"useGByrdInsRhoRBP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 17)\useRInsRhoGP{}
-  ind =  17;
+  ind++;
   strcpy((*dict)[ind].keyword,"useRInsRhoGP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 18)\useRInsIGXRhoGP{}
-  ind =  18;
+  ind++;
   strcpy((*dict)[ind].keyword,"useRInsIGXRhoGP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 19)\useRInsIGYRhoGP{}
-  ind =  19;
+  ind++;
   strcpy((*dict)[ind].keyword,"useRInsIGYRhoGP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 20)\useRInsIGZRhoGP{}
-  ind =  20;
+  ind++;
   strcpy((*dict)[ind].keyword,"useRInsIGZRhoGP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 21)\prioEextFFTMsg{}
-  ind =  21;
+  ind++;
   strcpy((*dict)[ind].keyword,"prioEextFFTMsg");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 22)\rhoLineOrder{}
-  ind =  22;
+  ind++;
   strcpy((*dict)[ind].keyword,"rhoLineOrder");
-  strcpy((*dict)[ind].keyarg,"skip");    
+  strcpy((*dict)[ind].keyarg,"skip");
   strcpy((*dict)[ind].error_mes,"skip,none,random");
   //----------------------------------------------------------------------------------
   // 23)\nchareHartAtmT{}
-  ind =  23;
+  ind++;
   strcpy((*dict)[ind].keyword,"nchareHartAtmT");
-  strcpy((*dict)[ind].keyarg,"1");    
+  strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes," number >=1 and <= natmtype");
   //-----------------------------------------------------------------------------
   // 24)\rhoSubPlaneBalance{}
-  ind =  24;
+  ind++;
   strcpy((*dict)[ind].keyword,"rhoSubPlaneBalance");
   strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 25)\rhoGToRhoRMsgCombine{}
-  ind =  25;
+  ind++;
   strcpy((*dict)[ind].keyword,"rhoGToRhoRMsgCombine");
   strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //----------------------------------------------------------------------------------
-
-  // 23)\nchareVdW{}
-  ind =  26;
+  // 26)\nchareVdW{}
+  ind++;
   strcpy((*dict)[ind].keyword,"nchareVdW");
-  strcpy((*dict)[ind].keyarg,"0");    
+  strcpy((*dict)[ind].keyarg,"0");
   strcpy((*dict)[ind].error_mes," number >=0 and <=  N_v^2");
   //-----------------------------------------------------------------------------
-
+  // 27)\nchareRhoR_x{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"nchareRhoR_x");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes," number > 0 and < ngridc");
+  //-----------------------------------------------------------------------------
+  // 28)\nchareRhoR_y{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"nchareRhoR_y");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes," number > 0 and < ngridb");
+  //-----------------------------------------------------------------------------
+  // 29)\nchareRhoRHart_x{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"nchareRhoRHart_x");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes," number > 0 and < ngrid_c");
+  //-----------------------------------------------------------------------------
+  // 30)\nchareRhoRHart_y{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"nchareRhoRHart_y");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes," number > 0 and < ngrid_b");
+  //-----------------------------------------------------------------------------
+  // 31)\nchareRhoInter_x{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"nchareRhoInter_x");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes," number > 0 and < ngridc");
+  //-----------------------------------------------------------------------------
+  // 32)\nchareRhoInter_z{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"nchareRhoInter_z");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes," number > 0 and < ngrida");
+  //-----------------------------------------------------------------------------
+  // 33)\nchareHartInter_x{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"nchareHartInter_x");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes," number > 0 and < ngridc");
+  //-----------------------------------------------------------------------------
+  // 34)\nchareHartInter_z{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"nchareHartInter_z");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes," number > 0 and < ngrida");
+  //-----------------------------------------------------------------------------
+  // 35)\nchareAtmSFInter_x{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"nchareAtmSFInter_x");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes," number > 0 and < ngrid_eext_c");
+  //-----------------------------------------------------------------------------
+  // 36)\nchareAtmSFInter_z{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"nchareAtmSFInter_z");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes," number > 0 and < ngrid_eext_a");
+  //-----------------------------------------------------------------------------
 }//end routine
 //===================================================================================
 
@@ -631,7 +678,7 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_name,int iflag){
   //===================================================================================
 
-  int ind;
+  int ind = 0;
   int ierr;
 
   //===================================================================================
@@ -639,45 +686,45 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
 
   //-----------------------------------------------------------------------------
   //  1)\rhorHartpriority{}
-  ind =   1;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&rhorHartpriority);
   if(rhorHartpriority<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  2)\rhogHartpriority{}
-  ind =   2;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&rhogHartpriority);
   if(rhogHartpriority<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  3)\useGHartInsRhoRP{}
-  ind =   3;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useGHartInsRhoRP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useGHartInsRhoRP=0;}
   //-----------------------------------------------------------------------------
   //  4)\useGHartInsRHart{}
-  ind =   4;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useGHartInsRHart,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useGHartInsRHart=0;}
   //-----------------------------------------------------------------------------
   //  5)\useRHartInsGHart{}
-  ind =   5;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useRHartInsGHart,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useRHartInsGHart=0;}
   //-----------------------------------------------------------------------------
   //  6)\rhorpriority{}
-  ind =   6;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&rhorpriority);
   if(rhorpriority<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  7)\rhogpriority{}
-  ind =   7;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&rhogpriority);
   if(rhogpriority<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  8)\gExpandFactRho{}
-  ind =   8;
+  ind++;
   sscanf(dict[ind].keyarg,"%lg",&gExpandFactRho);
   if(gExpandFactRho<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
@@ -687,76 +734,78 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 10)\rhoGHelpers{}
-  ind =  10;
+  int rhoGHelpers = 1;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&rhoGHelpers);
   if(rhoGHelpers<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 11)\rhoRsubplanes{}
-  ind =  11;
+  int rhoRsubplanes = 1;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&rhoRsubplanes);
   if(rhoRsubplanes<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 12)\useGIns0RhoRP{}
-  ind =  12;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useGIns0RhoRP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useGIns0RhoRP=0;}
   //-----------------------------------------------------------------------------
   // 13)\useGIns1RhoRP{}
-  ind =  13;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useGIns1RhoRP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useGIns1RhoRP=0;}
   //-----------------------------------------------------------------------------
   // 14)\useGIns2RhoRP{}
-  ind =  14;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useGIns2RhoRP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useGIns2RhoRP=0;}
   //-----------------------------------------------------------------------------
   // 15)\useGIns3RhoRP{}
-  ind =  15;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useGIns3RhoRP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useGIns3RhoRP=0;}
   //-----------------------------------------------------------------------------
   // 16)\useGByrdInsRhoRBP{}
-  ind =  16;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useGByrdInsRhoRBP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useGByrdInsRhoRBP=0;}
   //-----------------------------------------------------------------------------
   // 17)\useRInsRhoGP{}
-  ind =  17;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useRInsRhoGP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useRInsRhoGP=0;}
   //-----------------------------------------------------------------------------
   // 18)\useRInsIGXRhoGP{}
-  ind =  18;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useRInsIGXRhoGP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useRInsIGXRhoGP=0;}
   //-----------------------------------------------------------------------------
   // 19)\useRInsIGYRhoGP{}
-  ind =  19;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useRInsIGYRhoGP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useRInsIGYRhoGP=0;}
   //-----------------------------------------------------------------------------
   // 20)\useRInsIGZRhoGP{}
-  ind =  20;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useRInsIGZRhoGP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useRInsIGZRhoGP=0;}
   //-----------------------------------------------------------------------------
   // 21)\prioEextFFTMsg{}
-  ind =  21;
+  ind++;
   parse_on_off(dict[ind].keyarg,&prioEextFFTMsg,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 22)\rhoLineOrder{}
-  ind =  22;
+  ind++;
   ierr= 0;
   if(strcasecmp(dict[ind].keyarg,"none")==0)  {rhoLineOrder =-1; ierr++;}
   if(strcasecmp(dict[ind].keyarg,"skip")==0)  {rhoLineOrder = 0; ierr++;}
@@ -764,27 +813,79 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
   if(ierr!=1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 23)\nchareHartAtmT{}
-  ind =   23;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&nchareHartAtmT);
   if(nchareHartAtmT<1 || nchareHartAtmT>natm_typ){
     keyarg_barf(dict,input_name,fun_key,ind);
   }//endif
   //-----------------------------------------------------------------------------
   // 24)\rhoSubPlaneBalance{}
-  ind =  24;
+  int rhoSubPlaneBalance = 0;
+  ind++;
   parse_on_off(dict[ind].keyarg,&rhoSubPlaneBalance,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 25)\rhoGToRhoRMsgCombine{}
-  ind =  25;
+  int rhoGToRhoRMsgComb = 0;
+  ind++;
   parse_on_off(dict[ind].keyarg,&rhoGToRhoRMsgComb,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 26)\nchareVdW{}
-  ind =   26;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&nchareVdW);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){nchareVdW=0;}
+  //-----------------------------------------------------------------------------
+  // \nchareRhoR_x{}
+  ind++;
+  sscanf(dict[ind].keyarg,"%d",&nchareRhoR_x);
+  if(nchareRhoR_x<=0){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // \nchareRhoR_y{}
+  ind++;
+  sscanf(dict[ind].keyarg,"%d",&nchareRhoR_y);
+  if(nchareRhoR_y<=0){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // \nchareRhoRHart_x{}
+  ind++;
+  sscanf(dict[ind].keyarg,"%d",&nchareRhoRHart_x);
+  if(nchareRhoRHart_x<=0){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // \nchareRhoRHart_y{}
+  ind++;
+  sscanf(dict[ind].keyarg,"%d",&nchareRhoRHart_y);
+  if(nchareRhoRHart_y<=0){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // \nchareRhoInter_x{}
+  ind++;
+  sscanf(dict[ind].keyarg,"%d",&nchareRhoInter_x);
+  if(nchareRhoInter_x<=0){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // \nchareRhoInter_z{}
+  ind++;
+  sscanf(dict[ind].keyarg,"%d",&nchareRhoInter_z);
+  if(nchareRhoInter_z<=0){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // \nchareHartInter_x{}
+  ind++;
+  sscanf(dict[ind].keyarg,"%d",&nchareHartInter_x);
+  if(nchareHartInter_x<=0){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // \nchareHartInter_z{}
+  ind++;
+  sscanf(dict[ind].keyarg,"%d",&nchareHartInter_z);
+  if(nchareHartInter_z<=0){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // \nchareAtmSFInter_x{}
+  ind++;
+  sscanf(dict[ind].keyarg,"%d",&nchareAtmSFInter_x);
+  if(nchareAtmSFInter_x<=0){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // \nchareAtmSFInter_z{}
+  ind++;
+  sscanf(dict[ind].keyarg,"%d",&nchareAtmSFInter_z);
+  if(nchareAtmSFInter_z<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
 
 }//end routine
@@ -797,13 +898,13 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
 //===================================================================================
 void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
   //==================================================================================
-  //  I) Malloc the dictionary                                              
+  //  I) Malloc the dictionary
 
   num_dict[0] = 19;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_state")-1;
 
   //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
+  //  II) Initialize the user set option(did the user set the key word
 
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
@@ -811,122 +912,120 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
 
   //=================================================================================
   // III) Set up the dictionary
-  int ind;
+  int ind = 0;
   //-----------------------------------------------------------------------------
   //  1)\dataPath\{}
-  ind=1;
+  ind++;
   strcpy((*dict)[ind].keyword,"dataPath");
-  strcpy((*dict)[ind].keyarg,"./STATES");    
+  strcpy((*dict)[ind].keyarg,"./STATES");
   strcpy((*dict)[ind].error_mes,"a directory tree");
   //-----------------------------------------------------------------------------
   //  2)\gBucketSize{}
-  ind=2;
+  ind++;
   strcpy((*dict)[ind].keyword,"gBucketSize");
-  strcpy((*dict)[ind].keyarg,"5");    
+  strcpy((*dict)[ind].keyarg,"5");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   //  3)\rBucketSize{}
-  ind=3;
+  ind++;
   strcpy((*dict)[ind].keyword,"rBucketSize");
-  strcpy((*dict)[ind].keyarg,"5");    
+  strcpy((*dict)[ind].keyarg,"5");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   //  4)\gStreamPeriod{}
-  ind=4;
+  ind++;
   strcpy((*dict)[ind].keyword,"gStreamPeriod");
-  strcpy((*dict)[ind].keyarg,"2");    
+  strcpy((*dict)[ind].keyarg,"2");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   //  5)\rStreamPeriod{}
-  ind=5;
+  ind++;
   strcpy((*dict)[ind].keyword,"rStreamPeriod");
-  strcpy((*dict)[ind].keyarg,"2");    
+  strcpy((*dict)[ind].keyarg,"2");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   //  6)\gExpandFact{}
-  ind=6;
+  ind++;
   strcpy((*dict)[ind].keyword,"gExpandFact");
-  strcpy((*dict)[ind].keyarg,"1.25");    
+  strcpy((*dict)[ind].keyarg,"1.25");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   //  7)\stateOutput{}
-  ind=7;
+  ind++;
   strcpy((*dict)[ind].keyword,"stateOutput");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"off/on");
   //-----------------------------------------------------------------------------
   //  8)\psipriority{}
-  ind=8;
+  ind++;
   strcpy((*dict)[ind].keyword,"psipriority");
-  strcpy((*dict)[ind].keyarg,"400000000");    
+  strcpy((*dict)[ind].keyarg,"400000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   //  9)\prioFFTMsg{}
-  ind=9;
+  ind++;
   strcpy((*dict)[ind].keyword,"prioFFTMsg");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 10)\rsfftpriority{}
-  ind=10;
+  ind++;
   strcpy((*dict)[ind].keyword,"rsfftpriority");
-  strcpy((*dict)[ind].keyarg,"2000000");    
+  strcpy((*dict)[ind].keyarg,"2000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 11)\gsfftpriority{}
-  ind=11;
+  ind++;
   strcpy((*dict)[ind].keyword,"gsfftpriority");
-  strcpy((*dict)[ind].keyarg,"1000000");    
+  strcpy((*dict)[ind].keyarg,"1000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 12)\rsifftpriority{}
-  ind=12;
+  ind++;
   strcpy((*dict)[ind].keyword,"rsifftpriority");
-  strcpy((*dict)[ind].keyarg,"100000000");    
+  strcpy((*dict)[ind].keyarg,"100000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 13)\gsifftpriority{}
-  ind=13;
+  ind++;
   strcpy((*dict)[ind].keyword,"gsifftpriority");
-  strcpy((*dict)[ind].keyarg,"200000000");    
+  strcpy((*dict)[ind].keyarg,"200000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 14)\conserveMemory{}
-  ind=14;
+  ind++;
   strcpy((*dict)[ind].keyword,"conserveMemory");
-  strcpy((*dict)[ind].keyarg,"0");    
+  strcpy((*dict)[ind].keyarg,"0");
   strcpy((*dict)[ind].error_mes,"-1 to optimize for speed 0 for normal or 1 to minimize footprint");
   //-----------------------------------------------------------------------------
   // 15)\lbgspace{}
-  ind=15;
+  ind++;
   strcpy((*dict)[ind].keyword,"lbgspace");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 16)\doublePack{}
-  ind=16;
+  ind++;
   strcpy((*dict)[ind].keyword,"doublePack");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"Deprecated keyword");
   //-----------------------------------------------------------------------------
   // 17)\useGssInsRealP{}
-  ind=17;
+  ind++;
   strcpy((*dict)[ind].keyword,"useGssInsRealP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 18)\useMssInsGP{}
-  ind=18;
+  ind++;
   strcpy((*dict)[ind].keyword,"useMssInsGP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 19)\dataPathOut\{}
-  ind=19;
+  ind++;
   strcpy((*dict)[ind].keyword,"dataPathOut");
-  strcpy((*dict)[ind].keyarg,"./STATES_OUT");    
+  strcpy((*dict)[ind].keyarg,"./STATES_OUT");
   strcpy((*dict)[ind].error_mes,"a directory tree");
 
   //----------------------------------------------------------------------------------
@@ -940,7 +1039,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
 void Config::set_config_params_state(DICT_WORD *dict, char *fun_key, char *input_name,int iflag){
   //===================================================================================
 
-  int ind;
+  int ind = 0;
   int ierr;
 
   //===================================================================================
@@ -948,102 +1047,102 @@ void Config::set_config_params_state(DICT_WORD *dict, char *fun_key, char *input
 
   //-----------------------------------------------------------------------------
   //  1)\dataPath\{}
-  ind=1;
+  ind++;
   strcpy(dataPath, dict[ind].keyarg);
   //-----------------------------------------------------------------------------
   //  2)\gBucketSize{}
-  ind=2;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&gBucketSize);
   if(gBucketSize<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  3)\rBucketSize{}
-  ind=3;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&rBucketSize);
   if(rBucketSize<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  4)\gStreamPeriod{}
-  ind=4;
+  ind++;
   sscanf(dict[ind].keyarg,"%lg",&gStreamPeriod);
   if(gStreamPeriod<=0.0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  5)\rStreamPeriod{}
-  ind=5;
+  ind++;
   sscanf(dict[ind].keyarg,"%lg",&rStreamPeriod);
   if(rStreamPeriod<=0.0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  6)\gExpandFact{}
-  ind=6;
+  ind++;
   sscanf(dict[ind].keyarg,"%lg",&gExpandFact);
   if(gExpandFact<=0.0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  7)\stateOutput{}
-  ind=7;
+  ind++;
   parse_on_off(dict[ind].keyarg,&stateOutput,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(stateOutput==0){
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
     PRINTF("    You are in a state of danger! Your stateOutput is off! \n");
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
-  }//
+  }
 //-----------------------------------------------------------------------------
 //  8)\psipriority{}
-ind=8;
+ind++;
 sscanf(dict[ind].keyarg,"%d",&psipriority);
 if(psipriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
 //-----------------------------------------------------------------------------
 //  9)\prioFFTMsg{}
-ind=9;
+ind++;
 parse_on_off(dict[ind].keyarg,&prioFFTMsg,&ierr);
 if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 //-----------------------------------------------------------------------------
 // 10)\rsfftpriority{}
-ind=10;
+ind++;
 sscanf(dict[ind].keyarg,"%d",&rsfftpriority);
 if(rsfftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
 //-----------------------------------------------------------------------------
 // 11)\gsfftpriority{}
-ind=11;
+ind++;
 sscanf(dict[ind].keyarg,"%d",&gsfftpriority);
 if(gsfftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
 //-----------------------------------------------------------------------------
 // 12)\rsifftpriority{}
-ind=12;
+ind++;
 sscanf(dict[ind].keyarg,"%d",&rsifftpriority);
 if(rsifftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
 //-----------------------------------------------------------------------------
 // 13)\gsifftpriority{}
-ind=13;
+ind++;
 sscanf(dict[ind].keyarg,"%d",&gsifftpriority);
 if(gsifftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
 //-----------------------------------------------------------------------------
 // 14)\conserveMemory{}
-ind=14;
+ind++;
 sscanf(dict[ind].keyarg,"%d",&conserveMemory);
 if(conserveMemory<-1){keyarg_barf(dict,input_name,fun_key,ind);}
 //-----------------------------------------------------------------------------
 // 15)\lbgspace{}
-ind=15;
+ind++;
 parse_on_off(dict[ind].keyarg,&lbgspace,&ierr);
 if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 //-----------------------------------------------------------------------------
 // 16)\doublePack{}
-ind=16;
+ind++;
 if(dict[ind].iuset==1){keyarg_barf(dict,input_name,fun_key,ind);}
 //-----------------------------------------------------------------------------
 // 17)\useGssInsRealP{}
-ind=17;
+ind++;
 parse_on_off(dict[ind].keyarg,&useGssInsRealP,&ierr);
 if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 if(iflag==0 && dict[ind].iuset==0){useGssInsRealP=0;}
 //-----------------------------------------------------------------------------
 // 18)\useMssInsGP{}
-ind=18;
+ind++;
 parse_on_off(dict[ind].keyarg,&useMssInsGP,&ierr);
 if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 if(iflag==0 && dict[ind].iuset==0){useMssInsGP=0;}
 //-----------------------------------------------------------------------------
 // 19)\dataPathOut\{}
-ind=19;
+ind++;
 strcpy(dataPathOut, dict[ind].keyarg);
 if(strcasecmp(dataPathOut,dataPath)==0){
   PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -1062,13 +1161,13 @@ if(strcasecmp(dataPathOut,dataPath)==0){
 //===================================================================================
 void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
-  //  I) Malloc the dictionary                                              
+  //  I) Malloc the dictionary
 
   num_dict[0] = 32;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_pc")-1;
 
   //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
+  //  II) Initialize the user set option(did the user set the key word
 
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
@@ -1076,196 +1175,196 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
 
   //=================================================================================
   // III) Set up the dictionary
-  int ind;
+  int ind = 0;
   //-----------------------------------------------------------------------------
   // 1)\usePairDirectSend{}
-  ind=1;
+  ind++;
   strcpy((*dict)[ind].keyword,"usePairDirectSend");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 2)\PCCollectTiles{}
-  ind=2;
+  ind++;
   strcpy((*dict)[ind].keyword,"PCCollectTiles");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 3)\PCdelayBWSend{}
-  ind=3;
+  ind++;
   strcpy((*dict)[ind].keyword,"PCdelayBWSend");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 4)\PCstreamBWout{}
-  ind=4;
+  ind++;
   strcpy((*dict)[ind].keyword,"PCstreamBWout");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 5)\PCstreamFWblock{}
-  ind=5;
+  ind++;
   strcpy((*dict)[ind].keyword,"PCstreamFWblock");
   sprintf((*dict)[ind].keyarg,"%d",0);
   strcpy((*dict)[ind].error_mes,"a number >= 0");
   //-----------------------------------------------------------------------------
   // 6)\useOrthoDirect{}
-  ind=6;
+  ind++;
   strcpy((*dict)[ind].keyword,"useOrthoDirect");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 7)\useOrthoHelpers{}
-  ind=7;
+  ind++;
   strcpy((*dict)[ind].keyword,"useOrthoHelpers");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 8)\useOrthoSection{}
-  ind=8;
+  ind++;
   strcpy((*dict)[ind].keyword,"useOrthoSection");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 9)\useOrthoSectionRed{}
-  ind=9;
+  ind++;
   strcpy((*dict)[ind].keyword,"useOrthoSectionRed");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 10)\lambdaGrainSize{}
-  ind=10;
+  ind++;
   strcpy((*dict)[ind].keyword,"lambdaGrainSize");
   sprintf((*dict)[ind].keyarg,"%d",nstates);
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 11)\PCSpanFactor{}
-  ind=11;
+  ind++;
   strcpy((*dict)[ind].keyword,"PCSpanFactor");
-  strcpy((*dict)[ind].keyarg,"2");    
+  strcpy((*dict)[ind].keyarg,"2");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 12)\OrthoRedSpanFactor{}
-  ind=12;
+  ind++;
   strcpy((*dict)[ind].keyword,"OrthoRedSpanFactor");
-  strcpy((*dict)[ind].keyarg,"2");    
+  strcpy((*dict)[ind].keyarg,"2");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 13)\OrthoMcastSpanFactor{}
-  ind=13;
+  ind++;
   strcpy((*dict)[ind].keyword,"OrthoMcastSpanFactor");
-  strcpy((*dict)[ind].keyarg,"16");    
+  strcpy((*dict)[ind].keyarg,"16");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 14)\sGrainSize{}
-  ind=14;
+  ind++;
   strcpy((*dict)[ind].keyword,"sGrainSize");
   sprintf((*dict)[ind].keyarg,"%d",nstates);
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 15)\gemmSplitFWk{}
-  ind=15;
+  ind++;
   strcpy((*dict)[ind].keyword,"gemmSplitFWk");
-  strcpy((*dict)[ind].keyarg,"16");    
+  strcpy((*dict)[ind].keyarg,"16");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 16)\gemmSplitFWm{}
-  ind=16;
+  ind++;
   strcpy((*dict)[ind].keyword,"gemmSplitFWm");
-  strcpy((*dict)[ind].keyarg,"16");    
+  strcpy((*dict)[ind].keyarg,"16");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 17)\gemmSplitBW{}
-  ind=17;
+  ind++;
   strcpy((*dict)[ind].keyword,"gemmSplitBW");
-  strcpy((*dict)[ind].keyarg,"16");    
+  strcpy((*dict)[ind].keyarg,"16");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 18)\gemmSplitOrtho{}
-  ind=18;
+  ind++;
   strcpy((*dict)[ind].keyword,"gemmSplitOrtho");
-  strcpy((*dict)[ind].keyarg,"32");    
+  strcpy((*dict)[ind].keyarg,"32");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 19)\orthoGrainSize{}
-  ind=19;
+  ind++;
   strcpy((*dict)[ind].keyword,"orthoGrainSize");
   sprintf((*dict)[ind].keyarg,"%d",nstates);
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 20)\useBWBarrier{}
-  ind=20;
+  ind++;
   strcpy((*dict)[ind].keyword,"useBWBarrier");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 21)\phantomSym{}
-  ind=21;
+  ind++;
   strcpy((*dict)[ind].keyword,"phantomSym");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 22)\lbpaircalc{}
-  ind=22;
+  ind++;
   strcpy((*dict)[ind].keyword,"lbpaircalc");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 23)\lambdapriority{}
-  ind=23;
+  ind++;
   strcpy((*dict)[ind].keyword,"lambdapriority");
-  strcpy((*dict)[ind].keyarg,"300000000");    
+  strcpy((*dict)[ind].keyarg,"300000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 24)\toleranceInterval{}
-  ind=24;
+  ind++;
   strcpy((*dict)[ind].keyword,"toleranceInterval");
-  strcpy((*dict)[ind].keyarg,"1");    
+  strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 25)\gSpaceSum{}
-  ind=25;
+  ind++;
   strcpy((*dict)[ind].keyword,"gSpaceSum");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 26)\numChunks{}
-  ind=26;
+  ind++;
   strcpy((*dict)[ind].keyword,"numChunks");
-  strcpy((*dict)[ind].keyarg,"1");    
+  strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 27)\numChunksSym{}
-  ind=27;
+  ind++;
   strcpy((*dict)[ind].keyword,"numChunksSym");
-  strcpy((*dict)[ind].keyarg,"1");    
+  strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 28)\numChunksAsym{}
-  ind=28;
+  ind++;
   strcpy((*dict)[ind].keyword,"numChunksAsym");
-  strcpy((*dict)[ind].keyarg,"1");    
+  strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 29)\prioBW{}
-  ind=29;
+  ind++;
   strcpy((*dict)[ind].keyword,"prioBW");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 30)\usePairEtoM{}
-  ind=30;
+  ind++;
   strcpy((*dict)[ind].keyword,"usePairEtoM");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 31)\invsqr_tolerance{}
-  ind=31;
+  ind++;
   strcpy((*dict)[ind].keyword,"invsqr_tolerance");
   sprintf((*dict)[ind].keyarg,"%0.16g",1e-15);
   strcpy((*dict)[ind].error_mes,"a number > 0.0");
   //-----------------------------------------------------------------------------
   // 32)\invsqr_max_iter{}
-  ind=32;
+  ind++;
   strcpy((*dict)[ind].keyword,"invsqr_max_iter");
   sprintf((*dict)[ind].keyarg,"%d",1000);
   strcpy((*dict)[ind].error_mes,"a number >= 0");
@@ -1283,171 +1382,171 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_params_pc  (DICT_WORD *dict, char *fun_key, char *input_name){
   //===================================================================================
 
-  int ind,ierr;
+  int ind = 0,ierr;
 
   //===================================================================================
   // Fill me with joy.
 
   //-----------------------------------------------------------------------------
   // 1)\usePairDirectSend{}
-  ind=1;
+  ind++;
   parse_on_off(dict[ind].keyarg,&usePairDirectSend,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 2)\PCCollectTiles{}
-  ind=2;
+  ind++;
   parse_on_off(dict[ind].keyarg,&PCCollectTiles,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 3)\PCdelayBWSend{}
-  ind=3;
+  ind++;
   parse_on_off(dict[ind].keyarg,&PCdelayBWSend,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 4)\PCstreamBWout{}
-  ind=4;
+  ind++;
   parse_on_off(dict[ind].keyarg,&PCstreamBWout,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 5)\PCstreamFWblock{}
-  ind=5;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&PCstreamFWblock);
   if(PCstreamFWblock<0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 6)\useOrthoDirect{}
-  ind=6;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useOrthoDirect,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 7)\useOrthoHelpers{}
-  ind=7;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useOrthoHelpers,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 8)\useOrthoSection{}
-  ind=8;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useOrthoSection,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 9)\useOrthoSectionRed{}
-  ind=9;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useOrthoSectionRed,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 10)\lambdaGrainSize{}
-  ind=10;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&lambdaGrainSize);
   if(lambdaGrainSize<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 11)\PCSpanFactor{}
-  ind=11;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&PCSpanFactor);
   if(PCSpanFactor<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 12)\OrthoRedSpanFactor{}
-  ind=12;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&OrthoRedSpanFactor);
   if(OrthoRedSpanFactor<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 13)\OrthoMcastSpanFactor{}
-  ind=13;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&OrthoMcastSpanFactor);
   if(OrthoMcastSpanFactor<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 14)\sGrainSize{}
-  ind=14;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&sGrainSize);
   if(sGrainSize<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 15)\gemmSplitFWk{}
-  ind=15;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&gemmSplitFWk);
   if(gemmSplitFWk<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 16)\gemmSplitFWm{}
-  ind=16;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&gemmSplitFWm);
   if(gemmSplitFWm<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 17)\gemmSplitBW{}
-  ind=17;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&gemmSplitBW);
   if(gemmSplitBW<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 18)\gemmSplitOrtho{}
-  ind=18;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&gemmSplitOrtho);
   if(gemmSplitOrtho<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 19)\orthoGrainSize{}
-  ind=19;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&orthoGrainSize);
   if(orthoGrainSize<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 20)\useBWBarrier{}
-  ind=20;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useBWBarrier,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 21)\phantomSym{}
-  ind=21;
+  ind++;
   parse_on_off(dict[ind].keyarg,&phantomSym,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 22)\lbpaircalc{}
-  ind=22;
+  ind++;
   parse_on_off(dict[ind].keyarg,&lbpaircalc,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 23)\lambdapriority{}
-  ind=23;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&lambdapriority);
   if(lambdapriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 24)\toleranceInterval{}
-  ind=24;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&toleranceInterval);
   if(toleranceInterval<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 25)\gSpaceSum{}
-  ind=25;
+  ind++;
   parse_on_off(dict[ind].keyarg,&gSpaceSum,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 26)\numChunks{}
-  ind=26;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&numChunks);
   if(numChunks<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 27)\numChunksSym{}
-  ind=27;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&numChunksSym);
   if(numChunksSym<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 28)\numChunksAsym{}
-  ind=28;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&numChunksAsym);
   if(numChunksAsym<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 29)\prioBW{}
-  ind=29;
+  ind++;
   parse_on_off(dict[ind].keyarg,&prioBW,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 30)\usePairEtoM{}
-  ind=30;
+  ind++;
   parse_on_off(dict[ind].keyarg,&usePairEtoM,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 31)\invsqr_tolerance{}
-  ind=31;
+  ind++;
   sscanf(dict[ind].keyarg,"%lg",&invsqr_tolerance);
   if(invsqr_tolerance<=1e-100){
     //      CkPrintf("what the hell is wrong with %.15g \n",invsqr_tolerance);
     keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 32)\invsqr_max_iter{}
-  ind=32;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&invsqr_max_iter);
   if(invsqr_max_iter<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
@@ -1497,13 +1596,13 @@ void Config::set_config_params_pc  (DICT_WORD *dict, char *fun_key, char *input_
 //===================================================================================
 void Config::set_config_dict_nl (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
-  //  I) Malloc the dictionary                                              
+  //  I) Malloc the dictionary
 
   num_dict[0] = 9;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_nl")-1;
 
   //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
+  //  II) Initialize the user set option(did the user set the key word
 
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
@@ -1511,64 +1610,62 @@ void Config::set_config_dict_nl (int *num_dict ,DICT_WORD **dict){
 
   //=================================================================================
   // III) Set up the dictionary
-  int ind;
+  int ind = 0;
   //-----------------------------------------------------------------------------
   // 1)\sfpriority{}
-  ind=1;
+  ind++;
   strcpy((*dict)[ind].keyword,"sfpriority");
   strcpy((*dict)[ind].keyarg,"10000000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 2)\prioNLFFTMsg{}
-  ind=2;
+  ind++;
   strcpy((*dict)[ind].keyword,"prioNLFFTMsg");
   strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 3)\rsNLfftpriority{}
-  ind=3;
+  ind++;
   strcpy((*dict)[ind].keyword,"rsNLfftpriority");
   strcpy((*dict)[ind].keyarg,"2300000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 4)\gsNLfftpriority{}
-  ind=4;
+  ind++;
   strcpy((*dict)[ind].keyword,"gsNLfftpriority");
   strcpy((*dict)[ind].keyarg,"2500000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 5)\numSfGrps{}
-  ind=5;
+  ind++;
   strcpy((*dict)[ind].keyword,"numSfGrps");
   strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 6)\numSfDups{}
-  ind=6;
+  ind++;
   strcpy((*dict)[ind].keyword,"numSfDups");
   strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 7)\launchNLeesFromRho{}
-  ind=7;
+  ind++;
   int ierr= 0;
   strcpy((*dict)[ind].keyword,"launchNLeesFromRho");
-  strcpy((*dict)[ind].keyarg,"rs");    
+  strcpy((*dict)[ind].keyarg,"rs");
   strcpy((*dict)[ind].error_mes,"rs rhor rhog");
   //-----------------------------------------------------------------------------
   // 8)\useGssInsRealPP{}
-  ind=8;
+  ind++;
   strcpy((*dict)[ind].keyword,"useGssInsRealPP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 9)\useMssInsGPP{}
-  ind=9;
+  ind++;
   strcpy((*dict)[ind].keyword,"useMssInsGPP");
-  if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
-  if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
 
   //----------------------------------------------------------------------------------
 }//end routine
@@ -1581,44 +1678,44 @@ void Config::set_config_dict_nl (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_params_nl (DICT_WORD *dict, char *fun_key, char *input_name,int iflag){
   //===================================================================================
 
-  int ind, ierr;
+  int ind = 0, ierr;
 
   //===================================================================================
   // Fill 'er up
 
   //-----------------------------------------------------------------------------
   // 1)\sfpriority{}
-  ind=1;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&sfpriority);
   if(sfpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 2)\prioNLFFTMsg{}
-  ind=2;
+  ind++;
   parse_on_off(dict[ind].keyarg,&prioNLFFTMsg,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 3)\rsNLfftpriority{}
-  ind=3;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&rsNLfftpriority);
   if(rsNLfftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 4)\gsNLfftpriority{}
-  ind=4;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&gsNLfftpriority);
   if(gsNLfftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 5)\numSfGrps{}
-  ind=5;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&numSfGrps);
   if(numSfGrps<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 6)\numSfDups{}
-  ind=6;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&numSfDups);
   if(numSfDups<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 7)\launchNLeesFromRho{}
-  ind=7;
+  ind++;
   if(strcasecmp(dict[ind].keyarg,"rs")==0)  {launchNLeesFromRho =0; ierr++;}
   if(strcasecmp(dict[ind].keyarg,"rhor")==0)  {launchNLeesFromRho = 1; ierr++;}
   if(strcasecmp(dict[ind].keyarg,"rhog")==0){launchNLeesFromRho = 2; ierr++;}
@@ -1626,13 +1723,13 @@ void Config::set_config_params_nl (DICT_WORD *dict, char *fun_key, char *input_n
   if(launchNLeesFromRho<0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 8)\useGssInsRealPP{}
-  ind=8;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useGssInsRealPP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useGssInsRealPP=0;}
   //-----------------------------------------------------------------------------
   // 9)\useMssInsGPP{}
-  ind=9;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useMssInsGPP,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(iflag==0 && dict[ind].iuset==0){useMssInsGPP=0;}
@@ -1647,13 +1744,13 @@ void Config::set_config_params_nl (DICT_WORD *dict, char *fun_key, char *input_n
 //===================================================================================
 void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
-  //  I) Malloc the dictionary                                              
+  //  I) Malloc the dictionary
 
   num_dict[0] = 8;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_gen")-1;
 
   //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
+  //  II) Initialize the user set option(did the user set the key word
 
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
@@ -1661,54 +1758,54 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
 
   //=================================================================================
   // III) Set up the dictionary
-  int ind;
+  int ind = 0;
   //-----------------------------------------------------------------------------
   // 1)\fftprogresssplit{}
-  ind=1;
+  ind++;
   strcpy((*dict)[ind].keyword,"fftprogresssplit");
-  strcpy((*dict)[ind].keyarg,"1000");    
+  strcpy((*dict)[ind].keyarg,"1000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 2)\fftprogresssplitReal{}
-  ind=2;
+  ind++;
   strcpy((*dict)[ind].keyword,"fftprogresssplitReal");
-  strcpy((*dict)[ind].keyarg,"1000");    
+  strcpy((*dict)[ind].keyarg,"1000");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 3)\useCommlib{}
-  ind=3;
+  ind++;
   strcpy((*dict)[ind].keyword,"useCommlib");
   strcpy((*dict)[ind].keyarg,"off");
-  strcpy((*dict)[ind].error_mes,"on/off");
+  strcpy((*dict)[ind].error_mes,"off");
   //-----------------------------------------------------------------------------
   // 4)\useGMulticast{}
-  ind=4;
+  ind++;
   strcpy((*dict)[ind].keyword,"useGMulticast");
   strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 5)\numMulticastMsgs{}
-  ind=5;
+  ind++;
   strcpy((*dict)[ind].keyword,"numMulticastMsgs");
   strcpy((*dict)[ind].keyarg,"4");
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 6)\useCommlibMulticast{}
-  ind=6;
+  ind++;
   strcpy((*dict)[ind].keyword,"useCommlibMulticast");
   strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //----------------------------------------------------------------------------------
   // 7)\useTimeKeeper{}
-  ind=7;
+  ind++;
   strcpy((*dict)[ind].keyword,"useTimeKeeper");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 8)\atmOutput{}
-  ind=8;
+  ind++;
   strcpy((*dict)[ind].keyword,"atmOutput");
-  strcpy((*dict)[ind].keyarg,"on");    
+  strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
 
   //----------------------------------------------------------------------------------
@@ -1722,50 +1819,50 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_params_gen (DICT_WORD *dict, char *fun_key, char *input_name){
   //===================================================================================
 
-  int ind,ierr;
+  int ind = 0,ierr;
 
   //===================================================================================
-  // Fill 
+  // Fill
 
   //-----------------------------------------------------------------------------
   // 1)\fftprogresssplit{}
-  ind=1;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&fftprogresssplit);
   if(fftprogresssplit<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 2)\fftprogresssplitReal{}
-  ind=2;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&fftprogresssplitReal);
   if(fftprogresssplitReal<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 3)\useCommlib{}
-  ind=3;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useCommlib,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 4)\useGMulticast{}
-  ind=4;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useGMulticast,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 5)\numMulticastMsgs{}
-  ind=5;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&numMulticastMsgs);
   if(numMulticastMsgs<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 6)\useCommlibMulticast{}
-  ind=6;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useCommlibMulticast,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 
   //----------------------------------------------------------------------------------
   // 7)\useTimeKeeper{}
-  ind=7;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useTimeKeeper,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 8)\atmOutput{}
-  ind=8;
+  ind++;
   parse_on_off(dict[ind].keyarg,&atmOutput,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(atmOutput==0){
@@ -1784,13 +1881,13 @@ void Config::set_config_params_gen (DICT_WORD *dict, char *fun_key, char *input_
 //===================================================================================
 void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
-  //  I) Malloc the dictionary                                              
+  //  I) Malloc the dictionary
 
   num_dict[0] = 23;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_atm")-1;
 
   //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
+  //  II) Initialize the user set option(did the user set the key word
 
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
@@ -1798,132 +1895,132 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
 
   //=================================================================================
   // III) Set up the dictionary
-  int ind;
+  int ind = 0;
   //-----------------------------------------------------------------------------
   // 1)\torusMap{}
-  ind = 1;
+  ind++;
   strcpy((*dict)[ind].keyword,"torusMap");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 2)\useCuboidMap{}
-  ind = 2;
+  ind++;
   strcpy((*dict)[ind].keyword,"useCuboidMap");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 3)\useCuboidMapRS{}
-  ind = 3;
+  ind++;
   strcpy((*dict)[ind].keyword,"useCuboidMapRS");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 4)\useCentroidMap{}
-  ind = 4;
+  ind++;
   strcpy((*dict)[ind].keyword,"useCentroidMap");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   // 5)\useCentroidMapRho{}
-  ind = 5;
+  ind++;
   strcpy((*dict)[ind].keyword,"useCentroidMapRho");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 6)\Gstates_per_pe{}
-  ind = 6;
+  ind++;
   strcpy((*dict)[ind].keyword,"Gstates_per_pe");
-  sprintf((*dict)[ind].keyarg,"%d",nstates);  
+  sprintf((*dict)[ind].keyarg,"%d",nstates);
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 7)\Rstates_per_pe{}
-  ind = 7;
+  ind++;
   strcpy((*dict)[ind].keyword,"Rstates_per_pe");
   sprintf((*dict)[ind].keyarg,"%d",nstates);
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 8)\loadMapFiles{}
-  ind=8;
+  ind++;
   strcpy((*dict)[ind].keyword,"loadMapFiles");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 9)\dumpMapFiles{}
-  ind=9;
+  ind++;
   strcpy((*dict)[ind].keyword,"dumpMapFiles");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 10)\useRhoExclusionMap{}
-  ind=10;
+  ind++;
   strcpy((*dict)[ind].keyword,"useRhoExclusionMap");
   strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 11)\fakeTorus{}
-  ind = 11;
+  ind++;
   strcpy((*dict)[ind].keyword,"fakeTorus");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 12)\torusDimNX{}
-  ind = 12;
+  ind++;
   strcpy((*dict)[ind].keyword,"torusDimNX");
-  sprintf((*dict)[ind].keyarg,"%d",1);  
+  sprintf((*dict)[ind].keyarg,"%d",1);
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 13)\torusDimNY{}
-  ind = 13;
+  ind++;
   strcpy((*dict)[ind].keyword,"torusDimNY");
-  sprintf((*dict)[ind].keyarg,"%d",1);  
+  sprintf((*dict)[ind].keyarg,"%d",1);
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 14)\torusDimNZ{}
-  ind = 14;
+  ind++;
   strcpy((*dict)[ind].keyword,"torusDimNZ");
-  sprintf((*dict)[ind].keyarg,"%d",1);  
+  sprintf((*dict)[ind].keyarg,"%d",1);
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 15)\torusDimNT{}
-  ind = 15;
+  ind++;
   strcpy((*dict)[ind].keyword,"torusDimNT");
-  sprintf((*dict)[ind].keyarg,"%d",1);  
+  sprintf((*dict)[ind].keyarg,"%d",1);
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 16)\useStrictCuboid{}
-  ind = 16;
+  ind++;
   strcpy((*dict)[ind].keyword,"useStrictCuboid");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   //-----------------------------------------------------------------------------
   // 17)\useReductionExclusionMap{}
-  ind = 17;
+  ind++;
   strcpy((*dict)[ind].keyword,"useReductionExclusionMap");
   strcpy((*dict)[ind].keyarg,"on");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 18)\excludePE0{}
-  ind = 18;
+  ind++;
   strcpy((*dict)[ind].keyword,"excludePE0");
   strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 19)\dumpMapCoordFiles{}
-  ind=19;
+  ind++;
   strcpy((*dict)[ind].keyword,"dumpMapCoordFiles");
-  strcpy((*dict)[ind].keyarg,"off");    
+  strcpy((*dict)[ind].keyarg,"off");
   strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 20)\forceMappingAxis{}
-  ind = 20;
+  ind++;
   strcpy((*dict)[ind].keyword,"forceMappingAxis");
-  sprintf((*dict)[ind].keyarg,"%d",-1);  
+  sprintf((*dict)[ind].keyarg,"%d",-1);
   strcpy((*dict)[ind].error_mes,"-1  for no force, 0=X 1=Y 2=Z");
   //-----------------------------------------------------------------------------
   // 21)\numPes{}
-  ind = 21;
+  ind++;
   strcpy((*dict)[ind].keyword,"numPes");
-  sprintf((*dict)[ind].keyarg,"%d",CkNumPes());  
+  sprintf((*dict)[ind].keyarg,"%d",CkNumPes());
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //----------------------------------------------------------------------------
   // 22)\simpleTopo{}
@@ -1948,119 +2045,119 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_name){
   //===================================================================================
 
-  int ind, ierr; 
+  int ind = 0, ierr;
 
   //===================================================================================
-  // Fill the class with data 
+  // Fill the class with data
 
   //-----------------------------------------------------------------------------
   //  1)\torusMap{}
-  ind = 1;
+  ind++;
   parse_on_off(dict[ind].keyarg, &torusMap, &ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  2)\useCuboidMap{}
-  ind = 2;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useCuboidMap,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  3)\useCuboidMapRS{}
-  ind = 3;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useCuboidMapRS,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  4)\useCentroidMap{}
-  ind = 4;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useCentroidMap,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  5)\useCentroidMapRho{}
-  ind = 5;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useCentroidMapRho,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  6)\Gstates_per_pe{}
-  ind = 6;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&Gstates_per_pe);
   if(Gstates_per_pe<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  7)\Rstates_per_pe{}
-  ind = 7;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&Rstates_per_pe);
   if(Rstates_per_pe<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  8)\loadMapFiles{}
-  ind = 8;
+  ind++;
   parse_on_off(dict[ind].keyarg,&loadMapFiles,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  9)\dumpMapFiles{}
-  ind = 9;
+  ind++;
   parse_on_off(dict[ind].keyarg,&dumpMapFiles,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 10)\useRhoExclusionMap{}
-  ind=10;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useRhoExclusionMap,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(dict[ind].iuset==0){useRhoExclusionMap=1;}
   //-----------------------------------------------------------------------------
   //  11)\fakeTorus{}
-  ind = 11;
+  ind++;
   parse_on_off(dict[ind].keyarg, &fakeTorus, &ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  12)\torusDimNX{}
-  ind = 12;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&torusDimNX);
   if(torusDimNX<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  13)\torusDimNY{}
-  ind = 13;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&torusDimNY);
   if(torusDimNY<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  14)\torusDimNZ{}
-  ind = 14;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&torusDimNZ);
   if(torusDimNZ<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  15)\torusDimNT{}
-  ind = 15;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&torusDimNT);
   if(torusDimNT<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  16)\useStrictCuboid{}
-  ind = 16;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useStrictCuboid,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
 
   //  17)\useReductionExclusionMap{}
-  ind = 17;
+  ind++;
   parse_on_off(dict[ind].keyarg,&useReductionExclusionMap,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(dict[ind].iuset==0){useReductionExclusionMap=1;}
   //-----------------------------------------------------------------------------
   //  18)\excludePE0{}
-  ind = 18;
+  ind++;
   parse_on_off(dict[ind].keyarg,&excludePE0,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   if(dict[ind].iuset==0){excludePE0=0;}
   //-----------------------------------------------------------------------------
   //-----------------------------------------------------------------------------
   // 19)\dumpMapCoordFiles{}
-  ind = 19;
+  ind++;
   parse_on_off(dict[ind].keyarg,&dumpMapCoordFiles,&ierr);
   if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //  20)\forceMappingAxis{}
-  ind = 20;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&forceMappingAxis);
   if(forceMappingAxis>2){keyarg_barf(dict,input_name,fun_key,ind);}
 
   //  21)\numPes{}
-  ind = 21;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&numPes);
   if(numPes<1){keyarg_barf(dict,input_name,fun_key,ind);}
 
@@ -2082,13 +2179,13 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
 //===================================================================================
 void Config::set_config_dict_nfreq (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
-  //  I) Malloc the dictionary                                              
+  //  I) Malloc the dictionary
 
   num_dict[0] = 8;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_nfreq")-1;
 
   //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
+  //  II) Initialize the user set option(did the user set the key word
 
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
@@ -2106,52 +2203,52 @@ void Config::set_config_dict_nfreq (int *num_dict ,DICT_WORD **dict){
 
   //=================================================================================
   // III) Set up the dictionary
-  int ind;
+  int ind = 0;
   //-----------------------------------------------------------------------------
   // 1)\integrate{}
-  ind = 1;
+  ind++;
   strcpy((*dict)[ind].keyword,"integrate");
   sprintf((*dict)[ind].keyarg,"%d",nfreq_cpintegrate);
   strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
   //-----------------------------------------------------------------------------
   // 2)\localHartExt{}
-  ind = 2;
+  ind++;
   strcpy((*dict)[ind].keyword,"localHartExt");
   sprintf((*dict)[ind].keyarg,"%d",nfreq_cplocal_hartext);
   strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
   //-----------------------------------------------------------------------------
   // 3)\localEesHart{}
-  ind = 3;
+  ind++;
   strcpy((*dict)[ind].keyword,"localEesHart");
   sprintf((*dict)[ind].keyarg,"%d",nfreq_cplocal_eeshart);
   strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
   //-----------------------------------------------------------------------------
   // 4)\localEesEwald{}
-  ind = 4;
+  ind++;
   strcpy((*dict)[ind].keyword,"localEesEwald");
   sprintf((*dict)[ind].keyarg,"%d",nfreq_cplocal_eesewald);
   strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
   //-----------------------------------------------------------------------------
   // 5)\nonlocalEke{}
-  ind = 5;
+  ind++;
   strcpy((*dict)[ind].keyword,"nonlocalEke");
   sprintf((*dict)[ind].keyarg,"%d",nfreq_cpnonlocal_eke);
   strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
   //-----------------------------------------------------------------------------
   // 6)\nonlocalEesFwd{}
-  ind = 6;
+  ind++;
   strcpy((*dict)[ind].keyword,"nonlocalEesFwd");
   sprintf((*dict)[ind].keyarg,"%d",nfreq_cpnonlocal_eesfwd);
   strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
   //-----------------------------------------------------------------------------
   // 7)\nonlocalEesBk{}
-  ind = 7;
+  ind++;
   strcpy((*dict)[ind].keyword,"nonlocalEesBk");
   sprintf((*dict)[ind].keyarg,"%d",nfreq_cpnonlocal_eesbk);
   strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
   //-----------------------------------------------------------------------------
   // 8)\xcfnctl{}
-  ind = 8;
+  ind++;
   strcpy((*dict)[ind].keyword,"xcfnctl");
   sprintf((*dict)[ind].keyarg,"%d",nfreq_xcfnctl);
   strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
@@ -2165,53 +2262,51 @@ void Config::set_config_dict_nfreq (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_params_nfreq  (DICT_WORD *dict, char *fun_key, char *input_name){
   //===================================================================================
 
-  int ind,ierr;
+  int ind = 0,ierr;
 
   //===================================================================================
   //-----------------------------------------------------------------------------
   // 1)\integrate{}
-  ind = 1;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&nfreq_cpintegrate);
   if(nfreq_cpintegrate<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 2)\localHartExt{}
-  ind = 2;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&nfreq_cplocal_hartext);
   if(nfreq_cplocal_hartext<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 3)\localEesHart{}
-  ind = 3;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&nfreq_cplocal_eeshart);
   if(nfreq_cplocal_eeshart<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 4)\localEesEwald{}
-  ind = 4;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&nfreq_cplocal_eesewald);
   if(nfreq_cplocal_eesewald<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 5)\nonlocalEke{}
-  ind = 5;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&nfreq_cpnonlocal_eke);
   if(nfreq_cpnonlocal_eke<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 6)\nonlocalEesFwd{}
-  ind = 6;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&nfreq_cpnonlocal_eesfwd);
   if(nfreq_cpnonlocal_eesfwd<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 7)\nonlocalEesBk{}
-  ind = 7;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&nfreq_cpnonlocal_eesbk);
   if(nfreq_cpnonlocal_eesbk<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 8)\xcfnctl{}
-  ind = 8;
+  ind++;
   sscanf(dict[ind].keyarg,"%d",&nfreq_xcfnctl);
   if(nfreq_xcfnctl<1){keyarg_barf(dict,input_name,fun_key,ind);}
 }//end routine
 //===================================================================================
-
-
 
 
 //=============================================================================
@@ -2221,7 +2316,7 @@ void Config::set_config_params_nfreq  (DICT_WORD *dict, char *fun_key, char *inp
  * Guesses decent values for configuration parameters based on user
  * set values, system size, and the number of cores available.
  *
- * For large pe runs, scheme is thus: 
+ * For large pe runs, scheme is thus:
  *    1. find nchareG which is a multiple of at least one torus dimension
  *      a. on BG you can just choose a convenient power of 2 and it
  *         will work well for most torus cases.
@@ -2235,7 +2330,7 @@ void Config::set_config_params_nfreq  (DICT_WORD *dict, char *fun_key, char *inp
  *      a. find numPes()/nchareG.
  *      b. set sGrainsize to nstates, set numchunks to 1
  *      c. set numgrains to (nstates/sGrainSize)^2
- *      
+ *
  *    3. if phantoms are in use, numchunks is same for asym and sym
  *    4. set rstates_per_pe and gstates_per_pe as high as they will
  *       go for numPes and this system (constrained by nstates,
@@ -2245,23 +2340,23 @@ void Config::set_config_params_nfreq  (DICT_WORD *dict, char *fun_key, char *inp
  *       things
  *    6. if nstates%2=0 and useCuboid then useStrictCuboid=1 unless
  *       user set it off in config.
- *     
- *      
+ *
+ *
  *
  *  for nonpower of 2 systems the scheme is revised:
- * 
+ *
  *    1. find a grainsize which meets the following constraints where:
  *      nstates%grainsize=remainder
  *
  *      a. the remainder is less than 8 (the smallest remotely
- *         justifiable choice for orthograinsize).  
+ *         justifiable choice for orthograinsize).
  *      b. the grainsize has a factor small enough for either
  *         orthograinsize^2==numprocs, or orthograinsize^2==numprocs/2
  *         and enable orthohelpers.  with orthograinsize > remainder
  *      c. odd numbers should work, but will slightly degrade your
  *         ability to keep the double hummer pipeline loaded in which
  *          will reduce your flops so you should avoid them.
- *       
+ *
  * Supported parameters: sGrainSize, orthoGrainSize, gExpandFact,
  * gExpandFactRho, fftprogresssplit, fftprogresssplitReal, numSfGrps,
  * numSfDups, rhoGHelpers, numMulticastMsgs
@@ -2270,18 +2365,19 @@ void Config::set_config_params_nfreq  (DICT_WORD *dict, char *fun_key, char *inp
 //=============================================================================
 void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dict_rho,
     DICT_WORD *dict_state,DICT_WORD *dict_pc,
-    DICT_WORD *dict_nl,DICT_WORD *dict_map, 
+    DICT_WORD *dict_nl,DICT_WORD *dict_map,
     int nchareRhoRHart, int nplane_x_rho, int natm_typ){
   //=============================================================================
-  numInstances = UberImax * UberJmax * UberKmax * UberMmax; // numIntegrals * numKpoints * numTempers * numSpin;
+  // numIntegrals * numKpoints * numTempers * numSpin;
+  numInstances = UberImax * UberJmax * UberKmax * UberMmax;
   numPesPerInstance = numPes / numInstances;
   // in default case we have only 1 instance, so we just use the 0,0,0th
   // because it is simple.
   numPesPerInstance = (numPesPerInstance>0) ? numPesPerInstance : 1;
-  if(fakeTorus)
-  { //
+  if(fakeTorus) { //
     numPes=torusDimNX * torusDimNY * torusDimNZ * torusDimNT;
-    CkPrintf("  Using fake torus node %d X %d X %d X %d numPes %d\n", torusDimNX, torusDimNY, torusDimNZ, torusDimNT, numPes);
+    CkPrintf(" Using fake torus node %d X %d X %d X %d numPes %d\n", torusDimNX,
+        torusDimNY, torusDimNZ, torusDimNT, numPes);
   }
 
   // TODO get the number of instances.  This is a Glenn item as most
@@ -2289,18 +2385,17 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
   // how many instances there are of each type, and then the total
   // sum, will presumably come directly from CPcharmParaInfoGrp.
 
-
   int sqrtpes    = (int) sqrt((double)numPes);
   int sqrtstates = (int) sqrt((double)nstates);
   int igo;
 
   //=============================================================================
-  // gExpandFact not set 
+  // gExpandFact not set
 
   igo = dict_state[6].iuset;
 
-  if(igo==0){ 
-    if(numPesPerInstance>nGplane_x){
+  if(igo == 0) {
+    if(numPesPerInstance > nGplane_x){
       int i=1;
       double mypow=1;
       int targetNchare=nGplane_x;
@@ -2308,10 +2403,10 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       // nChareG * (nstates/sGrainSize)^2 * numChunks = numPesPerInstance
       // without going overboard on the planes, grains, or chunks.
       // in the general case we haven't determined any of these
-      // variables yet.  
+      // variables yet.
 
       // roughly speaking the desired nchare goes as sqrtpes)
-      if(nGplane_x<sqrtpes) targetNchare=sqrtpes / nGplane_x * nGplane_x;
+      if(nGplane_x < sqrtpes) targetNchare = sqrtpes / nGplane_x * nGplane_x;
       while((mypow=pow(2.0, (double)i)) <= targetNchare){i++;}
 
       gExpandFact = mypow / (double) nGplane_x;
@@ -2320,30 +2415,34 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     }//endif
   }//endif : gexpandfact not set
 
-
   nchareG  = (int)(gExpandFact*(double)nGplane_x);
   CkPrintf("  nchareG now %d based on gExpandFact %.5g\n\n", nchareG, gExpandFact);
   //=============================================================================
   // numChunks, numChunksSym, numChunksAsym, sgrainsize are not set
 
-  igo = (dict_pc[27].iuset+dict_pc[28].iuset+dict_pc[29].iuset+dict_pc[14].iuset);
-  if(igo==0){
+  igo = (dict_pc[27].iuset + dict_pc[28].iuset + dict_pc[29].iuset +
+      dict_pc[14].iuset);
+  if(igo == 0){
     int numGrains = nstates/sGrainSize;
-    numGrains    *=numGrains;
+    numGrains    *= numGrains;
     numChunks     = numPesPerInstance/(nchareG*numGrains);
-    if(numChunks<1){numChunks=1;}
+    if(numChunks < 1) {
+      numChunks=1;
+    }
     int remainder;
-    while(numChunks>8){
+    while(numChunks > 8){
       if(!isPow2(nstates)) // not a power of two, find a good grainsize
         // allowing for remainder
       {
         sGrainSize = sGrainSize/2;
-        remainder=approxFactor(nstates,sGrainSize, orthoGrainSize,numPesPerInstance);
+        remainder = approxFactor(nstates, sGrainSize, orthoGrainSize,
+            numPesPerInstance);
       }
       else
       {  //
         sGrainSize = sGrainSize/2;
-        remainder=approxFactor(nstates,sGrainSize, orthoGrainSize,numPesPerInstance);
+        remainder= approxFactor(nstates, sGrainSize, orthoGrainSize,
+            numPesPerInstance);
       }
       numGrains  = nstates/sGrainSize;
       numGrains *= numGrains;
@@ -2377,13 +2476,13 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
   igo = dict_map[6].iuset;
 
   if(numPesPerInstance!=1 && igo==0){
-    if(numPesPerInstance<=128){
-      Gstates_per_pe=nstates/numPesPerInstance;
-    }else{ 
-      if(numPesPerInstance>128 && numPesPerInstance<=512){
-        Gstates_per_pe=nstates/16;
+    if(numPesPerInstance <= 128){
+      Gstates_per_pe = nstates/numPesPerInstance;
+    }else{
+      if(numPesPerInstance > 128 && numPesPerInstance <= 512){
+        Gstates_per_pe = nstates/16;
       }else{
-        Gstates_per_pe= nchareG*nstates/numPesPerInstance;
+        Gstates_per_pe = nchareG*nstates/numPesPerInstance;
       }//endif
     }//endif
     if(Gstates_per_pe==0){Gstates_per_pe=1;}
@@ -2448,130 +2547,10 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 
 
   //=============================================================================
-  // Gexpandfact rho
-
-  // In an ideal universe rhoRS, RhoGS, rhoRhart, rhoGhart are all
-  // mapped to their own processor.  However, at the upper limit you
-  // can only make rho pieces so small before communication overhead
-  // swamps any possibly parallel overlap.  So we must cap the
-  // decomposition. At the lower limit you want to choose parameters
-  // so that the heaviest hitters, rhors and rhog, can be exclusion
-  // mapped.  As numproc increases we need to gradually increase
-  // gExpandFactRho, the number of subplanes, and the hart atm
-  // type.  
-
-  // Missing here is the logic for when ghelpers should be
-  // increased.  Difficulty in that primarily lies in the fact that
-  // it is unclear under what conditions ghelpers is useful when
-  // using the modern EES method.  We're not even going to try to
-  // optimize for non-EES, anyone using that creaky old stuff is on
-  // their own. -EJB
-
-  igo = dict_rho[9].iuset+dict_rho[11].iuset;
-  int nchareRhoR      = sizez;
-  if(igo==0){ 
-    int numRS=nchareRhoR*rhoRsubplanes;
-    int numGH=nchareRhoG*rhoGHelpers;
-    if(numPesPerInstance < numRS*3){
-      useReductionExclusionMap=0;
-
-      strcpy(dict_map[17].keyarg,"off");
-      CkPrintf("Disabling reduction exclusion map, too few processors to matter\n");
-    }
-    else
-    {
-      useReductionExclusionMap=1;
-      strcpy(dict_map[17].keyarg,"on");
-      CkPrintf("Enabling reduction exclusion map\n");
-    }
-
-    bool notdone=true;
-    int usedPes=numRS;
-    int maxSubplanes=20; // arbitary choice, but probably good
-    if(useReductionExclusionMap) usedPes+=nchareG;
-    while(numPesPerInstance > usedPes && notdone)
-    {
-
-      // trick here is to keep bumping up both subplanes and
-      // expandfact
-      int target=numPesPerInstance - usedPes;
-      if(numRS<target) target=numRS;
-      if(numPesPerInstance>numRS && nchareRhoR>nchareRhoG)
-      { // bring up expandfact to fill in 
-        if(target>nplane_x_rho && target <= numRS && gExpandFactRho< (double) nplane_x_rho)
-        {
-
-          gExpandFactRho= (double) target / double (nplane_x_rho);
-          //		  CkPrintf("i1 rhoRsubplanes now %d gExpandFactRho now %g nchareHartAtmT now %d making numRS %d nchareRhoG %d\n",rhoRsubplanes, gExpandFactRho, nchareHartAtmT, numRS, nchareRhoG);
-          double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
-          nchareRhoG       = ((int)temp_rho);
-          //notdone=false;
-          usedPes=nchareRhoG+numRS;
-          if(useReductionExclusionMap) usedPes+=nchareG;
-        }
-      }
-      if (numPesPerInstance>usedPes && numPesPerInstance >nchareRhoR*(rhoRsubplanes+1) && (numPesPerInstance >= nchareRhoRHart* (rhoRsubplanes+1)* nchareHartAtmT) &&(rhoRsubplanes<maxSubplanes))
-      {
-        numRS= (++rhoRsubplanes)*nchareRhoR;
-        usedPes=nchareRhoG+numRS;
-        if(useReductionExclusionMap) usedPes+=nchareG;
-      }
-      else
-      {
-        notdone=false;
-      }
-
-      if (numPesPerInstance>numRS && nchareRhoR<=nchareRhoG && gExpandFactRho< (double) nplane_x_rho)
-      { // keep ncharerhog close to numRS
-        int target=numPesPerInstance - numRS;
-        if(target>numRS) target=numRS;
-
-        if ( gExpandFactRho > double (nplane_x_rho))
-        {
-          gExpandFactRho=(double)nplane_x_rho;
-        }
-        if(gExpandFactRho>rhoRsubplanes) gExpandFactRho=(double) rhoRsubplanes;
-        double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
-        //	      CkPrintf("i2 rhoRsubplanes now %d gExpandFactRho now %g nchareHartAtmT now %d making numRS %d nchareRhoG %d\n",rhoRsubplanes, gExpandFactRho, nchareHartAtmT, numRS, nchareRhoG);
-        nchareRhoG       = ((int)temp_rho);
-        usedPes=nchareRhoG+numRS;
-        if(useReductionExclusionMap) usedPes+=nchareG;
-      }	   
-      else
-      {
-        notdone=false;
-      }
-      if(ees_eext_opt==1 && (nchareHartAtmT< natm_typ) && 
-          (nchareRhoRHart* (rhoRsubplanes)* (nchareHartAtmT+1)<=numPesPerInstance/2))
-      {
-        nchareHartAtmT++;
-      }
-    }//endwhile
-    if(rhoRsubplanes>1)
-    {
-      rhoLineOrder=-1;
-      strcpy(dict_rho[22].keyarg,"none");
-      rhoSubPlaneBalance=1;
-      strcpy(dict_rho[24].keyarg,"on");
-      rhoGToRhoRMsgComb=1;
-      strcpy(dict_rho[25].keyarg,"on");
-    }
-
-    sprintf(dict_rho[11].keyarg,"%d",rhoRsubplanes);
-    sprintf(dict_rho[23].keyarg,"%d",nchareHartAtmT);
-    sprintf(dict_rho[8].keyarg,"%g",gExpandFactRho);
-    CkPrintf("rhoRsubplanes now %d gExpandFactRho now %g nchareHartAtmT now %d making numRS %d nchareRhoG %d\n",rhoRsubplanes, gExpandFactRho, nchareHartAtmT, numRS, nchareRhoG);
-  }//endif
-  double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
-  nchareRhoG       = ((int)temp_rho);
-
-
-
-  //=============================================================================
   // numsfgrps
   // number of groups to chop atom calc into
   // needs to grow with size and number of PEs
-  // range 1->natm_nl 
+  // range 1->natm_nl
 
   igo = dict_nl[5].iuset;
 
@@ -2580,7 +2559,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     if(numPesPerInstance<atmstates){
       double ratio=(double)numPesPerInstance/(double)atmstates;
       numSfGrps=(int) (ratio*(double)natm_nl);
-    }else{ 
+    }else{
       numSfGrps=natm_nl-1;
     }//endif
     if(numSfGrps==0 && natm_nl>0){numSfGrps=1;}
@@ -2592,7 +2571,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
   //=============================================================================
   // numsfdups
   // numbers of duplicate caches to create needs to grow with
-  // number of atom chunks mapped to multiple PEs 
+  // number of atom chunks mapped to multiple PEs
   // which is map dependant... yikes. can't set this here.
   // Real range is 1 -> nstates
 
@@ -2603,31 +2582,11 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     if(numPesPerInstance<atmstates){
       double ratio=(double)numPesPerInstance/(double)atmstates;
       numSfDups=(int) (ratio*(double)nstates);
-    }else{ 
+    }else{
       numSfDups=nstates-1;
     }//endif
     if(numSfDups==0){numSfDups=1;}
     sprintf(dict_nl[6].keyarg,"%d",numSfDups);
-  }//endif
-
-  //=============================================================================
-  // Fix rhoGHelpers : ranges from 1 to numPesPerInstance/numChareRhoG
-
-  igo = dict_rho[10].iuset;
-
-  if(igo==0){
-    if(ees_eext_opt==1)
-    {
-      //rhoGHelpers=rhoRsubplanes/2;
-      //leave rhoghelpers alone
-    }
-    else
-    {
-      int temp_rho  = (int) (gExpandFactRho*2.0*((double) nGplane_x + 1.0));
-      if(numPesPerInstance>temp_rho){rhoGHelpers=numPesPerInstance/temp_rho;}
-    }
-    sprintf(dict_rho[10].keyarg,"%d",rhoGHelpers);
-
   }//endif
 
   //============================================================================
@@ -2649,51 +2608,67 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     sprintf(dict_map[16].keyarg, "%d", useStrictCuboid);
   }
 
-  //===================================================================================
-  // Clean up 
+  //==============================================================================
+  // guessing parameters for FFT-library
+  igo = dict_rho[27].iuset + dict_rho[28].iuset;
+  if(igo == 0) {
+    //user did not partition density, use plane decomp
+    nchareRhoR_x = simReadOnly.sizeZ;
+    nchareRhoR_y = 1;
+    sprintf(dict_rho[27].keyarg, "%d", nchareRhoR_x);
+    sprintf(dict_rho[28].keyarg, "%d", nchareRhoR_y);
+    dict_rho[27].iuset = dict_rho[28].iuset = 1;
+  }
 
-  if(rhoRsubplanes>1){
-    PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-    PRINTF("   rhoRsubplanes=%d. Disabling rho rs commlib use\n",rhoRsubplanes);
-    PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
-    useGHartInsRHart  = 0; strcpy(dict_rho[3].keyarg,"off");
-    useRHartInsGHart  = 0; strcpy(dict_rho[4].keyarg,"off");
-    useGHartInsRhoRP  = 0; strcpy(dict_rho[5].keyarg,"off");
-    useGIns0RhoRP     = 0; strcpy(dict_rho[12].keyarg,"off");
-    useGIns1RhoRP     = 0; strcpy(dict_rho[13].keyarg,"off");
-    useGIns2RhoRP     = 0; strcpy(dict_rho[14].keyarg,"off");
-    useGIns3RhoRP     = 0; strcpy(dict_rho[15].keyarg,"off");
-    useGByrdInsRhoRBP = 0; strcpy(dict_rho[16].keyarg,"off");
-    useRInsRhoGP      = 0; strcpy(dict_rho[17].keyarg,"off");
-    useRInsIGXRhoGP   = 0; strcpy(dict_rho[18].keyarg,"off");
-    useRInsIGYRhoGP   = 0; strcpy(dict_rho[19].keyarg,"off");
-    useRInsIGZRhoGP   = 0; strcpy(dict_rho[20].keyarg,"off");
-  }//endif
+  igo = dict_rho[29].iuset + dict_rho[30].iuset;
+  if(igo == 0) {
+    //user did not partition density, use plane decomp
+    nchareRhoRHart_x = simReadOnly.ngrid_eext_c;
+    nchareRhoRHart_y = 1;
+    sprintf(dict_rho[29].keyarg, "%d", nchareRhoRHart_x);
+    sprintf(dict_rho[30].keyarg, "%d", nchareRhoRHart_y);
+    dict_rho[29].iuset = dict_rho[30].iuset = 1;
+  }
 
-  if(nchareHartAtmT>1  && rhoRsubplanes==1){
-    PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-    PRINTF("   nchareHartAtmT=%d. Disabling rho hart commlib use\n",nchareHartAtmT);
-    PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
-    useGHartInsRHart  = 0; strcpy(dict_rho[3].keyarg,"off");
-    useRHartInsGHart  = 0; strcpy(dict_rho[4].keyarg,"off");
-    useGHartInsRhoRP  = 0; strcpy(dict_rho[5].keyarg,"off");
-  }//endif
+  igo = dict_rho[31].iuset + dict_rho[32].iuset;
+  if(igo == 0) {
+    //user did not partition density, use plane decomp
+    nchareRhoInter_x = simReadOnly.sizeZ;
+    nchareRhoInter_z = 1;
+    sprintf(dict_rho[31].keyarg, "%d", nchareRhoInter_x);
+    sprintf(dict_rho[32].keyarg, "%d", nchareRhoInter_z);
+    dict_rho[31].iuset = dict_rho[32].iuset = 1;
+  }
 
-  //----------------------------------------------------------------------------------
+  igo = dict_rho[33].iuset + dict_rho[34].iuset;
+  if(igo == 0) {
+    //user did not partition density, use plane decomp
+    nchareHartInter_x = nchareRhoInter_x;
+    nchareHartInter_z = nchareRhoInter_z;
+    sprintf(dict_rho[33].keyarg, "%d", nchareHartInter_x);
+    sprintf(dict_rho[34].keyarg, "%d", nchareHartInter_z);
+    dict_rho[33].iuset = dict_rho[34].iuset = 1;
+  }
 
-
+  igo = dict_rho[35].iuset + dict_rho[36].iuset;
+  if(igo == 0) {
+    //user did not partition density, use plane decomp
+    nchareAtmSFInter_x = simReadOnly.ngrid_eext_c;
+    nchareAtmSFInter_z = 1;
+    sprintf(dict_rho[35].keyarg, "%d", nchareHartInter_x);
+    sprintf(dict_rho[36].keyarg, "%d", nchareHartInter_z);
+    dict_rho[35].iuset = dict_rho[36].iuset = 1;
+  }
   //============================================================================
 }//end routine
 //============================================================================
 
-
-
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz,
-    const char *fromFile, int ibinary_opt,
-    int nkf1, int nkf2, int nkf3,int ncoef) {
+void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny,
+    int &nz, const char *fromFile, int ibinary_opt, int nkf1, int nkf2, int nkf3,
+    int ncoef) {
   //===================================================================================
   // Check for errors
 
@@ -2906,7 +2881,7 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
     PhysicsParamTransfer::fetch_state_kvecs(ka,kb,kc,nktot,doublePack);
 
     nplane0 = 0;
-    minx    = ka[1]; 
+    minx    = ka[1];
     maxx    = ka[1];
     for(int i=1;i<=nktot;i++){
       if(ka[i]<minx){minx=ka[i];}
@@ -2914,9 +2889,9 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
       if(ka[i]==0){nplane0++;}
     }//endfor
 
-    cfree(&ka[1],"configures.C"); 
-    cfree(&kb[1],"configures.C"); 
-    cfree(&kc[1],"configures.C"); 
+    cfree(&ka[1],"configures.C");
+    cfree(&kb[1],"configures.C");
+    cfree(&kc[1],"configures.C");
 
   }//endif
 
@@ -2936,7 +2911,7 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-void Config::simpleRangeCheck(){ 
+void Config::simpleRangeCheck(){
   //===================================================================================
 
   //  rangeExit(launchNLeesFromRho,"launchNLeesFromRho",0);
@@ -2952,12 +2927,10 @@ void Config::simpleRangeCheck(){
   rangeExit(usePairEtoM,"usePairEtoM",1);
   rangeExit(usePairDirectSend,"usePairDirectSend",1);
   rangeExit(PCCollectTiles,"PCCollectTiles",1);
-  rangeExit(PCdelayBWSend,"PCdelayBWSend",1);    
+  rangeExit(PCdelayBWSend,"PCdelayBWSend",1);
   rangeExit(PCstreamBWout,"PCstreamBWout",1);
   rangeExit(fftprogresssplit,"fftprogresssplit",0);
   rangeExit(fftprogresssplitReal,"fftprogresssplitReal",0);
-  rangeExit(rhoGHelpers,"rhoGHelpers",0);
-  rangeExit(rhoRsubplanes,"rhoRsubplanes",0);
   rangeExit(numMulticastMsgs,"numMulticastMsgs",0);
   rangeExit(PCSpanFactor,"numMulticastMsgs",0);
   rangeExit(toleranceInterval,"toleranceInterval;",0);
@@ -2988,7 +2961,7 @@ void Config::rangeExit(int param, const char *name, int iopt){
   //============================================================================
 
   switch(iopt){
-    case 0: 
+    case 0:
       if(param<1){
         PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("   The parameter %s must be >0 not %d \n",name,param);
@@ -2996,7 +2969,7 @@ void Config::rangeExit(int param, const char *name, int iopt){
         EXIT(1);
       }//endif
       break;
-    case 1: 
+    case 1:
       if(param<0 || param>1){
         PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("   The parameter %s must be 1(on) or 0 (off) \n",name);
@@ -3170,7 +3143,7 @@ void Config::Finale(int nkf1,int nkf2,int nkf3,int nplane_x,int nplane_x_rho, in
     if(gemmSplitFWk %2 !=0){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("   gemmSplitFWk %d must be an even number !\n",
-	     gemmSplitFWk);
+            gemmSplitFWk);
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
@@ -3178,11 +3151,10 @@ void Config::Finale(int nkf1,int nkf2,int nkf3,int nplane_x,int nplane_x_rho, in
     if(gemmSplitOrtho %2 !=0){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("   gemmSplitOrtho %d must be an even number !\n",
-	     gemmSplitOrtho);
+            gemmSplitOrtho);
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
-
 
     if((gemmSplitFWm % 2 !=0) || gemmSplitFWm > sGrainSize){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -3220,7 +3192,8 @@ void Config::Finale(int nkf1,int nkf2,int nkf3,int nplane_x,int nplane_x_rho, in
 
   if(useCommlibMulticast+useGMulticast!=1){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("   Must turn on either useGMulticast or useCommlibMulticast\n");
+    PRINTF("   Must turn on either useGMulticast (%d) or useCommlibMulticast "
+      "(%d) \n", useCommlibMulticast, useGMulticast);
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
   }//endif
@@ -3241,7 +3214,7 @@ void Config::Finale(int nkf1,int nkf2,int nkf3,int nplane_x,int nplane_x_rho, in
   }
 
   //===================================================================================
-  // Nonlocal Controls 
+  // Nonlocal Controls
 
   if((numSfGrps<1 && natm_nl>0)|| numSfGrps> natm_nl){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -3273,15 +3246,15 @@ void Config::write_cpaimd_config(FILE *fp,DICT_WORD *dict, int num_dict, char *f
   int iuset,itype;
 
   //========================================================================
-  //     I) Write out meta key word 
+  //     I) Write out meta key word
 
   fprintf(fp,"================================================\n");
   fprintf(fp,"cccccccccccccccccccccccccccccccccccccccccccccccc\n");
   fprintf(fp,"================================================\n");
   fprintf(fp,"~%s[\n",fun_key);
 
-  //================================================================================  
-  //    II) User defined parameters 
+  //================================================================================
+  //    II) User defined parameters
 
   iuset = 1;itype = 1;
   fprintf(fp,"------------------------------------------------\n");
@@ -3289,8 +3262,8 @@ void Config::write_cpaimd_config(FILE *fp,DICT_WORD *dict, int num_dict, char *f
   fprintf(fp,"------------------------------------------------\n");
   dict_print(fp,num_dict,dict,itype,iuset);
 
-  //================================================================================  
-  //   III) Default parameters 
+  //================================================================================
+  //   III) Default parameters
 
   iuset = 0;itype = 1;
   fprintf(fp,"------------------------------------------------\n");
@@ -3305,11 +3278,11 @@ void Config::write_cpaimd_config(FILE *fp,DICT_WORD *dict, int num_dict, char *f
   fprintf(fp,"================================================\n\n\n");
 
   //========================================================================
-}//end routine 
+}//end routine
 //========================================================================
 
 // PRE: input sGrainSize is upper bound, nstates & numpes >0
-// POST: 
+// POST:
 //     oGrainSize is a factor of sGrainSize
 //     (nstates/ograinsize)^<=numPesPerInstance
 //     remainder= nstates%sGrainSize
@@ -3351,7 +3324,7 @@ int Config::approxFactor(int nstates,int &sGrainSize, int &oGrainSize,int numPes
 
   // given our ograin lower bound and sgrain upper bound
   // we have an n^2 approach to step them towards each other until we
-  // find a match.  
+  // find a match.
   int sGrainSizeLB=sGrainSize/2;
   int remainder=nstates%sGrainSize;
   int sGrainSizeUB=sGrainSize;
@@ -3369,7 +3342,7 @@ int Config::approxFactor(int nstates,int &sGrainSize, int &oGrainSize,int numPes
     {
       CkPrintf("Approx trying oGrainSize %d sGrainSize %d \n",oGrainSize, sGrainSize);
       remainder=nstates%sGrainSize;
-      if((remainder<sGrainSize/4) && (remainder<oGrainSize)) 
+      if((remainder<sGrainSize/4) && (remainder<oGrainSize))
       {
         CkPrintf("Approx remainder %d \n",remainder);
 

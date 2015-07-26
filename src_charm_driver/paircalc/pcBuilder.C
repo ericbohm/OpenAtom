@@ -28,15 +28,6 @@ namespace cp {
 
       pcHandle.mCastMgrGID = CProxy_CkMulticastMgr::ckNew(cfg.inputSpanningTreeFactor);
 
-#ifdef USE_COMLIB
-      // Setup the appropriate multicast strategy
-      Strategy *multistrat = new DirectMulticastStrategy();
-      if(cfg.isSymmetric)
-        mcastInstanceCP=ComlibRegister(multistrat);
-      else
-        mcastInstanceACP=ComlibRegister(multistrat);
-#endif
-
       return pcHandle;
     }
 
@@ -144,8 +135,6 @@ namespace cp {
       pcHandle.mapperGID  = pcMapGrp.ckGetGroupID();
     }
 
-
-
     /*
        void Builder::createInputHandler(const pcConfig &cfg)
        {
@@ -155,8 +144,6 @@ namespace cp {
     CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> ::ckNew(pairCalculatorProxy,handlerOpts);
     }
      */
-
-
 
     void Builder::createPairCalcs()
     {

@@ -38,8 +38,8 @@
 
 //============================================================================
 
-extern int sizeX;
 extern Config config;
+extern CPcharmParaInfo simReadOnly;
 
 //void hackGSpacePlaneLoad(CPcharmParaInfo *sim,int idx, double *line_load, 
 //                         double *pt_load);
@@ -235,7 +235,7 @@ int RSMap::procNum(int arrayHdl, const CkArrayIndex &idx){
   CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
 
   int numPlanes = 0;
-  numPlanes = sizeX;
+  numPlanes = simReadOnly.sizeX;
 
   int pe  = 0;
 

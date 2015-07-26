@@ -406,7 +406,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   //  CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d numRecd %d numOrtho %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, cfg.isSymmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY, numRecd, numOrtho);
   if(numRecd==numOrtho)
   {
-    contribute(sizeof(int), &numRecd , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
+    contribute(cfg.uponSetupCompletion);
     numRecd=0;
     if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)
     {
@@ -423,7 +423,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
 void PairCalculator::phantomDone()
 {
   //  CkPrintf("[%d,%d,%d,%d,%d] phantom contrib\n");
-  contribute(sizeof(int), &numOrtho , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
+  contribute(cfg.uponSetupCompletion);
 }
 
 /** \brief initialize the multicast tree and cookies for backward path */

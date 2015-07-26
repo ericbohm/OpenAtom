@@ -22,8 +22,8 @@ cfgAsymmPC.gSpaceAID           = UgSpacePlaneProxy[thisInstance.getPO()].ckGetAr
 cfgSymmPC.instanceIndex        = thisInstance.getPO();
 cfgAsymmPC.instanceIndex       = thisInstance.getPO();
 // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
-cfgSymmPC.uponSetupCompletion  = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
-cfgAsymmPC.uponSetupCompletion = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
+cfgSymmPC.uponSetupCompletion  = CkCallback(CkIndex_InstanceController::doneInit(),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
+cfgAsymmPC.uponSetupCompletion = CkCallback(CkIndex_InstanceController::doneInit(),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
 
 // Identify who is the owner for this bubble
 CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);

@@ -1,5 +1,5 @@
 //======================================================
-// Things to do : 
+// Things to do :
 //    move resetiterstate
 //======================================================
 //#define _CP_DEBUG_WARN_SUSPEND_
@@ -65,7 +65,7 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
 //============================================================================
-#if CMK_PERSISTENT_COMM 
+#if CMK_PERSISTENT_COMM
 #define USE_PERSISTENT      1
 #endif
 
@@ -84,16 +84,9 @@ extern CkVec <CProxy_EnergyGroup>             UegroupProxy;
 extern CkVec <CProxy_FFTcache>                UfftCacheProxy;
 extern CkVec <CProxy_StructFactCache>         UsfCacheProxy;
 extern CkVec <CProxy_eesCache>                UeesCacheProxy;
+extern CPcharmParaInfo                          simReadOnly;
 
-
-extern CProxy_ComlibManager mgrProxy;
-extern ComlibInstanceHandle gssInstance;
 extern CkGroupID mCastGrpId;
-
-extern int nstates;
-extern int sizeX;
-extern int nchareG;              // number of g-space chares <= sizeX and >=nplane_x
-
 
 void testeke(int ,complex *,int *,int *,int *, int ,int);
 
@@ -127,19 +120,19 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
   double d1         = ((double *)msg->getData())[1];
   d1         = sqrt(d1); // piny convention
 
-  delete msg;  
+  delete msg;
 
   //============================================================================
   // Copy old/new : Set new values
 
   fovlap_old        = fovlap;          // CG ovlap (all chares need it)
-  fmagPsi_total_old = fmagPsi_total;  
+  fmagPsi_total_old = fmagPsi_total;
 
-  fovlap            = d0;  
+  fovlap            = d0;
   fmagPsi_total     = d1;              // mag of psi force (all chares need it)
 
   //============================================================================
-  // Output the mag force, send to the energy group, set the exit flag 
+  // Output the mag force, send to the energy group, set the exit flag
 
   if(thisIndex.x==0 && thisIndex.y==0){
     computeEnergies(ENERGY_FMAG, d1);
@@ -162,19 +155,19 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
     if(numBeads==1 && numTempers==1)
     {
       if(fmagPsi_total<=tol_cp_min){
-#ifndef _CP_DEBUG_SCALC_ONLY_ 
+#ifndef _CP_DEBUG_SCALC_ONLY_
         exitFlag=1; outputFlag=1;
         if(thisIndex.x==0 && thisIndex.y==0){
           CkPrintf("----------------------------------------------\n");
           CkPrintf("   CP wavefunction force tolerence reached!   \n");
           CkPrintf("----------------------------------------------\n");
         }//endif
-#endif // _CP_DEBUG_SCALC_ONLY_ 
+#endif // _CP_DEBUG_SCALC_ONLY_
       }
     }
     else
     {
-#ifndef _CP_DEBUG_SCALC_ONLY_ 
+#ifndef _CP_DEBUG_SCALC_ONLY_
       if(fmagPsi_total<=tol_cp_min)
         outputFlag=1;
       if(exitFlagMin==1) // every bead and temper is minimized
@@ -189,13 +182,13 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
       if(thisIndex.x==0 && thisIndex.y==0){
         // can't let any bead stop until they all reach tolerance.
         // but we only need one contributor from each replica.
-        CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+        CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
         int result=(fmagPsi_total <= tol_cp_min);
         //	    CkPrintf("{%d} [%d,%d] tolcheck contrib %d %.5g %5g %5g\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, result, fmagPsi_total, tol_cp_min,fmagPsi_total - tol_cp_min);
-        mcastGrp->contribute(sizeof(int), &result, CkReduction::logical_and, 
+        mcastGrp->contribute(sizeof(int), &result, CkReduction::logical_and,
             beadCookie);
       }
-#endif // _CP_DEBUG_SCALC_ONLY_ 
+#endif // _CP_DEBUG_SCALC_ONLY_
     }
 
   }
@@ -274,20 +267,20 @@ void printForce(void *param, void *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_State_GSpacePlane::CP_State_GSpacePlane(
-    /// numplanes in x per state 
-    int sizeX, 
+    /// numplanes in x per state
+    int sizeX,
     /// numplanes per slab (Gspace: in x dimension)
-    int gSpaceUnits, 
+    int gSpaceUnits,
     /// numplanes per slab (Rspace: in y dimension)
-    int realSpaceUnits, 
+    int realSpaceUnits,
     /// S matrix grain size
-    int s_grain, 
+    int s_grain,
     /// timekeeper fwd
-    int _gforward, 
+    int _gforward,
     /// timekeeper bwd
-    int _gbackward, 
+    int _gbackward,
     /// uber
-    UberCollection _thisInstance 
+    UberCollection _thisInstance
     ) :
   forwardTimeKeep(_gforward),  backwardTimeKeep(_gbackward),
   thisInstance(_thisInstance)
@@ -336,11 +329,11 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   iteration     = 0;
 
   istate_ind           = thisIndex.x;
-  iplane_ind           = thisIndex.y;  
+  iplane_ind           = thisIndex.y;
   ibead_ind            = thisInstance.idxU.x;
   kpoint_ind           = thisInstance.idxU.y;
   itemper_ind          = thisInstance.idxU.z;
-  ispin_ind            = 0;                   //needs to be updated 
+  ispin_ind            = 0;                   //needs to be updated
   initialized          = false;
   nrotation            = 0;
   iterRotation         = 0;
@@ -368,7 +361,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   exitFlag            = 0;
   exitFlagMin         = 0;
   outputFlag          = 0;
-  iRecvRedPsi         = 1;  
+  iRecvRedPsi         = 1;
   iSentRedPsi         = 1;
   iRecvRedPsiV        = 0;
   iSentRedPsiV        = 0;
@@ -411,14 +404,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   numRecvRedPsi   = sim->RCommPkg[thisIndex.y].num_recv_tot;
 
   //---------------------------------------------
-
-  int remainder=nstates%s_grain;
+  int nstates = simReadOnly.nstates;
+  int remainder = nstates%s_grain;
   int sizeoflastgrain=s_grain+remainder;
   int lastgrain=nstates-sizeoflastgrain;
-  int ourgrain    = thisIndex.x/s_grain*s_grain; 
+  int ourgrain    = thisIndex.x/s_grain*s_grain;
   if(nstates == s_grain){
     AllPsiExpected=1;
-  }else{ 
+  }else{
     //    if(ourgrain<lastgrain){ // corner has no extras
     if(ourgrain<(nstates-s_grain)){ // corner has no extras
       AllPsiExpected=2;
@@ -434,7 +427,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   }//endif
 
   //---------------------------------------------
-  /// Asymm PC msg count accounting 
+  /// Asymm PC msg count accounting
   if(cp_min_opt==0){    //expect non diagonal column results
     if(nstates == s_grain){
       AllLambdaExpected=1;
@@ -446,7 +439,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   }//endif
 
   if(config.gSpaceSum){ // no reductions its all coming direct
-    if(cp_min_opt==0 && numGrains>1) 
+    if(cp_min_opt==0 && numGrains>1)
     { AllLambdaExpected=(2*numGrains-1)*config.numChunksAsym;}
     else
     { AllLambdaExpected=numGrains*config.numChunksAsym*AllLambdaExpected;}
@@ -507,7 +500,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
   //============================================================================
   /// Pick a reduction plane
-
+  int nchareG = config.nchareG;
   redPlane = 0;
   if(nchareG>1){
     redPlane = 1;
@@ -536,7 +529,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     }else{
       redPlane = (thisIndex.x % (nchareG-1));
     }//endif
-#else 
+#else
     redPlane = (thisIndex.x % (nchareG-1));
 #endif
     redPlane = (redPlane < 0 ? redPlane+nchareG : redPlane);
@@ -637,7 +630,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     p|total_energy;
     p|cpuTimeNow;
 
-    p|real_proxy;   
+    p|real_proxy;
     gs.pup(p);
     p|gSpaceNumPoints;
     if (p.isUnpacking()) {
@@ -648,7 +641,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       countPsiO= new int[config.numChunksSym];
       countVPsiO= new int[config.numChunksSym];
       countLambdaO= new int[config.numChunksAsym];
-    }//endif  
+    }//endif
     PUParray(p,lambdaproxy,config.numChunksAsym);
     PUParray(p,lambdaproxyother,config.numChunksAsym);
     PUParray(p,psiproxy,config.numChunksSym);
@@ -674,13 +667,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //============================================================================
     // Contribute to the reduction telling main we are done
 
-    int constructed=1;
-    contribute(sizeof(int), &constructed, CkReduction::sum_int, 
-        CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
-  //============================================================================
-  }//end
-  //============================================================================
-
+    contribute(CkCallback(CkIndex_InstanceController::doneInit(),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+  }
 
   //============================================================================
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -695,6 +683,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     CP           *cp           = CP::get();
 #include "../class_defs/allclass_strip_cp.h"
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
+    int nstates       = sim->nstates;
+    int nchareG       = config.nchareG;
     int numData       = config.numData;
     int ibinary_opt   = sim->ibinary_opt;
     int istart_typ_cp = sim->istart_typ_cp;
@@ -706,7 +696,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     int *istrt_lgrp   = NULL;
     int *iend_lgrp    = NULL;
 
-    int nx            = sizeX;
+    int nx            = sim->sizeX;
     int ny            = sim->sizeY;
     int nz            = sim->sizeZ;
     int ngridaNL      = sim->ngrid_nloc_a;
@@ -735,14 +725,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     if(istart_typ_cp>=3){
       sprintf(fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/vState%d.out",
           config.dataPath,mySpinIndex,myKptIndex,myBeadIndex,myTemperIndex,ind_state+1);
-      readState(numData,vcomplexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
+      readState(numData,vcomplexPoints,fname,ibinary_opt,&nlines_tot,&nplane,
           kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,1);
     }//endif
 
     if(gen_wave==0){
       sprintf(fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/state%d.out",
           config.dataPath,mySpinIndex,myKptIndex,myBeadIndex,myTemperIndex,ind_state+1);
-      readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
+      readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane,
           kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
       if(cp_force_complex_psi==1){
         if(ind_state==0){
@@ -754,8 +744,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         double phase = M_PI*((double)(ind_state+1))/((double)(nstates+1));
         for(int i=0;i<numData;i++){
           double re = cos(phase); double im = sin(phase);
-          double ore = re*complexPoints[i].re - im*complexPoints[i].im; 
-          double oim = re*complexPoints[i].im + im*complexPoints[i].re; 
+          double ore = re*complexPoints[i].re - im*complexPoints[i].im;
+          double oim = re*complexPoints[i].im + im*complexPoints[i].re;
           complexPoints[i].re = ore;
           complexPoints[i].im = oim;
         }//endfor
@@ -766,7 +756,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       kx += 1;  ky += 1; kz +=1;
       processState(numData,ncoef,complexPoints,fname,ibinary_opt,&nlines_tot,
           &nplane,kx,ky,kz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,
-          0,0,0,ny); 
+          0,0,0,ny);
       double *xfull =UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.x-1;
       double *yfull =UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.y-1;
       double *zfull =UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.z-1;
@@ -848,9 +838,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //============================================================================
   /**
    * This method is used to accept the state data from some initializing
-   * routine. Since a CP_State_GSpacePlane class can have more than one plane, 
+   * routine. Since a CP_State_GSpacePlane class can have more than one plane,
    * the method used for initialization is as follows:
-   * 
+   *
    * This call initializes the entire set of planes
    * runDescSize: number of run-descriptors
    * size: the total number of non-zero points
@@ -861,13 +851,13 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   //============================================================================
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   //============================================================================
-  void CP_State_GSpacePlane::initGSpace(int            size, 
+  void CP_State_GSpacePlane::initGSpace(int            size,
       complex*       points,
-      int            vsize, 
+      int            vsize,
       complex*       vpoints,
-      int nx, int ny, int nz, 
-      int nxNL, int nyNL, int nzNL, 
-      int istart_cp) 
+      int nx, int ny, int nz,
+      int nxNL, int nyNL, int nzNL,
+      int istart_cp)
     //============================================================================
   { //begin routine
     //============================================================================
@@ -885,12 +875,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     // Section Reductions and SF proxy creation
 
     real_proxy = UrealSpacePlaneProxy[thisInstance.proxyOffset];
-
-#ifdef USE_COMLIB
-    if (config.useGssInsRealP){
-      ComlibAssociateProxy(gssInstance,real_proxy);
-    }//endif
-#endif
 
     //============================================================================
     // Register with the cache : Eric's multiple reduction schemes ensure its done
@@ -913,9 +897,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     istart_typ_cp  = istart_cp;
 
-    gs.eke_ret     = 0.0;  
-    gs.fictEke_ret = 0.0;  
-    gs.ekeNhc_ret  = 0.0;  
+    gs.eke_ret     = 0.0;
+    gs.fictEke_ret = 0.0;
+    gs.ekeNhc_ret  = 0.0;
     gs.cp_min_opt  = cp_min_opt;
 
     gs.numRuns     = eesData->GspData[iplane_ind]->numRuns;
@@ -924,7 +908,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     gs.numFullNL   = (gs.numLines)*nzNL;
     gs.istate_ind  = thisIndex.x;
     gs.iplane_ind  = thisIndex.y;
-    gs.mysizeX     = sizeX;
+    gs.mysizeX     = sim->sizeX;
     gs.fftReqd     = true;
 
     gs.xdim        = 1;
@@ -950,7 +934,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     gs.packedPlaneDataTemp2 = NULL;
     if(cp_min_opt==0){
       gs.packedPlaneDataScr   = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
-      gs.packedPlaneDataTemp  = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
+      gs.packedPlaneDataTemp  = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
       memset(gs.packedPlaneDataScr, 0, sizeof(complex)*gs.numPoints);
       CmiMemcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
     }//endif
@@ -967,7 +951,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     }//endif
 
     if(cp_min_opt==1 && cp_min_update==0){
-      gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
+      gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
       CmiMemcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
     }//endif
 
@@ -1020,10 +1004,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       CkExit();
     }//endif
 
-    fovlap      = 0.0; 
+    fovlap      = 0.0;
 
     //============================================================================
-    // Init NHC, Sample velocities 
+    // Init NHC, Sample velocities
 
     int ncoef_use = gs.numPoints-gs.nkx0_red;
     int maxLenNHC = gs.len_nhc_cp; // double check
@@ -1053,7 +1037,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 
     //============================================================================
-    // Send the k's to the structure factor 
+    // Send the k's to the structure factor
 
     if(sim->ees_nloc_on == 0){
       for(int atm=0;atm<config.numSfGrps; atm++){ //each atm
@@ -1078,7 +1062,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     /** Now that we have paircalcids, proxies, and allocated data, setup RDMA with a handshake to each PC.
      * Give each PC a token as part of the handshake that identifies what we will be sending it.
      * The PC will fill the token with its ID information and return it to us.
-     * This, along with the RDMA handle will allow us to complete the setup by pointing out the appropriate 
+     * This, along with the RDMA handle will allow us to complete the setup by pointing out the appropriate
      * data to be sent to that PC.
      */
 
@@ -1109,8 +1093,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     // This reduction is done to signal the end of initialization to main
 
     int i=1;
-    contribute(sizeof(int), &i, CkReduction::sum_int, 
-        CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
+    contribute(CkCallback(CkIndex_InstanceController::doneInit(),
+        CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 
 #endif
 #ifdef _CP_SUBSTEP_TIMING_
@@ -1141,7 +1125,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     new_atom_t_ext=temp;        // soon to be current
     // when you're done
     int i=1;
-    contribute(sizeof(int), &i, CkReduction::sum_int, 
+    contribute(sizeof(int), &i, CkReduction::sum_int,
         CkCallback(CkIndex_InstanceController::gspDoneNewTemp(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
   }//end 
  //============================================================================
@@ -1190,7 +1174,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     // Check for flow of control errors :
     if(iteration>0){
-      if(UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp != iteration || 
+      if(UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp != iteration ||
           UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration  != iteration){
         CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);
         CkPrintf("{%d} Flow of Control Error : Starting new iter before\n",thisInstance.proxyOffset);
@@ -1261,7 +1245,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 
     if(config.lbgspace || config.lbpaircalc ||config.lbdensity){
-      if((iteration % (FIRST_BALANCE_STEP - PRE_BALANCE_STEP) == 0)  || 
+      if((iteration % (FIRST_BALANCE_STEP - PRE_BALANCE_STEP) == 0)  ||
           (iteration % (LOAD_BALANCE_STEP - PRE_BALANCE_STEP) == 0)){
         LBTurnInstrumentOn();
       }//endif
@@ -1336,7 +1320,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   /**
    * This method is used to start the forward ffts in the CP_State_GSpacePlanes.
    * The work done here could have been done in the acceptData method, but for
-   * the fact that we need to synchronize all the CP_State_GSpacePlanes before 
+   * the fact that we need to synchronize all the CP_State_GSpacePlanes before
    * doing the forward-ffts. This is a feature, not a bug!
    */
   //============================================================================
@@ -1369,12 +1353,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     RunDescriptor *runs = eesData->GspData[iplane_ind]->runs;
 
-    UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->doStpFFTGtoR_Gchare(gs.packedPlaneData,gs.packedForceData, 
+    UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->doStpFFTGtoR_Gchare(gs.packedPlaneData,gs.packedForceData,
         gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim,iplane_ind);
 
 #if CMK_TRACE_ENABLED
     traceUserBracketEvent(GspaceFwFFT_, StartTime, CmiWallTimer());
-#endif   
+#endif
   }
   //============================================================================
 
@@ -1396,7 +1380,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     fftHandler = (PersistentHandle*) malloc( sizeof(PersistentHandle) * sizeZ);
     int size;
     for(int z=0; z < sizeZ; z++) {
-      int peer = real_proxy_local->homePe(CkArrayIndex2D(thisIndex.x, z)); 
+      int peer = real_proxy_local->homePe(CkArrayIndex2D(thisIndex.x, z));
       int compress_start = sizeof(envelope) + sizeof(RSFFTMsg);
       int compress_size = numLines*sizeof(complex);
       size = compress_start + compress_size + sizeof(int);
@@ -1429,16 +1413,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     int sizeZ    = gs.planeSize[1];
 
     //============================================================================
-    // Do a Comlib Dance
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-    if (config.useGssInsRealP){gssInstance.beginIteration();}
-#else
-    // if (config.useGssInsRealP){ComlibBegin(real_proxy, 0);}
-#endif
-#endif
-
-    //============================================================================
     // Send your (x,y,z) to processors z.
 
     /**********************************************
@@ -1459,35 +1433,28 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
       if(config.prioFFTMsg){
         CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-        *(int*)CkPriorityPtr(msg) = config.rsfftpriority + 
+        *(int*)CkPriorityPtr(msg) = config.rsfftpriority +
           thisIndex.x*gs.planeSize[0]+thisIndex.y;
       }//endif
 
       // beam out all points with same z to chare array index z
       complex *data    = msg->data;
-      //fprintf(fp,"%d\n%d ",numLines*2, iteration); 
+      //fprintf(fp,"%d\n%d ",numLines*2, iteration);
       for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = data_out[j]; }
       //for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = data_out[j]; fprintf(fp,"%e %e ", data[i].re, data[i].im);}
-#if USE_PERSISTENT 
+#if USE_PERSISTENT
       CmiUsePersistentHandle(&fftHandler[z], 1);
 #endif
       real_proxy(thisIndex.x, z).acceptFFT(msg);  // same state,realspace index [z]
-#if USE_PERSISTENT 
+#if USE_PERSISTENT
       CmiUsePersistentHandle(NULL, 0);
 #endif
       // progress engine baby
     }//endfor
     //fclose(fp);
 
-    //============================================================================    
-    // Finish up 
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-    if (config.useGssInsRealP){gssInstance.endIteration();}
-#else
-    //if (config.useGssInsRealP){ComlibEnd(real_proxy, 0);}
-#endif
-#endif
+    //============================================================================
+    // Finish up
 
 #ifdef _CP_SUBSTEP_TIMING_
     if(forwardTimeKeep>0)
@@ -1499,7 +1466,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 
     //----------------------------------------------------------------------
-  }//end routine 
+  }//end routine
   //============================================================================
 
 
@@ -1588,8 +1555,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     // Finish up by multiplying the the FFT scaling factor
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
-    double scaleFactor = -2.0/double(sim->sizeX * 
-        sim->sizeY * 
+    double scaleFactor = -2.0/double(sim->sizeX *
+        sim->sizeY *
         sim->sizeZ);
     complex *forces = gs.packedForceData;
     for(int index=0; index<gs.numPoints; index++)
@@ -1659,34 +1626,34 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 
     complex *forces = gs.packedForceData;
-    complex *ppForces = UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).ckLocal()->myForces; 
+    complex *ppForces = UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).ckLocal()->myForces;
 
 #ifdef _CP_DEBUG_SFNL_OFF_
     bzero(ppForces,ncoef*sizeof(complex));
 #endif
-#ifdef _CP_DEBUG_VKS_OFF_ 
+#ifdef _CP_DEBUG_VKS_OFF_
     bzero(forces,ncoef*sizeof(complex));
     bzero(ppForces,ncoef*sizeof(complex));
 #endif
 
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrix("vksBf",(double *)ppForces, 1, 
-        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    dumpMatrix("forceBf",(double *)forces, 1, 
-        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrix("vksBf",(double *)ppForces, 1,
+        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
+    dumpMatrix("forceBf",(double *)forces, 1,
+        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
     if(savedvksBf==NULL){ // load it
       savedvksBf= new complex[gs.numPoints];
-      loadMatrix("vksBf",(double *)savedvksBf, 1, 
-          gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("vksBf",(double *)savedvksBf, 1,
+          gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
     }//endif
     if(savedforceBf==NULL){ // load it
       savedforceBf= new complex[gs.numPoints];
-      loadMatrix("forceBf",(double *)savedforceBf, 1, 
-          gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("forceBf",(double *)savedforceBf, 1,
+          gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
     }//endif
 
     for(int i=0;i<gs.numPoints;i++){
@@ -1726,7 +1693,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         CkCallback(CkIndex_InstanceController::printEnergyEke(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
     //isEnergyReductionDone = false; ///@note: This doesnt seem necessary here and commenting out has not affected simple tests. This flag is reset at the start of the iter itself.
 
-#ifdef _CP_DEBUG_SCALC_ONLY_ 
+#ifdef _CP_DEBUG_SCALC_ONLY_
     bzero(forces,ncoef*sizeof(complex));
 #endif
 
@@ -1753,7 +1720,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
 
   //==============================================================================
-  /** \brief Atoms are launched by allDoneCpForces when all after ALL planes and states 
+  /** \brief Atoms are launched by allDoneCpForces when all after ALL planes and states
    *   have reported. */
   //==============================================================================
   //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1770,7 +1737,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #ifdef _CP_SUBSTEP_TIMING_
 #if USE_HPM
       (TimeKeeperProxy.ckLocalBranch())->printHPM();
-#endif	
+#endif
 #endif
       cleanExitCalled = 1;
 
@@ -1869,7 +1836,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //==============================================================================
 
     // Debug output schmoo : output forces before lambda-ization!
-    //                     : 
+    //                     :
 
 
 #define _CP_GSPACE_PSI_FORCE_OUTPUT_BEFORE_LAMBDA_OFF_
@@ -1940,22 +1907,22 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     char name2[100];
     sprintf(name1, "lambdaBf.iter.%d", iteration);
     sprintf(name2, "psiBf.iter.%d", iteration);
-    dumpMatrix(name1, (double *)force, 1, 
-        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    dumpMatrix(name2,(double *)psi, 1, 
-        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrix(name1, (double *)force, 1,
+        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
+    dumpMatrix(name2,(double *)psi, 1,
+        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
     if(savedlambdaBf==NULL){ // load it
       savedlambdaBf= new complex[gs.numPoints];
-      loadMatrix("lambdaBf",(double *)savedlambdaBf, 1, 
-          gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("lambdaBf",(double *)savedlambdaBf, 1,
+          gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
     }//endif
     if(savedpsiBf==NULL){ // load it
       savedpsiBf= new complex[gs.numPoints];
-      loadMatrix("psiBf",(double *)savedpsiBf, 1, 
-          gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("psiBf",(double *)savedpsiBf, 1,
+          gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
     }//endif
     double testvalue=0.00000001;
     for(int i=0;i<gs.numPoints;i++){
@@ -1988,7 +1955,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 
     //==============================================================================
-    /// sub-phase timing 
+    /// sub-phase timing
 
 #ifdef _CP_SUBSTEP_TIMING_
     if(backwardTimeKeep>0){
@@ -1999,7 +1966,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 
     //-----------------------------------------------------------------------------
-  }// end routine 
+  }// end routine
   //==============================================================================
 
 
@@ -2034,10 +2001,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     countLambda++;//lambda arrives in as many as 2 * numChunks reductions
 
     //==============================================================================
-    /// Add the forces 
+    /// Add the forces
 
     //---------------------------------------------------
-    /// A) Double Pack 
+    /// A) Double Pack
     if(config.doublePack==1){
       if(cp_min_opt==1){
         double overlap = (cp_lsda==0 ? 2.0 : 1.0);
@@ -2080,13 +2047,13 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     //---------------------------------------------------
     /// C) Cleanup
-    delete msg;  
+    delete msg;
 
     //==============================================================================
     /// Do we have everything?
 
     countLambdaO[offset]++;
-    if(countLambda==AllLambdaExpected){ 
+    if(countLambda==AllLambdaExpected){
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
         CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
@@ -2170,13 +2137,13 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //----------------------------------------------------------
     /// C) Clean up
 
-    delete msg;  
+    delete msg;
 
     //=============================================================================
     // are we done?
 
     countLambdaO[offset]++;
-    if(countLambda==AllLambdaExpected){ 
+    if(countLambda==AllLambdaExpected){
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
       if(thisIndex.x==0)
         CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
@@ -2241,15 +2208,15 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
 #ifdef _CP_GS_DUMP_LAMBDA_
     dumpMatrix("lambdaAf",(double *)force, 1, gs.numPoints*2,
-        thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+        thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
     double testvalue=0.00000001;
     if(savedlambdaAf==NULL){ // load it
       savedlambdaAf= new complex[gs.numPoints];
-      loadMatrix("lambdaAf",(double *)savedlambdaAf, 1, 
-          gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("lambdaAf",(double *)savedlambdaAf, 1,
+          gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
     }//endif
     for(int i=0;i<gs.numPoints;i++){
       CkAssert(fabs(force[i].re-savedlambdaAf[i].re)<testvalue);
@@ -2372,8 +2339,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     double ***xNHC    = gs.xNHC;
     double ***xNHCP   = gs.xNHCP;
     double ***vNHC    = gs.vNHC;
-    double ***fNHC    = gs.fNHC;          
-    double *mNHC      = gs.mNHC;          
+    double ***fNHC    = gs.fNHC;
+    double *mNHC      = gs.mNHC;
     int len_nhc_cp    = gs.len_nhc_cp;
     int num_nhc_cp    = gs.num_nhc_cp;
     int nck_nhc_cp    = gs.nck_nhc_cp;
@@ -2424,13 +2391,13 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         8*sizeof(int)) GStateOutMsg;
     if(config.prioFFTMsg){
       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-      *(int*)CkPriorityPtr(msg) = config.rsfftpriority + 
+      *(int*)CkPriorityPtr(msg) = config.rsfftpriority +
         thisIndex.x*gs.planeSize[0]+thisIndex.y;
     }//endif
     msg->size        = ncoef;
     msg->senderIndex = thisIndex.y;  // planenumber
     complex *data    = msg->data;
-    complex *vdata   = msg->vdata; 
+    complex *vdata   = msg->vdata;
     int *mk_x        = msg->k_x;
     int *mk_y        = msg->k_y;
     int *mk_z        = msg->k_z;
@@ -2440,7 +2407,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       for(int i=0;i<ncoef;i++){vdata[i] = 0.0;}
     }//endif
     for (int i=0;i<ncoef; i++){
-      data[i]  = psi[i];  
+      data[i]  = psi[i];
       mk_x[i]  = k_x[i];  mk_y[i]  = k_y[i];  mk_z[i]  = k_z[i];
     }//endfor
     UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,redPlane).acceptFileOutput(msg);
@@ -2473,7 +2440,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     int ncoef      = msg->size;
     int myplane    = msg->senderIndex;
     complex *data  = msg->data;
-    complex *vdata = msg->vdata; 
+    complex *vdata = msg->vdata;
     int *mk_x      = msg->k_x;
     int *mk_y      = msg->k_y;
     int *mk_z      = msg->k_z;
@@ -2557,7 +2524,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     //==============================================================================
 
-    /// II. Local pointers    
+    /// II. Local pointers
 
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     int *k_x          = eesData->GspData[iplane_ind]->ka;
@@ -2566,16 +2533,18 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     double *coef_mass = eesData->GspData[iplane_ind]->coef_mass;
 
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
+    int nstates        = sim->nstates;
+    int nchareG        = config.nchareG;
     int cp_min_opt     = sim->cp_min_opt;
     int cp_min_cg      = sim->cp_min_cg;
 
     int istate         = gs.istate_ind;
     int ncoef          = gs.numPoints;
-    int len_nhc        = gs.len_nhc_cp; 
+    int len_nhc        = gs.len_nhc_cp;
     int num_nhc        = gs.num_nhc_cp;
     int nck_nhc        = gs.nck_nhc_cp;
-    complex *psi_g     = gs.packedPlaneData; 
-    complex *forces    = gs.packedForceData; 
+    complex *psi_g     = gs.packedPlaneData;
+    complex *forces    = gs.packedForceData;
     complex *forcesold = gs.packedVelData; // for minimization not cp
     complex *vpsi_g    = gs.packedVelData; // for cp not minimization
     double ***fNHC     = gs.fNHC;
@@ -2606,7 +2575,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     ireset_cg = 0;
     if(iteration==1){ireset_cg=1;numReset_cg=0;}
     if(iteration>1 && cp_min_opt==1 && cp_min_cg==1){
-      if( (fmagPsi_total>1.05*fmagPsi_total_old && numReset_cg>=5) || 
+      if( (fmagPsi_total>1.05*fmagPsi_total_old && numReset_cg>=5) ||
           (fmagPsi_total>2.0*fmagPsi_total_old)){
         ireset_cg   = 1;
         numReset_cg = 0;
@@ -2676,7 +2645,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     }//endfor
 #endif
 
-#ifdef _CP_DEBUG_SCALC_ONLY_ 
+#ifdef _CP_DEBUG_SCALC_ONLY_
     bzero(forces,ncoef*sizeof(complex));
     if(cp_min_opt==0){
       psi_g = gs.packedPlaneDataTemp3;
@@ -2771,7 +2740,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     sendme[2] = fictEke;
     sendme[3] = ekeNhc;
     sendme[4] = potNHC;
-    contribute(5*sizeof(double),sendme,CkReduction::sum_double, 
+    contribute(5*sizeof(double),sendme,CkReduction::sum_double,
         CkCallback(CkIndex_InstanceController::printFictEke(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 
     //==========================================================================
@@ -2815,8 +2784,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //==============================================================================
 
     int iii=0; int jjj=0;
-    if(num_send_tot>0){ 
-      for(int irecv = 0; irecv < nchareG; irecv ++){
+    if(num_send_tot>0){
+      for(int irecv = 0; irecv < config.nchareG; irecv ++){
 
         int ncoef       = num_send[irecv];
         jjj += ncoef;
@@ -2824,7 +2793,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
           GSRedPsiMsg *msg  = new (ncoef,8*sizeof(int)) GSRedPsiMsg;
           if(config.prioFFTMsg){
             CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-            *(int*)CkPriorityPtr(msg) = config.rsfftpriority + 
+            *(int*)CkPriorityPtr(msg) = config.rsfftpriority +
               thisIndex.x*gs.planeSize[0]+thisIndex.y;
           }//endif
           if(ncoef>0){iii++;}
@@ -2840,7 +2809,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     }//endif : no one to which I have to send
 
     //==============================================================================
-    // Check for errors 
+    // Check for errors
 
     if(iii!=num_send_tot){
       CkPrintf("Error in GSchare %d %d : %d %d : sendredPsi.1\n",thisIndex.x,thisIndex.y,
@@ -2990,7 +2959,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 
     //==============================================================================
-    // Debugging 
+    // Debugging
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
     for(int i=0;i<config.numChunksSym;i++){CkAssert(countPsiO[i]==0);}
@@ -2998,7 +2967,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
 #ifdef _CP_GS_DUMP_PSI_
     dumpMatrix("psiBfp",(double *)psi, 1, gs.numPoints*2,
-        thisIndex.y,thisIndex.x,thisIndex.x,0,false);     
+        thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
@@ -3006,7 +2975,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     if(savedpsiBfp==NULL){ // load it
       savedpsiBfp= new complex[gs.numPoints];
       loadMatrix("psiBfp",(double *)savedpsiBfp, 1, gs.numPoints*2,
-          thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+          thisIndex.y,thisIndex.x,thisIndex.x,0,false);
     }//endif
     for(int i=0;i<gs.numPoints;i++){
       if(fabs(psi[i].re-savedpsiBfp[i].re)>testvalue){
@@ -3090,8 +3059,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     /// (II) If you have got it all : Rescale it, produce some output
 
     countPsi++;//psi arrives in as many as 2 *numblock reductions
-    countPsiO[offset]++;//psi arrives in as many as 2 
-    if(countPsi==AllPsiExpected){ 
+    countPsiO[offset]++;//psi arrives in as many as 2
+    if(countPsi==AllPsiExpected){
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
       if(thisIndex.x==0)
         CkPrintf("acceptpsi %d %d\n",thisIndex.y,cleanExitCalled);
@@ -3168,7 +3137,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     countPsi++;         //psi arrives in as many as 2 *numblock * numgrain reductions
     countPsiO[offset]++;//psi arrives in as many as 2 * numgrain
     //
-    if(countPsi==AllPsiExpected){ 
+    if(countPsi==AllPsiExpected){
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
       if(thisIndex.x==0){CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);}
 #endif
@@ -3211,7 +3180,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       CkPrintf("donewpsi %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
 
-    CkAssert(countPsi==AllPsiExpected); 
+    CkAssert(countPsi==AllPsiExpected);
 
     complex *psi  = gs.packedPlaneData;
 #ifdef _NAN_CHECK_
@@ -3253,7 +3222,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     if(savedpsiAf==NULL){
       savedpsiAf= new complex[gs.numPoints];
       loadMatrix("psiAf",(double *)savedpsiAf, 1, gs.numPoints*2,
-          thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+          thisIndex.y,thisIndex.x,thisIndex.x,0,false);
     }//endif
     for(int i=0;i<gs.numPoints;i++){
       if(fabs(psi[i].re-savedpsiAf[i].re)>testvalue){
@@ -3266,7 +3235,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 
     //=============================================================================
-    // (E) Reset psi 
+    // (E) Reset psi
 
     if(cp_min_opt==1 && cp_min_update==0 && iteration>0){
       CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
@@ -3331,8 +3300,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     double ***xNHC    = gs.xNHC;
     double ***xNHCP   = gs.xNHCP;
     double ***vNHC    = gs.vNHC;
-    double ***fNHC    = gs.fNHC;          
-    double *mNHC      = gs.mNHC;          
+    double ***fNHC    = gs.fNHC;
+    double *mNHC      = gs.mNHC;
     int len_nhc_cp    = gs.len_nhc_cp;
     int num_nhc_cp    = gs.num_nhc_cp;
     int nck_nhc_cp    = gs.nck_nhc_cp;
@@ -3345,7 +3314,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     /// II) Sync yourself with psi by integrating to time t if output has not done it
     //     you have the wrong force but thats OK until you put in a better rotation
 
-    halfStepEvolve = 1; 
+    halfStepEvolve = 1;
 
 #ifdef JUNK
     halfStepEvolve = 0; // do the 1/2 step update now
@@ -3370,8 +3339,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     int num_send_tot  = RCommPkg[isend].num_send_tot;
 
     int iii=0; int jjj=0;
-    if(num_send_tot>0){ 
-      for(int irecv = 0; irecv < nchareG; irecv ++){
+    if(num_send_tot>0){
+      for(int irecv = 0; irecv < config.nchareG; irecv ++){
 
         int ncoef       = num_send[irecv];
         jjj += ncoef;
@@ -3379,7 +3348,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
           GSRedPsiMsg *msg  = new (ncoef,8*sizeof(int)) GSRedPsiMsg;
           if(config.prioFFTMsg){
             CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-            *(int*)CkPriorityPtr(msg) = config.rsfftpriority + 
+            *(int*)CkPriorityPtr(msg) = config.rsfftpriority +
               thisIndex.x*gs.planeSize[0]+thisIndex.y;
           }//endif
           if(ncoef>0){iii++;}
@@ -3395,7 +3364,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     }//endif : no one to which I have to send
 
     //==============================================================================
-    /// Check for errors 
+    /// Check for errors
 
     if(iii!=num_send_tot){
       CkPrintf("Error in GSchare %d %d : %d %d : sendRedPsiV.1\n",thisIndex.x,thisIndex.y,
@@ -3546,7 +3515,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     int ncoef     = gs.numPoints;
     complex *data = gs.packedVelData;
-    complex *scr  = gs.packedPlaneDataScr;  // replace no-ortho psi 
+    complex *scr  = gs.packedPlaneDataScr;  // replace no-ortho psi
     complex *psi  = gs.packedPlaneData;     // by orthonormal psi when norb rotating
     CmiMemcpy(scr,psi,sizeof(complex)*ncoef);
 
@@ -3601,8 +3570,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       //for(int i=0; i<N; i++,idest++){vpsi[idest] = data[i];}
     }else{
       //    for(int i=0; i<N; i++,idest++){vpsi[idest] += data[i];}
-      fastAdd((double *) &vpsi[idest],(double *)data,N*2);    
-    }//endif  
+      fastAdd((double *) &vpsi[idest],(double *)data,N*2);
+    }//endif
 
     delete msg;
 
@@ -3612,7 +3581,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     countVPsi++;         //psi arrives in as many as 2 reductions
     countVPsiO[offset]++;//psi arrives in as many as 2 reductions
 
-    if(countVPsi==AllPsiExpected){ 
+    if(countVPsi==AllPsiExpected){
 #ifdef DEBUG_CP_GSPACE_PSIV
       CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d reductions).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
 #endif
@@ -3675,7 +3644,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     countVPsi++;//psi arrives in as many as 2 reductions
     countVPsiO[offset]++;//psi arrives in as many as 2 reductions
 
-    if(countVPsi==AllPsiExpected){ 
+    if(countVPsi==AllPsiExpected){
 #ifdef DEBUG_CP_GSPACE_PSIV
       CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d messages).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
 #endif
@@ -3812,7 +3781,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     CkPrintf("GSpace[%d,%d] doNewPsiV\n",thisIndex.x,thisIndex.y);
 #endif
 
-    CkAssert(countVPsi==AllPsiExpected); 
+    CkAssert(countVPsi==AllPsiExpected);
 
     if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
       CkPrintf("GSpace[%d,%d] Error: You can't doNewPsiV() without sending/receiving the redundant PsiV values around: finished %d %d : %d %d\n",thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
@@ -3965,11 +3934,11 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
 
   //==============================================================================
-  /** \brief Once All chares have completed energy computation and reduction, this 
+  /** \brief Once All chares have completed energy computation and reduction, this
    * storage routine is invoked. */
   // Since eke is the last energy, its reduction client
-  // invokes this guy on chare (0,0). The routine then bcasts its results to the 
-  // energy group (one per processor) thereby making information available on all 
+  // invokes this guy on chare (0,0). The routine then bcasts its results to the
+  // energy group (one per processor) thereby making information available on all
   // procs for tolerence testing via a cklocal type deal.
   //==============================================================================
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -3979,7 +3948,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     switch(param){
 
-      case ENERGY_EHART : 
+      case ENERGY_EHART :
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
         CkPrintf("Received Hart\n");
 #endif
@@ -3997,7 +3966,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         ecount++;
         break;
 
-      case ENERGY_EKE : 
+      case ENERGY_EKE :
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
         CkPrintf("Received Eke\n");
 #endif
@@ -4042,7 +4011,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         ecount++;
         break;
 
-      case ENERGY_FICTEKE : 
+      case ENERGY_FICTEKE :
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
         CkPrintf("Received FICTEKE\n");
 #endif
@@ -4050,7 +4019,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         ecount++;
         break;
 
-      case ENERGY_FMAG : 
+      case ENERGY_FMAG :
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
         CkPrintf("Received FMAG\n");
 #endif
@@ -4269,7 +4238,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     RDMApair_GSP_PC token = msg->token();
     rdmaHandleType ourHandle = msg->handle();
 #ifdef DEBUG_CP_PAIRCALC_RDMA
-    std::stringstream dbgStr; 
+    std::stringstream dbgStr;
     dbgStr<<token;
     CkPrintf("%s : Received RDMA setup confirmation from paircalc. Now have %d handles of %d (%d symm + %d asymm)\n", dbgStr.str().c_str(),
         thisIndex.x,thisIndex.y, gotHandles+1, numRDMAlinksSymm+numRDMAlinksAsymm, numRDMAlinksSymm, numRDMAlinksAsymm );
@@ -4311,9 +4280,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
 #ifdef DEBUG_CP_PAIRCALC_RDMA
     CkPrintf("%s : Will RDMA-put %d units of data at an offset of %d units from %p on proc %d to %p on proc %d\n",
-        dbgStr.str().c_str(), dataSize, offset, 
+        dbgStr.str().c_str(), dataSize, offset,
         (!token.shouldSendLeft && !token.symmetric)? &(gs.packedForceData) : &(gs.packedPlaneData), ourHandle.senderNode,
-        ourHandle.recverBuf,ourHandle.recverNode); 
+        ourHandle.recverBuf,ourHandle.recverNode);
 #endif
 
     /// Call a reduction that signals the end of the initialization phase to main
@@ -4324,8 +4293,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
           thisIndex.x,thisIndex.y,gotHandles,numRDMAlinksSymm,numRDMAlinksAsymm);
 #endif
       int i=1;
-      CkCallback cbDoneInit = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy);
-      contribute(sizeof(int), &i, CkReduction::sum_int, cbDoneInit, thisInstance.proxyOffset);
+      CkCallback cbDoneInit = CkCallback(CkIndex_InstanceController::doneInit(),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy);
+      contribute(cbDoneInit);
     }
     delete msg;
 #endif // PC_USE_RDMA

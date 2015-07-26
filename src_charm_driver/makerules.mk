@@ -9,7 +9,7 @@ libdriver_src = \
                 ckPairCalculator.C pcBuilder.C \
                 ortho.C pcSectionManager.C orthoBuilder.C \
                 StructureFactor.C StructFactorCache.C \
-                fftCache.C stateSlab.C rhoSlab.C \
+                fftCache.C stateSlab.C \
                 MapTable.C PeList.C ENL_EKE_Collector.C \
                 util.C MapFile.C para_grp_parse.C matrix2file.C PIBeadAtoms.C
 libdriver_obj = $(addsuffix .o, $(basename $(libdriver_src)) )

@@ -3,9 +3,8 @@
 #include "CP_State_ParticlePlane.h"
 #include "main/TimeKeeper.h"
 
-extern int nstates;
 extern Config config;
-
+extern CPcharmParaInfo                          simReadOnly;
 extern CProxy_TimeKeeper 			TimeKeeperProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>      UgSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane> 	UparticlePlaneProxy;
@@ -91,8 +90,8 @@ void GSpaceDriver::init()
   {
     /// numDups must be less than the number of states because thats the maximum number of times you can duplicate a plane
     int numSfDups = config.numSfDups;
-    if(numSfDups > nstates)
-      numSfDups = nstates;
+    if(numSfDups > simReadOnly.nstates)
+      numSfDups = simReadOnly.nstates;
     /// Create a list of SF chares in this section
     CkVec <CkArrayIndex3D> sfelems;
     for(int dup=0; dup<numSfDups; dup++)
