@@ -397,3 +397,35 @@ int PeList::findNext() {
   return pe;
 }
 
+PeList *PeList::distributeAcrossPelist(int numElements, int listoffset)
+{
+  if(isSetOnly) {
+    CkAbort("Cannot distributeAcrossPelist in a list which is setOnly\n");
+  }
+  int newListSize = (size() > numElements) ? numElements : size();
+  PeList *outlist = new PeList(1, 1, 0);
+  int stride = size() / numElements + 1;
+  int mod = size() % numElements;
+  if(isList) {
+    std::list< int >::iterator it = list.begin();
+    for(int i = 0; i < listoffset; i++) it++;
+    for(int i = 0; i < newListSize; i++) {
+      if(it == list.end()) it = list.begin();
+      outlist->checkAndAdd(*it);
+      if(i == mod) stride--;
+      for(int j = 0; j < stride; j++) {
+        if(it == list.end()) it = list.begin();
+        it++;
+      }
+    }
+  } else {
+    for(int i = 0; i < newListSize; i++, listoffset += stride) {
+      outlist->checkAndAdd(vectorList[listoffset % size()]);
+      if(i == mod) stride--;
+    }
+  }
+  outlist->reset();
+  return outlist;
+}
+
+

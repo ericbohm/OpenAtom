@@ -91,18 +91,8 @@ module gSpaceDriver
       }
       // Compute our initial psi unless gen_wave is on
       if (!_SDAG_DEBUG_PSI_OFF_ && gen_wave) {
- serial {
-      	      if (thisIndex.x == 0 && thisIndex.y == 0) {
-	                      CkPrintf("will call computeNewPsi\n", myGSpaceObj->num_steps);
-								        }		
-          }
         serial { myGSpaceObj->computeNewPsi(); }
         when doneNewPsi() {}
- serial {
-      	      if (thisIndex.x == 0 && thisIndex.y == 0) {
-	                      CkPrintf("done computeNewPsi\n", myGSpaceObj->num_steps);
-								        }		
-          }
       }
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! that we have met the desired tolerance by setting exitFlag to 1.
@@ -247,6 +237,7 @@ module gSpaceDriver
 
           serial { myGSpaceObj->computeRedPsi(); }
           when doneRedPsi() {}
+
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
         //! Compute the Psi for the next iteration
@@ -365,7 +356,11 @@ module gStatePlane
   message RSFFTMsg     { complex data[]; };
   message GSIFFTMsg    { complex data[]; };
   message GSRedPsiMsg  { complex data[]; };
-  message ProductMsg {double data[];};	
+  message InitDensity;
+  message VksMsg {
+    double data[];
+  };
+
   message GStateOutMsg
   {
     complex data[];
@@ -384,7 +379,7 @@ module gStatePlane
 
     entry void run() {
       while (true) {
-        for (count = 0; count < nchareG; count++) {
+        for (count = 0; count < config.nchareG; count++) {
           // Partially FFTd data comes from CP_State_GSpacePlane
           when acceptFFT(RSFFTMsg *m) serial { unpackFFT(m); }
         }
@@ -395,9 +390,9 @@ module gStatePlane
           // Reduction of Psi[S,R] to Rho[R] is invoked; Go to sleep
         }
 
-        for (countProduct = 0; countProduct < rhoRsubplanes; ++countProduct) {
+        for (countProduct = 0; countProduct < config.nchareRhoR_y; ++countProduct) {
           // Rho chares multicast back VKS[R]
-          when acceptProduct(ProductMsg *m) serial { unpackProduct(m); }
+          when acceptVks(VksMsg *m) serial { unPackVks(m); }
         }
 
 #ifdef RSVKS_BARRIER
@@ -419,12 +414,12 @@ module gStatePlane
     };
 
     entry [nokeep] void acceptFFT(RSFFTMsg *m);
-    entry [nokeep] void acceptProduct(ProductMsg *m);
+    entry [nokeep] void acceptVks(VksMsg *m);
     entry [local] void doFFT();
     entry [local] void doVksFFT();
     entry void setNumPlanesToExpect(int num);
     entry void printData();
-    entry [nokeep] void init(ProductMsg *m);
+    entry [nokeep] void init(InitDensity *m);
 
 #ifdef RSVKS_BARRIER
     entry void rdoneVks(CkReductionMsg *m);
@@ -594,7 +589,7 @@ module gStatePlane
 
       // The reduction plane collects all of the output, and writes the file
       if (thisIndex.y == redPlane) {
-        while (countFileOut < nchareG) {
+        while (countFileOut < config.nchareG) {
           when acceptFileOutput(GStateOutMsg* msg) serial { unpackFileOutput(msg); }
         }
         serial { writeOutputFile(); }

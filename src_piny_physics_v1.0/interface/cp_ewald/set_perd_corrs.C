@@ -24,10 +24,11 @@
 #include "../proto_defs/proto_cp_ewald_corrs.h"
 #include "../proto_defs/proto_friend_lib_entry.h"
 
+#if 0 && GLENN_PERIODIC_CORRECTION
 //=========================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=========================================================================================
-void setput_nd_eext_corrs(int nktot, int *ka, int *kb, int *kc, double *perdCorr){
+void setput_nd_eext_corrs(int nktot, vector< gridPoints > myPoints, double *perdCorr){
   //=========================================================================================
   // Strip out data and then check to see if you belong here
 
@@ -52,9 +53,9 @@ void setput_nd_eext_corrs(int nktot, int *ka, int *kb, int *kc, double *perdCorr
 
   int kamax = 0;  int kcmax = 0;  int kbmax = 0;
   for(int i=0;i<nktot;i++){
-    kamax = MAX(kamax,abs(ka[i]));
-    kbmax = MAX(kbmax,abs(kb[i]));
-    kcmax = MAX(kcmax,abs(kc[i]));
+    kamax = MAX(kamax,abs(myPoints[i].d1));
+    kbmax = MAX(kbmax,abs(myPoints[i].d2));
+    kcmax = MAX(kcmax,abs(myPoints[i].d3));
   }//endfor
 
   if(kamax>ngaMax || kbmax>ngbMax || kcmax>ngcMax){
@@ -78,11 +79,11 @@ void setput_nd_eext_corrs(int nktot, int *ka, int *kb, int *kc, double *perdCorr
     create_perd_corr_data(ngaMax,ngbMax,ngcMax,&M,&nquad,&anode,&weight,&data,&wmax,&wmin);
 
     if(iperd==0){
-      create_clus_corr(nktot,ka,kb,kc,hmat,hmati,nquad,anode,weight,data,wmax,wmin,perdCorr);
+      create_clus_corr(nktot,myPoints,hmat,hmati,nquad,anode,weight,data,wmax,wmin,perdCorr);
     }//endif
 
     if(iperd==1){
-      create_wire_corr(nktot,ka,kb,kc,hmat,hmati,nquad,anode,weight,data,wmax,wmin,perdCorr);
+      create_wire_corr(nktot,myPoints,hmat,hmati,nquad,anode,weight,data,wmax,wmin,perdCorr);
     }//endif
 
     free(&anode[1]);
@@ -92,7 +93,7 @@ void setput_nd_eext_corrs(int nktot, int *ka, int *kb, int *kc, double *perdCorr
 
   //-------------------------------------------------
   // Surface correction has a simple analytical form
-  if(iperd==2){create_surf_corr(nktot,ka,kb,kc,hmat,hmati,perdCorr);}
+  if(iperd==2){create_surf_corr(nktot,myPoints,hmat,hmati,perdCorr);}
 
   //=========================================================================================
 }//end routine
@@ -357,7 +358,7 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void create_clus_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double *hmati, 
+void create_clus_corr(int nktot, vector< gridPoints> & myPoints, double *hmat, double *hmati, 
     int nquad, double *anode, double *weight, double **data,
     double wmax, double wmin,double *kernel_corr){
   //============================================================================
@@ -385,14 +386,14 @@ void create_clus_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
 
   double pre = L2/sqrt(M_PI);
   for(int i=0;i<nktot;i++){
-    double gx = 2.0*M_PI*((double) kx[i]);
-    double gy = 2.0*M_PI*((double) ky[i]);
-    double gz = 2.0*M_PI*((double) kz[i]);
+    double gx = 2.0*M_PI*((double) myPoints[i].d1);
+    double gy = 2.0*M_PI*((double) myPoints[i].d2);
+    double gz = 2.0*M_PI*((double) myPoints[i].d3);
     double g2 = gx*gx+gy*gy+gz*gz;
     double g  = sqrt(g2);
-    int ind_x = abs(kx[i]);
-    int ind_y = abs(ky[i]);
-    int ind_z = abs(kz[i]);
+    int ind_x = abs(myPoints[i].d1);
+    int ind_y = abs(myPoints[i].d2);
+    int ind_z = abs(myPoints[i].d3);
     if(g==0.0){kernel_corr[i]=gzero;}
     if(g>0.0){
       kernel_corr[i]=0.0;
@@ -406,32 +407,32 @@ void create_clus_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
       double wmax72 = wmax52*wmax;
       //--------------------------------
       // 1 guy is non-zero 
-      if(kx[i]!=0&&ky[i]==0&&kz[i]==0){
+      if(myPoints[i].d1!=0&&myPoints[i].d2==0&&myPoints[i].d3==0){
         kernel_corr[i] -= (2.0*cos(gx*0.5)/(gx2*wmax32))
           *(2.0/3.0+(12.0/(5.0*gx2)-1.0/6.0)/wmax);
       }//endif
-      if(kx[i]==0&&ky[i]!=0&&kz[i]==0){
+      if(myPoints[i].d1==0&&myPoints[i].d2!=0&&myPoints[i].d3==0){
         kernel_corr[i] -= (2.0*cos(gy*0.5)/(gy2*wmax32))
           *(2.0/3.0+(12.0/(5.0*gy2)-1.0/6.0)/wmax);
       }//endif
-      if(kx[i]==0&&ky[i]==0&&kz[i]!=0){
+      if(myPoints[i].d1==0&&myPoints[i].d2==0&&myPoints[i].d3!=0){
         kernel_corr[i] -= (2.0*cos(gz*0.5)/(gz2*wmax32))
           *(2.0/3.0+(12.0/(5.0*gz2)-1.0/6.0)/wmax);
       }//endif
       //--------------------------------
       // 1 guy is zero
-      if(kx[i]==0&&ky[i]!=0&&kz[i]!=0){
+      if(myPoints[i].d1==0&&myPoints[i].d2!=0&&myPoints[i].d3!=0){
         kernel_corr[i] += (8.0/5.0)*cos(gy*0.5)*cos(gz*0.5)/(gy2*gz2*wmax52);
       }//endif
-      if(kx[i]!=0&&ky[i]==0&&kz[i]!=0){
+      if(myPoints[i].d1!=0&&myPoints[i].d2==0&&myPoints[i].d3!=0){
         kernel_corr[i] += (8.0/5.0)*cos(gx*0.5)*cos(gz*0.5)/(gx2*gz2*wmax52);
       }//endif
-      if(kx[i]!=0&&ky[i]!=0&&kz[i]==0){
+      if(myPoints[i].d1!=0&&myPoints[i].d2!=0&&myPoints[i].d3==0){
         kernel_corr[i] += (8.0/5.0)*cos(gx*0.5)*cos(gy*0.5)/(gx2*gy2*wmax52);
       }//endif
       //--------------------------------
       // No one is zero
-      if(kx[i]!=0&&ky[i]!=0&&kz[i]!=0){
+      if(myPoints[i].d1!=0&&myPoints[i].d2!=0&&myPoints[i].d3!=0){
         kernel_corr[i] -= (16.0/7.0)*cos(gx*0.5)*cos(gy*0.5)*cos(gz*0.5)/(gx2*gy2*gz2*wmax72);
       }//endif
       //--------------------------------
@@ -451,7 +452,7 @@ void create_clus_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void create_wire_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double *hmati, 
+void create_wire_corr(int nktot, vector< gridPoints> &myPoints, double *hmat, double *hmati, 
     int nquad, double *anode, double *weight,double **data,
     double wmax, double wmin,double *kernel_corr){
   //============================================================================
@@ -489,13 +490,13 @@ void create_wire_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
   double rat = L/hmat[1];
   double pre = L2;
   for(int i=0;i<nktot;i++){
-    double gx = 2.0*M_PI*rat*((double) kx[i]);
-    double gy = 2.0*M_PI*((double) ky[i]);
-    double gz = 2.0*M_PI*((double) kz[i]);
+    double gx = 2.0*M_PI*rat*((double) myPoints[i].d1);
+    double gy = 2.0*M_PI*((double) myPoints[i].d2);
+    double gz = 2.0*M_PI*((double) myPoints[i].d3);
     double g2 = gx*gx+gy*gy+gz*gz;
     double g  = sqrt(g2);
-    int ind_y = abs(ky[i]);
-    int ind_z = abs(kz[i]);
+    int ind_y = abs(myPoints[i].d2);
+    int ind_z = abs(myPoints[i].d3);
     if(g==0.0){kernel_corr[i]=gzero;}
     if(fabs(gx)<200.0 && g>0.0){
       kernel_corr[i]=0.0;
@@ -506,19 +507,19 @@ void create_wire_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
       }//endfor
       //---------------------------------------------------
       // long range correction in the absense of gx damping (gx==0).
-      if(kx[i]==0){
+      if(myPoints[i].d1==0){
         double gz2 = gz*gz; double gy2 = gy*gy;
         //----------------------------------------
         // 1 guy = 0 1 guy !=0
-        if(ky[i]==0 && kz[i]!=0){
+        if(myPoints[i].d2==0 && myPoints[i].d3!=0){
           kernel_corr[i] += cos(0.5*gz)/(gz2*wmax)*( (1.0/3.0-6.0/gz2)/wmax-2.0 );
         }//endif
-        if(ky[i]!=0 && kz[i]==0){
+        if(myPoints[i].d2!=0 && myPoints[i].d3==0){
           kernel_corr[i] += cos(0.5*gy)/(gy2*wmax)*( (1.0/3.0-6.0/gy2)/wmax-2.0 );
         }//endif
         //----------------------------------------
         // both non-zero
-        if(ky[i]!=0 && kz[i]!=0){
+        if(myPoints[i].d2!=0 && myPoints[i].d3!=0){
           kernel_corr[i] += 2.0*cos(0.5*gy)*cos(0.5*gz)/(gy2*gz2*wmax*wmax);
         }//endif
       }//endif
@@ -540,7 +541,7 @@ void create_wire_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void create_surf_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double *hmati, 
+void create_surf_corr(int nktot, vector< gridPoints> & myPoints, double *hmat, double *hmati, 
     double *kernel_corr){
   //============================================================================
   // Check the box
@@ -558,15 +559,15 @@ void create_surf_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
   double gzero = -0.5*M_PI*hmat[9]*hmat[9];  // analytically with 
   // singularity taken out
   for(int i=0;i<nktot;i++){
-    double aka = 2.0*M_PI*( (double) kx[i] );
-    double akb = 2.0*M_PI*( (double) ky[i] );
-    double akc = 2.0*M_PI*( (double) kz[i] );
+    double aka = 2.0*M_PI*( (double) myPoints[i].d1 );
+    double akb = 2.0*M_PI*( (double) myPoints[i].d2 );
+    double akc = 2.0*M_PI*( (double) myPoints[i].d3 );
     double xk  = aka*hmati[1] + akb*hmati[2];
     double yk  = aka*hmati[4] + akb*hmati[5];
     double zk  = akc*hmati[9];
     double g2  = xk*xk + yk*yk + zk*zk;
     double gs  = sqrt(xk*xk+yk*yk);
-    if(kx[i]==0 && ky[i]==0 && kz[i]==0){
+    if(myPoints[i].d1==0 && myPoints[i].d2==0 && myPoints[i].d3==0){
       kernel_corr[i] = gzero;
     }else{
       kernel_corr[i] = -(4.0*M_PI/g2)*cos(zk*hmat[9]*0.5)*exp(-gs*hmat[9]*0.5);
@@ -583,7 +584,7 @@ void create_surf_corr(int nktot, int *kx, int *ky, int *kz, double *hmat, double
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void create_surf_corr_dummy(int nktot, int *kx, int *ky, int *kz, double *hmat, double *hmati, 
+void create_surf_corr_dummy(int nktot, vector< gridPoints > & myPoints, double *hmat, double *hmati, 
     int nquad, double *anode, double *weight,double **data,
     double wmax, double wmin,double *kernel_corr){
   //============================================================================
@@ -617,16 +618,16 @@ void create_surf_corr_dummy(int nktot, int *kx, int *ky, int *kz, double *hmat, 
 
   double pre = L2*sqrt(M_PI);
   for(int i=0;i<nktot;i++){
-    double aka = 2.0*M_PI*( (double) kx[i] );
-    double akb = 2.0*M_PI*( (double) ky[i] );
-    double akc = 2.0*M_PI*( (double) kz[i] );
+    double aka = 2.0*M_PI*( (double) myPoints[i].d1 );
+    double akb = 2.0*M_PI*( (double) myPoints[i].d2 );
+    double akc = 2.0*M_PI*( (double) myPoints[i].d3 );
     double xk  = (aka*hmati[1] + akb*hmati[2])*hmat[9];
     double yk  = (aka*hmati[4] + akb*hmati[5])*hmat[9];
     double zk  = akc;
     double g2  = (xk*xk + yk*yk + zk*zk);
     double gs  = sqrt(xk*xk+yk*yk);
     double g   = sqrt(g2);
-    int ind_z  = abs(kz[i]);
+    int ind_z  = abs(myPoints[i].d3);
     if(g==0.0){kernel_corr[i]=gzero;}
     if(gs<200.0 && g>0.0){
       kernel_corr[i]=0.0;
@@ -635,7 +636,7 @@ void create_surf_corr_dummy(int nktot, int *kx, int *ky, int *kz, double *hmat, 
         kernel_corr[i] += ((weight[k]/x)*exp(-gs*gs*anode[k]*0.25)*
             data[k][ind_z]);
       }//endfor
-      if(kx[i]==0 && ky[i]==0){
+      if(myPoints[i].d1==0 && myPoints[i].d2==0){
         kernel_corr[i] -= 4.0*cos(zk*0.5)/(zk*zk*sqrt(wmax));
         kernel_corr[i] += (1.0/3.0)*cos(zk*0.5)*(1.0/(zk*zk)-24.0/(zk*zk*zk*zk))
           /(sqrt(wmax)*wmax);
@@ -803,3 +804,6 @@ void set_large_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret,
   //============================================================================
 }//end routine
 //============================================================================
+
+#endif //GLENN_PERIODIC_CORRECTION
+

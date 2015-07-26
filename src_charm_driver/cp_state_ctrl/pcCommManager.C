@@ -68,15 +68,8 @@ namespace cp {
               chunk, chunk, 1);
           /// Delegate the multicast work to an appropriate library
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
-#ifdef USE_COMLIB
-          if(_PC_COMMLIB_MULTI_ )
-            ComlibAssociateProxy(mcastInstanceCP,sectionGettingLeft[chunk]);
-          else
-#endif
-          {
-            CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
-            sectionGettingLeft[chunk].ckSectionDelegate(mcastGrp);
-          }
+          CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
+          sectionGettingLeft[chunk].ckSectionDelegate(mcastGrp);
 #endif
         }
       }
@@ -129,15 +122,8 @@ namespace cp {
                 c, c, 1);
             /// Delegate the multicast work to an appropriate library
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
-#ifdef USE_COMLIB
-            if(_PC_COMMLIB_MULTI_)
-              ComlibAssociateProxy(mcastInstanceCP, sectionGettingRight[c]);
-            else
-#endif
-            {
-              CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
-              sectionGettingRight[c].ckSectionDelegate(mcastGrp);
-            }
+            CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
+            sectionGettingRight[c].ckSectionDelegate(mcastGrp);
 #endif
           }
         }

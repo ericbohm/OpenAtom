@@ -1,9 +1,11 @@
 #===============================================================================
 #------------------------- Path to Charm++ and FFTW ----------------------------
   # Location of the charm installation
-  CHARMBASE	= $(CHARM_DIR)
-  # Location of the FFTW library installation
-  FFT_HOME	= /dcsdata/home/bohm/fftw64
+  CHARMBASE     = $(HOME)/charm/pamilrts-bluegeneq-async-smp
+  # Location of the FFTW2 and FFTW3 library installation
+  FFT2_HOME     = /usr/local/tools/fftw-2.1.5/
+  FFT3_HOME     = /soft/libraries/alcf/current/xl/FFTW3
+  CHARMFFT_HOME = $(HOME)/fft
 
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
@@ -18,18 +20,15 @@
 #-------------------------------------------------------------------------------
 #------------------------- Flags for the whole code ----------------------------
   # Optimization level and debug (Dont add other flags to OPT)
-  OPT       = -O3 -optimize -production
+  OPT       = -O3 -g
   # What flags do we use when compiling the fragile portions of piny
-  OPT_CARE  = -O2
-  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -I$(FFT_HOME)/include
+  OPT_CARE  = -O2 -g -DFORTRANUNDERSCORE_OFF
+  CPPFLAGS += -DUSE_ESSL_WRAPPER=0 $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF \
+	      -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
+	      -Wl,--allow-multiple-definition
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
   CXXFLAGS += $(OPT)
-
-#-------------------------------------------------------------------------------
-#------------------------------ Flags for linking ------------------------------
-  LDFLAGS  += -L$(FFT_HOME)/lib -memory gnu
-  LDLIBS   += -module CkMulticast -lz -lconv-util -lm
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
@@ -41,42 +40,52 @@ $(libdriver):  CXXFLAGS +=
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the physics code ----------------
-$(libphysics): CPPFLAGS += -I$(STANDARD_INC)
-$(libphysics): FFLAGS   += -fno-second-underscore
-$(libphysics): CFLAGS   += 
-$(libphysics): CXXFLAGS += 
+$(libphysics): CPPFLAGS += -I$(STANDARD_INC) -DFORTRANUNDERSCORE_OFF
+$(libphysics): FFLAGS   += -fno-second-underscore -fno-underscoring
 
 # Where should we look for standard_include.h
-STANDARD_INC             = $(physics)/include/pentium_par
+STANDARD_INC             = $(physics)/include/ibm_par
 
-#-------------------------------------------------------------------------------
-#------------------ Flags and settings just for the math libs ------------------
-$(libmath):    CPPFLAGS +=
-$(libmath):    FFLAGS   +=
-$(libmath):    CFLAGS   += -seq
-$(libmath):    CXXFLAGS += -seq
+$(libmath):    FFLAGS   += -fno-second-underscore -fno-underscoring
+$(libmath):    CFLAGS   += -seq -DFORTRANUNDERSCORE_OFF=1
+$(libmath):    CXXFLAGS += -seq -DFORTRANUNDERSCORE_OFF=1
+
 
 #===============================================================================
 #-------------------------------------------------------------------------------
   # Should we use dual fft or not
   DUAL_FFTW	= -DDUAL_FFTW_OFF
   # Which math library sources (that OpenAtom lugs around) need to be compiled
-  src_math	= $(src_blas) $(src_lapack) $(src_eispack)
+  src_math	= $(src_xerbla) $(src_eispack)
   # Special optimization options to used for compiling fastadd.C
-  fastadd.o:     CXXFLAGS +=
+  fastadd.o:     CXXFLAGS += -O3 -g
   # Should we pass -D_IBM_ESSL_ as a preprocessor flag when building 
   # ibm_essl_dummy.o
-  ibm_essl_dummy.o: CPPFLAGS  +=
+  ibm_essl_dummy.o: CPPFLAGS  += -D_IBM_ESSL_
   # The fft (and other) math libraries to link based on whether DUAL_FFTW is
   # turned on or off
   ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
-    LDLIBS   += -lrfftw -lfftw
+    LDLIBS   += -lrfftw -lfftw -lfft_charm -lfftw3_essl
+    #LDLIBS   += -lrfftw -lfftw -lfft_charm -lfftw3
   else
-    LDLIBS   += -ldrfftw -ldfftw
+    LDLIBS   += -ldrfftw -ldfftw -lfft_charm -lfftw3_essl
   endif
 
-#===============================================================================
-#------------- Variables to control how regression tests are set up --------------#
-# The location of the water (32M,10Ry) dataset that will be used in the tests
-w3210       = $(data)/water_32M_10Ry
+#-------------------------------------------------------------------------------
+#------------------------------ Flags for linking ------------------------------
+  LDFLAGS  += -L$(FFT3_HOME)/lib -L$(FFT2_HOME)/lib -L$(CHARMFFT_HOME) 
+  #LDFLAGS  += -L/soft/libraries/alcf/current/xl/ZLIB/lib \
+              -L/soft/compilers/ibmcmp-feb2015/xlf/bg/14.1/bglib64 \
+              -L/bgsys/drivers/ppcfloor/gnu-linux/powerpc64-bgq-linux/lib \
+              -L/soft/libraries/essl/current/essl/5.1/lib64
+  LDFLAGS  += -L/usr/local/tools/zlib-1.2.6/lib \
+          -L/opt/ibmcmp/xlf/bg/14.1/bglib64 \
+           -L/bgsys/ibm_essl/prod/opt/ibmmath/essl/5.1/lib64
+  LDLIBS   += -module CkMulticast -module comlib -lconv-util -lz -lesslbg \
+             -lesslsmpbg -lm -lxlfmath -lxlf90_r -lxl -lpthread -lrt -ldl
+
+ifeq ($(PROJ), yes)
+LDLIBS 	 += -tracemode projections
+endif
+
 

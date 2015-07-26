@@ -166,8 +166,8 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   // report your status to main
 
   int constructed=1;
-  contribute(sizeof(int), &constructed, CkReduction::sum_int, 
-      CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
+  contribute(CkCallback(CkIndex_InstanceController::doneInit(), 
+      CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   savedprojpsiBf=NULL;
   savedprojpsiBfsend=NULL;
@@ -191,10 +191,6 @@ void CP_State_ParticlePlane::initKVectors()
   if(ees_nonlocal == 1)
   {
     realPP_proxy = UrealParticlePlaneProxy[thisInstance.proxyOffset];
-#ifdef USE_COMLIB
-    if (config.useGssInsRealPP)
-      ComlibAssociateProxy(gssPInstance,realPP_proxy);
-#endif
   }
 
   //============================================================================
@@ -262,27 +258,27 @@ void CP_State_ParticlePlane::initKVectors()
   for(int state=0; state<nstates;state++){
     int plane=0;
     while(plane<nchareG)
+    {
+      bool used=false;
+      int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%CkNumPes();
+      if(usedProc[thisstateplaneproc]>=charperpe)
       {
-        bool used=false;
-        int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%CkNumPes();
-	if(usedProc[thisstateplaneproc]>=charperpe)
-	{
-	  used=true;
-	  if(plane+1==nchareG)
-	    {
-	      usedProc[thisstateplaneproc]++;
-	      red_pl[state]=plane;
-	      plane=nchareG;
-	    }
-	}
-	else
-	  {
-	    usedProc[thisstateplaneproc]++;
-            red_pl[state]=plane;
-            plane=nchareG;
-          }
-        plane++;
+        used=true;
+        if(plane+1==nchareG)
+        {
+          usedProc[thisstateplaneproc]++;
+          red_pl[state]=plane;
+          plane=nchareG;
+        }
       }
+      else
+      {
+        usedProc[thisstateplaneproc]++;
+        red_pl[state]=plane;
+        plane=nchareG;
+      }
+      plane++;
+    }
   }
   reductionPlaneNum = red_pl[thisIndex.x];
   delete [] usedProc;
@@ -1093,14 +1089,6 @@ void CP_State_ParticlePlane::sendToEesRPP(){
     CkPrintf("HI, I am gPP %d %d in sendtoEesRPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-  if (config.useGssInsRealPP){gssPInstance.beginIteration();}
-#else
-  if (config.useGssInsRealPP){ComlibBegin(realPP_proxy, iterNL);}
-#endif
-#endif
-
   //============================================================================
   // Send your (x,y,z) to processors z.
 
@@ -1128,16 +1116,6 @@ void CP_State_ParticlePlane::sendToEesRPP(){
     realPP_proxy(thisIndex.x, z).recvFromEesGPP(msg);  // same state, realspace char[z]
   }//endfor
 
-  //============================================================================
-  // Turn off commlib
-
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-  if (config.useGssInsRealPP){gssPInstance.endIteration();}
-#else
-  if (config.useGssInsRealPP){ComlibEnd(realPP_proxy, iterNL);}
-#endif    
-#endif
   sendDone = 1;
 
   //============================================================================

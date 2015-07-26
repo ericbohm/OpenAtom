@@ -30,9 +30,9 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPXCFNCTS::CP_getGGAFunctional(
-    const int npts, const int nf1,const int nf2,const int nf3,
-    double *density,double *rhoIRX, double *rhoIRY, double *rhoIRZ, 
-    double *Vks,int iyPlane_ind,double *exc_gga_ret,int nfreq_cmi_update)
+    const int npts, const int nf1, const int nf2, const int nf3,
+    double *density, double *rhoIRX, double *rhoIRY, double *rhoIRZ, 
+    double *Vks, int iyPlane_ind, double *exc_gga_ret, int nfreq_cmi_update)
   //============================================================================
 {/* Begin function */
   //============================================================================
@@ -76,109 +76,115 @@ void CPXCFNCTS::CP_getGGAFunctional(
 
   //============================================================================
   // Start Loop over part of grid I have 
+  int x_len = 2 * (nf1/2 + 1);
+  int jump = 2 - (nf1 & 1);
+  int i = 0;
+  for(int z = 0; z < nf3; z++) {
+    for(int y = 0; y < nf2; y++) {
+      for(int x = 0; x < nf1; x++) {
+        //----------------------------------------------------------
+        // Get density and decide if the loop should be done
 
-  for(int y = 0; y < nf2; y++){
-    for(int x = 0; x < nf1; x++){
-
-      int i = y*(nf1+2) + x;
-      //----------------------------------------------------------
-      // Get density and decide if the loop should be done
-
-      rho   =  density[i];
+        rho   =  density[i];
 #ifdef _CPDEBUG_XC_FUNCTIONALS_
-      fprintf(fp,"rho %g",rho);
+        fprintf(fp, "rho %g", rho);
 #endif
 
-      if(rho > rho_cut){
+        if(rho > rho_cut) {
 
-        //----------------------------------------------------------
-        // Calculate magnitude square of gradient of density
+          //----------------------------------------------------------
+          // Calculate magnitude square of gradient of density
 
-        g_rho2 = rhoIRX[i]*rhoIRX[i] 
-          + rhoIRY[i]*rhoIRY[i] 
-          + rhoIRZ[i]*rhoIRZ[i];
-
-#ifdef _CPDEBUG_XC_FUNCTIONALS_
-        fprintf(fp," rhoi %g %g %g grho2 %g",rhoIRX[i],rhoIRY[i],rhoIRZ[i],g_rho2);
-#endif
-
-        //----------------------------------------------------------
-        // Calculate the switching function and its derivative
-
-        rsw = (rho - rho_cut)*rho_heali;
-        rsw = (rsw < 1.0 ? rsw : 1.0);
-        rsw = (rsw > 0.0 ? rsw : 0.0);
-        srho = rsw*rsw*(3.0-2.0*rsw);
-        dsrho = 6.0*rsw*(1.0-rsw)*rho_heali;
-
-        //----------------------------------------------------------
-        // Calculate the exchange functional
-
-        fx  = 0.0;  dfx_drho  = 0.0;  dfx_dgrho = 0.0;
-        if(cp_becke==1){
-          becke_gcx_lda(rho,g_rho2,&fx,&dfx_drho,&dfx_dgrho,beta);
-        }//endif
-
-        fc = 0.0;  dfc_drho  = 0.0;  dfc_dgrho = 0.0;
-        if(cp_lyp==1){ 
-          lyp_gcc(rho,g_rho2,&fc,&dfc_drho,&dfc_dgrho);
-        }//endif
-
-        //----------------------------------------------------------
-        // Process the output via the switching function
-
-        dfx_drho = (dfx_drho*srho + fx*dsrho);
-        dfx_dgrho *= srho;
-        fx *= srho;
-
-        dfc_drho = (dfc_drho*srho + fc*dsrho);
-        dfc_dgrho *= srho;
-        fc *= srho;
-
-        //----------------------------------------------------------
-        // Finish the energy
+          g_rho2 = rhoIRX[i] * rhoIRX[i] 
+                 + rhoIRY[i] * rhoIRY[i] 
+                 + rhoIRZ[i] * rhoIRZ[i];
 
 #ifdef _CPDEBUG_XC_FUNCTIONALS_
-        fprintf(fp," fx %g fc %g",fx,fc);
+          fprintf(fp," rhoi %g %g %g grho2 %g",rhoIRX[i], rhoIRY[i], rhoIRZ[i],
+                  g_rho2);
 #endif
 
-        ex += fx;
-        ec += fc;
+          //----------------------------------------------------------
+          // Calculate the switching function and its derivative
 
-        //----------------------------------------------------------
-        // Construct output for the FFT
+          rsw = (rho - rho_cut) * rho_heali;
+          rsw = (rsw < 1.0 ? rsw : 1.0);
+          rsw = (rsw > 0.0 ? rsw : 0.0);
+          srho = rsw * rsw * (3.0 - 2.0 * rsw);
+          dsrho = 6.0 * rsw * (1.0 - rsw) * rho_heali;
 
-        Vks[i] += (dfx_drho + dfc_drho);
+          //----------------------------------------------------------
+          // Calculate the exchange functional
 
-        g_rhoi = 1.0/sqrt(g_rho2);
-        unit_gx = rhoIRX[i]*g_rhoi;
-        unit_gy = rhoIRY[i]*g_rhoi;
-        unit_gz = rhoIRZ[i]*g_rhoi;
+          fx  = 0.0;  dfx_drho  = 0.0;  dfx_dgrho = 0.0;
+          if(cp_becke == 1){
+            becke_gcx_lda(rho, g_rho2, &fx, &dfx_drho, &dfx_dgrho, beta);
+          }//endif
 
-        dfxc_dgrho = dfx_dgrho + dfc_dgrho;
-        rhoIRX[i] = unit_gx*dfxc_dgrho;
-        rhoIRY[i] = unit_gy*dfxc_dgrho;
-        rhoIRZ[i] = unit_gz*dfxc_dgrho;
+          fc = 0.0;  dfc_drho  = 0.0;  dfc_dgrho = 0.0;
+          if(cp_lyp == 1){ 
+            lyp_gcc(rho, g_rho2, &fc, &dfc_drho, &dfc_dgrho);
+          }//endif
 
-      } else {  /* Density is less than cutoff */
+          //----------------------------------------------------------
+          // Process the output via the switching function
 
-        rhoIRX[i] = 0.0;
-        rhoIRY[i] = 0.0;
-        rhoIRZ[i] = 0.0;
+          dfx_drho = (dfx_drho * srho + fx * dsrho);
+          dfx_dgrho *= srho;
+          fx *= srho;
 
-      } /* Endif density is greater than cutoff */
+          dfc_drho = (dfc_drho * srho + fc * dsrho);
+          dfc_dgrho *= srho;
+          fc *= srho;
+
+          //----------------------------------------------------------
+          // Finish the energy
+
 #ifdef _CPDEBUG_XC_FUNCTIONALS_
-      fprintf(fp,"\n");
+          fprintf(fp, " fx %g fc %g", fx, fc);
 #endif
-    }}//endfor
+
+          ex += fx;
+          ec += fc;
+
+          //----------------------------------------------------------
+          // Construct output for the FFT
+
+          Vks[i] += (dfx_drho + dfc_drho);
+
+          g_rhoi = 1.0/sqrt(g_rho2);
+          unit_gx = rhoIRX[i] * g_rhoi;
+          unit_gy = rhoIRY[i] * g_rhoi;
+          unit_gz = rhoIRZ[i] * g_rhoi;
+
+          dfxc_dgrho = dfx_dgrho + dfc_dgrho;
+          rhoIRX[i] = unit_gx * dfxc_dgrho;
+          rhoIRY[i] = unit_gy * dfxc_dgrho;
+          rhoIRZ[i] = unit_gz * dfxc_dgrho;
+
+        } else {  /* Density is less than cutoff */
+
+          rhoIRX[i] = 0.0;
+          rhoIRY[i] = 0.0;
+          rhoIRZ[i] = 0.0;
+
+        } /* Endif density is greater than cutoff */
+#ifdef _CPDEBUG_XC_FUNCTIONALS_
+        fprintf(fp,"\n");
+#endif
+        i++;
+      }
+      i += jump;
+    }
+  }//endfor
 
   //============================================================================
   // Store the energy
 
-  (*exc_gga_ret) = (ex+ec)*vscale;
+  (*exc_gga_ret) = (ex + ec) * vscale;
 
 #ifdef _CPDEBUG_XC_FUNCTIONALS_
-  fprintf(fp,"done %g\n",exc_gga_ret[0]);
+  fprintf(fp, "done %g\n", exc_gga_ret[0]);
   fclose(fp);
 #endif
 

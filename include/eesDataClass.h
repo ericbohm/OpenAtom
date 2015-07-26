@@ -13,6 +13,7 @@
 #define _eesDataClass_h_
 
 #include "../include/RunDescriptor.h"
+#include "fft_types.h"
 
 //============================================================================
 // Data class
@@ -41,24 +42,21 @@ class RPPDATA {
 //============================================================================
 class RHORHARTDATA {
  public:
-   int index;
-   int rhoRsubplanes;                // subplanes splits
+   int xindex, yindex; // of the chare array element (serves as unique key)
+   int gridc_start, gridc_end, gridb_start, gridb_end;
+   int mygridc, mygridb;
    int ngrid_a,ngrid_b,ngrid_c;      // fft grid size
    int n_interp;                     // ees interpolation order
    int natm;                         // non-local atms
-   int *plane_index;                 // lth: natm : atm is on plane? 1/0
-   int *subStr;                      // lth : rhoRsubPlanes : subplane decomp
-   int *subEnd;                      // lth : rhoRsubPlanes : subplane decomp
-   int *subSiz;                      // lth : rhoRsubPlanes : subplane decomp
-   int *ntemp;                       // lst : rhoRsubPlanes*ninterp;
-   int **itemp;                      // lst : rhoRsubPlanes*ninterp;
-   int **nSub;                       // lth : natm*rhoRsubPlanes          : pts in subplane
-   int ***igrid;                     // lth: natm*rhoRsubPlanes*ninterp^2 : pos in subplane
-   double ***mn;                     // lth: natm*rhoRsubPlanes*ninterp^2 : bspline in subplane
-   double ***dmn_x,***dmn_y,***dmn_z;// lth: natm*rhoRsubPlanes*ninterp^2 : nabla_alpha (b-spline)
+   int **plane_index;                 // lth: natm : atm is on plane? 1/0
+   int **itemp;                      // lst : mygridc*interp;
+   int **nSub;                       // lth : mygridc*natm  : pts in subplane
+   int ***igrid;                     // lth: mygridc*natm*ninterp^2 : pos in subplane
+   double ***mn;                     // lth: mygridc*natm*ninterp^2 : bspline in subplane
+   double ***dmn_x,***dmn_y,***dmn_z;// lth: mygridc*natm*ninterp^2 : nabla_alpha (b-spline)
    RHORHARTDATA(){};   
   ~RHORHARTDATA(){};   
-   void init(int );
+   void init();
 };
 //============================================================================
 
@@ -95,9 +93,10 @@ class RHOGHARTDATA {
    int ncoef;                     //number of g-pts in this collection
    double *b_re, *b_im;           //lth: ncoef : ees g-space scaling factor
    double *h_gspl;int *ind_gspl;  //lth: ncoef : pseudo-spline lookup parameters 
+   std::vector< gridPoint > * points;
    RHOGHARTDATA(){};   
   ~RHOGHARTDATA(){};   
-   void init(int ,int , int *,int *,int *);
+   void init();
 };
 //============================================================================
 

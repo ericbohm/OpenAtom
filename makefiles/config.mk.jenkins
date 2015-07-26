@@ -1,11 +1,12 @@
 #===============================================================================
 #------------------------- Path to Charm++ and FFTW ----------------------------
   # Location of the charm installation
-  CHARMBASE	= $(HOME)/charm
+  CHARMBASE	= $(CHARM_DIR)
   # Location of the FFTW library installation
-  # module load fftw/2.1.5.7
-  # module load acml
-  FFT_HOME	= $(FFTW_DIR)/..
+  FFT_HOME	= /dcsdata/home/bohm/fftw64
+  FFT3_HOME	= /usr
+  FFT2_HOME	= /usr
+  CHARMFFT_HOME = /dcsdata/home/nikhil/fft
 
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
@@ -20,63 +21,67 @@
 #-------------------------------------------------------------------------------
 #------------------------- Flags for the whole code ----------------------------
   # Optimization level and debug (Dont add other flags to OPT)
-  OPT       = -O3
+  OPT       = -O3 -optimize -production
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2
-  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -I$(FFT_HOME)/include
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE  \
+	      -I$(FFT3_HOME)/include -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME)
+
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
   CXXFLAGS += $(OPT)
-  INCDIRS  += 
-  DEPSTRIPDIRS += 
 
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
-  LDFLAGS  += -L$(FFT_HOME)/lib
-  LDLIBS   += -module CkMulticast -module comlib -lrca -lconv-util -lm -lz -lacml
+  LDFLAGS  += -L$(FFT3_HOME)/lib -L$(FFT2_HOME)/lib -L$(CHARMFFT_HOME)
+  LDLIBS   += -module CkMulticast -lz -lconv-util -lm
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
 $(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include \
 			   -I$(STANDARD_INC)
-#$(libdriver):  FFLAGS   +=
-#$(libdriver):  CFLAGS   +=
-#$(libdriver):  CXXFLAGS +=
+$(libdriver):  FFLAGS   +=
+$(libdriver):  CFLAGS   +=
+$(libdriver):  CXXFLAGS +=
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the physics code ----------------
 $(libphysics): CPPFLAGS += -I$(STANDARD_INC)
-#$(libphysics): FFLAGS   +=
-#$(libphysics): CFLAGS   +=
-#$(libphysics): CXXFLAGS +=
+$(libphysics): FFLAGS   += -fno-second-underscore
+$(libphysics): CFLAGS   += 
+$(libphysics): CXXFLAGS += 
 
 # Where should we look for standard_include.h
 STANDARD_INC             = $(physics)/include/pentium_par
 
 #-------------------------------------------------------------------------------
 #------------------ Flags and settings just for the math libs ------------------
-#$(libmath):    CPPFLAGS +=
-#$(libmath):    FFLAGS   +=
+$(libmath):    CPPFLAGS +=
+$(libmath):    FFLAGS   +=
 $(libmath):    CFLAGS   += -seq
 $(libmath):    CXXFLAGS += -seq
-
 
 #===============================================================================
 #-------------------------------------------------------------------------------
   # Should we use dual fft or not
-  DUAL_FFTW	= -DDUAL_FFTW
+  DUAL_FFTW	= -DDUAL_FFTW_OFF
   # Which math library sources (that OpenAtom lugs around) need to be compiled
-  src_math	= $(src_eispack)
+  src_math	= $(src_blas) $(src_lapack) $(src_eispack)
   # Special optimization options to used for compiling fastadd.C
-  fastadd.o:     CXXFLAGS += -O3
+  fastadd.o:     CXXFLAGS +=
   # Should we pass -D_IBM_ESSL_ as a preprocessor flag when building 
   # ibm_essl_dummy.o
   ibm_essl_dummy.o: CPPFLAGS  +=
   # The fft (and other) math libraries to link based on whether DUAL_FFTW is
   # turned on or off
   ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
-    LDLIBS   += -lrfftw -lfftw
+    LDLIBS   += -lrfftw -lfftw -lfft_charm -lfftw3
   else
-    LDLIBS   += -ldrfftw -ldfftw
+    LDLIBS   += -ldrfftw -ldfftw -lfft_charm -lfftw3
   endif
+
+#===============================================================================
+#------------- Variables to control how regression tests are set up --------------#
+# The location of the water (32M,10Ry) dataset that will be used in the tests
+w3210       = $(data)/water_32M_10Ry
 

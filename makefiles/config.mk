@@ -1,9 +1,11 @@
 #===============================================================================
 #------------------------- Path to Charm++ and FFTW ----------------------------
   # Location of the charm installation
-  CHARMBASE	= $(HOME)/charm
+  CHARMBASE	= $(HOME)/charm/netlrts-linux-x86_64-smp
   # Location of the FFTW library installation
-  FFT_HOME	= $(HOME)/fftw
+  FFT3_HOME	= /usr
+  FFT2_HOME	= /usr
+  CHARMFFT_HOME = $(HOME)/fft
 
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
@@ -22,15 +24,16 @@
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2
   CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
-	      -I$(FFT_HOME)/include #-DUSE_COMLIB
+	      -I$(FFT3_HOME)/include -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
+	      -Wl,--allow-multiple-definition
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
   CXXFLAGS += $(OPT)
 
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
-  LDFLAGS  += -L$(FFT_HOME)/lib #-memory gnu
-  LDLIBS   += -module CkMulticast -module comlib -lz -lconv-util -lm
+  LDFLAGS  += -L$(FFT3_HOME)/lib -L$(FFT2_HOME)/lib -L$(CHARMFFT_HOME)
+  LDLIBS   += -module CkMulticast -lz -lconv-util -lm
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
@@ -71,9 +74,9 @@ $(libmath):    CXXFLAGS += -seq
   # The fft (and other) math libraries to link based on whether DUAL_FFTW is
   # turned on or off
   ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
-    LDLIBS   += -lrfftw -lfftw
+    LDLIBS   += -lrfftw -lfftw -lfft_charm -lfftw3
   else
-    LDLIBS   += -ldrfftw -ldfftw
+    LDLIBS   += -ldrfftw -ldfftw -lfft_charm -lfftw3
   endif
 
 #===============================================================================

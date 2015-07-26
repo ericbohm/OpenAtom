@@ -1,8 +1,6 @@
 #ifndef CK_PAIR_CALCULATOR_H
 #define CK_PAIR_CALCULATOR_H
 
-#undef  OLD_COMMLIB
-//#define OLD_COMMLIB 1
 #include "debug_flags.h"
 
 #include "ckmulticast.h"

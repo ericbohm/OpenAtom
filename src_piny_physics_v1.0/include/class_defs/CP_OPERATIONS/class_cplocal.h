@@ -3,7 +3,7 @@
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-//                          CP Local energy (however you calculate it) 
+//                          CP Local energy (however you calculate it)
 //==========================================================================
 
 #ifndef _CPLOCAL_
@@ -11,6 +11,8 @@
 
 #include "../../../../include/Atoms.h"
 #include "../../../../include/eesDataClass.h"
+#include <vector>
+#include "fft_types.h"
 class PSSCRATCH;
 
 class CPLOCAL{
@@ -25,8 +27,9 @@ class CPLOCAL{
 
     //---------------------------------------------------------------------------
     // functions
-    static void CP_hart_eext_calc(int , complex *,int , FastAtoms *,complex *, 
-        double *,double *,double *,int *, int *, int *, double *,int, PSSCRATCH *, int nfreq_cmi_update=4);
+    static void CP_hart_eext_calc(int , std::vector< gridPoint > & , complex *,
+        int, int , FastAtoms *, complex *, double *, double *, double *, int,
+        PSSCRATCH *, int );
 
     static void CP_get_vpsnow(int *,int ,double ,double ,double ,
         double *,double *,double *,double *,
@@ -35,24 +38,26 @@ class CPLOCAL{
 
     static void getEesPrms(int *, int *, int *, int *, int *);
 
-    static void eesSetEesWghtGgrp(int , int *, int *, int *,double *, double *, 
-        int ,int ,int ,int );
+    static void eesSetEesWghtGgrp(int , std::vector< gridPoint > &, double *,
+        double *, int, int, int, int);
 
-    static void eesAtmBsplineRgrp(FastAtoms *, int *, RHORHARTDATA **, PSSCRATCH *);
+    static void eesAtmBsplineRgrp(FastAtoms *, std::vector<RHORHARTDATA>
+        &, PSSCRATCH *);
 
-    static void eesPackGridRchare(int , int , double *, int ,int , int ***, double ***, int *, 
-        int **, int );
+    static void eesPackGridRchare(int, int, double*, int, int, int, int, int,
+        int ***, double ***, int **, int **);
 
-    static void eesHartEextGchare(int , int , complex *, complex *, complex *, complex *,
-        double *, double *,double *,double *,
-        int *,int *,int *,double *,int,int nfreq_cmi_update = 100);
+    static void eesHartEextGchare(int , int , complex *, complex *, complex *,
+        complex *, double *, double *,double *,double *,
+        std::vector< gridPoint > &, double *, int,
+        int nfreq_cmi_update = 100);
 
     static void eesEwaldGchare(int ,complex *,double *, double *,double *,
-        int *, int *, int *, double *,int,int nfreq_cmi_update = 100);
+        std::vector< gridPoint > &, int, double *,int,int nfreq_cmi_update = 100);
 
-    static void eesAtmForceRchare(int , FastAtoms *,int , 
-        int ***, double ***, double ***, double ***, 
-        int *, int **,  double *, int ,int ,int );
+    static void eesAtmForceRchare(int , FastAtoms *,int ,
+        int ***, double ***, double ***, double ***,
+        int **, int **,  double *, int, int, int, int, int );
     //---------------------------------------------------------------------------
 };  //CPLOCAL
 //==========================================================================

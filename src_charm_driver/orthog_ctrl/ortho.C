@@ -66,7 +66,6 @@
 //============================================================================
 extern Config config;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
-extern ComlibInstanceHandle orthoInstance;
 
 //============================================================================
 
@@ -527,7 +526,7 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
 {
   /** For runs using a large numPE, Orthos chares are typically mapped onto a small fraction of the cores
    * However, array broadcasts in charm++ involve all PEs (due to some legacy quirk present because of any-time 
-   * migration support). Hence, to avoid this anti-scaling overhead, we delegate array collectives to comlib / CkMulticast
+   * migration support). Hence, to avoid this anti-scaling overhead, we delegate array collectives to  CkMulticast
    * by building a section that includes all chare elements! :)
    *
    * The (0,0) Ortho chare sets up these sections and delegates them
@@ -537,7 +536,7 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
     /// Create an array section that includes the whole Ortho chare array
     int numOrtho = cfg.numStates / cfg.grainSize;
     multiproxy = CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(), 0, numOrtho-1,1, 0, numOrtho-1, 1);
-    /// If reductions are being delegated to a comm library
+    /// If reductions are being delegated to a multicast library
     if(config.useOrthoSectionRed)
     {
       CProxySection_Ortho rproxy =   multiproxy;
@@ -551,19 +550,9 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
     /// If multicasts are being delegated to a comm library
     if(config.useOrthoSection)
     {
-      /// Use the appropriate library for multicasts
-      if( config.useCommlib && config.useOrthoDirect)
-      {
-#ifdef USE_COMLIB
-        ComlibAssociateProxy(orthoInstance,multiproxy);	  
-#endif
-      }
-      else
-      {
-        CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oMCastGID).ckLocalBranch();
-        CkAssert(mcastGrp != NULL);
-        multiproxy.ckSectionDelegate(mcastGrp);
-      }
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oMCastGID).ckLocalBranch();
+      CkAssert(mcastGrp != NULL);
+      multiproxy.ckSectionDelegate(mcastGrp);
     }
   }
 

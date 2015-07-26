@@ -1,6 +1,5 @@
 #ifndef _INSTANCECONTROLLER_H_
 #define _INSTANCECONTROLLER_H_
-//#include "InstanceController.decl.h"
 class ICCookieMsg : public CkMcastBaseMsg, public CMessage_ICCookieMsg {
   public:
     int junk;
@@ -16,11 +15,13 @@ class InstanceController: public CBase_InstanceController {
   public:
     InstanceController_SDAG_CODE
     double Timer;
-    InstanceController();
+    InstanceController(int);
     ~InstanceController(){}
     InstanceController(CkMigrateMessage *m){}
     void init();
-    void doneInit(CkReductionMsg *msg);
+    void doneInit();
+    void doneFFTCreation(idMsg *msg);
+    void initDensity();
     void initCookie(ICCookieMsg *msg);
     void printEnergyHart(CkReductionMsg *msg);
     void printEnergyEexc(CkReductionMsg *msg);
@@ -39,7 +40,8 @@ class InstanceController: public CBase_InstanceController {
     CProxySection_CP_State_GSpacePlane gTemperBeadProxy;
   private:
 
-    int done_init;
+    int done_init, fft_expected;
+    bool done_fft_creation;
     int numKpointforces;
     bool atomsTempDone;
     bool gspTempDone;

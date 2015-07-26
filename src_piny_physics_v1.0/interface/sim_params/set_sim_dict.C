@@ -291,7 +291,7 @@ void set_sim_dict_temper(int *num_dict,DICT_WORD *dict[])
   strcpy((*dict)[i].keyword,"output_directory");
   strcpy((*dict)[i].keyarg,"TEMPER_OUT");
   /*-----------------------------------------------------------------------*/
-}/*end routine
+}/*end routine*/
 /*==========================================================================*/
 
 

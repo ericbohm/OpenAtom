@@ -595,6 +595,8 @@ class PeList
       }
       reset();
     }
+
+    PeList * distributeAcrossPelist(int numElements, int listoffset=0);
 };
 
 

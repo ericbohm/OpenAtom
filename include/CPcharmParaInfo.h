@@ -184,6 +184,7 @@ class CPcharmParaInfo {
    int natm_typ;
    int numSfGrps;
    int natm_nl_grp_max;
+   double ecut;              //cutoff for the FFT
    double *lines_per_chareG;  // lines in each collection (g-space)
    double *pts_per_chareG;    // pts in each collection   (g-space)
    CkVec<RunDescriptor> *sortedRunDescriptors; // description of collection
@@ -298,6 +299,7 @@ class CPcharmParaInfo {
      natm_typ     = s.natm_typ;
      natm_nl      = s.natm_nl;
      numSfGrps    = s.numSfGrps;
+     ecut         = s.ecut;
      natm_nl_grp_max = s.natm_nl_grp_max;
      if(nplane_x==0 || nplane_x > sizeX){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -529,6 +531,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
      natm_typ     = s.natm_typ;
      natm_nl      = s.natm_nl;
      numSfGrps    = s.numSfGrps;
+     ecut         = s.ecut;
      natm_nl_grp_max = s.natm_nl_grp_max;
      if(nplane_x==0 || nplane_x > sizeX){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -755,10 +758,10 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       delete [] RhosortedRunDescriptors;
       cfree_int_mat(index_tran_upack,0,nchareG,0,nlines_max);
       cfree_int_mat(index_tran_upackNL,0,nchareG,0,nlines_max);
-      cfree_int_mat(index_tran_upack_rho,0,nchareRhoG,0,nlines_max_rho);
-      cfree_int_mat(index_tran_upack_eext,0,nchareRhoGEext,0,nlines_max_rho);
+      //cfree_int_mat(index_tran_upack_rho,0,nchareRhoG,0,nlines_max_rho);
+      //cfree_int_mat(index_tran_upack_eext,0,nchareRhoGEext,0,nlines_max_rho);
 
-     if(rhoRsubplanes>1){
+     /*if(rhoRsubplanes>1){
       cfree_itens3(index_tran_upack_rho_y,0,nchareRhoG,0,rhoRsubplanes,0,nlines_max_rho);
       cfree_itens3(index_tran_pack_rho_y,0,nchareRhoG,0,rhoRsubplanes,0,nlines_max_rho);
       cfree_itens3(index_tran_upack_eext_y,0,nchareRhoGEext,0,rhoRsubplanes,
@@ -775,7 +778,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       delete [] numSubGx;
       cfree_int_mat(listSubGx,0,rhoRsubplanes,0,ngxSubMax);
      }//endif
-      
+     */
   }//end destructor
 //=============================================================================
 
@@ -803,8 +806,8 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       p|nplane_x;   p|nchareG;    p|natm_tot; p|natm_nl;
       p|nstates;    p|ntime;      p|btime;    p|gen_wave; p|ncoef;
       p|ibinary_opt; p|ibinary_write_opt;
-      p|natm_typ;   p|natm_nl;    p|numSfGrps; p|nlIters; 
-      p|nmem_zmat_tot; p|nmem_zmat_max;
+      p|natm_typ;   p|natm_nl;    p|numSfGrps;  p|ecut;
+      p|nlIters; p|nmem_zmat_tot; p|nmem_zmat_max;
       p|natm_nl_grp_max;  p|nlines_tot; p|npts_tot;
       p|nlines_max; p|nlines_max_eext;
       p|nplane_rho_x; p|nchareRhoG; p|nchareRhoGEext; 

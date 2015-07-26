@@ -67,10 +67,11 @@ class Config {
     int rhogpriority;
     double gExpandFactRho;
     int lbdensity;
-    int rhoGHelpers;
-    int rhoRsubplanes;
-    int rhoSubPlaneBalance;
-    int rhoGToRhoRMsgComb;
+    int nchareRhoR_x, nchareRhoR_y;
+    int nchareRhoRHart_x, nchareRhoRHart_y;
+    int nchareRhoInter_x, nchareRhoInter_z;
+    int nchareHartInter_x, nchareHartInter_z;
+    int nchareAtmSFInter_x, nchareAtmSFInter_z;
     int prioEextFFTMsg;
     //==================================
     // density commlib flags

@@ -46,8 +46,6 @@
 #include <fstream>
 #include <cmath>
 
-
-
 //============================================================================
 extern CProxy_TimeKeeper                      TimeKeeperProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
@@ -59,9 +57,7 @@ extern CkVec <CProxy_CP_State_ParticlePlane>  UparticlePlaneProxy;
 extern CkVec <CProxy_FFTcache>                UfftCacheProxy;
 extern CProxy_InstanceController              instControllerProxy;
 extern CkGroupID            mCastGrpId;
-extern ComlibInstanceHandle mssInstance;
 
-extern int    sizeX;
 extern Config config;
 extern CkReduction::reducerType sumFastDoubleType;
 
@@ -94,11 +90,11 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
 
   countProduct=0;
   count = 0;
-  rhoRsubplanes = config.rhoRsubplanes;
   numCookies=0;
   ngrida = _ngrida;
   ngridb = _ngridb;
   ngridc = _ngridc;
+
   if(config.doublePack){
     csize = (ngrida/2 + 1)*ngridb; 
     rsize = (ngrida   + 2)*ngridb; ;
@@ -106,6 +102,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
     csize = ngrida*ngridb; 
     rsize = 2*csize;
   }//endif
+
   iplane_ind   = thisIndex.y;
   istate       = thisIndex.x;
   ibead_ind    = thisInstance.idxU.x;
@@ -121,8 +118,14 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
   if(config.UberJmax>1) RhoReductionDest.idxU.y=0; // not at the gamma point
   RhoReductionDest.setPO();
   setMigratable(false);
-  cookie= new CkSectionInfo[rhoRsubplanes];
+
   iteration = 0;
+
+  grid_offset_b = NULL;
+  grid_num_b = NULL;
+  rho_rpencil_offset_x = -1;
+  rho_rpencil_num_y = config.nchareRhoR_y;
+  cookie = new CkSectionInfo[rho_rpencil_num_y];
   thisProxy[thisIndex].run();
 
 }
@@ -139,7 +142,6 @@ void CP_State_RealSpacePlane::pup(PUP::er &p){
   p|istate;
   p|ibead_ind; p|kpoint_ind; p|itemper_ind;
   p|iteration;
-  p|rhoRsubplanes;
   p|ngrida;
   p|ngridb;
   p|ngridc;
@@ -147,7 +149,11 @@ void CP_State_RealSpacePlane::pup(PUP::er &p){
   p|countProduct;
   p|csize;
   p|rsize;
-  PUParray(p,cookie,rhoRsubplanes);
+  p|rho_rpencil_num_y;
+  p|rho_rpencil_offset_x;
+  PUParray(p,cookie,rho_rpencil_num_y);
+  PUParray(p, grid_offset_b, rho_rpencil_num_y);
+  PUParray(p, grid_num_b, rho_rpencil_num_y);
   p|gproxy;
   p|numCookies;
   rs.pup(p); // pup your plane, now, honey.
@@ -422,13 +428,13 @@ void CP_State_RealSpacePlane::doReduction(){
   double *data        = fftcache->tmpDataR;
 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
-  CkPrintf("In StateRSpacePlane[%d %d] doReduction Memory: %lf MB\n", thisIndex.x, thisIndex.y,
-      CmiMemoryUsage()/ (1024.0 * 1024));
+  CkPrintf("In StateRSpacePlane[%d %d] doReduction %.2lf MB\n", thisIndex.x, thisIndex.y,
+      CmiMemoryUsage()/(1024.0*1024));
 #endif
 
 #ifdef _NAN_CHECK_
-  for(int i=0;i<ngrida*ngridb ;i++){
-    if(isnan(data[i])!=0){
+  for(int i = 0;i < ngrida*ngridb; i++){
+    if(isnan(data[i]) != 0){
       CkPrintf("RS [%d %d] issuing nan at %d out of %d\n",
           thisIndex.x, thisIndex.y, i, ngridb*ngrida);
       CkAbort("RS nan in the fftcache");
@@ -447,21 +453,18 @@ void CP_State_RealSpacePlane::doReduction(){
   // Need loop of contribute calls, one for each nchareRhoSplit offset 
   // into data. Need a vector of cookies and callback functions
 
-  int subSize = (ngridb/rhoRsubplanes);
-  int subRem  = (ngridb % rhoRsubplanes);
-
-  int off = 0;
-  for(int subplane=0; subplane<rhoRsubplanes; subplane++){
-    int dataSize = subSize*ngrida;
-    if(subplane < subRem){dataSize += ngrida;}
-    CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
-        CkArrayIndex2D(thisIndex.y,subplane),UrhoRealProxy[RhoReductionDest.proxyOffset].ckGetArrayID());
+  int off = 0, dataSize;
+  for(int density_reduction = 0; density_reduction < rho_rpencil_num_y; density_reduction++){
+    dataSize = grid_num_b[density_reduction] * ngrida;
+    off = grid_offset_b[density_reduction] * ngrida;
+    CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(NULL),
+        CkArrayIndex2D(rho_rpencil_offset_x, density_reduction),
+        UrhoRealProxy[RhoReductionDest.proxyOffset].ckGetArrayID());
     mcastGrp->contribute(dataSize*sizeof(double),&(data[off]),
-        sumFastDoubleType,cookie[subplane],cb);
-    off += dataSize;
+        sumFastDoubleType, cookie[density_reduction], cb, thisIndex.y);
+    //CkPrintf("[%d] RSP [%d,%d] contributed %d to %d %d \n", CkMyPe(), 
+    //    thisIndex.x, thisIndex.y, dataSize, rho_rpencil_offset_x, density_reduction);
   }//endfor : subplanes
-  CkAssert(off==ngrida*ngridb);
-
 
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(DoFFTContribute_, StartTime, CmiWallTimer());
@@ -491,9 +494,9 @@ void CP_State_RealSpacePlane::doReduction(){
  *   FFTing.  This is a stream processing scheme.
  */
 //============================================================================
-void CP_State_RealSpacePlane::unpackProduct(ProductMsg *msg) {
+void CP_State_RealSpacePlane::unPackVks(VksMsg *msg) {
   //============================================================================
-
+  //TODO: fix this once we have done the rho business correctly
   CP           *cp           = CP::get();
 #include "../class_defs/allclass_strip_cp.h"
   double *occ      = cpcoeffs_info->occ_up;
@@ -533,42 +536,32 @@ void CP_State_RealSpacePlane::unpackProduct(ProductMsg *msg) {
 
 
   double *vks_tmp = msg->data;
-  int mychare    = msg->idx;
-  int mysize     = msg->datalen;
-  int myindex    = msg->subplane; // subplaneindex of rhor
-  CkAssert(mychare==thisIndex.y);
+  int pencil_offset_y = msg->pencil_offset_y;
 
-  int subSize    = (ngridb/rhoRsubplanes);
-  int subRem     = (ngridb % rhoRsubplanes);
-  int subAdd     = (myindex < subRem ? 1 : 0);
-  int subMax     = (myindex < subRem ? myindex : subRem);
-  int myNgridb   = subSize+subAdd;
-  int size       = ngrida*myNgridb;
-  CkAssert(mysize == size);
-
+  int myNgridb   = grid_num_b[pencil_offset_y];
+  
   //============================================================================	
 
   // multiply psi by vks to form psiVks
   if(config.doublePack){
     double *psiVks      = rs.planeArrR;
-    int off = (subSize*myindex + subMax)*(ngrida+2);
-    for(int i=0,i2=off;i<myNgridb;i++,i2+=2){
-      for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-        psiVks[(j+i2)] *= vks_tmp[j]*wght_rho;
+    int off = grid_offset_b[pencil_offset_y] * (ngrida + 2);
+    for(int i = 0, i2 = off; i < myNgridb; i++, i2 += 2) {
+      for(int j = i * ngrida; j < (i + 1) * ngrida; j++){
+        psiVks[(j + i2)] *= vks_tmp[j] * wght_rho;
       }//endfor
     }//endfor
   }else{
     complex *psiVks      = rs.planeArr;
-    int off = (subSize*myindex + subMax)*(ngrida);
-    for(int i=0;i<myNgridb;i++){
-      for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-        psiVks[(j+off)] = psiVks[(j+off)]*(vks_tmp[j]*wght_rho);
+    int off = grid_num_b[pencil_offset_y]*ngrida;
+    for(int i = 0; i < myNgridb; i++){
+      for(int j = i * ngrida; j < (i + 1) * ngrida; j++) {
+        psiVks[(j + off)] *= (vks_tmp[j] * wght_rho);
       }//endfor
     }//endfor
   }//endif
 }//endroutine
 //============================================================================
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -582,8 +575,8 @@ void CP_State_RealSpacePlane::doVksFFT() {
   // A little output under some circumstances
 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
-  CkPrintf("In RealSpacePlane[%d %d] doProduct Memory %lf MB\n",
-      thisIndex.x, thisIndex.y,CmiMemoryUsage()/ (1024.0 * 1024));
+  CkPrintf("In RealSpacePlane[%d %d] doProduct %.2lf MB\n",
+      thisIndex.x, thisIndex.y,CmiMemoryUsage()/(1024.0*1024));
 #endif
 
 #ifndef _CP_DEBUG_RHO_OFF_  
@@ -659,14 +652,6 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 
   //------------------------------------------------------------------
 
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-  if (config.useMssInsGP){mssInstance.beginIteration();}
-#else
-  if (config.useMssInsGP){ComlibBegin(gproxy,0);}
-#endif
-#endif
-
   for (int ic = 0; ic < nchareG; ic ++) { // chare arrays to which we will send
 
     int sendFFTDataSize = nlines_per_chareG[ic];
@@ -684,14 +669,6 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
     gproxy(thisIndex.x, ic).acceptIFFT(msg); // send the message
 
   }//end for : chare sending
-
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-  if (config.useMssInsGP){mssInstance.endIteration();}
-#else
-  if (config.useMssInsGP){ComlibEnd(gproxy,0);}
-#endif
-#endif
 
   //------------------------------------------------------------------
 
@@ -722,28 +699,32 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
  * Setting up the multicast trees for Gengbin's library 
  */
 //============================================================================
-void CP_State_RealSpacePlane::init(ProductMsg *msg){
+void CP_State_RealSpacePlane::init(InitDensity *msg){
   //============================================================================
   // Do not delete msg. Its a nokeep.
   //============================================================================
 
+  if(grid_offset_b == NULL) {
+    grid_offset_b = new int[rho_rpencil_num_y];
+    grid_num_b = new int[rho_rpencil_num_y];
+    rho_rpencil_offset_x = msg->pencil_offset_x;
+  }
+
   gproxy = UgSpacePlaneProxy[thisInstance.proxyOffset];
   numCookies++;
   // based on where this came from, put it in the cookie vector
-  CkGetSectionInfo(cookie[msg->subplane], msg);
-  if(numCookies == config.rhoRsubplanes)
-  {
-    //	CkPrintf("{%d} RSP [%d,%d] contributing numCookies %d = config.rhoRsubplanes %d\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y,numCookies, config.rhoRsubplanes);  
-    contribute(sizeof(int), &numCookies, CkReduction::sum_int, 
-        CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
-  }
-  // do not delete nokeep message
-#ifdef USE_COMLIB
-  if (config.useMssInsGP){
-    ComlibAssociateProxy(mssInstance,gproxy);
-  }//endif
-#endif
+  CkGetSectionInfo(cookie[msg->pencil_offset_y], msg);
+  grid_offset_b[msg->pencil_offset_y] = msg->grid_offset_b;
+  grid_num_b[msg->pencil_offset_y] = msg->grid_num_b;
+  CmiAssert(rho_rpencil_offset_x == msg->pencil_offset_x);
 
+  if(numCookies == rho_rpencil_num_y)
+  {
+    //CkPrintf("[%d] RSP [%d,%d] contributing numCookies %d \n", CkMyPe(), 
+    //    thisIndex.x, thisIndex.y, numCookies);
+    contribute(CkCallback(CkIndex_InstanceController::doneInit(), 
+          CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+  }
 }
 //============================================================================
 
@@ -751,10 +732,6 @@ void CP_State_RealSpacePlane::init(ProductMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealSpacePlane::ResumeFromSync(){
-#ifdef USE_COMLIB
-  //    if(config.useMssInsGP)
-  //	ComlibResetProxy(gproxy);
-#endif
 }
 //============================================================================
 
