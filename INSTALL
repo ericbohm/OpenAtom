@@ -6,17 +6,19 @@ INSTALLATION
 
 1. To compile OpenAtom, you need to specify the following things:
     i.   Charm++ Installation Path
-    ii.  FFTW Library Path
+    ii.  FFTW-2 and FFTW-3 Library Path
     iii. Optimized Math Libraries
+    iv.  Charm-FFT Library
 
 2. First, copy a machine specific configuration file (config.MACHINE.mk) from
    the makefiles/ directory to the OpenAtom base directory and rename it to
    config.mk.
 
    Linux Workstations	config.mk
-   Blue Gene/P		config.bgp.mk
-   Ranger (TACC)	config.ranger.mk
-   XT4/XT5		config.xt5.mk
+   Blue Gene/Q		config.mk.bgq
+   Cray XE6/XK7/XC30	config.mk.xk6
+
+   Use config.mk for systems that do not belong to any of the above options.
   
 3. To install Charm++, download a copy from http://charm.cs.illinois.edu
    Depending on the architecture of the machine, choose the right build options
@@ -26,13 +28,21 @@ INSTALLATION
    Next, edit the CHARMBASE variable in config.mk to point to the Charm++
    installation.
 
-4. OpenAtom requires double precision FFTW installed in some location.
+4. OpenAtom requires double precision FFTW-2 and FFTW-3 installed in some location.
    
-   Edit the FFT_HOME variable in config.mk to point to the FFTW installation.
-   You might also need to edit the DUAL_FFTW variable depending on how FFTW was
-   compiled. It takes two values: DUAL_FFTW_OFF and DUAL_FFTW
+   Edit the FFT2_HOME and FFT3_HOME variables in config.mk to point to the FFTW
+   installations. You might also need to edit the DUAL_FFTW variable depending
+   on how FFTW was compiled. It takes two values: DUAL_FFTW_OFF and DUAL_FFTW
 
-5. To start the build, simply type make in the top-level directory along with
+5. You will also need to compile Charm-FFT library separately before compiling
+   OpenAtom. This library can be obtained using the following command:
+
+   git clone https://charm.cs.illinois.edu/gerrit/libs/fft
+
+   Follow the instructions in the downloaded code to compile it. Set the
+   variable CHARMFFT_HOME to the directory with compiled version of Charm-FFT.
+
+6. To start the build, simply type make in the top-level directory along with
    any other options that you require. The binary 'OpenAtom' is placed in the
    build directory whose name is indicated at the start and end of the build
    process.
