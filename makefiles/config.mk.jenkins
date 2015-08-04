@@ -3,10 +3,9 @@
   # Location of the charm installation
   CHARMBASE	= $(CHARM_DIR)
   # Location of the FFTW library installation
-  FFT_HOME	= /dcsdata/home/bohm/fftw64
-  FFT3_HOME	= /usr
-  FFT2_HOME	= /usr
-  CHARMFFT_HOME = /dcsdata/home/nikhil/fft
+  FFT3_HOME	= /dcsdata/home/bohm/fftw3
+  FFT2_HOME	= /dcsdata/home/bohm/fftw64
+  CHARMFFT_HOME = $(WORKSPACE)/fft
 
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
