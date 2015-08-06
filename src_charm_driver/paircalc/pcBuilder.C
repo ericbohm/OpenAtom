@@ -154,12 +154,12 @@ namespace cp {
       // Set up indices for start, end, step, and bounds. This will determine
       // how many chares to create and at which indices to create them when we
       // call ckNew().
-      // The state indices are set up in such a way that if numStates isn't
-      // divisible by grainSize, the remainder is stitched to the last chare.
       short numPlanes = (short)cfg.numPlanes;
       short numStates = (short)cfg.numStates;
       short grainSize = (short)cfg.grainSize;
       short numChunks = (short)cfg.numChunks;
+      // The state indices are set up in such a way that if numStates isn't
+      // divisible by grainSize, the remainder is stitched to the last chare.
       short stateEnd  = (numStates / grainSize) * grainSize;
       // Because we always start the 3rd index at zero, we must have phantoms
       // on at all times. The current bulk construction in Charm++ is not
