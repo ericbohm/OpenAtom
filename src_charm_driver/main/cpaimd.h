@@ -17,9 +17,6 @@
 #include "CPcharmParaInfoGrp.h"
 #include "load_balance/PeList.h"
 #include "uber/Uber.h"
-#include "EachToManyMulticastStrategy.h"
-#include "RingMulticastStrategy.h"
-#include "StreamingStrategy.h"
 #include "ckhashtable.h"
 
 #ifdef CMK_BALANCED_INJECTION_API

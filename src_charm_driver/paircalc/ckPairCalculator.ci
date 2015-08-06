@@ -6,9 +6,6 @@ module pcMessages {
 
   include "paircalc/pcFwdDeclarations.h";
 
-  readonly ComlibInstanceHandle mcastInstanceCP;
-  readonly ComlibInstanceHandle mcastInstanceACP;
-
   initnode registersumMatrixDouble(void);
 
   message initResultMsg;

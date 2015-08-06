@@ -146,9 +146,6 @@ int numPes;
 #include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 
-#include "MeshStreamingStrategy.h"
-#include "MultiRingMulticast.h"
-#include "OneTimeMulticastStrategy.h"
 #include "TopoManager.h"
 #include "TimeKeeper.h"
 
