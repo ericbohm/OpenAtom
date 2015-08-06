@@ -1264,12 +1264,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   {
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
     int cp_bomd_opt = sim->cp_bomd_opt;
-    int time_array_idx;
+    int time_array_idx; // Index into the time array based on iteration and mode
 
     // do new iteration output once globally from the 0th instance
     if (thisIndex.x==0 && thisIndex.y==0 &&
         thisInstance.idxU.x==0 && thisInstance.idxU.y==0 &&
         thisInstance.idxU.z==0 && thisInstance.idxU.s==0 ) {
+      // If we are doing too many steps, don't keep a full timing history,
+      // otherwise set the index based on whether or not we are doing bomd.
       if (num_steps >= 30) {
         time_array_idx = 1;
         wallTimeArr[0] = wallTimeArr[1];
@@ -1279,9 +1281,20 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         time_array_idx = iteration;
       }
       wallTimeArr[time_array_idx] = CkWallTimer();
+
+      // If we are doing BOMD, it is only the last iteration when we have set
+      // the exitFlag and we are on the last bomd step. Otherwise, the last
+      // iteration is either cause we are exiting, or hit num_steps.
+      bool final_iteration;
+      if (cp_bomd_opt) {
+        final_iteration = exitFlag && bomd_step == num_steps;
+      } else {
+        final_iteration = exitFlag || iteration == num_steps;
+      }
+
       // If we've reached the end of the simulation, print a list of the
       // iteration times. Otherwise just print the current iteration time.
-      if (num_steps < 30 && (exitFlag || time_array_idx == num_steps)) {
+      if (num_steps < 30 && final_iteration) {
         CkPrintf("-------------------------------------------------------------------------------\n");
         CkPrintf("Wall Times from within GSP\n\n");
         for (int t = 1; t <= time_array_idx; t++) {
