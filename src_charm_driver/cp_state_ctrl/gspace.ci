@@ -59,7 +59,7 @@ module gSpaceDriver
 
     // Incoming reduction barrier notifications
     entry [nokeep] void allDoneNLForces(CkReductionMsg *msg) {
-      serial { doneNLForces(); }
+      serial "SDAG_doneNLForces" { doneNLForces(); }
     };
 
     entry void driveGSpace() {
@@ -68,21 +68,21 @@ module gSpaceDriver
       // TODO: Need to update flags to be able to decide between more than just
       // minimization and dynamics.
       if (cp_min_opt && !cp_bomd_opt) {
-        serial { computeMinimization(); }
+        serial "SDAG_computeMinimization" { computeMinimization(); }
         when minimizationDone(bool success) {}
       } else if (cp_bomd_opt) {
-        serial { computeBOMD(); }
+        serial "SDAG_computeBOMD" { computeBOMD(); }
         when bomdDone(bool success) {}
       } else {
-        serial { computeDynamics(); }
+        serial "SDAG_computeDynamics" { computeDynamics(); }
         when dynamicsDone(bool success) {}
       }
-      serial { finishComputation(); }
+      serial "SDAG_finishComputation" { finishComputation(); }
     };
 
     //! \brief SDAG method for flow control while doing minimization
     entry void computeMinimization() {
-      serial {
+      serial "SDAG_minInitialSetup" {
         if (thisIndex.x == 0 && thisIndex.y == 0) {
           CkPrintf("Starting minimization with a max of %d steps\n", config.maxIter);
         }
@@ -91,13 +91,13 @@ module gSpaceDriver
       }
       // Compute our initial psi unless gen_wave is on
       if (!_SDAG_DEBUG_PSI_OFF_ && gen_wave) {
-        serial { myGSpaceObj->computeNewPsi(); }
+        serial "SDAG_minInitComputeNewPsi" { myGSpaceObj->computeNewPsi(); }
         when doneNewPsi() {}
       }
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! that we have met the desired tolerance by setting exitFlag to 1.
       while(myGSpaceObj->min_step < config.maxIter && !myGSpaceObj->exitFlag) {
-        serial {
+        serial "SDAG_minStartIteration" {
           //! Resets flags and increases the iteration counter
           myGSpaceObj->min_step++;
           myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
@@ -105,15 +105,17 @@ module gSpaceDriver
 
         if (!_SDAG_DEBUG_PSI_OFF_) {
           //! If called, releaseSFComputeZ() triggers an NL force computation.
-          if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==0 && natm_nl!=0) serial {
+          if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal==0 && natm_nl!=0)
+          serial "SDAG_minReleaseSFComputeZ" {
             releaseSFComputeZ();
           }
 
           //! Both branches of this if will trigger an NL force computation if
           //! releaseSFComputeZ() was not called above.
-          if (!_SDAG_DEBUG_VKS_OFF_) serial {
+          if (!_SDAG_DEBUG_VKS_OFF_) serial "SDAG_minComputePsiFandVKS" {
             myGSpaceObj->computePsiFandVKS();
-          } else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal && natm_nl) serial {
+          } else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal && natm_nl)
+            serial "SDAG_minStartNonLocalEes" {
             startNonLocalEes(myGSpaceObj->iteration);
           }
 
@@ -127,20 +129,26 @@ module gSpaceDriver
             }
           }
 
-          serial { myGSpaceObj->combineForcesGetEke(); }
+          serial "SDAG_minCombineForcesGetEke" {
+            myGSpaceObj->combineForcesGetEke();
+          }
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
         if (!_SDAG_DEBUG_PSI_OFF_) {
-          serial { myGSpaceObj->computeLambdaAndCg(); }
-          when doneLambdaAndCg() serial { myGSpaceObj->launchAtoms(); }
+          serial "SDAG_minComputeLambdaAndCg" {
+            myGSpaceObj->computeLambdaAndCg();
+          }
+          when doneLambdaAndCg() serial "SDAG_minLaunchAtoms" {
+            myGSpaceObj->launchAtoms();
+          }
 
-          serial { myGSpaceObj->computeRedPsi(); }
+          serial "SDAG_minComputeRedPsi" { myGSpaceObj->computeRedPsi(); }
           when doneRedPsi() {}
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
         //! Compute our next Psi, update PsiV, and dump output.
         if (!_SDAG_DEBUG_PSI_OFF_) {
-          serial { myGSpaceObj->computeNewPsi(); }
+          serial "SDAG_minComputeNewPsi" { myGSpaceObj->computeNewPsi(); }
           when doneNewPsi() {}
 
           //! Dump to file every ndump_frq iterations and the final iteration.
@@ -148,7 +156,7 @@ module gSpaceDriver
               (myGSpaceObj->iteration % ndump_frq==0 ||
                myGSpaceObj->iteration==config.maxIter ||
                myGSpaceObj->exitFlag==1)) {
-            serial { myGSpaceObj->doOutput(); }
+            serial "SDAG_minDoOutput" { myGSpaceObj->doOutput(); }
             when doneOutput() {}
           }
         }  // end if !_SDAG_DEBUG_PSI_OFF_
@@ -163,46 +171,50 @@ module gSpaceDriver
         }
 
         //! Print out the iteration times.
-        serial {
+        serial "SDAG_minScreenPrintWallTimes" {
           myGSpaceObj->screenPrintWallTimes();
         }
       }  // end while simulation is running
 
-      serial { thisProxy[thisIndex].minimizationDone(myGSpaceObj->exitFlag); }
+      serial "SDAG_minimizationDone" {
+        thisProxy[thisIndex].minimizationDone(myGSpaceObj->exitFlag);
+      }
     };
 
     //! \brief SDAG method for flow control while doing dynamics
     entry void computeDynamics() {
-      serial {
+      serial "SDAG_dynInitialSetup" {
         if (thisIndex.x == 0 && thisIndex.y == 0) {
           CkPrintf("Starting dynamics for %d steps\n", myGSpaceObj->num_steps);
         }
       }
       //! Compute our initial psi
       if (!_SDAG_DEBUG_PSI_OFF_) {
-        serial { myGSpaceObj->computeNewPsi(); }
+        serial "SDAG_dynInitComputeNewPsi" { myGSpaceObj->computeNewPsi(); }
         when doneNewPsi() {}
       }  // end if !_SDAG_DEBUG_PSI_OFF_
 
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! to exit because we have exceeded the allowed tolerance.
       while(myGSpaceObj->iteration < myGSpaceObj->num_steps && !myGSpaceObj->exitFlag) {
-        serial {
+        serial "SDAG_dynStartIteration" {
           //! Resets flags and increases the iteration counter.
           myGSpaceObj->thisProxy(thisIndex.x,thisIndex.y).startNewIter();
         }
 
         if (!_SDAG_DEBUG_PSI_OFF_) {
           //! If called, releaseSFComputeZ() triggers an NL force computation.
-          if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal == 0 && natm_nl) serial {
+          if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal == 0 && natm_nl)
+          serial "SDAG_dynReleaseSFComputeZ" {
             releaseSFComputeZ();
           }
 
           //! Both branches of this if will trigger an NL force computation if
           //! releaseSFComputeZ() was not called above.
-          if (!_SDAG_DEBUG_VKS_OFF_) serial {
+          if (!_SDAG_DEBUG_VKS_OFF_) serial "SDAG_dynComputePsiFandVKS" {
             myGSpaceObj->computePsiFandVKS();
-          } else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal && natm_nl) serial {
+          } else if (!_SDAG_DEBUG_SFNL_OFF_ && ees_nonlocal && natm_nl)
+            serial "SDAG_dynStartNonLocalEes" {
             startNonLocalEes(myGSpaceObj->iteration);
           }
 
@@ -216,13 +228,17 @@ module gSpaceDriver
             }
           }
 
-          serial { myGSpaceObj->combineForcesGetEke(); }
+          serial "SDAG_dynCombineForcesGetEke" {
+            myGSpaceObj->combineForcesGetEke();
+          }
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
-        serial { myGSpaceObj->launchAtoms(); }
+        serial "SDAG_dynLaunchAtoms" { myGSpaceObj->launchAtoms(); }
 
         if (!_SDAG_DEBUG_PSI_OFF_) {
-          serial { myGSpaceObj->computeLambdaAndCg(); }
+          serial "SDAG_dynComputeLambdaAndCg" {
+            myGSpaceObj->computeLambdaAndCg();
+          }
           when doneLambdaAndCg() {}
 
           //! Dump to file every ndump_frq iterations and the final iteration.
@@ -231,27 +247,31 @@ module gSpaceDriver
               (myGSpaceObj->iteration % ndump_frq==0 ||
                myGSpaceObj->iteration == config.maxIter ||
                myGSpaceObj->exitFlag == 1)) {
-            serial { myGSpaceObj->doOutput(); }
+            serial "SDAG_dynDoOutput" { myGSpaceObj->doOutput(); }
             when doneOutput() {}
           }
 
-          serial { myGSpaceObj->computeRedPsi(); }
+          serial "SDAG_dynComputeRedPsi" { myGSpaceObj->computeRedPsi(); }
           when doneRedPsi() {}
 
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
         //! Compute the Psi for the next iteration
         if (!_SDAG_DEBUG_PSI_OFF_) {
-          serial { myGSpaceObj->computeNewPsi(); }
+          serial "SDAG_dynComputeNewPsi" { myGSpaceObj->computeNewPsi(); }
           when doneNewPsi() {}
 
           if (isPsiVupdateNeeded) {
 #ifdef GSP_USE_PRIMITIVE_ROTATION
-            serial { myGSpaceObj->computeNewPsiV(); }
+            serial "SDAG_dynComputeNewPsiV" { myGSpaceObj->computeNewPsiV(); }
 #else
-            serial { myGSpaceObj->computeNewPsiVFiniteDifference(); }
+            serial "SDAG_dynComputeNewPsiVFiniteDifference" {
+              myGSpaceObj->computeNewPsiVFiniteDifference();
+            }
 #endif
-            when donePsiV() serial { isPsiVupdateNeeded = false; }
+            when donePsiV() serial "SDAG_dynUpdatePsiFlag" {
+              isPsiVupdateNeeded = false;
+            }
           }
         }  // end if !_SDAG_DEBUG_PSI_OFF_
 
@@ -265,29 +285,31 @@ module gSpaceDriver
         }
 
         //! Print out the iteration times.
-        serial {
+        serial "SDAG_dynScreenPrintWallTimes" {
           myGSpaceObj->screenPrintWallTimes();
         }
       }  // end while simulation is running
 
-      serial { thisProxy[thisIndex].dynamicsDone(myGSpaceObj->exitFlag); }
+      serial "SDAG_dynamicsDone" {
+        thisProxy[thisIndex].dynamicsDone(myGSpaceObj->exitFlag);
+      }
     };
 
     // Born-Oppenheimer Molecular Dynamics
     entry void computeBOMD() {
       while (myGSpaceObj->bomd_step < myGSpaceObj->num_steps) {
-        serial {
+        serial "SDAG_bomdStartIteration" {
           myGSpaceObj->bomd_step++;
           computeMinimization();
         }
-        when minimizationDone(bool success) serial {
+        when minimizationDone(bool success) serial "SDAG_bomdCheckIteration" {
           if (!success) {
             thisProxy[thisIndex].bomdDone(false);
             return;
           }
         }
       }
-      serial { thisProxy[thisIndex].bomdDone(true); }
+      serial "SDAG_bomdDone" { thisProxy[thisIndex].bomdDone(true); }
     };
   };
 };
@@ -381,9 +403,9 @@ module gStatePlane
       while (true) {
         for (count = 0; count < config.nchareG; count++) {
           // Partially FFTd data comes from CP_State_GSpacePlane
-          when acceptFFT(RSFFTMsg *m) serial { unpackFFT(m); }
+          when acceptFFT(RSFFTMsg *m) serial "SDAG_unpackFFT" { unpackFFT(m); }
         }
-        serial {
+        serial "SDAG_doFFT" {
           iteration++;
           // Finish the FFT to create Psi[S,R]
           doFFT();
@@ -392,19 +414,19 @@ module gStatePlane
 
         for (countProduct = 0; countProduct < config.nchareRhoR_y; ++countProduct) {
           // Rho chares multicast back VKS[R]
-          when acceptVks(VksMsg *m) serial { unPackVks(m); }
+          when acceptVks(VksMsg *m) serial "SDAG_unpackVks" { unpackVks(m); }
         }
 
 #ifdef RSVKS_BARRIER
         // Performance diagnostic barrier
-        serial {
+        serial "SDAG_RSVKSBarrier" {
           contribute(CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),
                 UrealSpacePlaneProxy[thisInstance.proxyOffset]));
         }
-        when rdoneVks(CkReductionMsg *m) serial { delete m; }
+        when rdoneVks(CkReductionMsg *m) serial "SDAG_VksDelete" { delete m; }
 #endif
 
-        serial {
+        serial "SDAG_doVksFFTAndSendFPsi" {
           // Partially FFT VKS*Psi=Force
           thisProxy[thisIndex].doVksFFT();
           // Send the partially FFTd force to GSpacePlane
@@ -468,7 +490,7 @@ module gStatePlane
 
     // SDAG ////////
     entry void computePsiFandVKS() {
-      serial {
+      serial "SDAG_doFFTAndSendFFTData" {
         // Do the z-FFT
         doFFT();
         // Transpose by sending to RealSpaceStatePlane
@@ -476,9 +498,11 @@ module gStatePlane
       }
       // Wait for RealSpaceStatePlane to send back partially FFTd forces
       while (countIFFT != gs.planeSize[1]) {
-        when acceptIFFT(GSIFFTMsg *msg) serial { unpackIFFT(msg); }
+        when acceptIFFT(GSIFFTMsg *msg) serial "SDAG_unpackIFFT" {
+          unpackIFFT(msg);
+        }
       }
-      serial {
+      serial "SDAG_doIFFT" {
         countIFFT = 0;
         // Complete forces from VKS
 
@@ -487,116 +511,136 @@ module gStatePlane
 #ifdef BARRIER_CP_GSPACE_IFFT
       when allDoneIFFT(CkReductionMsg* msg) {}
 #endif
-      serial {
+      serial "SDAG_donePsiFandVKS" {
         UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).donePsiFandVKS();
       }
     };
 
     entry void computeLambdaAndCg() {
       // Lambda sending is needed for CgOverlap even if ortho is turned off
-      serial {
+      serial "SDAG_sendLambda" {
         // We launch the computation of the constraint force
         sendLambda();
       }
       if (!_SDAG_DEBUG_ORTHO_OFF_) {
         while (countLambda != AllLambdaExpected) {
           case {
-            when acceptLambda(CkReductionMsg *msg) serial { unpackLambda(msg); }
-            when acceptLambda(partialResultMsg *msg) serial { unpackLambda(msg); }
+            when acceptLambda(CkReductionMsg *msg) serial "SDAG_unpackLambda" {
+              unpackLambda(msg);
+            }
+            when acceptLambda(partialResultMsg *msg)
+              serial "SDAG_unpackPartialLambda" { unpackLambda(msg); }
           }
         }
-        serial { doLambda(); }
+        serial "SDAG_doLambda" { doLambda(); }
       }
-      serial { computeCgOverlap(); }
-      when acceptCgOverlap(CkReductionMsg *msg) serial {
+      serial "SDAG_computeCgOverlap" { computeCgOverlap(); }
+      when acceptCgOverlap(CkReductionMsg *msg) serial "SDAG_finishLambdaAndCg" {
         psiCgOvlap(msg);
         UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneLambdaAndCg();
       }
     };
 
     entry void computeRedPsi() {
-      serial {
+      serial "SDAG_integrateModeForceAndSendRedPsi" {
         // Update the Psis using the forces modified by lambda
         integrateModForce();
         // At the gamma point synchronize redundant points on Gx = 0
         sendRedPsi();
       }
       while (iRecvRedPsi == 0) {
-        when acceptRedPsi(GSRedPsiMsg *msg) serial { unpackRedPsi(msg); }
+        when acceptRedPsi(GSRedPsiMsg *msg) serial "SDAG_unpackRedPsi" {
+          unpackRedPsi(msg);
+        }
       }
-      serial {
+      serial "SDAG_finishRedPsi" {
         doneRedPsiIntegrate();
         UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneRedPsi();
       }
     };
 
     entry void computeNewPsi() {
-      serial { sendPsi(); }
+      serial "SDAG_sendPsi" { sendPsi(); }
       if (!_SDAG_DEBUG_ORTHO_OFF_) {
         while (countPsi != AllPsiExpected) {
           case {
-            when acceptNewPsi(CkReductionMsg *msg) serial { unpackNewPsi(msg); }
-            when acceptNewPsi(partialResultMsg *msg) serial { unpackNewPsi(msg); }
+            when acceptNewPsi(CkReductionMsg *msg) serial "SDAG_unpackNewPsi" {
+              unpackNewPsi(msg);
+            }
+            when acceptNewPsi(partialResultMsg *msg)
+              serial "SDAG_unpackPartialNewPsi" { unpackNewPsi(msg); }
           }
         }
-        serial { doNewPsi(); }
+        serial "SDAG_doNewPsi" { doNewPsi(); }
 #ifdef BARRIER_CP_GSPACE_PSI
         when allDonePsi(CkReductionMsg *msg) {}
 #endif
-        serial { UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).doneNewPsi(); }
+        serial "SDAG_doneNewPsi" {
+          UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).doneNewPsi();
+        }
       }
     };
 
     entry void computeNewPsiV() {
-      serial {
+      serial "SDAG_sendRedPsiV" {
         acceptedVPsi = false;
         sendRedPsiV();
       }
       while (iRecvRedPsiV == 0) {
-        when acceptRedPsiV(GSRedPsiMsg *msg) serial { unpackRedPsiV(msg); }
+        when acceptRedPsiV(GSRedPsiMsg *msg) serial "SDAG_unpackRedPsiV" {
+          unpackRedPsiV(msg);
+        }
       }
-      serial {
+      serial "SDAG_doneRedPsiV" {
         doneRedPsiVIntegrate();
         sendPsiV();
       }
       while (countVPsi != AllPsiExpected) {
         case {
-          when acceptNewPsiV(CkReductionMsg *msg) serial { unpackNewPsiV(msg); }
-          when acceptNewPsiV(partialResultMsg *msg) serial { unpackNewPsiV(msg); }
+          when acceptNewPsiV(CkReductionMsg *msg) serial "SDAG_unpackNewPsiV" {
+            unpackNewPsiV(msg);
+          }
+          when acceptNewPsiV(partialResultMsg *msg)
+            serial "SDAG_unpackPartialNewPsiV" { unpackNewPsiV(msg); }
         }
       }
-      serial { doNewPsiV(); }
+      serial "SDAG_doNewPsiV" { doNewPsiV(); }
 #ifdef BARRIER_CP_GSPACE_PSIV
       when allDonePsiV(CkReductionMsg *msg) {}
 #endif
-      serial { UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).donePsiV(); }
+      serial "SDAG_donePsiV" {
+        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).donePsiV();
+      }
     };
 
     entry void computeNewPsiVFiniteDifference() {
-      serial {
+      serial "SDAG_finiteDifferencePsiV" {
         finiteDifferencePsiV();
       }
 #ifdef BARRIER_CP_GSPACE_PSIV
       when allDonePsiV(CkReductionMsg *msg) {}
 #endif
-      serial { UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).donePsiV(); }
+      serial "SDAG_doneFiniteDifferencePsiV" {
+        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).donePsiV();
+      }
     };
 
 
     entry void doOutput() {
       // Everyone sends their portion of the output to the reduction plane
-      serial { contributeFileOutput(); }
+      serial "SDAG_contributeFileOutput" { contributeFileOutput(); }
 
       // The reduction plane collects all of the output, and writes the file
       if (thisIndex.y == redPlane) {
         while (countFileOut < config.nchareG) {
-          when acceptFileOutput(GStateOutMsg* msg) serial { unpackFileOutput(msg); }
+          when acceptFileOutput(GStateOutMsg* msg)
+            serial "SDAG_unpackFileOutput" { unpackFileOutput(msg); }
         }
-        serial { writeOutputFile(); }
+        serial "SDAG_writeOutputFile" { writeOutputFile(); }
       }
 
       // Everyone contributes to the reduction saying that output has completed
-      serial {
+      serial "SDAG_doneOutput" {
         contribute(CkCallback(CkIndex_GSpaceDriver::doneOutput(), UgSpaceDriverProxy[thisInstance.proxyOffset]));
       }
     };
