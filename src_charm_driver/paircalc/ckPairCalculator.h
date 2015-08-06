@@ -304,7 +304,7 @@ extern "C" {
 {
   public:
     /// @entry (obviously)
-    PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig _cfg);
+    PairCalculator(const pc::pcConfig _cfg);
     /// Constructor for migration
     PairCalculator(CkMigrateMessage *);
     /// Destructor (nothing needs to be done?)
@@ -399,8 +399,6 @@ extern "C" {
 
     /// A private copy of the input configurations
     pc::pcConfig cfg;
-    /// A handle to the co-located chare array that handles data input 
-    CProxy_InputDataHandler<CollatorType,CollatorType> myMsgHandler;
     /// Data collators for the left and right matrix blocks
     CollatorType *leftCollator, *rightCollator;
     /// Flags indicating if the left and right matrix blocks have been received

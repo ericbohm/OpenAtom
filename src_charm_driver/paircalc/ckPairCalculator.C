@@ -76,10 +76,11 @@ void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
 /** \brief constructor */
-PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig _cfg): cfg(_cfg)
+PairCalculator::PairCalculator(const pc::pcConfig _cfg): cfg(_cfg)
 {
-#ifdef _PAIRCALC_DEBUG_PLACE_
-  CkPrintf("{%d} [PAIRCALC] [%d,%d,%d,%d,%d] inited on pe %d \n", _instance,thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,_sym, CkMyPe());
+#ifdef DEBUG_CP_PAIRCALC_CREATION
+  CkPrintf("Paircalc: [%d,%d,%d,%d] created on pe %d.\n",
+      thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,CkMyPe());
 #endif
 
 
@@ -210,15 +211,6 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
 #ifdef DEBUG_CP_PAIRCALC_INPUTDATAHANDLER
   CkPrintf("[%d,%d,%d,%d,%d] My left and right data collators: %p %p\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,leftCollator,rightCollator);
 #endif
-  /// This is the first point during execution when I can supply my InputDataHandler with pointers to the msg handlers, hence
-  /// it is (now) safe to insert the [w,x,y,z]th element of the InputDataHandler chare array (as it will immediately clamor 
-  /// for access to these handlers)
-  myMsgHandler = inProxy;
-#ifdef DEBUG_CP_PAIRCALC_CREATION
-  CkPrintf("[%d,%d,%d,%d,%d] Inserting my InputDataHandler\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
-#endif
-  myMsgHandler(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).insert(thisProxy);
-  myMsgHandler.doneInserting();
 }
 
 
