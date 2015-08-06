@@ -81,7 +81,7 @@ $(libmath):    CXXFLAGS += -seq -DFORTRANUNDERSCORE_OFF=1
   LDFLAGS  += -L/usr/local/tools/zlib-1.2.6/lib \
           -L/opt/ibmcmp/xlf/bg/14.1/bglib64 \
            -L/bgsys/ibm_essl/prod/opt/ibmmath/essl/5.1/lib64
-  LDLIBS   += -module CkMulticast -module comlib -lconv-util -lz -lesslbg \
+  LDLIBS   += -module CkMulticast -lconv-util -lz -lesslbg \
              -lesslsmpbg -lm -lxlfmath -lxlf90_r -lxl -lpthread -lrt -ldl
 
 ifeq ($(PROJ), yes)
