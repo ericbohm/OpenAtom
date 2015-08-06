@@ -2476,7 +2476,9 @@ void paircalcstartup(pc::pcConfig *cfgSymmPC, pc::pcConfig *cfgAsymmPC, CPcharmP
 
   // Configurations specific to the symmetric PC instance
   cfgSymmPC->isSymmetric        = true;
-  cfgSymmPC->arePhantomsOn      = config.phantomSym;
+  // Turning phantoms off doesn't work with the current sparse-array
+  // construction used in pcBuilder.C
+  cfgSymmPC->arePhantomsOn      = true;
   cfgSymmPC->numChunks          = config.numChunksSym;
   cfgSymmPC->isDoublePackOn     = doublePack;
   cfgSymmPC->inputMsgPriority   = config.psipriority;
