@@ -494,7 +494,7 @@ void CP_State_RealSpacePlane::doReduction(){
  *   FFTing.  This is a stream processing scheme.
  */
 //============================================================================
-void CP_State_RealSpacePlane::unPackVks(VksMsg *msg) {
+void CP_State_RealSpacePlane::unpackVks(VksMsg *msg) {
   //============================================================================
   //TODO: fix this once we have done the rho business correctly
   CP           *cp           = CP::get();

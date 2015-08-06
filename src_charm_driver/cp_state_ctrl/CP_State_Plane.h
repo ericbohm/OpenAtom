@@ -111,7 +111,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
     void unpackFFT(RSFFTMsg *);
     void doFFT();
     void doVksFFT();
-    void unPackVks(VksMsg *);
+    void unpackVks(VksMsg *);
     void doProductThenFFT();
     void sendFPsiToGSP();
     void setNumPlanesToExpect(int num);
