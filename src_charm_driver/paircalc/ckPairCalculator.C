@@ -2,9 +2,6 @@
 #include "utility/matrix2file.h"
 #include <sstream> 
 
-ComlibInstanceHandle mcastInstanceCP;
-ComlibInstanceHandle mcastInstanceACP;
-
 CkReduction::reducerType sumMatrixDoubleType;
 
 

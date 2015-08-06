@@ -74,7 +74,6 @@ extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 
 extern CkGroupID            mCastGrpId;
-extern ComlibInstanceHandle gssPInstance;
 
 extern int    nstates;
 extern int    nchareG;

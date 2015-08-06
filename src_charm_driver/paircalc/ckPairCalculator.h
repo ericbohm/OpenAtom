@@ -7,14 +7,6 @@
 #include "ckhashtable.h"
 #include "ckcomplex.h"
 
-#include "PipeBroadcastStrategy.h"
-#include "BroadcastStrategy.h"
-#include "DirectMulticastStrategy.h"
-#include "RingMulticastStrategy.h"
-#include "MultiRingMulticast.h"
-#include "NodeMulticast.h"
-
-
 // If the machine is capable of RDMA...
 #if CMK_DIRECT
 // Enable GSpace-PairCalc RDMA
@@ -48,8 +40,6 @@
 #define NORMALPC   0  ///< standard
 #define KEEPORTHO  1  ///< retain orthoT
 #define PSIV       2  ///< multiply new psiV by retained orthoT
-
-extern ComlibInstanceHandle mcastInstanceCP;
 
 extern "C" {
 
