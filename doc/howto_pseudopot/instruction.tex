@@ -1,0 +1,156 @@
+% instruction for Martins-Troullier type pseudopotential
+
+\documentclass[letterpaper,12pt]{article}
+
+\usepackage{helvet}
+\usepackage{courier}
+
+
+
+\textwidth = 6.5 in
+\textheight = 9 in
+\oddsidemargin = 0.0 in
+\evensidemargin = 0.0 in
+\topmargin = 0.0 in
+\headheight = 0.0 in
+\headsep = 0.0 in
+\parskip = 0.2in
+\parindent = 0.0in
+
+
+\title{\fontfamily{phv}\selectfont{Converting pseudopotentials for OpenAtom}}
+%\author{\fontfamily{phv}\selectfont{Minjung Kim}}
+\date{}
+
+\begin{document}
+\maketitle
+
+At this moment (May 2015),
+\begin{itemize}
+\item OpenAtom only supports norm-conserving pseudopotentials.
+\item The converter works for CPMD pseudopotentials. You may want to download CPMD pseudopotential library (visit{\fontfamily{pcr}\selectfont{ http://cpmd.org/download}}.)
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%% MARTINS-TROULLIER 
+\section{Martins-Troullier type pseudopotentials}
+
+
+\noindent
+\underline{ {\bf Source codes }(provided): }
+	\begin{itemize}
+	\item make{\_}mt{\_}pot.f
+	\item piny{\_}make{\_}grid{\_}mt.f
+	\end{itemize}
+	
+\vskip 12pt
+\noindent
+\underline{ {\bf Input files:} }
+	\begin{itemize}
+	\item potential file (e.g., Zn{\_}mt{\_}pot)
+	\item wavefunction file (e.g., Zn{\_}mt{\_}wfn)
+	\item PI{\_}MD.MAKE\\:This file contains input information needed to run piny{\_}make{\_}grid{\_}mt.f
+	\end{itemize}
+
+\vskip 12pt
+\noindent
+\underline{ {\bf Instruction:} }
+
+\begin{enumerate}
+\item Open CPMD pseudopotential file you wish to convert (e.g., Zn\_MT\_PBE\_SEMI.psp)
+\item  Copy potential and wavefunction data from CPMD pseudopotential file (right after {\fontfamily{pcr}\selectfont{\&POTENTIAL}} and {\fontfamily{pcr}\selectfont{\&WAVEFUNCTION}}) to potential (Zn{\_}mt{\_}pot) and wavefunction file (Zn\_mt\_wfn)
+\item Edit make{\_}mt{\_}pot.f
+
+        \begin{itemize}
+	\item Enter the names of your potential and wavefunction files into the appropriate ``open" statement (line 3 and 4)
+	\item Enter the names of your angular momentum channel files  you wish to create into the ``open" statement. 
+	For example, if you have 3 angular momentum channels ($s, p, d$), then Zn{\_}l0, Zn{\_}l1, Zn{\_}l2
+         \end{itemize}
+
+\item Compile make{\_}mt{\_}pot.f and run. It will create Zn{\_}l0, Zn{\_}l1, Zn{\_}l2 files.
+
+\item Edit PI{\_}MD.MAKE\\ The following informations are required:
+
+	\begin{itemize}
+	\item npts rmax lmax
+	\item ZV
+	\item alpha1 C1
+	\item alpha2 C2
+	\item l=0 file name 
+	\item l=1 file name 
+	\item l=2 file name 
+	\item...
+	\item l=lmax file name
+	\end{itemize}
+	
+	npts: number of points on the ouput radial grid\\
+	rmax: the largest r value you on the radial grid\\
+	lmax: the highest angular momentum channel\\
+	ZV: the valence charge\\
+	alpha1, alpha2, C1, C2: parameters that determine the long-range part of the pseudopotential, assumed to be:\\
+	
+	-C1*erf(alpha1*r)/r - C2*erf(alpha2*r)/r\\
+	
+	We've been using alpha1=1.0 C1=1.0 and C2=0.0 so that the long-range part is -erf(r)/r
+
+\item Compile piny{\_}make{\_}grid{\_}mt.f and run. It will create OpenAtom pseudopotential file.
+\end{enumerate}
+
+
+
+%%%%%%%%%%%%%%%%% Goedecker-Hutter type 
+\section{Goedecker-Hutter type pseudopotential}
+
+\noindent
+\underline{ {\bf Source code }(provided): }
+	\begin{itemize}
+	\item make\_goedecker.c
+	\end{itemize}
+
+\vskip 12pt
+\noindent
+\underline{ {\bf Input file:} }
+	\begin{itemize}
+	\item input file (e.g., Cl\_SG\_BLYP\_INPUT -- see the example in the directory)
+	\end{itemize}
+	
+	
+\vskip 12pt
+\noindent
+\underline{ {\bf Instruction:} }
+
+\begin{enumerate}
+\item Create an input file which includes the following information:
+
+First line -comments\\
+Z$_{ion}$\\
+ZV (valence electrons)\\
+LMAX\\
+$r_{loc}$\\
+number of $C$, $C_1$, $C_2$, $C_3$, $C_4$\\
+Number of $s$ channels\\
+$r_s$\\
+$h^0_{1,1}$\\
+$h^0_{2,2}$\\
+Number of $p$ channels\\
+$r_p$\\
+$h^1_{1,1}$\\
+Number of $d$ channels\\
+Number of $f$ channels\\
+
+You can get these numbers from CPMD PP file. Or look up PRB \textbf{58}, 3641 (1998) paper. All coefficients are tabulated.
+
+\item Run {\fontfamily{pcr}\selectfont{make\_goedecker.c}}. You are prompted for the name of the input file, and it will create {\fontfamily{pcr}\selectfont{PSEUDO.OUT}}.
+
+
+\end{enumerate}
+
+
+
+
+
+
+
+	
+
+\end{document}
