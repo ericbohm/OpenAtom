@@ -1,0 +1,54 @@
+How to Add a Test:
+
+1. Check that the test infrastructure works by running make test
+
+2. Create a config file for your test in the python directory:
+
+e.g., test_crooked.config
+
+3. Set the directory for your test as the first parameter in that file:
+
+e.g., ../data/water_32M_10Ry
+
+It is the relative path from the python directory to the execution current working directory of your test.
+
+4. Set the name of the test as the second parameter in that file
+
+e.g., min_test_crookedbox
+
+5. That file should now look like this:
+
+../data/water_32M_10Ry min_test_crookedbox
+
+6. create a directory with the name of your test in the test subdirectory of your test.
+
+e.g., cd ..;  mkdir -p data/water_32M_10Ry/tests/min_test_crookedbox
+
+7. Place your charm driver config file, physics input config file in that directory.
+
+e.g.,  cp cpaimd_config.p1 water.input data/water_32M_10Ry/tests/min_test_crookedbox
+
+8. Create an output file which matches the expected output of your test for one iteration of your choice.
+
+9. edit the testConfig.yml file in that directory to match the file names you used in the previous steps.  Set iteration to match the iteration that you used to capture a successful canonical execution.
+
+  config:
+  sig_figs: 5
+  iteration: 6
+- name: min_test_crookedbox
+  desc: Minimization test raw crooked box
+  numpes: [1]
+  par_cfg: cpaimd_config.p1
+  phy_cfg: water.input
+  out_ref: cpout.log
+
+10. Test your configuration
+
+e.g., cd ../../../../python; python test_driver.py /path/to/your/openatom/build-O3 test_crooked.config
+
+It should pass the test, if it does not then study the situation by running the configuration you specifed in your yml file and see where it diverges from the result you recorded in your canonical output file. 
+
+11. commit and push your test configuration to openatom and any reposistory changes associated with your test.  If your test required a new repository, consult the team for help. The creation of a new dataset repository will require additional git operation outside the scope of this document.
+
+
+
