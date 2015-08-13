@@ -28,8 +28,10 @@
 
 \section{\textsc{OpenAtom}: Getting started}
 
-Before running any type of ``CP'' (which means quantum in \openatom land) simulations supported by \openatom package, you first need to obtain minimized wavefunction files by performing {\fontfamily{pcr}\selectfont{cp\_wave\_min}}. 
-This document explains how to make input files for ``{\fontfamily{pcr}\selectfont{cp\_wave\_min}}".
+Before running any type of ``CP'' (which means quantum in \openatom land) simulations supported by \openatom package, you first need to obtain minimized wavefunction files by performing \verb+cp_wave_min+.
+
+This document explains how to make input files for ``\verb+cp_wave_min+''.
+
 
 --Minjung Kim
 
@@ -44,69 +46,69 @@ There are 7 different types of input files to run \openatom.
 
 \subsubsection{Simulation keyword file}
 
-Let's create a file named {\fontfamily{pcr}\selectfont{water.input}} for water molecule simulation. You can choose any name you want. This file includes general information of the simulations such as, what  type of simulation to perform, where to write the output files, where to find other input files, etc. 
+Let's create a file named \verb+water.input+ for water molecule simulation. You can choose any name you want. This file includes general information of the simulations such as, what  type of simulation to perform, where to write the output files, where to find other input files, etc. 
 
-The simulation keyword file contains 9 subsubsections (i.e., meta-keywords):\\
-{\fontfamily{pcr}\selectfont
-$\sim$sim\_list\_def[ ]\\
-$\sim$sim\_cp\_def[ ]\\
-$\sim$sim\_gen\_def[ ]\\
-$\sim$sim\_class\_PE\_def[ ]\\
-$\sim$sim\_run\_def[ ]\\
-$\sim$sim\_nhc\_def[ ]\\
-$\sim$sim\_vol\_def[ ]\\
-$\sim$sim\_write\_def[ ]\\
-$\sim$sim\_pimd\_def[ ]\\
-}
+The simulation keyword file contains 9 subsections (i.e., meta-keywords):
+\begin{verbatim}
+~sim_list_def[ ]
+~sim_cp_def[ ]
+~sim_gen_def[ ]
+~sim_class_PE_def[ ]
+~sim_run_def[ ]
+~sim_nhc_def[ ]
+~sim_vol_def[ ]
+~sim_write_def[ ]
+~sim_pimd_def[ ]
+\end{verbatim}
 
-It is not required to use all meta-keywords in the input file. For example, if you are not running your calculation with beads, {\fontfamily{pcr}\selectfont{sim\_pimd\_def[]}} meta-keyword is unnecessary. 
+It is not required to use all meta-keywords in the input file. For example, if you are not running your calculation with beads, \verb+sim_pimd_def[]+ meta-keyword is unnecessary. 
 
-Each meta-keyword requires keywords and key-arguments. Complete information of keywords and key-arguments is found in the OpenAtom website. This document explains a few keywords and its key-arguments that are necessary to run {\fontfamily{pcr}\selectfont{cp\_wave\_min}}.
-Here is the example of {\fontfamily{pcr}\selectfont{water.input}}:
+Each meta-keyword requires keywords and key-arguments. Complete information of keywords and key-arguments is found in the OpenAtom website. This document explains a few keywords and its key-arguments that are necessary to run \verb+cp_wave_min+.
+Here is the example of \verb+water.input+:
 
-{\fontfamily{pcr}\selectfont
-$\sim$sim\_gen\_def[\\
-\textbackslash simulation\_typ\{cp\_wave\_min\} \\
-\textbackslash num\_time\_step\{100000\} \\ 
-\textbackslash restart\_type\{initial\}\\
- ]
+\begin{verbatim}
+~sim_gen_def[
+\simulation_typ{cp_wave_min}
+\num_time_step{100000}
+\restart_type{initial}
+]
  
-$\sim$sim\_cp\_def[\\
-\textbackslash cp\_minimize\_typ\{min\_cg\}\\
-\textbackslash cp\_restart\_type\{gen\_wave\}\\
- ]
+~sim_cp_def[
+\cp_minimize_typ{min_cg}
+\cp_restart_type{gen_wave}
+]
 
-$\sim$sim\_run\_def[\\
-\textbackslash cp\_min\_tol\{0.001\}\\
- ]
+~sim_run_def[
+\cp_min_tol{0.001}
+]
 
-$\sim$sim\_vol\_def[\\
-\textbackslash periodicity\{3\}\\
- ]
+~sim_vol_def[
+\periodicity{3}
+]
 
-$\sim$sim\_write\_def[\\
-\textbackslash write\_screen\_freq\{3\}\\
-\textbackslash write\_dump\_freq\{100\}\\
-\textbackslash in\_restart\_file\{water.coords\_initial\}\\
-\textbackslash mol\_set\_file\{water.set\}\\
-\textbackslash sim\_name\{water\}\\
-\textbackslash write\_binary\_cp\_coef\{off\_gzip\}\\
- ]
-}
+~sim_write_def[
+\ write_screen_freq{3}
+\write_dump_freq{100}
+\in_restart_file{water.coords_initial}
+\mol_set_file{water.set}
+\sim_name{water}
+\write_binary_cp_coef{off_gzip}
+]
+\end{verbatim}
 
 Short explanation for each keyword \& argument:
 \begin{itemize}
-\item Simulation type is ``cp\_wave\_min'' which is wavefunction minimization.
+\item Simulation type is ``\verb+cp_wave_min+'' which is wavefunction minimization.
 \item It performs 100000 iterations. After 100000$^{th}$ iteration, it stops even if it does not converge.
-\item Restart type is ``initial", which means it starts from scratch.
+\item Restart type is ``initial'', which means it starts from scratch.
 \item Using CG method for minimization.
-\item ``gen\_wave" stands for generating wavefunctions.
-\item Once the force of wavefunction reaches to the ``cp\_min\_tol" value, it stops the wavefunction minimization.
-\item ``periodicity'' indicates the boundary condition. 3 means it is fully periodic.
+\item ``\verb+gen_wave+'' stands for generating wavefunctions.
+\item Once the force of wavefunction reaches to the ``\verb+cp_min_tol+'' value, it stops the wavefunction minimization.
+\item ``\verb+periodicity+'' indicates the boundary condition. 3 means it is fully periodic.
 \item In each 3 iteration, it prints out some energy values to the output file.
-\item In each 100 iteration, it writes out wavefunction coefficients to STATE\_OUT directory.
-\item Input coordinates are read from ``water.coords\_initial" file.
-\item Molecule \& atom information is found in ``water.set" file.
+\item In each 100 iteration, it writes out wavefunction coefficients to \verb+STATE_OUT+ directory.
+\item Input coordinates are read from ``\verb+water.coords_initial+'' file.
+\item Molecule \& atom information is found in ``\verb+water.set+'' file.
 \item The simulation name is water, which means it creates water file at the end of the simulation.
 \item The wavefunction coefficient file is gzipped.
 \end{itemize}
@@ -114,125 +116,127 @@ Short explanation for each keyword \& argument:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%SETUP file
 \subsubsection{Setup file}
-In the input file, keyword {\fontfamily{pcr}\selectfont{\textbackslash mol\_set\_file} }has a key-argument {\fontfamily{pcr}\selectfont{water.set}}. This is a setup file. It gives the information of total number of electrons, types of of molecules (or atoms), pseudopotential database, etc.
+In the input file, keyword \verb+\mol_set_file+ has a key-argument \verb+water.set+. This is a setup file. It gives the information of total number of electrons, types of of molecules (or atoms), pseudopotential database, etc.
 
-The setup file contains 4 subsubsections ($=$meta-keywords):\\
-{\fontfamily{pcr}\selectfont
-$\sim$wavefunc\_def[ ]\\
-$\sim$molecule\_def[ ]\\
-$\sim$data\_base\_def[ ]\\
-$\sim$bond\_free\_def[ ]\\
-}
+The setup file contains 4 subsections (=meta-keywords):
+\begin{verbatim}
+~wavefunc_def[ ]
+~molecule_def[ ]
+~data_base_def[ ]
+~bond_free_def[ ]
+\end{verbatim}
 
-The first three meta-keywords are necessary. For ``CP'' simulations, we do not need the last meta-keyword. Below is what {\fontfamily{pcr}\selectfont{water.set}} may look like:
+The first three meta-keywords are necessary. For ``CP'' simulations, we do not need the last meta-keyword. Below is what \verb+water.set+ may look like:
 
-{\fontfamily{pcr}\selectfont
-$\sim$wavefunction\_def[\\
-\textbackslash nstate\_up\{4\}\textbackslash nstate\_dn\{4\}\textbackslash cp\_nhc\_opt\{none\}\\
+\begin{verbatim}
+~wavefunction_def[
+\nstate_up{4}\nstate_dn{4}\cp_nhc_opt{none}
  ]
 
-$\sim$molecule\_def[\\
-\textbackslash mol\_name\{Hydrogen\}\textbackslash mol\_parm\_file\{./DATABASE/H.parm\}\\
-\textbackslash num\_mol\{2\}\textbackslash mol\_index\{1\}\textbackslash mol\_opt\_nhc\{mass\_mol\}\\
+~molecule_def[
+\mol_name{Hydrogen}\mol_parm_file{./DATABASE/H.parm}
+\num_mol{2}\mol_index{1}\mol_opt_nhc{mass_mol}
 ]
 
-$\sim$molecule\_def[\\
-\textbackslash mol\_name\{Oxygen\}\textbackslash mol\_parm\_file\{./DATABASE/O.parm\}\\
-\textbackslash num\_mol\{1\}\textbackslash mol\_index\{2\}\textbackslash mol\_opt\_nhc\{mass\_mol\}\\
+~molecule_def[
+\mol_name{Oxygen}\mol_parm_file{./DATABASE/O.parm}
+\num_mol{1}\mol_index{2}\mol_opt_nhc{mass_mol}
 ]
 
-$\sim$data\_base\_def[\\
-\textbackslash inter\_file\{./DATABASE/water.inter\}\\
-\textbackslash vps\_file\{./DATABASE/water.vps\}\\
+~data_base_def[
+\inter_file{./DATABASE/water.inter}
+\vps_file{./DATABASE/water.vps}
 ]
+\end{verbatim}
 
-}
 \begin{itemize}
-\item {\fontfamily{pcr}\selectfont wavefunction\_def} defines the number of electrons. The number of states for spin-up and spin-down has to be the same. 
+\item \verb+wavefunction_def+ defines the number of electrons. The number of states for spin-up and spin-down has to be the same. 
 
-\item {\fontfamily{pcr}\selectfont molecule\_def }defines the name of the molecule and specify the parameter file (.parm files). In quantum simulations, molecule is each atom type. 
+\item \verb+molecule_def+ defines the name of the molecule and specify the parameter file (.parm files). In quantum simulations, molecule is each atom type. 
 
-\item {\fontfamily{pcr}\selectfont data\_base\_def} defines the name of interaction file (water.inter) and pseudopotential file (water.vps).  
+\item \verb+data_base_def+ defines the name of interaction file (water.inter) and pseudopotential file (\verb+water.vps+).  
+
 \end{itemize}
 
 % Coordinates
 \subsubsection{Coordinate input file}
-This file includes the information of atom coordinates and the size of the simulation cell. The name of the atom coordinate file (e.g., water.coords\_initial) is defined in input file (See subsection 1.1).
+This file includes the information of atom coordinates and the size of the simulation cell. The name of the atom coordinate file (e.g., \verb+water.coords_initial+) is defined in input file (See subsection above).
 
-The coordinate file includes three parts:
-
-[number of atoms] [number of beads] [number of path]\\
+The coordinate file includes three parts:\\
+~[number of atoms] [number of beads] [number of path]\\
 coordinates (in \AA)\\
-simulation cell information (in \AA)
+simulation cell information (in \AA)\\
 
-If the system contains only one water molecule, {\fontfamily{pcr}\selectfont{water.coords\_initial}} may look like below:
+If the system contains only one water molecule, \verb+water.coords_initial+ may look like below:
 
-{\fontfamily{pcr}\selectfont{
-3 1 1\\
-0.757 0.586 0.0\\
--0.757 0.586 0.0\\
-0.000 0.000 0.0\\
-10 0 0\\
-0 10 0\\
-0 0 10\\
-}}
+\begin{verbatim}
+3 1 1
+0.757 0.586 0.0
+-0.757 0.586 0.0
+0.000 0.000 0.0
+10 0 0
+0 10 0
+0 0 10
+\end{verbatim}
 
-Make sure that the coordinates must follow the order that you set in {\fontfamily{pcr}\selectfont{water.set}}, i.e., the first two coordinates for H, and the third coordinate for O. 
+Make sure that the coordinates must follow the order that you set in \verb+water.set+, i.e., the first two coordinates for H, and the third coordinate for O. 
 
 % PARALLEL DECOMPOSITION PARAMETERS (CHARM PARAMETERS)
 \subsubsection{Charm parameter file}
 
-The charm parameter file includes all options related to charm++. It can be an empty file. Usually, that is the best way to start. If  \openatom \ complains about some key-arguments, change it accordingly. In this documentation, we will name this file as ``{\fontfamily{pcr}\selectfont{cpaimd\_config}}".
+The charm parameter file includes all options related to charm++. It can be an empty file. Usually, that is the best way to start. If  \openatom \ complains about some key-arguments, change it accordingly. In this documentation, we will name this file as ``\verb+cpaimd_config+''.
 
 
 % Potential parameter keywords file
 \subsubsection{Potential parameter files}
 
-In the setup file (water.set), we have specified two files: ``water.inter" and ``water.vps". For ``CP'' calculations (remember in \openatom \ world, CP means quantum), water.inter is irrelevant. However, if you do not create this file, the code will complain. ``water.vps'' indicates a type of the pseudopotentials, a name of the pseudopotential file, the number of angular momentum, and local component of the pseudopotential. Here are examples of water.inter and water.vps.
+In the setup file (water.set), we have specified two files: ``\verb+water.inter+'' and ``\verb+water.vps+''. For ``CP'' calculations (remember in \openatom \ world, CP means quantum), \verb+water.inter+ is irrelevant. However, if you do not create this file, the code will complain. \verb+water.vps+ indicates a type of the pseudopotentials, a name of the pseudopotential file, the number of angular momentum, and local component of the pseudopotential. Here are examples of \verb+water.inter+ and \verb+water.vps+.
 
-water.inter file:
+\verb+water.inter+ file:
 
-{\fontfamily{pcr}\selectfont{
-$\sim$inter\_parm[\textbackslash atom1\{H\}\textbackslash atom2\{H\}\textbackslash pot\_type{null}\textbackslash min\_dist\{0.1\}\textbackslash max\_dist\{12.9\}]
-$\sim$inter\_parm[\textbackslash atom1\{O\}\textbackslash atom2\{H\}\textbackslash pot\_type\{null\}\textbackslash min\_dist\{0.1\}\textbackslash max\_dist\{12.9\}]
-$\sim$inter\_parm[\textbackslash atom1\{O\}\textbackslash atom2\{O\}\textbackslash pot\_type\{null\}\textbackslash min\_dist{0.1}\textbackslash max\_dist\{12.9\}]
-}}
+\begin{verbatim}
+~inter_parm[\atom1{H}\atom2{H}\pot_type{null}\min_dist{0.1}\max_dist{12.9}]
+~inter_parm[\atom1{O}\atom2{H}\pot_type{null}\min_dist{0.1}\max_dist{12.9}]
+~inter_parm[\atom1{O}\atom2{O}\pot_type{null}\min_dist{0.1}\max_dist{12.9}]
+\end{verbatim}
 
-water.vps file:
+\verb+water.vps+ file:
 
-{\fontfamily{pcr}\selectfont{
-$\sim$PSEUDO\_PARM[\textbackslash ATOM1\{H\}\textbackslash VPS\_TYP\{KB\}\textbackslash N\_ANG\{2\}\textbackslash LOC\_OPT\{0\}\\ \textbackslash VPS\_FILE\{./PPs/Zn\_MT\_PBE\_SEMI.pseud\}]
+\begin{verbatim}
+~PSEUDO_PARM[\ATOM1{H}\VPS_TYP{KB}\N_ANG{2}\LOC_OPT{0}
+\VPS_FILE{./PPs/Zn_MT_PBE_SEMI.pseud}]
 
- $\sim$PSEUDO\_PARM[\textbackslash ATOM1\{O\}\textbackslash VPS\_TYP\{KB\}\textbackslash N\_ANG\{1\}\textbackslash LOC\_OPT\{1\}\\ \textbackslash VPS\_FILE\{./PPs/O\_BLYP\_PP30.pseud\}]
+ ~PSEUDO_PARM[\ATOM1{O}\VPS_TYP{KB}\N_ANG{1}\LOC_OPT{1}
+ \VPS_FILE{./PPs/O_BLYP_PP30.pseud}]
 
- }}
+\end{verbatim}
 
 % Topology keywords file (.parm file)
 \subsubsection{Topology keywords file}
 
-In setup file (sec. 1.2), the topology keywords file are defined in {\fontfamily{pcr}\selectfont{\textbackslash mol\_parm\_file}} keyword for each molecule. In this file, we specify which atoms consist of the molecule (in our case, atom is the molecule). The example of these files for our water system is below:
+In setup file (sec. 1.2), the topology keywords file are defined in \verb+\mol_parm_file+ keyword for each molecule. In this file, we specify which atoms consist of the molecule (in our case, atom is the molecule). The example of these files for our water system is below:
 
-H.parm file:
+\verb+H.parm+ file:
 
-{\fontfamily{pcr}\selectfont{
-$\sim$MOLECULE\_NAME\_DEF[\textbackslash MOLECULE\_NAME\{Hydrogen\}\textbackslash NATOM\{1\}]
+\begin{verbatim}
+~MOLECULE_NAME_DEF[\MOLECULE_NAME{Hydrogen}\NATOM{1}]
 
-$\sim$ATOM\_DEF[\textbackslash ATOM\_TYP\{H\}\textbackslash ATOM\_IND\{1\}\textbackslash MASS\{1.0\}\textbackslash CHARGE\{1.0\}\\
-\textbackslash cp\_valence\_up\{0\}\textbackslash cp\_valence\_dn\{0\}\textbackslash cp\_atom\{yes\}]
- }}
+~ATOM_DEF[\ATOM_TYP{H}\ATOM_IND{1}\MASS{1.0}\CHARGE{1.0}
+\cp_valence_up{0}\cp_valence_dn{0}\cp_atom{yes}]
+\end{verbatim}
 
-O.parm file:
+\verb+O.parm+ file:
 
-{\fontfamily{pcr}\selectfont{
-$\sim$MOLECULE\_NAME\_DEF[\textbackslash MOLECULE\_NAME\{Oxygen\}\textbackslash NATOM\{1\}]
+\begin{verbatim}
+~MOLECULE_NAME_DEF[\MOLECULE_NAME{Oxygen}\NATOM{1}]
 
-$\sim$ATOM\_DEF[\textbackslash ATOM\_TYP\{O\}\textbackslash ATOM\_IND\{1\}\textbackslash MASS\{16.0\}\textbackslash CHARGE\{6.0\}\\
-\textbackslash cp\_valence\_up\{4\}\textbackslash cp\_valence\_dn\{4\}\textbackslash cp\_atom\{yes\}]
- }}
+~ATOM_DEF[\ATOM_TYP{O}\ATOM_IND{1}\MASS{16.0}\CHARGE{6.0}
+\cp_valence_up{4}\cp_valence_dn{4}\cp_atom{yes}]
+\end{verbatim}
 
 % Pseudopotential files
 \subsubsection{Pseudopotential files}
-The name of the pseudopotential files are indicated in potential parameter file (water.vps). Generating pseudopotential for \openatom \ can be found in the \openatom \ website.
+The name of the pseudopotential files are indicated in potential parameter file (\verb+water.vps+). Generating pseudopotential for \openatom \ can be found in the \openatom \ website.
 
 
 

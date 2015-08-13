@@ -31,7 +31,7 @@
 At this moment (May 2015),
 \begin{itemize}
 \item OpenAtom only supports norm-conserving pseudopotentials.
-\item The converter works for CPMD pseudopotentials. You may want to download CPMD pseudopotential library (visit{\fontfamily{pcr}\selectfont{ http://cpmd.org/download}}.)
+\item The converter works for CPMD pseudopotentials. You may want to download CPMD pseudopotential library (visit \verb+http://cpmd.org/download+.)
 \end{itemize}
 --- Minjung Kim
 
@@ -52,7 +52,7 @@ At this moment (May 2015),
 	\begin{itemize}
 	\item potential file (e.g., Zn{\_}mt{\_}pot)
 	\item wavefunction file (e.g., Zn{\_}mt{\_}wfn)
-	\item PI{\_}MD.MAKE\\:This file contains input information needed to run piny{\_}make{\_}grid{\_}mt.f
+	\item PI{\_}MD.MAKE : This file contains input information needed to run piny{\_}make{\_}grid{\_}mt.f
 	\end{itemize}
 
 \vskip 12pt
@@ -61,7 +61,7 @@ At this moment (May 2015),
 
 \begin{enumerate}
 \item Open CPMD pseudopotential file you wish to convert (e.g., Zn\_MT\_PBE\_SEMI.psp)
-\item  Copy potential and wavefunction data from CPMD pseudopotential file (right after {\fontfamily{pcr}\selectfont{\&POTENTIAL}} and {\fontfamily{pcr}\selectfont{\&WAVEFUNCTION}}) to potential (Zn{\_}mt{\_}pot) and wavefunction file (Zn\_mt\_wfn)
+\item  Copy potential and wavefunction data from CPMD pseudopotential file (right after \verb+&POTENTIAL+ and \verb+&WAVEFUNCTION+) to potential (Zn{\_}mt{\_}pot) and wavefunction file (Zn\_mt\_wfn)
 \item Edit make{\_}mt{\_}pot.f
 
         \begin{itemize}
@@ -143,7 +143,7 @@ Number of $f$ channels\\
 
 You can get these numbers from CPMD PP file. Or look up PRB \textbf{58}, 3641 (1998) paper. All coefficients are tabulated.
 
-\item Run {\fontfamily{pcr}\selectfont{make\_goedecker.c}}. You are prompted for the name of the input file, and it will create {\fontfamily{pcr}\selectfont{PSEUDO.OUT}}.
+\item Run \verb+make_goedecker.c+. You are prompted for the name of the input file, and it will create \verb+PSEUDO.OUT+.
 
 
 \end{enumerate}
