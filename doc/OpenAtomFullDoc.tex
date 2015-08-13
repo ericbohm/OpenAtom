@@ -2,28 +2,37 @@
 %cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 %==================================================================
 
-\documentclass[12pt]{article}
+\documentclass[12pt,titlepage]{article}
 \usepackage[text={6.5in,8.9in},centering]{geometry}
 
+% title and date
+\title{\textsc{OpenAtom} Manual: Modern Simulation Methods Applied to Chemistry, Physics and Biology}
+\date{\today}
 
 \begin{document}
-%==================================================================
-%==================================================================
 
-\leavevmode\vfill
-\begin{center}
-\huge
-\textsc{OpenAtom} Manual: \\
-$\ $ \\
-\Large
-Modern Simulation Methods Applied to Chemistry, Physics and Biology
-\end{center}
-\vfill
-
+% make title and table of contents band break for page
+\maketitle
+\tableofcontents
 \newpage
+
+%==================================================================
+% Old title page
+%==================================================================
+%\leavevmode\vfill
+%\begin{center}
+%\huge
+%\textsc{OpenAtom} Manual: \\
+%$\ $ \\
+%\Large
+%Modern Simulation Methods Applied to Chemistry, Physics and Biology
+%\end{center}
+%\vfill
+%\newpage
+
 %==================================================================
 %==================================================================
-\section*{\bf Introduction}
+\section{\bf Introduction}
 
 There are five types of files from which the \textsc{OpenAtom}
 script-language interface reads commands, the
@@ -35,9 +44,9 @@ not contain commands but simply free format data.
 In the simulation setup files, commands that drive a given simulation
 are stated. For example, run 300 time steps of Car-Parrinello {\em ab initio}
 molecular dynamics. In the system setup file, the 
-system is decribed. For example, 300 water molecules, two peptides,
+system is described. For example, 300 water molecules, two peptides,
 three counter ions, thirty Kohn-Sham states etc.  Topology files
-contain information about the molecular connectitivity and potential
+contain information about the molecular connectivity and potential
 energy/pseudopotential files contain information about the
 interactions. The parallel decomposition
 input file contains all the information about the parallel decomposition.
@@ -103,7 +112,7 @@ This manual was, of course, also a late night accomplishment.
 \newpage
 %==================================================================
 %==================================================================
-\section*{\bf Simulation Keyword Dictionary} 
+\section{\bf Simulation Keyword Dictionary} 
 
 The following commands maybe specified in the simulation setup file:
 \begin{enumerate}
@@ -693,7 +702,7 @@ values are placed in the file:
 
 %==================================================================
 %==================================================================
-\section*{\bf Molecule and Wave function Keyword Dictionary} 
+\section{\bf Molecule and Wave function Keyword Dictionary} 
 
 The following commands maybe specified in the system setup file:
 \begin{enumerate}
@@ -905,7 +914,7 @@ file of nkpoint + 1 lines.
 
 %==================================================================
 %==================================================================
-\section*{\bf Topology Keyword Dictionary} 
+\section{\bf Topology Keyword Dictionary} 
 
 The following commands maybe specified in the molecular topology 
 and parameter files:
@@ -1145,7 +1154,7 @@ and parameter files:
 
 %==================================================================
 %==================================================================
-\section*{\bf Potential Parameter Keyword Dictionary} 
+\section{\bf Potential Parameter Keyword Dictionary} 
 
 The following commands maybe specified in the potential parameter files:
 \begin{enumerate}
@@ -1311,7 +1320,7 @@ The following commands maybe specified in the potential parameter files:
 
 %==================================================================
 %==================================================================
-\section*{\bf Coordinate Input Files} 
+\section{\bf Coordinate Input Files} 
 
 At present the code will build topologies for the user. However,
 it will not build coordinates. Therefore, the user must provide
@@ -1339,7 +1348,7 @@ then the last three lines of the file should be \\
 \newpage
 %==================================================================
 %==================================================================
-\section*{\bf Parallel Decomposition Keyword Dictionary: } 
+\section{\bf Parallel Decomposition Keyword Dictionary} 
 
 The following commands maybe specified in the parallel decomposition file:
 \begin{enumerate}
