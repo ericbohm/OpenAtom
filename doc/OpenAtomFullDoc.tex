@@ -156,64 +156,105 @@ values are placed in the file:
 %-------------------------------------------------------------------
 \begin{enumerate}
  \vspace{0.15in}
- \item $\backslash$simulation\_typ\{{\bf md},minimize,debug ...\} : \\
-     Perform a molecular dynamics, minimization, pimd, cp
-     cp\_pimd, cp\_wave, cp\_wave\_pimd, cp\_min, cp\_wave\_min,
-     cp\_wave\_min\_pimd,
-     debug, debug\_cp\_pimd, debug\_cp, debug\_pimd. Here CP indicates
-     Car-Parrinello and PIMD  denotes path integral molecular dynamics.
-
- \vspace{0.15in} 
- \item  $\backslash$ensemble\_typ\{{\bf nve},nvt,npt\_i,npt\_f\} : \\
-     Use the statistical ensemble specified in the curly brackets.
-
- \vspace{0.15in} 
- \item  $\backslash$minimize\_typ\{{\bf min\_std},min\_cg,min\_diis\} : \\
-     Perform a minimization run using the method specified in curly brackets:
+ \item $\backslash$simulation\_typ\{{\bf cp},cp\_pimd,...\} : \\
+     This describes the type of simulation being performed.
      \begin{itemize}
-        \item[$\cdot$] {\it min\_std} -- Steepest descent.
-        \item[$\cdot$] {\it min\_cg} -- Conjugate gradient.
-        \item[$\cdot$] {\it min\_diis} -- Direct inversion in the 
-                                          iterative subspace.
-     \end{itemize}
+      \item cp\_wave\_min : Minimize/optimize the Kohn-Sham wave functions (fixed nuclei)
+              If you don't have initial wave functions, you have to
+	      use the gen\_wave option below.\\
+      \item cp\_wave\_min\_pimd : Minimize/optimize the Kohn-Sham wave functions
+		   over all the beads in preparation for a path
+		   integral run (PIMD) with fixed nuclei.  If you need
+		   starting wave functions for all beads, you need gen\_wave.\\
+       \item cp : Car-Parrinello molecular dynamics (MD)\\
+       \item cp\_pimd : Car-Parinello path integral MD over all the beads\\
+       \item bomd : Born-Oppenheimer molecular dynamics\\
+       \item bomd\_pimd : Born-Oppenheimer molecular dynamics for beads in path integral MD\\
+       \item 
+{\it
+--- planned for the near future---\\
+cp\_min : Minimize nuclei on the Born-Oppenheimer surface (provided by DFT)
+}
+ \end{itemize}
+
+ \vspace{0.15in} 
+ \item  $\backslash$ensemble\_typ\{{\bf nve},nvt,...\} : \\
+Contolls the type of statistical ensemble used in the MD simulation
+\begin{itemize}
+\item nve : Run a (N,V,E) microcanonical MD simulation\\
+\item nvt : Run a (N,V,T) canonical simulation, temperature is controlled by 
+      temperature keyword below\\
+\item {\it
+--- planned for the near future ---\\
+npt\_i : (N,P,T) ensemble with volume scaling only (e.g., for liquids)\\
+npt\_f : (N,P,T) ensemble with full unit cell scaling  (e.g., solids
+        with shear modes)
+}
+\end{itemize}
 
  \vspace{0.15in} 
  \item  $\backslash$restart\_type\{{\bf initial},
              restart\_pos,restart\_posvel,restart\_all\} : \\
      Option controlling how the coordinate input file is read in:
      \begin{itemize}
-       \item[$\cdot$] {\it initial} -- Start using {\it initial} format 
-                                        with atomic positions in angstroms.
-       \item[$\cdot$] {\it restart\_pos} -- Restart only the atomic positions.
+       \item  initial -- Start using {\it initial} format 
+                                        with atomic positions in Angstroms.
+       \item  restart\_pos -- Restart only the atomic positions.
                     Velocities and thermostat velocites (if used) are 
                     sampled from a Maxwell distribution.
-       \item[$\cdot$] {\it restart\_posvel} -- Restart both atmoic position 
+       \item  restart\_posvel -- Restart both atmoic position 
                      and atomic velocities.  Thermostat velocities (if used) 
                      are sampled from a Maxwell distribution.
-       \item[$\cdot$] {\it restart\_all} -- Restart atomic positions, 
+       \item restart\_all -- Restart atomic positions, 
                      velocities, and thermostat velocities (if used).
      \end{itemize}
 
+
+
  \vspace{0.15in} 
  \item  $\backslash$num\_time\_step\{0\} : \\
-     Total number of time steps for this run.
+Total number of time steps (or iterations) of the simulation.  Zero is
+an error, it must be a positive integer.  
 
  \vspace{0.15in} 
  \item   $\backslash$time\_step\{1\} : \\
-     Fundamental or smallest time step.  If no multiple time step integration 
-     is used, then this is {\it the} time step.
+Units of femtoseconds.  This is the fundamental or smallest time
+step. If no multiple time step integration is used, then this is the
+time step.  For example, in a cp simulation, this is the time step for
+each CP step.  In a minimization process, this controls the size of
+the minimization step.
 
 
  \vspace{0.15in} 
  \item   $\backslash$temperature\{300\} : \\
-     Atomic temperature.  This is the temperature used for velocity rescaling,
-     velocity resampling, thermostatting, etc.
+Tempeature for nuclei during MD simulations at finite temperature.
+This is the temperature used for velocity rescaling, velocity
+resampling, thermostatting, etc. The units are Kelvin.
 
 
  \vspace{0.15in} 
  \item   $\backslash$pressure\{0\} : \\
-     Pressure of system.  Only used for simulations in the NPT ensembles.
+Pressure of system in bar. Only used for simulations in the NPT
+ensembles.
+
+
+
+ \vspace{0.15in} 
+{\it
+
+ \item  --- planned for the near future --- \\
+ $\backslash$minimize\_typ\{min\_std,min\_cg,min\_diis\} : \\
+     Perform a minimization run using the method specified in curly brackets:
+     \begin{itemize}
+        \item min\_std -- Steepest descent.
+        \item min\_cg -- Conjugate gradient.
+        \item min\_diis -- Direct inversion in the 
+                                          iterative subspace.
+     \end{itemize}
+}
+
 \end{enumerate}
+
 
 \newpage
 %-------------------------------------------------------------------
