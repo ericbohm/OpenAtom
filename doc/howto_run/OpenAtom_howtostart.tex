@@ -1,47 +1,52 @@
-% instruction for Martins-Troullier type pseudopotential
+%% instruction for Martins-Troullier type pseudopotential
+%
+%\documentclass[letterpaper,12pt]{article}
+%
+%\usepackage{helvet}
+%\usepackage{courier}
+%
+%\textwidth = 6.5 in
+%\textheight = 9 in
+%\oddsidemargin = 0.0 in
+%\evensidemargin = 0.0 in
+%\topmargin = 0.0 in
+%\headheight = 0.0 in
+%\headsep = 0.0 in
+%\parskip = 0.2in
+%\parindent = 0.0in
+%
+%\newcommand{\openatom}{\textsc{OpenAtom}}
+%\renewcommand\labelitemi{\textendash}
+%
+%
+%\title{\fontfamily{phv}\selectfont{\openatom: Get started}}
+%%\author{\fontfamily{phv}\selectfont{Minjung Kim}}
+%\date{}
+%
+%\begin{document}
+%\maketitle
 
-\documentclass[letterpaper,12pt]{article}
-
-\usepackage{helvet}
-\usepackage{courier}
-
-\textwidth = 6.5 in
-\textheight = 9 in
-\oddsidemargin = 0.0 in
-\evensidemargin = 0.0 in
-\topmargin = 0.0 in
-\headheight = 0.0 in
-\headsep = 0.0 in
-\parskip = 0.2in
-\parindent = 0.0in
-
-\newcommand{\openatom}{\textsc{OpenAtom}}
-\renewcommand\labelitemi{\textendash}
-
-
-\title{\fontfamily{phv}\selectfont{\openatom: Get started}}
-%\author{\fontfamily{phv}\selectfont{Minjung Kim}}
-\date{}
-
-\begin{document}
-\maketitle
+\section{\textsc{OpenAtom}: Getting started}
 
 Before running any type of ``CP'' (which means quantum in \openatom land) simulations supported by \openatom package, you first need to obtain minimized wavefunction files by performing {\fontfamily{pcr}\selectfont{cp\_wave\_min}}. 
 This document explains how to make input files for ``{\fontfamily{pcr}\selectfont{cp\_wave\_min}}".
+
+--Minjung Kim
+
 %%%%%%%%%%%%%%%%% Compilation
-%\section{Compilation}
+%\subsection{Compilation}
 
 %%%%%%%%%%%%%%%%% Input files
 
-\section{Input files}
+\subsection{Input files}
 
 There are 7 different types of input files to run \openatom. 
 
-\subsection{Simulation keyword file}
+\subsubsection{Simulation keyword file}
 
 Let's create a file named {\fontfamily{pcr}\selectfont{water.input}} for water molecule simulation. You can choose any name you want. This file includes general information of the simulations such as, what  type of simulation to perform, where to write the output files, where to find other input files, etc. 
 
-The simulation keyword file contains 9 subsections (i.e., meta-keywords):\\
+The simulation keyword file contains 9 subsubsections (i.e., meta-keywords):\\
 {\fontfamily{pcr}\selectfont
 $\sim$sim\_list\_def[ ]\\
 $\sim$sim\_cp\_def[ ]\\
@@ -108,10 +113,10 @@ Short explanation for each keyword \& argument:
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%SETUP file
-\subsection{Setup file}
+\subsubsection{Setup file}
 In the input file, keyword {\fontfamily{pcr}\selectfont{\textbackslash mol\_set\_file} }has a key-argument {\fontfamily{pcr}\selectfont{water.set}}. This is a setup file. It gives the information of total number of electrons, types of of molecules (or atoms), pseudopotential database, etc.
 
-The setup file contains 4 subsections ($=$meta-keywords):\\
+The setup file contains 4 subsubsections ($=$meta-keywords):\\
 {\fontfamily{pcr}\selectfont
 $\sim$wavefunc\_def[ ]\\
 $\sim$molecule\_def[ ]\\
@@ -151,8 +156,8 @@ $\sim$data\_base\_def[\\
 \end{itemize}
 
 % Coordinates
-\subsection{Coordinate input file}
-This file includes the information of atom coordinates and the size of the simulation cell. The name of the atom coordinate file (e.g., water.coords\_initial) is defined in input file (See section 1.1).
+\subsubsection{Coordinate input file}
+This file includes the information of atom coordinates and the size of the simulation cell. The name of the atom coordinate file (e.g., water.coords\_initial) is defined in input file (See subsection 1.1).
 
 The coordinate file includes three parts:
 
@@ -175,13 +180,13 @@ If the system contains only one water molecule, {\fontfamily{pcr}\selectfont{wat
 Make sure that the coordinates must follow the order that you set in {\fontfamily{pcr}\selectfont{water.set}}, i.e., the first two coordinates for H, and the third coordinate for O. 
 
 % PARALLEL DECOMPOSITION PARAMETERS (CHARM PARAMETERS)
-\subsection{Charm parameter file}
+\subsubsection{Charm parameter file}
 
 The charm parameter file includes all options related to charm++. It can be an empty file. Usually, that is the best way to start. If  \openatom \ complains about some key-arguments, change it accordingly. In this documentation, we will name this file as ``{\fontfamily{pcr}\selectfont{cpaimd\_config}}".
 
 
 % Potential parameter keywords file
-\subsection{Potential parameter files}
+\subsubsection{Potential parameter files}
 
 In the setup file (water.set), we have specified two files: ``water.inter" and ``water.vps". For ``CP'' calculations (remember in \openatom \ world, CP means quantum), water.inter is irrelevant. However, if you do not create this file, the code will complain. ``water.vps'' indicates a type of the pseudopotentials, a name of the pseudopotential file, the number of angular momentum, and local component of the pseudopotential. Here are examples of water.inter and water.vps.
 
@@ -203,7 +208,7 @@ $\sim$PSEUDO\_PARM[\textbackslash ATOM1\{H\}\textbackslash VPS\_TYP\{KB\}\textba
  }}
 
 % Topology keywords file (.parm file)
-\subsection{Topology keywords file}
+\subsubsection{Topology keywords file}
 
 In setup file (sec. 1.2), the topology keywords file are defined in {\fontfamily{pcr}\selectfont{\textbackslash mol\_parm\_file}} keyword for each molecule. In this file, we specify which atoms consist of the molecule (in our case, atom is the molecule). The example of these files for our water system is below:
 
@@ -226,9 +231,9 @@ $\sim$ATOM\_DEF[\textbackslash ATOM\_TYP\{O\}\textbackslash ATOM\_IND\{1\}\textb
  }}
 
 % Pseudopotential files
-\subsection{Pseudopotential files}
+\subsubsection{Pseudopotential files}
 The name of the pseudopotential files are indicated in potential parameter file (water.vps). Generating pseudopotential for \openatom \ can be found in the \openatom \ website.
 
 
 
-\end{document}
+%\end{document}

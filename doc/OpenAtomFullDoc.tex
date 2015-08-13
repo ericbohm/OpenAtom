@@ -5,8 +5,11 @@
 \documentclass[12pt,titlepage]{article}
 \usepackage[text={6.5in,8.9in},centering]{geometry}
 
+\newcommand{\openatom}{\textsc{OpenAtom}}
+
+
 % title and date
-\title{\textsc{OpenAtom} Manual: Modern Simulation Methods Applied to Chemistry, Physics and Biology}
+\title{\openatom Manual: Modern Simulation Methods Applied to Chemistry, Physics and Biology}
 \date{\today}
 
 \begin{document}
@@ -32,6 +35,7 @@
 
 %==================================================================
 %==================================================================
+\hrulefill
 \section{\bf Introduction}
 
 There are five types of files from which the \textsc{OpenAtom}
@@ -112,6 +116,20 @@ This manual was, of course, also a late night accomplishment.
 \newpage
 %==================================================================
 %==================================================================
+\hrulefill
+\input{howto_pseudopot/instruction.tex}
+
+\newpage
+%==================================================================
+%==================================================================
+\hrulefill
+\input{howto_run/OpenAtom_howtostart.tex}
+
+
+\newpage
+%==================================================================
+%==================================================================
+\hrulefill
 \section{\bf Simulation Keyword Dictionary} 
 
 The following commands maybe specified in the simulation setup file:
@@ -1118,33 +1136,33 @@ and parameter files:
 
 \subsection*{\bf \~{ }residue\_morph []}
 \begin{itemize}
- \large \item Used to define a file which contains modifications to 
+  \item Used to define a file which contains modifications to 
               a given residue.
- \large \item It has the same arguments as \~{ }residue\_name\_def[].
+  \item It has the same arguments as \~{ }residue\_name\_def[].
 \end{itemize}
 
 %-------------------------------------------------------------------
 
 \subsection*{\bf \~{ }atom\_destroy []}
 \begin{itemize}
- \large  \item Used to destroy an atom in a residue morph file.
- \large  \item Uses the same key words as \~{ }atom\_def[]
+   \item Used to destroy an atom in a residue morph file.
+   \item Uses the same key words as \~{ }atom\_def[]
 \end{itemize}
 
 %-------------------------------------------------------------------
 
 \subsection*{\bf \~{ }atom\_create []}
 \begin{itemize}
- \large  \item Used to create an atom in a residue morph file.
- \large  \item Uses the same key words as \~{ }atom\_def[]
+   \item Used to create an atom in a residue morph file.
+   \item Uses the same key words as \~{ }atom\_def[]
 \end{itemize}
 
 %-------------------------------------------------------------------
 
 \subsection*{\bf \~{ }atom\_morph []}
 \begin{itemize}
- \large  \item Used to morph an atom in a residue morph file.
- \large  \item Uses the same key words as \~{ }atom\_def[]
+   \item Used to morph an atom in a residue morph file.
+   \item Uses the same key words as \~{ }atom\_def[]
 \end{itemize}
 
 %-------------------------------------------------------------------
