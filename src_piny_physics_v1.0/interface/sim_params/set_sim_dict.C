@@ -714,7 +714,7 @@ void set_sim_dict_gen(int *num_dict,DICT_WORD *dict[])
   /*========================================================================*/ 
   /*   A) Set up gen flags                                                  */
   /*------------------------------------------------------------------------*/ 
-  /*  1)\simulation_typ{cp,cp_wave,cp_wave_min,...}
+  /*  1)\simulation_typ{cp,cp_wave,cp_wave_min,...} */
   strcpy((*dict)[1].error_mes,
       "minimize,md,pimd,cp,cp_pimd,cp_wave,cp_wave_pimd,cp_min,cp_wave_min,cp_bomd,cp_wave_min_pimd");
   strcpy((*dict)[1].keyword,"simulation_typ");
