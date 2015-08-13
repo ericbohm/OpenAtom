@@ -1,39 +1,42 @@
-% instruction for Martins-Troullier type pseudopotential
+%% instruction for Martins-Troullier type pseudopotential
+%
+%\documentclass[letterpaper,12pt]{article}
+%
+%\usepackage{helvet}
+%\usepackage{courier}
+%
+%
+%
+%\textwidth = 6.5 in
+%\textheight = 9 in
+%\oddsidemargin = 0.0 in
+%\evensidemargin = 0.0 in
+%\topmargin = 0.0 in
+%\headheight = 0.0 in
+%\headsep = 0.0 in
+%\parskip = 0.2in
+%\parindent = 0.0in
+%
+%
+%\title{\fontfamily{phv}\selectfont{Converting pseudopotentials for OpenAtom}}
+%%\author{\fontfamily{phv}\selectfont{Minjung Kim}}
+%\date{}
+%
+%\begin{document}
+%\maketitle
 
-\documentclass[letterpaper,12pt]{article}
+\section{Converting pseudopotentials for OpenAtom}
 
-\usepackage{helvet}
-\usepackage{courier}
-
-
-
-\textwidth = 6.5 in
-\textheight = 9 in
-\oddsidemargin = 0.0 in
-\evensidemargin = 0.0 in
-\topmargin = 0.0 in
-\headheight = 0.0 in
-\headsep = 0.0 in
-\parskip = 0.2in
-\parindent = 0.0in
-
-
-\title{\fontfamily{phv}\selectfont{Converting pseudopotentials for OpenAtom}}
-%\author{\fontfamily{phv}\selectfont{Minjung Kim}}
-\date{}
-
-\begin{document}
-\maketitle
 
 At this moment (May 2015),
 \begin{itemize}
 \item OpenAtom only supports norm-conserving pseudopotentials.
 \item The converter works for CPMD pseudopotentials. You may want to download CPMD pseudopotential library (visit{\fontfamily{pcr}\selectfont{ http://cpmd.org/download}}.)
 \end{itemize}
-
+--- Minjung Kim
 
 %%%%%%%%%%%%%%%%% MARTINS-TROULLIER 
-\section{Martins-Troullier type pseudopotentials}
+\subsection{Martins-Troullier type pseudopotentials}
 
 
 \noindent
@@ -99,7 +102,7 @@ At this moment (May 2015),
 
 
 %%%%%%%%%%%%%%%%% Goedecker-Hutter type 
-\section{Goedecker-Hutter type pseudopotential}
+\subsection{Goedecker-Hutter type pseudopotential}
 
 \noindent
 \underline{ {\bf Source code }(provided): }
@@ -148,9 +151,4 @@ You can get these numbers from CPMD PP file. Or look up PRB \textbf{58}, 3641 (1
 
 
 
-
-
-
-	
-
-\end{document}
+%\end{document}
