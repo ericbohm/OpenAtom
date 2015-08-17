@@ -3,7 +3,7 @@
   # Location of the charm installation
   CHARMBASE     = $(HOME)/charm/pamilrts-bluegeneq-async-smp
   # Location of the FFTW2 and FFTW3 library installation
-  FFT2_HOME     = /usr/local/tools/fftw-2.1.5/
+  FFT2_HOME     =  /soft/libraries/alcf/current/xl/FFTW2
   FFT3_HOME     = /soft/libraries/alcf/current/xl/FFTW3
   CHARMFFT_HOME = $(HOME)/fft
 
@@ -54,7 +54,7 @@ $(libmath):    CXXFLAGS += -seq -DFORTRANUNDERSCORE_OFF=1
 #===============================================================================
 #-------------------------------------------------------------------------------
   # Should we use dual fft or not
-  DUAL_FFTW	= -DDUAL_FFTW_OFF
+  DUAL_FFTW	= -DDUAL_FFTW
   # Which math library sources (that OpenAtom lugs around) need to be compiled
   src_math	= $(src_xerbla) $(src_eispack)
   # Special optimization options to used for compiling fastadd.C
@@ -65,20 +65,21 @@ $(libmath):    CXXFLAGS += -seq -DFORTRANUNDERSCORE_OFF=1
   # The fft (and other) math libraries to link based on whether DUAL_FFTW is
   # turned on or off
   ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
-    LDLIBS   += -lrfftw -lfftw -lfft_charm -lfftw3_essl
-    #LDLIBS   += -lrfftw -lfftw -lfft_charm -lfftw3
+    #LDLIBS   += -lrfftw -lfftw -lfft_charm -lfftw3_essl
+    LDLIBS   += -lrfftw -lfftw -lfft_charm -lfftw3
   else
-    LDLIBS   += -ldrfftw -ldfftw -lfft_charm -lfftw3_essl
+    #LDLIBS   += -ldrfftw -ldfftw -lfft_charm -lfftw3_essl
+    LDLIBS   += -ldrfftw -ldfftw -lfft_charm -lfftw3
   endif
 
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
   LDFLAGS  += -L$(FFT3_HOME)/lib -L$(FFT2_HOME)/lib -L$(CHARMFFT_HOME) 
-  #LDFLAGS  += -L/soft/libraries/alcf/current/xl/ZLIB/lib \
-              -L/soft/compilers/ibmcmp-feb2015/xlf/bg/14.1/bglib64 \
+  LDFLAGS  += -L/soft/libraries/alcf/current/xl/ZLIB/lib \
+              -L/soft/compilers/ibmcmp-may2015/xlf/bg/14.1/bglib64 \
               -L/bgsys/drivers/ppcfloor/gnu-linux/powerpc64-bgq-linux/lib \
               -L/soft/libraries/essl/current/essl/5.1/lib64
-  LDFLAGS  += -L/usr/local/tools/zlib-1.2.6/lib \
+  #LDFLAGS  += -L/usr/local/tools/zlib-1.2.6/lib \
           -L/opt/ibmcmp/xlf/bg/14.1/bglib64 \
            -L/bgsys/ibm_essl/prod/opt/ibmmath/essl/5.1/lib64
   LDLIBS   += -module CkMulticast -lconv-util -lz -lesslbg \
