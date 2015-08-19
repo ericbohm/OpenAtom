@@ -54,7 +54,7 @@ void TemperController::acceptData()
   /* switch energies based on a probability. Take into account nearest neighbor temperatures are moving around. 
      Index has the map.
    */
-
+  CkPrintf("TemperController is switching everyone\n");
   /* Glenn wants his global crutch */
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   for(int i=switchdir; i<numTempers-switchdir; i+=2)
@@ -107,6 +107,7 @@ void TemperController::output()
     {
       fprintf(tFile,"%d %d %g\n",i, index[i], temperatures[i]);
       fprintf(atFile,"%d %d %g\n",i, index[i], temperatures[i]);
+      CkPrintf("Temps Now %d %d %g\n",i, index[i], temperatures[i]);
     }
   fclose(tFile);
   fclose(atFile);

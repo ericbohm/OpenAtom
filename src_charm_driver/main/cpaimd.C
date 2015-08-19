@@ -587,11 +587,6 @@ main::main(CkArgMsg *msg) {
           thisInstance=UberCollection(thisInstanceIndex);
           UberAlles.push_back(thisInstance);// collection of proxies for all instances
 
-          //============================================================================    
-          // We will need a different one of these per instance
-          // Transfer parameters from physics to driver
-          //    read in atoms : create atoms group 
-          control_physics_to_driver(thisInstance, sim);
 
           //============================================================================ 
 
@@ -601,6 +596,12 @@ main::main(CkArgMsg *msg) {
           // and then we make the usual set of chares to which we pass
           // the Uber Index.
           init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
+          //============================================================================    
+          // We will need a different one of these per instance
+          // Transfer parameters from physics to driver
+          //    read in atoms : create atoms group 
+          control_physics_to_driver(thisInstance, sim);
+
           CkPrintf("After Init state chares  user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
 
           //============================================================================
@@ -2365,6 +2366,10 @@ void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim
       int cp_grimme     = PhysicsAtom->cp_grimme;
       if(sim->ntemper>1)
 	{
+
+	  for(int i=0;i<sim->ntemper;i++){
+	    CkPrintf("sim ntemper %d index[%d]=%d temp[%d]=%g\n",sim->ntemper, i,sim->t_ext_index[i],i,sim->temper_t_ext[i]);
+	  }
 	  PhysicsAtom->kT=sim->temper_t_ext[sim->t_ext_index[itemper]];
 	}
       double kT         = PhysicsAtom->kT;

@@ -831,7 +831,8 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
 
   //============================================================================
   // Perform some error checking
-
+  CkAssert(iopt>=0);
+  CkAssert(iopt<=1);
   countFFT[iopt]++;
   if (countFFT[iopt] > 	recvCountFromGHartExt) {
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

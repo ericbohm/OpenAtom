@@ -212,8 +212,9 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   if(ntemper>1)
     {
       for(int i=0;i<ntemper;i++){
+	CkPrintf("sim ntemper %d index[%d]=%d temp[%d]=%g\n",ntemper, i,t_ext_index[i+1],i,temper_t_ext[i+1]);
 	sim->temper_t_ext[i] = temper_t_ext[(i+1)];
-	sim->t_ext_index[i] = t_ext_index[(i+1)];
+	sim->t_ext_index[i] = t_ext_index[(i+1)]-1;
       }//endfor
     }
   else

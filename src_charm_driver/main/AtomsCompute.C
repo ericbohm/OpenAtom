@@ -947,7 +947,7 @@ void AtomsCompute::bcastAtomsToAtomCache()
 
   UatomsCacheProxy[thisInstance.proxyOffset].acceptAtoms(msg);
 
-  if(amBeadRoot && !amZerothBead){
+  if(numPIMDBeads>1 && amBeadRoot && !amZerothBead){
       UberCollection instance=thisInstance;
       instance.idxU.x=0;
       int offset=instance.calcPO();
