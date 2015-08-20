@@ -1960,11 +1960,15 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
         fft_callback));
 
   if(ees_eext_on) {
+    int miniGrid[3];
+    miniGrid[0] = sim->sizeZ;
+    miniGrid[1] = sim->sizeY;
+    miniGrid[2] = sim->sizeX;
     for(int type = 0; type < config.nchareHartAtmT + 1; type++) {
       Urho_fft_atmSFProxy[type].push_back(Charm_createFFT(sim->ngrid_eext_c,
             sim->ngrid_eext_b, sim->ngrid_eext_a, nchareRhoRHart_x, nchareRhoRHart_y,
             nchareAtmSFInter_x, nchareAtmSFInter_z, nchareRhoG, cutoff,
-            hmati, RC, atmSF_fft_maps[type], fft_callback));
+            hmati, RC, atmSF_fft_maps[type], fft_callback, miniGrid));
     }
   }
 
