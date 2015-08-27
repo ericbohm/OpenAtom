@@ -440,11 +440,13 @@ main::main(CkArgMsg *msg) {
     {
       output_directory="TEMPER_OUT";
     }
+  CkPrintf("tempering output dir %s\n",output_directory);
   char *historyfile=general_data->gentempering_ctrl.history_name;
   if(historyfile==NULL)
     {
       historyfile="temperature_trace.out";
     }
+
 
   int numFFTinstances = 0;
   numFFTinstances += 3; //3 ffts for divRhos
@@ -452,6 +454,9 @@ main::main(CkArgMsg *msg) {
   if(sim->ees_eext_on) {
     numFFTinstances += config.nchareHartAtmT + 1; //these for atmSF
   }
+
+
+  CkPrintf("temperate trace out %s\n", historyfile);
   instControllerProxy= CProxy_InstanceController::ckNew(numFFTinstances,
       config.numInstances);
 
@@ -465,12 +470,11 @@ main::main(CkArgMsg *msg) {
   }
   // make one collector per uberKmax
   CkArrayOptions enlopts(config.UberKmax);
-<<<<<<< 42bdd840f09e271a580318371ca46fd2383b0c03
-  ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, config.UberKmax, std::string(output_directory), enlopts); 
-=======
-  ENLEKECollectorProxy = CProxy_ENL_EKE_Collector::ckNew(config.UberImax *
-      config.UberJmax * config.UberMmax, config.UberKmax, enlopts);
->>>>>>> Refactor density to use Charm FFT lib
+
+  ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax * 
+	config.UberJmax * config.UberMmax, config.UberKmax, 
+        std::string(output_directory), enlopts); 
+
   ENLEKECollectorProxy.doneInserting();
 
   /**@}*/
@@ -574,83 +578,6 @@ main::main(CkArgMsg *msg) {
       object construction of the elements in each of those arrays.  Note that while we are inside Main the chares for PE 0 will be constructed inline in program order.  No assumptions should be made about chares constructed on other PEs until we exit main and pass control to the Charm++ scheduler for parallel launch.
   */
   /**@{*/
-<<<<<<< 42bdd840f09e271a580318371ca46fd2383b0c03
-  CkPrintf("NumInstances %d: Beads %d  * Kpoints %d * Tempers %d * Spin %d\n",config.numInstances, config.UberImax, config.UberJmax, config.UberKmax,config.UberMmax);
-  for(int integral=0; integral< config.UberImax; integral++){
-    for(int kpoint=0; kpoint< config.UberJmax; kpoint++) {
-      for(int temper=0; temper< config.UberKmax; temper++) {
-        for(int spin=0; spin< config.UberMmax; spin++) {
-
-          if(config.simpleTopo) {
-            int ndims;
-            TopoManager_getDimCount(&ndims);
-            int bdims[10];
-            bdims[0] = bdims[1] = bdims[2] = bdims[3] = bdims[4] = 4;
-            gfoo = new PeList(ndims, bdims, numInst);
-            peList4PCmapping = new PeListFactory(ndims, bdims, numInst);
-            rfoo = new PeList(1, 0, *gfoo);
-            availGlobG = rfoo;
-            availGlobR = gfoo;
-          }
-
-          // for each new instance we need a new Uber Index
-          CkVec  <int>  peUsedBySF;
-          CkVec  <int>  peUsedByNLZ;
-          CkVec  <int>  planeUsedByNLZ;
-
-          UberIndex thisInstanceIndex(integral, kpoint, temper, spin); // Internal labels{x,y,z,s}
-          thisInstance=UberCollection(thisInstanceIndex);
-          UberAlles.push_back(thisInstance);// collection of proxies for all instances
-
-
-          //============================================================================ 
-
-          if(config.UberImax>1)	      // handle Path Integrals
-            init_PIBeads(sim, thisInstance);
-
-          // and then we make the usual set of chares to which we pass
-          // the Uber Index.
-          init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
-          //============================================================================    
-          // We will need a different one of these per instance
-          // Transfer parameters from physics to driver
-          //    read in atoms : create atoms group 
-          control_physics_to_driver(thisInstance, sim);
-
-          CkPrintf("After Init state chares  user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
-
-          //============================================================================
-          // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
-
-          orthostartup(&orthoCfg, &cfgSymmPC, &cfgAsymmPC, sim, peList4PCmapping);
-
-          CkPrintf("After Ortho startup  user mem %lf MB\n", (CmiMemoryUsage()/(1024.0*1024.0)));
-
-          //============================================================================
-          // compute the location for the non-local Z reduction roots for each plane
-          // this can then be used in exclusion mapping to avoid overloading them
-          int *usedProc= new int[config.numPes];
-          memset(usedProc, 0, sizeof(int)*config.numPes);
-          int charperpe = nstates/(config.numPesPerInstance);
-          if(charperpe<1) {
-            charperpe=1;
-          } else {
-            if(nstates % config.numPesPerInstance != 0)  charperpe++;
-          }
-          for(int state=0; state<nstates; state++) {
-            int plane = nchareG-1;
-            while(plane >= 0) {
-              bool used = false;
-              int thisstateplaneproc = GSImaptable[thisInstance.getPO()].get(state,plane);
-              if(usedProc[thisstateplaneproc]>=charperpe) 
-              {
-                used=true;
-                if(plane==0) {
-                  peUsedByNLZ.push_back(thisstateplaneproc);
-                  planeUsedByNLZ.push_back(plane);
-                  usedProc[thisstateplaneproc]++;
-                  plane=-1;
-=======
   CkPrintf("NumInstances %d: Beads %d  * Kpoints %d * Tempers %d * Spin %d\n",
       config.numInstances, config.UberImax, config.UberJmax, config.UberKmax,
       config.UberMmax);
@@ -669,7 +596,6 @@ main::main(CkArgMsg *msg) {
                   rfoo = new PeList(1, 0, *gfoo);
                   availGlobG = rfoo;
                   availGlobR = gfoo;
->>>>>>> Refactor density to use Charm FFT lib
                 }
 
 		// for each new instance we need a new Uber Index
@@ -2002,7 +1928,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim){
   //============================================================================
   // make a group : create a proxy for the atom class and also a reduction client
-<<<<<<< 42bdd840f09e271a580318371ca46fd2383b0c03
+
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   char *output_directory=general_data->gentempering_ctrl.output_directory;
   if(output_directory==NULL)
@@ -2010,10 +1936,7 @@ void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim
       output_directory="TEMPER_OUT";
     }
   // Make  groups for the atoms and energies 
-=======
 
-  // Make  groups for the atoms and energies
->>>>>>> Refactor density to use Charm FFT lib
   if(thisInstance.idxU.y>0|| thisInstance.idxU.s>0)
     { // the set of chares being created is for a non-zero kpoint
       // all k-points use the same atoms and energies

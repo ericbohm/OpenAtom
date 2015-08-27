@@ -742,6 +742,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
 
        ioff_zmat = NULL;
        nmem_zmat = NULL;
+       ntemper = 1;
        temper_t_ext = NULL;
        t_ext_index = NULL;
        index_tran_upack_rho_y   = NULL;
