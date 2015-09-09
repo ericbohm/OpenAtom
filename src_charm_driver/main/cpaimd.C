@@ -611,7 +611,7 @@ main::main(CkArgMsg *msg) {
 		// We will need a different one of these per instance
 		// Transfer parameters from physics to driver
 		//    read in atoms : create atoms group
-		control_physics_to_driver(thisInstance);
+		control_physics_to_driver(thisInstance, sim);
 
 		//============================================================================
 

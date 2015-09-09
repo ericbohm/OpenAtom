@@ -156,7 +156,7 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
     t_ext_index = tempering_ctrl->t_ext_index;
     directory = tempering_ctrl->output_directory;
 
-    PRINTF("     Reading tempering state points from : %s\n",fname);
+    PRINTF("     Reading %d tempering state points from : %s\n",npara_temps, fname);
     PRINTF("      Tempering state points are:\n");
 
     fp = cfopen((const char *)fname,"r");
