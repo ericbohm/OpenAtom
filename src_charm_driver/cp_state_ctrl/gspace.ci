@@ -52,6 +52,7 @@ module gSpaceDriver
     entry void donePsiV();
     entry void doneOutput();
     entry void doneNLForces();
+    entry void startNextStep();
 
     entry void minimizationDone(bool);
     entry void dynamicsDone(bool);
@@ -93,6 +94,10 @@ module gSpaceDriver
       if (!_SDAG_DEBUG_PSI_OFF_ && gen_wave) {
         serial "SDAG_minInitComputeNewPsi" { myGSpaceObj->computeNewPsi(); }
         when doneNewPsi() {}
+      }
+
+      serial {
+        myGSpaceObj->wallTimeArr[0] = CkWallTimer(); 
       }
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! that we have met the desired tolerance by setting exitFlag to 1.
@@ -170,6 +175,13 @@ module gSpaceDriver
           when doneMovingAtoms(const int AtomsGrpIter) {}
         }
 
+        serial {
+          contribute(CkCallback(CkIndex_InstanceController::doneIteration(), 
+                CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+        }
+
+        when startNextStep() {}
+
         //! Print out the iteration times.
         serial "SDAG_minScreenPrintWallTimes" {
           myGSpaceObj->screenPrintWallTimes();
@@ -194,6 +206,9 @@ module gSpaceDriver
         when doneNewPsi() {}
       }  // end if !_SDAG_DEBUG_PSI_OFF_
 
+      serial {
+        myGSpaceObj->wallTimeArr[0] = CkWallTimer(); 
+      }
       //! Loop until we hit the last iteration, or the GSpacePlane has signaled
       //! to exit because we have exceeded the allowed tolerance.
       while(myGSpaceObj->iteration < myGSpaceObj->num_steps && !myGSpaceObj->exitFlag) {

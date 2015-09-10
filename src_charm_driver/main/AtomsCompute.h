@@ -97,11 +97,11 @@ class AtomsCompute: public CBase_AtomsCompute {
     void init();
     ~AtomsCompute();
     void integrateAtoms();
-    void accept_PIMD_x(double _x, double _y, double _z, int atomI);
-    void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);
-    void accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu, double _xu, double _yu, double _zu, int atomI);
-    void accept_PIMD_CM(AtomXYZMsg *m);
-    void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
+    void accept_PIMD_x(AtomXYZMsg*);
+    void accept_PIMD_Fu(AtomXYZMsg*);
+    void accept_PIMD_Fu_and_u(AtomXYZMsg*);
+    void accept_PIMD_CM(AtomXYZMsg*);
+    void accept_PIMD_u(AtomXYZMsg*);
     void acceptNewTemperature(double temp);
     void recvContribute(CkReductionMsg *);
     void recvContributeForces(CkReductionMsg *);

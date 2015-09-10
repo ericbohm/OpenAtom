@@ -197,7 +197,7 @@ CProxy_PlatformSpecific platformSpecificProxy;
 //============================================================================
 // readonly globals
 
-double Timer;
+double globalTimer;
 int Ortho_UE_step2;
 int Ortho_UE_step3;
 int Ortho_UE_error;
@@ -234,6 +234,7 @@ const char OpenAtomRevision[] = INQUOTES(OPENATOM_REVISION);
  * \brief The Main of CPAIMD, it calls all the init functions.
  */
 main::main(CkArgMsg *msg) {
+  globalTimer = CkWallTimer();
   topoMgr = NULL;
   //============================================================================
   /**
@@ -349,7 +350,7 @@ main::main(CkArgMsg *msg) {
 
   CkPrintf("  Reading Driver input from %s\n",msg->argv[1]);
 
-  Timer = CmiWallTimer();
+  double Timer = CmiWallTimer();
   double phase1start = Timer;
   numPes = CkNumPes();
   int minimization_steps;
@@ -555,6 +556,7 @@ main::main(CkArgMsg *msg) {
     (CmiMemoryUsage()/(1024.0*1024.0)));
   computeMapOffsets();
 
+  newtime = CmiWallTimer();
   /* these really don't need to be different */
   if(!config.simpleTopo) {
     availGlobG = rfoo;
@@ -563,6 +565,8 @@ main::main(CkArgMsg *msg) {
   }
   newtime = CmiWallTimer();
   Timer = newtime;
+  CkPrintf("Intermediate creation done in %g\n",newtime-Timer);
+  PRINT_LINE_STAR; CkPrintf("\n");
   diagonalization = sim->cp_min_diagonalize;
   /**@}*/
   /*
@@ -599,6 +603,7 @@ main::main(CkArgMsg *msg) {
 	      for(int spin=0; spin< config.UberMmax; spin++) {
 
                 if(config.simpleTopo) {
+                  Timer = newtime;
                   int ndims;
                   TopoManager_getDimCount(&ndims);
                   int bdims[10];
@@ -608,6 +613,8 @@ main::main(CkArgMsg *msg) {
                   rfoo = new PeList(1, 0, *gfoo);
                   availGlobG = rfoo;
                   availGlobR = gfoo;
+                  newtime = CmiWallTimer();
+                  CkPrintf("Pelist initialized in %g with %d elements\n", newtime-Timer, availGlobG->count());
                 }
 
 		// for each new instance we need a new Uber Index
@@ -641,29 +648,44 @@ main::main(CkArgMsg *msg) {
 		// and then we make the usual set of chares to which we pass
 		// the Uber Index.
 		//Need our maps and groups to exist before anyone tries to use them
+                Timer = newtime;
 		if(firstInstance || config.simpleTopo)
 		  build_all_maps(sim, thisInstance);
 		else
 		  build_uber_maps(sim, thisInstance);
+                newtime = CmiWallTimer();
+                CkPrintf("All maps initialized in %g s\n", newtime-Timer);
 
+                Timer = newtime;
 		init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
+                newtime = CmiWallTimer();
+                CkPrintf("All states created in %g s\n", newtime-Timer);
 
 		//============================================================================
 		// Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
 
+                Timer = newtime;
 		orthostartup(&orthoCfg, &cfgSymmPC, &cfgAsymmPC, sim, peList4PCmapping);
+                newtime = CmiWallTimer();
+                CkPrintf("Ortho/PC created in %g s\n", newtime-Timer);
 
 		// Create mapping classes for Paircalcular
 
 
 		//============================================================================
 		// Initialize the density chare arrays
+                Timer = newtime;
 		init_rho_chares(sim, thisInstance);
+                newtime = CmiWallTimer();
+                CkPrintf("Rho created in %g s\n", newtime-Timer);
 
 		//============================================================================
 		// Initialize commlib strategies for later association and delegation
+                Timer = newtime;
 		if(sim->ees_nloc_on)
 		  init_eesNL_chares( natm_nl, natm_nl_grp_max, doublePack, excludePes, sim, thisInstance);
+                newtime = CmiWallTimer();
+                CkPrintf("NL created in %g s\n", newtime-Timer);
 		firstInstance=false;
 		numInst++;
 
@@ -703,13 +725,14 @@ main::main(CkArgMsg *msg) {
   newtime=CmiWallTimer();
   PRINT_LINE_DASH;
   CkPrintf("Cpaimd-Charm-Driver setup phase completed in %g \n",newtime-phase1start);
+  CkPrintf("Total time to execute set up in the main chare %g \n",newtime-globalTimer);
   PRINT_LINE_STAR; CkPrintf("\n");
   PRINT_LINE_STAR;
   PRINT_LINE_DASH;CkPrintf("\n");
   CkPrintf("user mem %.2lf MB\n",CmiMemoryUsage()/(1024.0*1024));
-  Timer=newtime;
   /**@}*/
   //============================================================================
+  traceBegin();
 }// end Main
 //============================================================================
 
@@ -869,6 +892,7 @@ void fillInPeUsedBy(CPcharmParaInfo *sim, UberCollection thisInstance) {
 void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 {
   double newtime=CmiWallTimer();
+  double Timer = newtime;
   availGlobG->reset();
   GSImaptable[numInst].buildMap(config.nstates, config.nchareG);
   int maploaded = 0;
@@ -884,6 +908,7 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 					availGlobG, config.nchareG,
 					config.nstates, config.Gstates_per_pe,
 					config.useCuboidMap, numInst);
+  newtime=CmiWallTimer();
   CkPrintf("GSMap created in %g\n", newtime-Timer);
   if(config.dumpMapFiles)
     {
@@ -934,7 +959,10 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 
   availGlobR->reset();
 
+  Timer=newtime;
   fillInPeUsedBy(sim, thisInstance);
+  newtime=CmiWallTimer();
+  CkPrintf("FillIn created in %g\n", newtime-Timer);
 
   /* Rho */
 
@@ -985,6 +1013,7 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
   maploaded=0;
   size[0] = config.nchareRhoR_x; size[1] = config.nchareRhoR_y;
   RhoRSImaptable[thisInstance.getPO()].buildMap(size[0], size[1]);
+  Timer=newtime;
   if(config.loadMapFiles) {
     mf = new MapFile("RhoRSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
     maploaded = mf->loadMap("RhoRSMap", &RhoRSImaptable[thisInstance.getPO()]);
@@ -994,6 +1023,8 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
     size[0], size[1], config.nstates, config.useCentroidMapRho,
     &RSImaptable[thisInstance.getPO()], excludePes);
   }
+  newtime=CmiWallTimer();
+  CkPrintf("RhoRSMap created in %g\n", newtime-Timer);
   if(config.dumpMapFiles) {
     if(!mf)
       mf = new MapFile("RhoRSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
@@ -1016,6 +1047,7 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
   maploaded = 0;
   size[0] = config.nchareRhoG;
   RhoGSImaptable[thisInstance.getPO()].buildMap(size[0]);
+  Timer=newtime;
   if(config.loadMapFiles) {
     mf = new MapFile("RhoGSMap", 1, size, config.numPes, "TXYZ", 2, 1, 1, 1);
     maploaded = mf->loadMap("RhoGSMap", &RhoGSImaptable[thisInstance.getPO()]);
@@ -1025,6 +1057,8 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
         size[0], config.useCentroidMapRho, &RhoRSImaptable[thisInstance.getPO()],
         excludePes);
   }
+  newtime=CmiWallTimer();
+  CkPrintf("RhoGSMap created in %g\n", newtime-Timer);
   if(config.dumpMapFiles) {
     if(!mf) mf = new MapFile("RhoGSMap", 1, size, config.numPes, "TXYZ", 2, 1,
         1, 1);
@@ -1048,6 +1082,7 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
     size[0] = config.nchareRhoRHart_x; size[1] = config.nchareRhoRHart_y;
     size[2] = config.nchareHartAtmT;
     maploaded=0;
+    Timer=newtime;
     RhoRHartImaptable[thisInstance.getPO()].buildMap(size[0], size[1], size[2]);
     if(config.loadMapFiles) {
 
@@ -1058,6 +1093,8 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
       RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable[thisInstance.getPO()],
           RhoAvail, size[0], size[1], size[2], excludePes);
     }
+    newtime=CmiWallTimer();
+    CkPrintf("RhoRHart created in %g\n", newtime-Timer);
     if(config.dumpMapFiles) {
       if(!mf) mf = new MapFile("RhoRHartMap", 3, size, config.numPes, "TXYZ",
             2, 1, 1, 1);
@@ -1078,6 +1115,7 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
     RhoAvail->reset();
   RhoGHartImaptable[thisInstance.getPO()].buildMap(size[0], size[1]);
   maploaded = 0;
+  Timer=newtime;
   if(config.loadMapFiles) {
     mf = new MapFile("RhoGHartMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
     maploaded = mf->loadMap("RhoGHartMap", &RhoGHartImaptable[thisInstance.getPO()]);
@@ -1094,6 +1132,8 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
         RhoAvail, size[0], size[1], config.useCentroidMapRho, RhoRSImaptablep,
         RhoRHartImaptablep, excludePes);
   }
+  newtime=CmiWallTimer();
+  CkPrintf("RhoGHart created in %g\n", newtime-Timer);
 
   if(config.dumpMapFiles) {
     if(!mf) mf = new MapFile("RhoGHartMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
@@ -1127,6 +1167,7 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
       if(config.loadMapFiles) {
 	maploaded = mf->loadMap("RPPMap", &RPPImaptable[thisInstance.getPO()]);
       }
+      Timer=newtime;
       if(!maploaded)
 	{
 	  RPPMapTable RPPtable= RPPMapTable(
@@ -1138,6 +1179,8 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 						       config.nchareG,
 						       &GSImaptable[thisInstance.getPO()]);
 	}
+      newtime=CmiWallTimer();
+      CkPrintf("RPPTable created in %g\n", newtime-Timer);
       if(config.dumpMapFiles) {
 	if(!mf)	mf = new MapFile("RPPMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 	mf->dumpMap(&RPPImaptable[thisInstance.getPO()], thisInstance.getPO());
@@ -1154,6 +1197,7 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 
   //create map tables for Y pencils
   //TODO: to be changed later so that we use plane decomposition
+  Timer=newtime;
   if(1 || config.nchareRhoInter_x != 1) {
     size[0] = config.nchareRhoInter_x; size[1] = config.nchareRhoInter_z;
     for(int loop_off = 0; loop_off < 3; loop_off++) {
@@ -1228,7 +1272,10 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
       delete mfc;
     }
   }// nchareHartInter_x != 1 -> plane decomposition
+  newtime=CmiWallTimer();
+  CkPrintf("RhoYPencils created in %g\n", newtime-Timer);
   if(sim->ees_eext_on) {
+    Timer=newtime;
     if(1 || config.nchareAtmSFInter_x != 1) {
       size[0] = config.nchareAtmSFInter_x; size[1] = config.nchareAtmSFInter_z;
       for(int loop_off = 0; loop_off < config.nchareHartAtmT + 1; loop_off++) {
@@ -1266,6 +1313,8 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
         }
       }//loop_off - fft of nchareHartAtmT + 1
     }//nchareAtmSFInter_x != 1 -> plane decomposition
+    newtime=CmiWallTimer();
+    CkPrintf("AtmSFYPencils created in %g\n", newtime-Timer);
   }//end of if ees_eext_on
 }
 
@@ -1353,7 +1402,7 @@ void init_PIBeads(CPcharmParaInfo *sim, UberCollection thisInstance)
     {
       int natm = sim->natm_tot;
       CkPrintf("Constructing PIMD Bead array\n");
-      CkArrayOptions opts(natm);
+      CkArrayOptions opts(config.numBeadAtomChares);
       UPIBeadAtomsProxy.push_back( CProxy_PIBeadAtoms::ckNew(thisInstance,config.UberImax,natm,opts));
     }
 
@@ -1414,6 +1463,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   //============================================================================
 
+  double Timer = CmiWallTimer();;
   if(thisInstance.idxU.y > 0 || thisInstance.idxU.s > 0) {
     // the set of chares being created is for a non-zero kpoint
     // all k-points and spins use the same atoms and energies
@@ -1436,7 +1486,9 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
           sim->nstates, nkpoint, thisInstance));
   }
 
-  if(firstInstance) CkPrintf("created eescache proxy\n");
+  if(firstInstance) CkPrintf("created eescache proxy in %f\n", 
+      CmiWallTimer() - Timer);
+  Timer = CmiWallTimer();
 
   int nchareRRhoTot  = config.nchareRhoR_x * config.nchareRhoR_y;
   int nchareRHartTot = config.nchareRhoRHart_x * config.nchareRhoRHart_y;
@@ -1488,7 +1540,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
           numGEext,      numRXEext,  numRYEext,
           config.fftopt,config.fftprogresssplitReal,config.fftprogresssplit,
           1, thisInstance));
-    CkPrintf("created fftcache proxy\n");
+    CkPrintf("created fftcache proxy in %lf\n", CmiWallTimer() - Timer);
+    Timer = CmiWallTimer(); 
     delete [] numRXState;
     delete [] numRYState;
     delete [] numRYStateLower;
@@ -1536,7 +1589,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(sim->sizeX, 1, 1,
         sGrainSize, gforward, gbackward, thisInstance, gSpaceOpts));
   UgSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
-  // CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
+  CkPrintf("UgSpacePlaneProxy created in %f\n", CmiWallTimer() - Timer);
+  Timer = CmiWallTimer(); 
   /**@}*/
   //--------------------------------------------------------------------------------
   // Bind the GSpaceDriver array to the GSpacePlane array so that they migrate together
@@ -1547,6 +1601,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   gspDriverOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
   UgSpaceDriverProxy.push_back( CProxy_GSpaceDriver::ckNew(thisInstance,gspDriverOpts) );
   UgSpaceDriverProxy[thisInstance.proxyOffset].doneInserting();
+  CkPrintf("UgSpaceDriverProxy created in %f\n", CmiWallTimer() - Timer);
   /**@}*/
   //--------------------------------------------------------------------------------
   // We bind the particlePlane array to the gSpacePlane array migrate together
@@ -1564,6 +1619,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
         nchareG, Gstates_per_pe, numIterNL, ees_nonlocal_on,
         thisInstance,  particleOpts));
   UparticlePlaneProxy[thisInstance.proxyOffset].doneInserting();
+  CkPrintf("UparticlePlaneProxy created in %f\n", CmiWallTimer() - Timer);
+  Timer = CmiWallTimer(); 
 
   //---------------------------------------------------------------------------
   // state r-space
@@ -1582,6 +1639,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   UrealSpacePlaneProxy.push_back( CProxy_CP_State_RealSpacePlane::ckNew(1, 1,
   ngrida, ngridb, ngridc, rforward, rbackward, thisInstance, realSpaceOpts));
   UrealSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
+  CkPrintf("UrealSpacePlaneProxy created in %f\n", CmiWallTimer() - Timer);
+  Timer = CmiWallTimer(); 
 
   //--------------------------------------------------------------------------------
   // state r-particleplane

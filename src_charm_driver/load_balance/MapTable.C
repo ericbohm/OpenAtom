@@ -441,9 +441,10 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
     int *Pecount= new int[config.numPes];
     bzero(Pecount, config.numPes *sizeof(int));
 
-    int procsPerPlane = config.numPesPerInstance/nchareG;
+    int procsPerPlane = availprocs->size()/nchareG;
+
     int cubeGstates_per_pe = nstates/procsPerPlane;
-    int charesperpe = nchareG*nstates/config.numPesPerInstance;
+    int charesperpe = nchareG*nstates/availprocs->size();
     int cubesrem = nstates%procsPerPlane;
     if(cubesrem)
       cubeGstates_per_pe++;
@@ -716,7 +717,8 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
 
   bzero(Pecount, config.numPes*sizeof(int));
 
-  rsobjs_per_pe = nstates*sizeZ/config.numPesPerInstance;
+  rsobjs_per_pe = nstates*sizeZ/availprocs->size();
+    
   l = Rstates_per_pe;		// no of states in one chunk
   pl = nstates / l;
   if(nstates % l == 0)
@@ -1201,9 +1203,10 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
   bool useExclude=true;
   int maxorthoindex=(nstates/orthoGrainSize-1);
   int northo=(maxorthoindex+1)*(maxorthoindex+1);
-  oobjs_per_pe = northo/(config.numPes);
+  oobjs_per_pe = northo/(config.numPesPerInstance);
+  if(oobjs_per_pe < 1) oobjs_per_pe = 1;
   int *Pecount= new int [config.numPes];
-  bzero(Pecount, config.numPesPerInstance*sizeof(int)); 
+  bzero(Pecount, config.numPes*sizeof(int)); 
   int s1 = 0, s2 = 0;
   int maxpcstateindex=(nstates/sGrainSize-1)*sGrainSize;
   int maxorthostateindex=(nstates/orthoGrainSize-1)*orthoGrainSize;

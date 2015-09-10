@@ -75,6 +75,13 @@ namespace cp {
       {
         /// Get an appropriately constructed PeList from the supplied factory functor
         PeList *availGlobG = mapCfg.getPeList();
+        if(availGlobG->size() != config.numPesPerInstance) {
+          availGlobG->checkAndAdd(0);
+        }
+        if(availGlobG->size() != config.numPesPerInstance) {
+          CkPrintf("Not enough PEs in PC. Expected %d Got %d\n", config.numPesPerInstance,
+            availGlobG->size());
+        }
         availGlobG->reset();
         mapTable.buildMap(cfg.numPlanes, cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize, achunks, cfg.grainSize);
 

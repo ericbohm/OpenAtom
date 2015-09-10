@@ -94,7 +94,7 @@ PeList::PeList(int ndims, const int bdims[10], int instanceIndex) {
                   for(curLoc[3] = 0; curLoc[3] < dims[3]; curLoc[3]++) {
                     int pe = -1;
                     TopoManager_getPeRank(&pe, curLoc);
-                    if(pe >= 0) {
+                    if(pe > 0) {
                       if(IN_THIS_INSTANCE(globalCount, instanceIndex)) {
 #if USE_BITVECTOR
                         allPE[pe] = true;
@@ -105,6 +105,8 @@ PeList::PeList(int ndims, const int bdims[10], int instanceIndex) {
                         vectorList.push_back(pe);
                         pe_added++;
                       }
+                    }
+                    if(pe >= 0) {
                       globalCount++;
                     }
                   }
@@ -178,7 +180,7 @@ PeList::PeList(int ndims, const int bdims[10], int instanceIndex) {
                           for(curLoc[5] = 0; curLoc[5] < dims[5]; curLoc[5]++) {
                             int pe = -1;
                             TopoManager_getPeRank(&pe, curLoc);
-                            if(pe >= 0) {
+                            if(pe > 0) {
                               if(IN_THIS_INSTANCE(globalCount, instanceIndex)) {
 #if USE_BITVECTOR
                                 allPE[pe] = true;
@@ -189,6 +191,8 @@ PeList::PeList(int ndims, const int bdims[10], int instanceIndex) {
                                 vectorList.push_back(pe);
                                 pe_added++;
                               }
+                            }
+                            if(pe >= 0) {
                               globalCount++;
                             }
                           }
@@ -206,9 +210,6 @@ PeList::PeList(int ndims, const int bdims[10], int instanceIndex) {
       CkAbort("Unsupported ndims\n");
     }
   
-    if(pe_added != config.numPesPerInstance) {
-      CkAbort("TopoManager missed some PEs, aborting\n");
-    }
   } else {
     CkAbort("You shouldn't be calling this function\n");
   }

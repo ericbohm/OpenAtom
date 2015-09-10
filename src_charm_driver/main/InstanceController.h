@@ -40,6 +40,8 @@ class InstanceController: public CBase_InstanceController {
     void instancesReady(CkReductionMsg *msg);
     void resumeFromTemper();
     CProxySection_CP_State_GSpacePlane gTemperBeadProxy;
+    void doneIteration();
+    void allInstancesDoneIteration();
   private:
 
     int done_init, fft_expected;

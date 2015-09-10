@@ -77,12 +77,11 @@ module Atoms
     entry void recvContribute(CkReductionMsg *);
     entry void recvContributeForces(CkReductionMsg *);
     entry void atomsDone(CkReductionMsg *);
-    entry void accept_PIMD_x(double _x, double _y, double _z, int atomI);
-    entry void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);
-    entry void accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu, 
-        double _xu, double _yu, double _zu, int atomI);
-    entry void accept_PIMD_CM(AtomXYZMsg *msg);
-    entry void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
+    entry void accept_PIMD_x(AtomXYZMsg*);
+    entry void accept_PIMD_Fu(AtomXYZMsg*);
+    entry void accept_PIMD_Fu_and_u(AtomXYZMsg*);
+    entry void accept_PIMD_CM(AtomXYZMsg*);
+    entry void accept_PIMD_u(AtomXYZMsg*);
 
   };
 
@@ -110,10 +109,10 @@ module PIBeadAtoms
   class AtomNHC;
   array [1D] PIBeadAtoms {
     entry PIBeadAtoms(UberCollection, int,int);
-    entry void accept_PIMD_x(double x,double y, double z, int index );
+    entry void accept_PIMD_x(AtomXYZMsg *msg);
     entry void accept_PIMD_Fx(AtomXYZMsg *msg);
     entry void accept_PIMD_Fx_and_x(AtomXYZMsg *msg);
-    entry void accept_PIMD_u(double xu,double yu, double zu, int index);
+    entry void accept_PIMD_u(AtomXYZMsg *msg);
   };
 
 
@@ -169,6 +168,8 @@ module instanceController
     entry void fmagMinTest(CkReductionMsg *m);
     entry void instancesReady(CkReductionMsg *m);
     entry void resumeFromTemper();
+    entry void doneIteration();
+    entry void allInstancesDoneIteration();
   };
 
   group DiagonalizerBridge {
@@ -264,7 +265,7 @@ module temperController
 mainmodule cpaimd {
   initnode void initFFTLock(void);
 
-  readonly double Timer;
+  readonly double globalTimer;
   readonly int Ortho_UE_step2;
   readonly int Ortho_UE_step3;
   readonly int Ortho_UE_error;

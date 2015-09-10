@@ -51,6 +51,7 @@ class Config {
     int UberMmax;
     int numInstances;
     int temperCycle;
+    int numBeadAtomChares;
   //==================================
 
   //==================================

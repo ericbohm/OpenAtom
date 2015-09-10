@@ -53,6 +53,7 @@ extern int orthoShrinkExpand;
 extern int numStatesOA;
 extern int totalOrthos;
 extern int grainSizeOrtho;
+extern double                                   globalTimer;
 //============================================================================
 
 InstanceController::InstanceController(int _fft_expected) {
@@ -152,6 +153,7 @@ void InstanceController::instancesReady(CkReductionMsg *m){
   
   int result=( (int *) (m->getData()) )[0];
   delete m;
+  CkPrintf("Total time to finish all start up phases %g \n",CkWallTimer()-globalTimer);
   CkPrintf("Starting all %d instances\n", result);
   for(int i=0;i<config.numInstances; i++)  UgSpaceDriverProxy[i].startControl();  
 #ifdef CMK_BALANCED_INJECTION_API
@@ -314,12 +316,16 @@ void InstanceController::doneInit(){
             related issues on some platforms.
          */
          int num=1;
+         CkPrintf("Total time to finish all start up phases for instance %d is  %g \n", 
+          thisIndex, CkWallTimer()-globalTimer);
          contribute(sizeof(int), &num, CkReduction::sum_int, 
                     CkCallback(CkIndex_InstanceController::instancesReady(NULL),CkArrayIndex1D(0),thisProxy), 0);
          
        }
       else
        {
+         CkPrintf("Total time to finish all start up phases %g \n", 
+          CkWallTimer()-globalTimer);
          UgSpaceDriverProxy[thisIndex].startControl();
 #ifdef CMK_BALANCED_INJECTION_API
          CkPrintf("Reseting Balanced Injection to %d\n", origBIValue);
@@ -333,6 +339,21 @@ void InstanceController::doneInit(){
 }
 //============================================================================
 /**@}*/
+
+void InstanceController::doneIteration() {
+  if(config.numInstances == 1) {
+    allInstancesDoneIteration();
+  } else {
+    contribute(CkCallback(CkIndex_InstanceController::allInstancesDoneIteration(), 
+      CkArrayIndex1D(0),thisProxy));
+  }
+
+}
+
+void InstanceController::allInstancesDoneIteration() {
+  for(int i=0;i<config.numInstances; i++)  
+    UgSpaceDriverProxy[i].startNextStep();  
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

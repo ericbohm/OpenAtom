@@ -1167,7 +1167,7 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
       //           thisInstance.proxyOffset, CkMyPe(), *iteration);
       if(amBeadRoot){send_PIMD_u();}
       if(amBeadRoot && amZerothBead){//For staging, this is the 1st bead not the CM but that's fine
-        AtomXYZMsg *msg = new (natm,natm,natm) AtomXYZMsg;
+        AtomXYZMsg *msg = new (natm,natm,natm, 8*sizeof(int)) AtomXYZMsg;
         for(int atomI=0;atomI<natm;atomI++){
           msg->x[atomI]=atoms[atomI].xu;
           msg->y[atomI]=atoms[atomI].yu;
@@ -1246,9 +1246,18 @@ void AtomsCompute::send_PIMD_u(){
   //==============================================================================
   //  CkPrintf("{%d}[%d] AtomsCompute::send_PIMD_u iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), *iteration);     
 
-  for(int atomnum=0;atomnum<natm;atomnum++){
-    UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_u(
-        atoms[atomnum].xu,atoms[atomnum].yu,atoms[atomnum].zu, PIBeadIndex);
+  for(int beadChare = 0; beadChare < config.numBeadAtomChares; beadChare++) {
+    int startAtm = (beadChare * natm)/config.numBeadAtomChares;
+    int endAtm = ((beadChare + 1) * natm)/config.numBeadAtomChares;
+    int numAtm = endAtm - startAtm;
+    AtomXYZMsg * toSend = new (numAtm, numAtm, numAtm,  8*sizeof(int)) AtomXYZMsg;
+    toSend->index = PIBeadIndex;
+    for(int i = 0; i < numAtm; i++) {
+      toSend->x[i] = atoms[startAtm + i].xu;
+      toSend->y[i] = atoms[startAtm + i].yu;
+      toSend->z[i] = atoms[startAtm + i].zu;
+    }
+    UPIBeadAtomsProxy[thisInstance.proxyOffset][beadChare].accept_PIMD_u(toSend);
   }//endfor
 
 }//end routine
@@ -1259,19 +1268,26 @@ void AtomsCompute::send_PIMD_u(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 // is broadcast to us
-void AtomsCompute::accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI){
+void AtomsCompute::accept_PIMD_Fu(AtomXYZMsg *msg){
   //==============================================================================
 
-  atoms[atomI].fxu    =_fxu; // FastAtoms not used for integration or output
-  atoms[atomI].fyu    =_fyu;
-  atoms[atomI].fzu    =_fzu;
+  int startAtm = (msg->index * natm)/config.numBeadAtomChares;
+  int endAtm = ((msg->index + 1) * natm)/config.numBeadAtomChares;
+  int curAtm = 0; 
+  for(int atomI = startAtm; atomI < endAtm; atomI++) {
+    atoms[atomI].fxu    = msg->x[curAtm];
+    atoms[atomI].fyu    = msg->y[curAtm];
+    atoms[atomI].fzu    = msg->z[curAtm];
+    curAtm++;
+  }
 
+  delete msg;
   acceptCountfu++;
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
       thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, atomI, _fxu, _fyu, _fzu);     
 #endif
-  if(acceptCountfu==natm){
+  if(acceptCountfu == config.numBeadAtomChares){
     //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu done calling integrator iteration %d\n ", 
     //              thisInstance.proxyOffset, CkMyPe(), *iteration);     
     integrateAtoms();
@@ -1286,24 +1302,29 @@ void AtomsCompute::accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int ato
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 // is broadcast to us
-void AtomsCompute::accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu, 
-    double _xu, double _yu, double _zu, int atomI){
+void AtomsCompute::accept_PIMD_Fu_and_u(AtomXYZMsg* msg) {
   //==============================================================================
-
-  atoms[atomI].fxu    =_fxu; // FastAtoms not used for integration or output
-  atoms[atomI].fyu    =_fyu;
-  atoms[atomI].fzu    =_fzu;
-
-  atoms[atomI].xu    =_xu; // FastAtoms not used for integration or output
-  atoms[atomI].yu    =_yu;
-  atoms[atomI].zu    =_zu;
+  int startAtm = (msg->index * natm)/config.numBeadAtomChares;
+  int endAtm = ((msg->index + 1) * natm)/config.numBeadAtomChares;
+  int curAtm = 0; 
+  int numAtm = endAtm - startAtm;
+  for(int atomI = startAtm; atomI < endAtm; atomI++) {
+    atoms[atomI].fxu    = msg->x[curAtm];
+    atoms[atomI].fyu    = msg->y[curAtm];
+    atoms[atomI].fzu    = msg->z[curAtm];
+    atoms[atomI].xu    = msg->x[curAtm + numAtm];
+    atoms[atomI].yu    = msg->y[curAtm + numAtm];
+    atoms[atomI].zu    = msg->z[curAtm + numAtm];
+    curAtm++;
+  }
+  delete msg;
 
   acceptCountfu++;
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
       thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, atomI, _fxu, _fyu, _fzu);     
 #endif
-  if(acceptCountfu==natm){
+  if(acceptCountfu == config.numBeadAtomChares){
     //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu done calling integrator iteration %d\n ", 
     //              thisInstance.proxyOffset, CkMyPe(), *iteration);     
     integrateAtoms();
@@ -1318,22 +1339,27 @@ void AtomsCompute::accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void AtomsCompute::accept_PIMD_x(double _x, double _y, double _z, int atomI){
+void AtomsCompute::accept_PIMD_x(AtomXYZMsg* msg) {
   //==============================================================================
   //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_x iteration %d\n ", thisInstance.proxyOffset, thisIndex, *iteration);     
   //==============================================================================
-
-  atoms[atomI].x=_x;
-  atoms[atomI].y=_y;
-  atoms[atomI].z=_z;
-
-  fastAtoms.x[atomI]=_x;
-  fastAtoms.y[atomI]=_y;
-  fastAtoms.z[atomI]=_z;
-
+  int startAtm = (msg->index * natm)/config.numBeadAtomChares;
+  int endAtm = ((msg->index + 1) * natm)/config.numBeadAtomChares;
+  int curAtm = 0; 
+  for(int atomI = startAtm; atomI < endAtm; atomI++) {
+    atoms[atomI].x    = msg->x[curAtm];
+    atoms[atomI].y    = msg->y[curAtm];
+    atoms[atomI].z    = msg->z[curAtm];
+    fastAtoms.x[atomI]    = msg->x[curAtm];
+    fastAtoms.y[atomI]    = msg->y[curAtm];
+    fastAtoms.z[atomI]    = msg->z[curAtm];
+    curAtm++;
+  }
+  
+  delete msg;
   acceptCountX++;
 
-  if(acceptCountX==natm){
+  if(acceptCountX == config.numBeadAtomChares){
     acceptCountX=0;
     atomsPIMDXrecv=true;
     if(atomsCMrecv){
@@ -1365,9 +1391,18 @@ void AtomsCompute::accept_PIMD_x(double _x, double _y, double _z, int atomI){
 void AtomsCompute::send_PIMD_x(){
   //==============================================================================
 
-  for(int atomnum=0;atomnum<natm;atomnum++){
-    UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_x(atoms[atomnum].x,atoms[atomnum].y,atoms[atomnum].z, 
-        PIBeadIndex);
+  for(int beadChare = 0; beadChare < config.numBeadAtomChares; beadChare++) {
+    int startAtm = (beadChare * natm)/config.numBeadAtomChares;
+    int endAtm = ((beadChare + 1) * natm)/config.numBeadAtomChares;
+    int numAtm = endAtm - startAtm;
+    AtomXYZMsg * toSend = new (numAtm, numAtm, numAtm,  8*sizeof(int)) AtomXYZMsg;
+    toSend->index = PIBeadIndex;
+    for(int i = 0; i < numAtm; i++) {
+      toSend->x[i] = atoms[startAtm + i].x;
+      toSend->y[i] = atoms[startAtm + i].y;
+      toSend->z[i] = atoms[startAtm + i].z;
+    }
+    UPIBeadAtomsProxy[thisInstance.proxyOffset][beadChare].accept_PIMD_x(toSend);
   }//endfor
 
   //==============================================================================
@@ -1401,17 +1436,24 @@ void AtomsCompute::acceptNewTemperature(double temp)
 //==============================================================================
 // done during initialization in 1st iteration
 //==============================================================================
-void AtomsCompute::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI){
+void AtomsCompute::accept_PIMD_u(AtomXYZMsg *msg) {
   //==============================================================================
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_u iteration %d\n", thisInstance.proxyOffset, thisIndex, *iteration);     
 #endif
-  atoms[atomI].xu =_xu;
-  atoms[atomI].yu =_yu;
-  atoms[atomI].zu =_zu;
-
+  int startAtm = (msg->index * natm)/config.numBeadAtomChares;
+  int endAtm = ((msg->index + 1) * natm)/config.numBeadAtomChares;
+  int curAtm = 0; 
+  for(int atomI = startAtm; atomI < endAtm; atomI++) {
+    atoms[atomI].xu    = msg->x[curAtm];
+    atoms[atomI].yu    = msg->y[curAtm];
+    atoms[atomI].zu    = msg->z[curAtm];
+    curAtm++;
+  }
+  
+  delete msg;
   acceptCountu++;
-  if(acceptCountu==natm){
+  if(acceptCountu == config.numBeadAtomChares){
     integrateAtoms();
     acceptCountu=0;
   }//endif

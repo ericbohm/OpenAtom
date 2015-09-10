@@ -67,7 +67,7 @@ class PeList
         true_size = 0;
       }
 #endif
-      for(int i = 0; i < _size; i++) {
+      for(int i = 1; i < _size; i++) {
         if(isSet) {
 #if USE_BITVECTOR
           allPE[i] = true;
@@ -99,6 +99,7 @@ class PeList
       }
 #endif
       for(int i = 0; i < inList.size(); i++) {
+        if(inList[i]) {
         if(isSet) {
 #if USE_BITVECTOR
           allPE[inList[i]] = true;
@@ -111,6 +112,7 @@ class PeList
           list.push_back(inList[i]);
         } else {
           vectorList.push_back(inList[i]);
+        }
         }
       }
       LisV = 0;
@@ -154,6 +156,7 @@ class PeList
       }
 #endif
       for(int i = 0; i < _size; i++) {
+        if(a[i]) {
         if(isSet) {
 #if USE_BITVECTOR
           allPE[a[i]] = true;
@@ -166,6 +169,7 @@ class PeList
           list.push_back(a[i]);
         } else {
           vectorList.push_back(a[i]);
+        }
         }
       }
       LisV = 0;

@@ -49,13 +49,14 @@ class PIBeadAtoms : public CBase_PIBeadAtoms
     PIBeadAtoms(int );
     void accept_PIMD_Fx(AtomXYZMsg *msg);
     void accept_PIMD_Fx_and_x(AtomXYZMsg *msg);
-    void accept_PIMD_x(double _x, double _y, double _z, int PIBeadIndex);
-    void accept_PIMD_u(double _xu, double _yu, double _zu, int PIBeadIndex);
+    void accept_PIMD_x(AtomXYZMsg *msg);
+    void accept_PIMD_u(AtomXYZMsg *msg);
     ~PIBeadAtoms(){}
   private:
     const UberCollection thisInstance;
     int numBeads;
     int natm;
+    int startAtm, endAtm, numAtm;
     void compute_PIMD_Fu();
     void compute_PIMD_u();
     void compute_PIMD_x();
