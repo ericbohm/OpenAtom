@@ -71,6 +71,20 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 {// begin routine
   //==============================================================================
   // parameters, options and energies
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(a[i].x));
+      CkAssert(finite(a[i].y));
+      CkAssert(finite(a[i].z));
+      CkAssert(finite(a[i].fx));
+      CkAssert(finite(a[i].fy));
+      CkAssert(finite(a[i].fz));
+    }
+#endif
+
+
   switchMoveNow = false;
   new_t_ext=0.0;
   old_t_ext=kT * BOLTZ;
@@ -398,6 +412,18 @@ fclose(fp);
 CkExit();
 #endif
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(atoms[i].x));
+      CkAssert(finite(atoms[i].y));
+      CkAssert(finite(atoms[i].z));
+      CkAssert(finite(atoms[i].fx));
+      CkAssert(finite(atoms[i].fy));
+      CkAssert(finite(atoms[i].fz));
+    }
+#endif
+
 
 //==========================================================================
 // if classical go on to integration, otherwise Fx -> Fu
@@ -570,6 +596,17 @@ void AtomsCompute::integrateAtoms(){
   }//endif
   //============================================================
   // Integrate the atoms : Path Integral Ready
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(atoms[i].x));
+      CkAssert(finite(atoms[i].y));
+      CkAssert(finite(atoms[i].z));
+      CkAssert(finite(atoms[i].fx));
+      CkAssert(finite(atoms[i].fy));
+      CkAssert(finite(atoms[i].fz));
+    }
+#endif
 
 #ifndef  _CP_DEBUG_SCALC_ONLY_ 
   ATOMINTEGRATE::ctrl_atom_integrate(*iteration,natm,len_nhc,cp_min_opt,
@@ -578,6 +615,21 @@ void AtomsCompute::integrateAtoms(){
       myoutput_on,natmNow,natmStr,natmEnd,mybead, switchMoveNow, 
       new_t_ext, old_t_ext);
 #endif
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(atoms[i].x));
+      CkAssert(finite(atoms[i].y));
+      CkAssert(finite(atoms[i].z));
+      CkAssert(finite(atoms[i].fx));
+      CkAssert(finite(atoms[i].fy));
+      CkAssert(finite(atoms[i].fz));
+
+    }
+#endif
+
+
   switchMoveNow=false;
   //============================================================
   // Path integral :  Rescale to the physical masses
@@ -664,10 +716,34 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   vbgr         = 0.0;
   potPerdCorr  = 0.0;
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(fastAtoms.x[i]));
+      CkAssert(finite(fastAtoms.y[i]));
+      CkAssert(finite(fastAtoms.z[i]));
+      CkAssert(finite(fastAtoms.fx[i]));
+      CkAssert(finite(fastAtoms.fy[i]));
+      CkAssert(finite(fastAtoms.fz[i]));
+    }
+#endif
+
+
 #ifndef _CP_DEBUG_PSI_OFF_
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
   CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr, pScratchProxy.ckLocalBranch()->psscratch,&potGrimmeVdw);
 #endif
+#endif
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(fastAtoms.x[i]));
+      CkAssert(finite(fastAtoms.y[i]));
+      CkAssert(finite(fastAtoms.z[i]));
+      CkAssert(finite(fastAtoms.fx[i]));
+      CkAssert(finite(fastAtoms.fy[i]));
+      CkAssert(finite(fastAtoms.fz[i]));
+    }
 #endif
 
   //==========================================================================
@@ -679,6 +755,17 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   // get the atomCache working to collect the other force contribution for us
   if(thisIndex==0)
     UatomsCacheProxy[thisInstance.proxyOffset].contributeforces();
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(fastAtoms.x[i]));
+      CkAssert(finite(fastAtoms.y[i]));
+      CkAssert(finite(fastAtoms.z[i]));
+      CkAssert(finite(fastAtoms.fx[i]));
+      CkAssert(finite(fastAtoms.fy[i]));
+      CkAssert(finite(fastAtoms.fz[i]));
+    }
+#endif
 
   double *ftot           = new double[(3*natm+3)];
   for(int i=0,j=0; i<natm; i++,j+=3){

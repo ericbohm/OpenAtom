@@ -77,6 +77,11 @@ AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstan
     fastAtoms.fx[i] = a[i].fx;
     fastAtoms.fy[i] = a[i].fy;
     fastAtoms.fz[i] = a[i].fz;
+#ifdef _NAN_CHECK_
+    CkAssert(finite(fastAtoms.x[i]));
+    CkAssert(finite(fastAtoms.y[i]));
+    CkAssert(finite(fastAtoms.z[i]));
+#endif
   }//endfor
   if(0 && (config.UberKmax>1 || config.UberImax>1 ))
   {
@@ -147,6 +152,12 @@ void AtomsCache::acceptAtoms(AtomMsg *msg)
     fastAtoms.x[atomI]=msg->data[j];
     fastAtoms.y[atomI]=msg->data[j+1];
     fastAtoms.z[atomI]=msg->data[j+2];
+#ifdef _NAN_CHECK_
+    CkAssert(finite(fastAtoms.x[atomI]));
+    CkAssert(finite(fastAtoms.y[atomI]));
+    CkAssert(finite(fastAtoms.z[atomI]));
+#endif
+
   } 
   zeroforces();
   int i=0;

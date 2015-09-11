@@ -52,10 +52,27 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
   //============================================================================
   // (I) Evolve to the last 1/2 step of previous step : only changes velocities
 
+#ifdef _NAN_CHECK_
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+    }
+#endif
   if(move_atoms){
     integrate_2nd_half_step(itime,natm,len_nhc,iextended_on,atoms,atomsNHC,
         eKinetic,eKineticNhc,potNhc,natmNow,natmStr,natmEnd);
   }//endif
+
+#ifdef _NAN_CHECK_
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+    }
+#endif
 
   //============================================================================
   // (II) Save the end step velocities and positions : pos already saved for PIMD
@@ -76,6 +93,14 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
     }//endfor
   }//endfor
 
+#ifdef _NAN_CHECK_
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+    }
+#endif
   //============================================================================
   // (IIb) implement parallel tempering
   //  1. rescale particle velocities 
@@ -98,11 +123,28 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
 
   //============================================================================
   // (III) Evolve to first 1/2 step of the present step
+#ifdef _NAN_CHECK_
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+    }
+#endif
+
 
   if(move_atoms){
     integrate_1st_half_step(natm,len_nhc,iextended_on,atoms,atomsNHC,
 			    natmNow,natmStr,natmEnd, switchMoveNow, fact); 
   }//endif
+#ifdef _NAN_CHECK_
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+    }
+#endif
 
   //============================================================================
   // (III) Debug output
@@ -176,6 +218,19 @@ void ATOMINTEGRATE::integrate_1st_half_step(int natm,int len_nhc,int iextended_o
   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
   MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
   int isokin_opt = mdtherm_info->isokin_opt;
+#ifdef _NAN_CHECK_
+  CkPrintf("iextended_on is %d isokin_opt %d\n",iextended_on, isokin_opt);
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+     CkAssert(finite(atoms[i].vx));
+     CkAssert(finite(atoms[i].vy));
+     CkAssert(finite(atoms[i].vz));
+    }
+#endif
+
 
   switch(iextended_on){
     case 0 : integrate_nve_1st_half(natm,atoms,natmNow,natmStr,natmEnd); break;
@@ -188,6 +243,18 @@ void ATOMINTEGRATE::integrate_1st_half_step(int natm,int len_nhc,int iextended_o
              }//endif
              break;
   }//endif
+#ifdef _NAN_CHECK_
+  CkPrintf("iextended_on is %d isokin_opt %d\n",iextended_on, isokin_opt);
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+     CkAssert(finite(atoms[i].vx));
+     CkAssert(finite(atoms[i].vy));
+     CkAssert(finite(atoms[i].vz));
+    }
+#endif
 
   //---------------------------------------------------------------------------
 }//end routine

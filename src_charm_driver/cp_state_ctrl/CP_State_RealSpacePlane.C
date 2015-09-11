@@ -524,12 +524,6 @@ void CP_State_RealSpacePlane::unpackVks(VksMsg *msg) {
   }
 #endif
 
-#ifdef _NAN_CHECK_
-  for(int i=0;i<msg->datalen ;i++){
-    CkAssert(isnan(msg->data[i])==0);
-  }
-#endif
-
   //============================================================================
   //Unpack and check size, use message data for multiply, then resume
   //which calls doProduct
