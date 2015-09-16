@@ -1,5 +1,8 @@
 #!/bin/bash
 #==========================================
+# This creates all the bead and temper directories
+# to store the bead configurations.  Runs it with
+# two arguments:
 # $1 is head directory , $2 is number of beads-1
 #==========================================
 #
