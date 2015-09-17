@@ -6,7 +6,7 @@ fullpdf: OpenAtomFullDoc.tex
 
 fullhtml: OpenAtomFullDoc.tex
 	rm -f *.pdf
-	rm -r OpenAtomFlow | true
+	rm -r OpenAtomFullDoc | true
 	latex2html -split 2 -local_icons OpenAtomFullDoc.tex
 
 flowpdf: OpenAtomFlow.tex
@@ -25,4 +25,5 @@ flowhtml: OpenAtomFlow.tex
 clean:
 	rm -f *.ilg *.aux *.log *.dvi *.idx *.toc *.lof *.lot
 	rm -f *.blg *.bbl *~
+	rm -rf OpenAtomFullDoc
 
