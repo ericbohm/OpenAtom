@@ -158,17 +158,19 @@ values are placed in the file:
  \vspace{0.15in}
  \item $\backslash$simulation\_typ\{cp,cp\_pimd,...\} : \\
      This describes the type of simulation being performed.\\
-     cp\_wave\_min : Minimize/optimize the Kohn-Sham wave functions (fixed nuclei)
+     \begin{itemize}
+\item     cp\_wave\_min : Minimize/optimize the Kohn-Sham wave functions (fixed nuclei)
               If you don't have initial wave functions, you have to
-	      use the gen\_wave option below.\\
-cp\_wave\_min\_pimd : Minimize/optimize the Kohn-Sham wave functions
+	      use the gen\_wave option below.
+\item cp\_wave\_min\_pimd : Minimize/optimize the Kohn-Sham wave functions
 		   over all the beads in preparation for a path
 		   integral run (PIMD) with fixed nuclei.  If you need
-		   starting wave functions for all beads, you need gen\_wave.\\
-cp : Car-Parrinello molecular dynamics (MD)\\
-cp\_pimd : Car-Parinello path integral MD over all the beads\\
-bomd : Born-Oppenheimer molecular dynamics\\
-bomd\_pimd : Born-Oppenheimer molecular dynamics for beads in path integral MD\\
+		   starting wave functions for all beads, you need gen\_wave.
+\item cp : Car-Parrinello molecular dynamics (MD)
+\item cp\_pimd : Car-Parinello path integral MD over all the beads
+\item bomd : Born-Oppenheimer molecular dynamics
+\item bomd\_pimd : Born-Oppenheimer molecular dynamics for beads in path integral MD
+\end{itemize}
 {\it
 --- planned for the near future---\\
 cp\_min : Minimize nuclei on the Born-Oppenheimer surface (provided by DFT)
