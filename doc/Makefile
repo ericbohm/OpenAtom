@@ -1,4 +1,7 @@
-all: clean fullpdf fullhtml flowpdf flowhtml
+all: clean fullpdf fullhtml flowpdf flowhtml tgzimages
+
+tgzimages:
+	tar -vzcf OpenAtomFullDoc.images.tgz OpenAtomFullDoc/*.png
 
 fullpdf: OpenAtomFullDoc.tex
 	rm -r OpenAtomFullDoc | true
@@ -24,6 +27,5 @@ flowhtml: OpenAtomFlow.tex
 
 clean:
 	rm -f *.ilg *.aux *.log *.dvi *.idx *.toc *.lof *.lot
-	rm -f *.blg *.bbl *~
+	rm -f *.blg *.bbl *~ OpenAtomFullDoc.images.tgz
 	rm -rf OpenAtomFullDoc
-
