@@ -702,7 +702,6 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
     int nchareG, int numInst):
   nstates(_nstates), sizeZ(_sizeZ), Rstates_per_pe(_Rstates_per_pe)
 {
-  CkAssert(numInst == 0);
   maptable = _tomap;
   availprocs = _availprocs;
   availprocs->reset();
