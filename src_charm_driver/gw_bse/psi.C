@@ -1,11 +1,7 @@
 #include "psi.h"
 #include "gw_bse.h"
-#include "fcalculator.h"
 
-Psi::Psi(bool occupied) : occupied(occupied), section_index(0) {
-  mcast_ptr = CProxy_CkMulticastMgr(mcast_ID).ckLocalBranch();
-
-  size = config.n_elems;
+Psi::Psi(unsigned s) : size(s) {
   psi = new double[size];
   // TODO: Read in the Psi somehow or get it from the driver?
   // NOTE: For now, using randomly generated psi for performance impact
@@ -14,39 +10,59 @@ Psi::Psi(bool occupied) : occupied(occupied), section_index(0) {
   }
 
   calculatePsiR();
-}
-
-void Psi::setupSections(unsigned q) {
-  std::vector<unsigned> k_indices, l_indices, m_indices;
-
-  if (occupied) {
-    k_indices.push_back(thisIndex.x);
-    l_indices.push_back(thisIndex.y);
-    for (int m = 0; m < config.M; m++) m_indices.push_back(m);
-  } else {
-    int k = (thisIndex.x + q) % config.K;
-    k_indices.push_back(k);
-    for (int l = 0; l < config.L; l++) l_indices.push_back(l);
-    m_indices.push_back(thisIndex.y);
-  }
-
-  // Build the sections from the indices constructed above
-  for (unsigned l : l_indices) {
-    CProxySection_FCalculator section;
-    std::vector<CkArrayIndex3D> indices;
-    for (unsigned k : k_indices) {
-      for (unsigned m : m_indices) {
-        indices.push_back(CkArrayIndex3D(k,l,m));
-      }
-    }
-    section = CProxySection_FCalculator::ckNew( fcalc.ckGetArrayID(),
-                                                indices.data(), indices.size());
-    section.ckSectionDelegate(mcast_ptr);
-    sections.push_back(std::make_pair(l, section));
+  if (thisIndex.y < config.L) {
+    sendToCache();
   }
 }
 
 void Psi::calculatePsiR() {
   // TODO (Yale): Take the psi array in this object and IFFT it to take it to
   // real space
-} 
+  CkPrintf("[%i,%i]: Calculating real-space psi...\n",thisIndex.x, thisIndex.y);
+}
+
+void Psi::sendToCache() {
+  CkPrintf("[%i,%i]: Sending psi to node cache...\n",thisIndex.x, thisIndex.y);
+  PsiMessage* msg = new (size) PsiMessage(size, psi);
+  msg->k_index = thisIndex.x;
+  msg->state_index = thisIndex.y;
+  psicache.receivePsi(msg);
+}
+
+void Psi::sendToP() {
+  CkPrintf("[%i,%i]: Sending psi to P matrix...\n",thisIndex.x, thisIndex.y);
+  PsiMessage* msg = new (size) PsiMessage(size, psi);
+  msg->k_index = thisIndex.x;
+  msg->state_index = thisIndex.y;
+  pmatrix.receivePsi(msg);
+}
+
+PsiCache::PsiCache(unsigned c, unsigned s) : psi_count(c), psi_size(s) {
+  received_psis = 0;
+  psis = new double*[psi_count];
+  for (int i = 0; i < psi_count; i++) {
+    psis[i] = new double[psi_size];
+  }
+}
+
+void PsiCache::receivePsi(PsiMessage* msg) {
+  CkPrintf("[%i]: Receiving psi from [%i,%i]\n",CkMyPe(), msg->k_index, msg->state_index);
+  CkAssert(msg->state_index < psi_count);
+  CkAssert(msg->size == psi_size);
+  std::copy(psis[msg->state_index], psis[msg->state_index]+psi_size, msg->psi);
+
+  // Once the cache has received all of it's data start the sliding pipeline
+  // sending of psis to P to start the accumulation of fxf'.
+  if (++received_psis == psi_count) {
+    for (int i = 0; i < config.pipeline_stages; i++) {
+      contribute(CkCallback(CkReductionTarget(Psi,sendToP), psi(0,i)));
+    }
+  }
+
+  delete msg;
+}
+
+double* PsiCache::getPsi(unsigned index) const {
+  CkAssert(index < psi_count);
+  return psis[index];
+}

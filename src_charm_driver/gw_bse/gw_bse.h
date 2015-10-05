@@ -12,10 +12,8 @@ class GWDriver : public CBase_GWDriver {
 };
 
 /*readonly*/extern GWConfig config;
-/*readonly*/extern CkGroupID mcast_ID;
-/*readonly*/extern CProxy_Psi kpsi;
-/*readonly*/extern CProxy_Psi qpsi;
-/*readonly*/extern CProxy_FCalculator fcalc;
+/*readonly*/extern CProxy_PsiCache psicache;
+/*readonly*/extern CProxy_Psi psi;
 /*readonly*/extern CProxy_PMatrix pmatrix;
 
 #endif

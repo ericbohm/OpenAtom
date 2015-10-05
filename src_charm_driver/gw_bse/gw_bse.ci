@@ -5,94 +5,32 @@ mainmodule gw_bse {
   // Global configuration
   readonly GWConfig config;
 
-  // Global chare proxies/ids
-  readonly CkGroupID mcast_ID;
-  readonly CProxy_Psi kpsi;
-  readonly CProxy_Psi qpsi;
-  readonly CProxy_FCalculator fcalc;
+  // Global chare proxies
+  readonly CProxy_PsiCache psicache;
+  readonly CProxy_Psi psi;
   readonly CProxy_PMatrix pmatrix;
 
   mainchare GWDriver {
     entry GWDriver(CkArgMsg* msg);
   };
 
-  array [2D] Psi {
-    entry Psi(bool occupied);
-    entry [nokeep] void fcalcDone(CkReductionMsg*);
-    entry void sendPsi() {
-      for (q_index = 0; q_index < config.K; q_index++) {
-        serial { setupSections(q_index); }
-        // Send out the initial Psis to the fcalc
-        for (l_index = 0; l_index < config.pipeline_stages; l_index++) serial {
-          if (sections[section_index].first == l_index) {
-            PsiMsg* msg = new (size) PsiMsg(size, psi);
-            sections[section_index++].second.receivePsi(msg);
-          }
-        }
-        // Send out the rest of the Psis as we receive done messages
-        while (l_index < config.L) {
-          when fcalcDone(CkReductionMsg* m) serial {
-            if (sections[section_index].first == l_index) {
-              PsiMsg* msg = new (size) PsiMsg(size, psi);
-              sections[section_index++].second.receivePsi(msg);
-            }
-            l_index++;
-          }
-        }
-        // After all Psis have been sent out, wait for the rest of the dones
-        for (l_index = 0; l_index < config.pipeline_stages; l_index++) {
-          when fcalcDone(CkReductionMsg* m) {}
-        }
-        serial { CkExit(); }
-      }
-    };
-  };
-
-  message PlaneMsg;
-
-  message PsiMsg {
+  message PsiMessage {
     double psi[];
   };
 
-  // 3D array for computing f for a particular k l m
-  array [3D] FCalculator {
-    entry FCalculator();
-    entry [nokeep] void receivePsi(PsiMsg* msg);
-    entry [nokeep] void receiveSectionInfo(PlaneMsg* msg);
-    entry void run() {
-      serial {
-        if (thisIndex.x == 0 && thisIndex.z == 0) {
-          setupSections();
-        }
-      }
-      when receiveSectionInfo(PlaneMsg* msg) serial {
-        CkGetSectionInfo(sec_info, msg);
-      }
-      when receivePsi(PsiMsg* m1), receivePsi(PsiMsg* m2) serial {
-        computeF(m1, m2);
-
-        // TODO (UIUC): This will probably need some whens to control the mem
-        for (int r = 0; r < size; r++) {
-          computeAndSendRow(rowOffset(r));
-        }
-
-        // Tell the Psi chares we are done with this l-plane
-        int l = thisIndex.y;
-        CkCallback cb1(CkIndex_Psi::fcalcDone(NULL), kpsi);
-        CkCallback cb2(CkIndex_Psi::fcalcDone(NULL), qpsi);
-        mcast_ptr->contribute(sizeof(int), &l, CkReduction::min_int, sec_info, cb1);
-        mcast_ptr->contribute(sizeof(int), &l, CkReduction::min_int, sec_info, cb2);
-        delete[] f;
-      }
-    };
+  nodegroup PsiCache {
+    entry PsiCache(unsigned int, unsigned int);
+    entry void receivePsi(PsiMessage*);
   };
 
-  message RowMessage {
-    double row[];
+  array [2D] Psi {
+    entry Psi(unsigned int);
+    entry [reductiontarget] void sendToP();
   };
 
   array [1D] PMatrix {
     entry PMatrix();
-    entry [nokeep] void receiveRowContribution(RowMessage*);
+    entry [nokeep] void receivePsi(PsiMessage*);
   };
+
 };

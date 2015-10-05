@@ -3,23 +3,17 @@
 
 #include "gw_bse.decl.h"
 
-class RowMessage : public CMessage_RowMessage {
-  public:
-    RowMessage(unsigned i, unsigned s) : index(i), size(s) {}
-    unsigned index, size;
-    double* row;
-};
-
 class PMatrix : public CBase_PMatrix {
+  PMatrix_SDAG_CODE
   public:
     PMatrix();
     PMatrix(CkMigrateMessage* msg) {}
 
-    void receiveRowContribution(RowMessage* msg);
+    void receivePsi(PsiMessage*);
 
   private:
-    unsigned num_rows, row_size, start_row;
-    double** rows;
+    unsigned num_rows, num_cols, start_row, start_col;
+    double** data;
 };
 
 #endif

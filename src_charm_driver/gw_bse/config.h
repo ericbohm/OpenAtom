@@ -8,6 +8,7 @@ struct GWConfig {
   unsigned n_elems;           // Number of elements in psi and f
   unsigned pipeline_stages;   // Number of stages in L pipeline
   unsigned rows_per_chare;    // Rows per PMatrix chare
+  unsigned matrix_nchares;    // Number of matrix chares
 };
 PUPbytes(GWConfig);
 

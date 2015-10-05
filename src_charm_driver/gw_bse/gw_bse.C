@@ -1,45 +1,35 @@
 #include "gw_bse.h"
 #include "psi.h"
-#include "fcalculator.h"
 #include "pmatrix.h"
-#include "ckmulticast.h"
 
 /*readonly*/GWConfig config;
-/*readonly*/CkGroupID mcast_ID;
-/*readonly*/CProxy_Psi kpsi;
-/*readonly*/CProxy_Psi qpsi;
-/*readonly*/CProxy_FCalculator fcalc;
+/*readonly*/CProxy_PsiCache psicache;
+/*readonly*/CProxy_Psi psi;
 /*readonly*/CProxy_PMatrix pmatrix;
 
 GWDriver::GWDriver(CkArgMsg* msg) {
   readConfig();
   readState();
 
-  mcast_ID = CProxy_CkMulticastMgr::ckNew();
-  kpsi = CProxy_Psi::ckNew(true, config.K, config.L);
-  qpsi = CProxy_Psi::ckNew(false, config.K, config.M);
+  psicache = CProxy_PsiCache::ckNew(config.L, config.n_elems);
   pmatrix = CProxy_PMatrix::ckNew(config.n_elems / config.rows_per_chare);
-
-  fcalc = CProxy_FCalculator::ckNew(config.K, config.L, config.M);
-
-  kpsi.sendPsi();
-  qpsi.sendPsi();
-  fcalc.run();
+  psi = CProxy_Psi::ckNew(config.n_elems, config.K, config.L + config.M);
 }
 
 // Read in configuration data from the file system
 void GWDriver::readConfig() {
-  config.K = 4;
-  config.L = 1;
-  config.M = 4;
+  config.K = 1;
+  config.L = 4;
+  config.M = 16;
 
   config.n_elems = 256;
   config.rows_per_chare = 16;
+  config.matrix_nchares= config.n_elems / config.rows_per_chare;
 
-  config.pipeline_stages = 1;
+  config.pipeline_stages = 4;
 }
 
-// Read in state date from the file system
+// Read in state data from the file system
 void GWDriver::readState() {
   // TODO: State input should be parallel
 }
