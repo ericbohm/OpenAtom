@@ -7,6 +7,7 @@ PMatrix::PMatrix() {
   num_cols = config.n_elems;
   start_row = thisIndex * num_rows;
   start_col = 0;
+  done_count = 0;
 
   data = new double*[num_rows];
   for (int i = 0; i < num_rows; i++) {
@@ -47,5 +48,8 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   // Once all P chares have finished with this psi, the next psi can broadcast.
   if (msg->state_index + config.pipeline_stages < config.L + config.M) {
     contribute(CkCallback(CkReductionTarget(Psi, sendToP), psi(msg->k_index, msg->state_index + config.pipeline_stages)));
+  }
+  if (++done_count == config.M) {
+    contribute(CkCallback(CkCallback::ckExit));
   }
 }

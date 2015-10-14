@@ -55,7 +55,7 @@ void PsiCache::receivePsi(PsiMessage* msg) {
   // sending of psis to P to start the accumulation of fxf'.
   if (++received_psis == psi_count) {
     for (int i = 0; i < config.pipeline_stages; i++) {
-      contribute(CkCallback(CkReductionTarget(Psi,sendToP), psi(0,i)));
+      contribute(CkCallback(CkReductionTarget(Psi,sendToP), psi(0,config.L + i)));
     }
   }
 

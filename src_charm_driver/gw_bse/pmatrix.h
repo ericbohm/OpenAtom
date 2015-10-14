@@ -12,7 +12,7 @@ class PMatrix : public CBase_PMatrix {
     void receivePsi(PsiMessage*);
 
   private:
-    unsigned num_rows, num_cols, start_row, start_col;
+    unsigned num_rows, num_cols, start_row, start_col, done_count;
     double** data;
 };
 
