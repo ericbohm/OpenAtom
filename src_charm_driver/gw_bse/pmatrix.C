@@ -28,6 +28,9 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   // f x f' and accumulate it's contribution in P.
   for (int l = 0; l < config.L; l++) {
     // Compute f based on each pair of Psis
+    // TODO: Figure out the most cache effective way to do this. Should we
+    // explicitly compute f or use the psis to compute the addition to P.
+    // TODO: Instead of computing f on the P chares should the cache do it?
     psi2 = psicache.ckLocalBranch()->getPsi(l);
     for (int i = 0; i < size; i++) {
       f[i] = psi1[i]*psi2[i];
