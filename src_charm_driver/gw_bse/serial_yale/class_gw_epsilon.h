@@ -17,8 +17,15 @@ class GW_EPSILON{
 
   //---------------
   public:
+    int nspin;
+    int nkpt;
+    int nocc;
+    int nunocc;
+    double*** Eocc;
+    double*** Eunocc;
     double Ecuteps;              // Num: Epsilon matrix cutoff
     double tol_iter;             // Num: Tolerance of the iterative matrix inversion method
+    char eigFileName[200];       // No need to pup this, contents stored in Eocc and Eunocc
 
 
     //----------------
@@ -26,6 +33,10 @@ class GW_EPSILON{
     GW_EPSILON(){
       Ecuteps         = 0;
       tol_iter        = 0;
+      nocc = 0;
+      nunocc = 0;
+      Eocc = NULL;
+      Eunocc = NULL;
     };
     ~GW_EPSILON(){};
 
@@ -36,6 +47,29 @@ class GW_EPSILON{
       //pupping dbles
       p | Ecuteps;
       p | tol_iter;
+      p | nspin;
+      p | nkpt;
+      p | nocc;
+      p | nunocc;
+
+      if (p.isUnpacking()) {
+        Eocc = new double**[nspin];
+        Eunocc = new double**[nspin];
+        for (int s = 0; s < nspin; s++) {
+          Eocc[s] = new double*[nkpt];
+          Eunocc[s] = new double*[nkpt];
+          for (int k = 0; k < nkpt; k++) {
+            Eocc[s][k] = new double[nocc];
+            Eunocc[s][k] = new double[nunocc];
+          }
+        }
+      }
+      for (int s = 0; s < nspin; s++) {
+        for (int k = 0; k < nkpt; k++) {
+          PUParray(p, Eocc[s][k], nocc);
+          PUParray(p, Eunocc[s][k], nunocc);
+        }
+      }
       
 #ifdef _PARALLEL_DEBUG_        
       if (p.isUnpacking())
@@ -51,6 +85,18 @@ class GW_EPSILON{
       //dbles
       fprintf(fp,"Ecuteps %lg\n",Ecuteps);
       fprintf(fp,"tol_iter %lg\n",tol_iter);
+      fprintf(fp,"nocc %d\n",nocc);
+      fprintf(fp,"nunocc %d\n",nunocc);
+      for (int s = 0; s < nspin; s++) {
+        for (int k = 0; k < nkpt; k++) {
+          for (int i = 0; i < nocc; i++) {
+            fprintf(fp,"Eocc[%d,%d,%d] = %lg\n", s,k,i, Eocc[s][k][i]);
+          }
+          for (int i = 0; i < nunocc; i++) {
+            fprintf(fp,"Eunocc[%d,%d,%d] = %lg\n", s,k,i, Eunocc[s][k][i]);
+          }
+        }
+      }
       fclose(fp);
     }// end routine
     

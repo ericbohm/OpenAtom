@@ -1,20 +1,22 @@
-CHARMDIR = /Users/minjung/packages/Charm
+#CHARMDIR = /Users/minjung/packages/Charm
+CHARMDIR = /scratch/mikida2/charm
 
 FLAGS = #-D_CP_DEBUG_UTIL_VERBOSE_  -DDEBUG_FFT
 
 CHARMC = $(CHARMDIR)/bin/charmc $(OPTS) -g $(FLAGS)
 
-FFTPATH = /sw/lib
+FFT3 = /dcsdata/home/bohm/fftw3
+FFTPATH = $(FFT3)/lib
 FFTLIB = -L$(FFTPATH) -lfftw3 -lm
-FFTINC = -I/sw/include
+FFTINC = -I$(FFT3)/include
 
 
 default: all
 all: states
 
 
-states : my_fftw.o fft_routines.o piny_pup.o main.o states.o friend_lib.o interface_hand.o piny_malloc.o configure_gwbse.o
-	$(CHARMC) -language charm++ -o states main.o states.o my_fftw.o fft_routines.o  friend_lib.o interface_hand.o piny_malloc.o piny_pup.o configure_gwbse.o -lz $(FFTINC) $(FFTLIB)
+states : my_fftw.o fft_routines.o piny_pup.o main.o states.o friend_lib.o interface_hand.o piny_malloc.o configure_gwbse.o fft_size.o pmatrix.o
+	$(CHARMC) -language charm++ -o states main.o states.o my_fftw.o fft_routines.o  friend_lib.o interface_hand.o piny_malloc.o piny_pup.o configure_gwbse.o fft_size.o pmatrix.o -lz $(FFTINC) $(FFTLIB)
 
 main.o : main.C piny_pup.C main.h main.decl.h main.def.h states.decl.h 
 	$(CHARMC) -o main.o main.C
@@ -43,6 +45,11 @@ my_fftw.o: my_fftw.C my_fftw.h
 fft_routines.o: fft_routines.C fft_routines.h
 	$(CHARMC) -o fft_routines.o fft_routines.C
 
+fft_size.o: fft_size.C fft_size.h
+	$(CHARMC) -o fft_size.o fft_size.C
+
+pmatrix.o: pmatrix.C pmatrix.h
+	$(CHARMC) -o pmatrix.o pmatrix.C
 
 states.o : states.C states.h my_fftw.h fft_routines.h states.decl.h states.def.h main.decl.h
 	$(CHARMC) -o states.o states.C

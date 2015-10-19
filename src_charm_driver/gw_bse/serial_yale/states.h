@@ -2,6 +2,29 @@
 #define __STATES_H__
 #include "ckcomplex.h"
 
+// Message sent from psi used to compute f. Some of these are cached on each
+// node, and others are streamed in to the PMatrix as needed.
+class PsiMessage : public CMessage_PsiMessage {
+  public:
+    PsiMessage(unsigned s, complex* p) : size(s) {
+      std::copy(p, p+size, psi);
+    }
+    unsigned spin_index, k_index, state_index, size;
+    complex* psi;
+};
+
+
+class PsiCache: public CBase_PsiCache {
+  public:
+    PsiCache();
+
+    void receivePsi(PsiMessage*);
+    complex* getPsi(unsigned) const;
+  private:
+    unsigned psi_count, psi_size, received_psis;
+    complex** psis;
+};
+
 class states_occ : public CBase_states_occ {
 
  public:
@@ -11,6 +34,7 @@ class states_occ : public CBase_states_occ {
   int numCoeff;
   int ikpt;        // index for k point
   int ispin;       // index for spin
+  int istate;      // index for state
   int countdebug;
 
   int ibinary_opt; // binary file option to read state file
@@ -23,6 +47,8 @@ class states_occ : public CBase_states_occ {
   states_occ();
   states_occ(CkMigrateMessage *msg);
   /// Entry Methods ///                                                                         
+  void sendToCache();
+  void sendToP();
   void beamoutMyState(int iteration, int qindex);
   void exitfordebugging();
 
@@ -30,7 +56,6 @@ class states_occ : public CBase_states_occ {
   void readState(char *);
   // fftw routines
   void fft_G_to_R();
-  void set_fftsize();
   
 };
 
@@ -44,6 +69,7 @@ class states_unocc : public CBase_states_unocc {
   int numCoeff;
   int ikpt;        // index for k point
   int ispin;       // index for spin
+  int istate;      // index for state
 
   int ibinary_opt; // binary file option to read state file
   bool doublePack; // if only have gamma point, then true (=1). Otherwise, false(=0)
@@ -56,13 +82,14 @@ class states_unocc : public CBase_states_unocc {
   states_unocc(CkMigrateMessage *msg);
 
   /// Entry Methods ///                                                                         
+  void sendToCache();
+  void sendToP();
   void beamoutMyState(int iteration, int qindex);
 
   /// scalar routines ///
   void readState(char *);
   // fftw routines
   void fft_G_to_R();
-  void set_fftsize();
 };
 
 

@@ -24,10 +24,15 @@
 
 #include "allclass_gwbse.h"
 #include "configure_gwbse.h"
+#include "fft_size.h"
 
 // these are openatom dictionary parsers
 #include "proto_friend_lib_entry.h"
 #include "proto_handle_entry.h"
+
+#if CMK_PROJECTIONS_USE_ZLIB
+#include "zlib.h"
+#endif
 
 //===================================================================================
 
@@ -70,12 +75,14 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
   int num_dict_gen_GW;
   int num_dict_GW_epsilon;
   int num_dict_GW_sigma;
+  int num_dict_GW_parallel;
   int num_dict_GW_file;
   int num_dict_GW_charm_input;
   DICT_WORD *dict_fun;
   DICT_WORD *dict_gen_GW;
   DICT_WORD *dict_GW_epsilon;
   DICT_WORD *dict_GW_sigma;
+  DICT_WORD *dict_GW_parallel;
   DICT_WORD *dict_GW_file;
   DICT_WORD *dict_GW_charm_input;
   DICT_WORD word;            
@@ -114,8 +121,8 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
   set_config_dict_gen_GW( &num_dict_gen_GW, &dict_gen_GW );
   set_config_dict_GW_epsilon( &num_dict_GW_epsilon, &dict_GW_epsilon );
   set_config_dict_GW_sigma( &num_dict_GW_sigma, &dict_GW_sigma );
+  set_config_dict_GW_parallel( &num_dict_GW_parallel, &dict_GW_parallel );
   //set_config_dict_GW_file( &num_dict_GW_file, &dict_GW_file );
-  //set_config_dict_GW_charm_input( &num_dict_GW_charm_input, &dict_GW_charm_input );
 
   //===================================================================================
   // Read the input file and fill the dictionaries with user input
@@ -137,7 +144,7 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
                      nkey,nfun_key,input_name);break;
         case 4 : put_word_dict(&word,dict_GW_file,num_dict_GW_file,fun_key,nline,
                      nkey,nfun_key,input_name);break;
-        case 5 : put_word_dict(&word,dict_GW_charm_input,num_dict_GW_charm_input,fun_key,nline,
+        case 5 : put_word_dict(&word,dict_GW_parallel,num_dict_GW_parallel,fun_key,nline,
                      nkey,nfun_key,input_name);break;
       }//end switch
     }// end while 
@@ -152,7 +159,7 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
   set_config_params_GW_epsilon  (dict_GW_epsilon, dict_fun[2].keyword, input_name, gw_epsilon);
   set_config_params_GW_sigma    (dict_GW_sigma, dict_fun[3].keyword, input_name, gw_sigma);
   //  set_config_params_GW_file     (dict_GW_file, dict_fun[4].keyword, input_name, gwbseopts);
-//  set_config_params_GW_charm_input   (dict_GW_charm_input, dict_fun[5].keyword, input_name, iflag);
+  set_config_params_GW_parallel   (dict_GW_parallel, dict_fun[5].keyword, input_name, gw_parallel);
 // my input values
 //  simpleRangeCheck_gwbse(); // redundant checking   need to write this
 
@@ -166,7 +173,7 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
   //===================================================================================
   // Final consistency checks
 
-//  Finale(nkf1,nkf2,nkf3,nplane_x,nplane_x_rho,cp_min_opt);
+  finale(gw_epsilon, gw_parallel, gwbseopts);
 
   //===================================================================================
   // Output your parameter choices to the screen
@@ -178,7 +185,7 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
   write_cpaimd_config(fp, dict_GW_epsilon, num_dict_GW_epsilon, dict_fun[2].keyword);
   write_cpaimd_config(fp, dict_GW_sigma, num_dict_GW_sigma, dict_fun[3].keyword);
   //  write_cpaimd_config(fp, dict_GW_file, num_dict_GW_file, dict_fun[4].keyword);
-//  write_cpaimd_config(fp,dict_GW_charm_input,   num_dict_GW_charm_input,   dict_fun[5].keyword);
+  write_cpaimd_config(fp,dict_GW_parallel,   num_dict_GW_parallel,   dict_fun[5].keyword);
   fclose(fp);
   //===================================================================================
   // Free memory : 
@@ -191,7 +198,7 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
   cfree(&dict_GW_epsilon[1], "Config::readCconfig");
   cfree(&dict_GW_sigma[1], "Config::readCconfig"); 
   //  cfree(&dict_GW_file[1]   ,"Config::readCconfig");
-  //  cfree(&dict_GW_charm_input[1]   ,"Config::readCconfig");
+  cfree(&dict_GW_parallel[1]   ,"Config::readCconfig");
 
   //===================================================================================
   // Tell Everyone you are done
@@ -274,10 +281,10 @@ void Config::set_config_dict_fun  (int *num_dict  ,DICT_WORD **dict){
   strcpy((*dict)[ind].keyword,"GW_filenames");
   strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
-  //  5)~GW_charm_input[ ]
+  //  5)~GW_parallel[ ]
   ind = 5;
   strcpy((*dict)[ind].error_mes," ");
-  strcpy((*dict)[ind].keyword,"GW_charm_input");
+  strcpy((*dict)[ind].keyword,"GW_parallel");
   strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
 }//end routine
@@ -384,7 +391,7 @@ void Config::set_config_dict_gen_GW  (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_dict_GW_epsilon  (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
   //  I) Malloc the dictionary                                              
-  num_dict[0] = 2;
+  num_dict[0] = 3;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
 
   //=================================================================================
@@ -411,6 +418,14 @@ void Config::set_config_dict_GW_epsilon  (int *num_dict ,DICT_WORD **dict){
   strcpy((*dict)[ind].keyword,"tol_iter_mtxinv");
   strcpy((*dict)[ind].keyarg,"0.001");
   strcpy((*dict)[ind].error_mes,"an integer > 1 ");
+  //-----------------------------------------------------------------------------
+
+  //-----------------------------------------------------------------------------
+  //  3)\state_eigen_value_file{}
+  ind =   3;   
+  strcpy((*dict)[ind].keyword,"state_eigen_value_file");
+  strcpy((*dict)[ind].keyarg,"eigenvalues.in");
+  strcpy((*dict)[ind].error_mes,"a file containing nocc + nunocc eigenvalues");
   //-----------------------------------------------------------------------------
 
   
@@ -551,10 +566,10 @@ void Config::set_config_dict_GW_file  (int *num_dict ,DICT_WORD **dict){
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-void Config::set_config_dict_GW_charm_input  (int *num_dict ,DICT_WORD **dict){
+void Config::set_config_dict_GW_parallel  (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
   //  I) Malloc the dictionary                                              
-  num_dict[0] = 5;
+  num_dict[0] = 2;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
 
   //=================================================================================
@@ -567,6 +582,21 @@ void Config::set_config_dict_GW_charm_input  (int *num_dict ,DICT_WORD **dict){
   //=================================================================================
   // III) Set up the dictionary
   int ind;
+
+  //-----------------------------------------------------------------------------
+  //  1)\pipeline_stages{}
+  ind =   1;   
+  strcpy((*dict)[ind].keyword,"pipeline_stages");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes,"a number >= 1");
+
+  //-----------------------------------------------------------------------------
+  //  2)\rows_per_chare{}
+  ind =   2;   
+  strcpy((*dict)[ind].keyword,"rows_per_chare");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes,"a number >= 1");
+  //-----------------------------------------------------------------------------
 
 }//end routine
 //===================================================================================
@@ -701,6 +731,14 @@ void Config::set_config_params_GW_epsilon  (DICT_WORD *dict, char *fun_key, char
   if (real_arg<0){keyarg_barf(dict,input_name,fun_key,ind);}  
   gw_epsilon->tol_iter = real_arg;
   //----------------------------------------------------------------------------- 
+
+  //-----------------------------------------------------------------------------
+  //  3)\state_eigen_value_file{}
+  ind =   3;  
+  strcpy(gw_epsilon->eigFileName, dict[ind].keyarg);
+  if (strlen(gw_epsilon->eigFileName) == 0){keyarg_barf(dict,input_name,fun_key,ind);}  
+
+  //----------------------------------------------------------------------------- 
 }// end routine
 //================================================================================
 
@@ -805,20 +843,58 @@ void Config::set_config_params_GW_file  (DICT_WORD *dict, char *fun_key, char *i
 
 
 
+//===================================================================================
+/* set parameters to the class variables */
+//===================================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===================================================================================
+void Config::set_config_params_GW_parallel  (DICT_WORD *dict, char *fun_key, char *input_name, GW_PARALLEL *gw_parallel){
+  //===================================================================================
+  double real_arg;
+  int int_arg;
+  int ifound;
+  int ind,ierr;
+
+  //===================================================================================
+  // Fill me with joy.
+
+  //-----------------------------------------------------------------------------
+  //  1)\pipeline_stages{}
+  ind =   1;   
+  sscanf(dict[ind].keyarg,"%d",&int_arg);
+  if (int_arg<1){keyarg_barf(dict,input_name,fun_key,ind);}  
+  gw_parallel->pipeline_stages = int_arg;
+  
+  //-----------------------------------------------------------------------------
+  //  2)\rows_per_chare{}
+  ind =   2;   
+  sscanf(dict[ind].keyarg,"%d",&int_arg);
+  if (int_arg<1){keyarg_barf(dict,input_name,fun_key,ind);}  
+  gw_parallel->rows_per_chare = int_arg;
+  
+  //----------------------------------------------------------------------------- 
+}// end routine
+//================================================================================
 
 
 
+
+
+static void update_minmax(int pNo, int val, int &min, int &max) {
+  if (pNo == 0) { min = max = val; }
+  if (val < min) { min = val; }
+  if (val > max) { max = val; }
+}
 
 
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz,
-    const char *fromFile, int ibinary_opt,
-    int nkf1, int nkf2, int nkf3,int ncoef) {
+void Config::readStateInfo(int &nPacked,int &minx, int &miny, int &minz,
+    int &maxx, int &maxy, int &maxz, int &nx, int &ny, int &nz,
+    const char *fromFile, int ibinary_opt, int doublePack) {
   //===================================================================================
   // Check for errors
-#ifdef when_we_are_ready
   if(ibinary_opt < 0 || ibinary_opt > 3){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("   Bad binary option\n",ibinary_opt);
@@ -838,217 +914,162 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
   //===================================================================================
   // Read the file
 
-  int nktot,nplane0,n=1;
+  int n = 1;
 
-  if(gen_wave==0){
-    //---------------------------------------------------------------------------------
-    // Ascii
-    if(ibinary_opt==0){
+  //---------------------------------------------------------------------------------
+  // Ascii
+  if(ibinary_opt==0){
 
-      FILE *fp=fopen(fromFile,"r");
-      if(fp==NULL){
+    FILE *fp=fopen(fromFile,"r");
+    if(fp==NULL){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Can't open state file :%s", fromFile);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+    if(4!=fscanf(fp,"%d%d%d%d",&nPacked,&nx,&ny,&nz)){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Can't parse size line of file %s\n", fromFile);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }
+    for(int pNo=0;pNo<nPacked;pNo++) {
+      double re,im; int x,y,z;
+      if(5!=fscanf(fp,"%lg%lg%d%d%d",&re,&im,&x,&y,&z)){
         PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("   Can't open state file :%s", fromFile);
-        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        EXIT(1);
-      }//endif
-      if(4!=fscanf(fp,"%d%d%d%d",&nPacked,&nx,&ny,&nz)){
-        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("   Can't parse size line of file %s\n", fromFile);
+        PRINTF("   Can't parse packed state location");
         PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         EXIT(1);
       }
-      nktot=0;
-      nplane0=0;
-      for(int pNo=0;pNo<nPacked;pNo++) {
-        double re,im; int x,y,z;
-        if(5!=fscanf(fp,"%lg%lg%d%d%d",&re,&im,&x,&y,&z)){
+      update_minmax(pNo, x, minx, maxx);
+      update_minmax(pNo, y, miny, maxy);
+      update_minmax(pNo, z, minz, maxz);
+      if(x==0 && y==0 && z==0 && doublePack)break;
+    }//endfor
+    fclose(fp);
+
+  }//endif:: acii
+
+#if CMK_PROJECTIONS_USE_ZLIB
+  //---------------------------------------------------------------------------------
+  // Zipped ascii
+  if(ibinary_opt==2){
+
+    char bigenough[1000];  //we know our lines are shorter than this
+    char localFile[1000]; // fromFile is const
+    strncpy(localFile,fromFile,1000);
+    strncat(localFile,".gz",1000);
+    gzFile zfp=gzopen(localFile,"rb");
+    if (zfp==NULL){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Can't open state file %s\n",localFile);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+    int nPackedLoc;
+    if(gzgets(zfp,bigenough,1000)!=Z_NULL){
+      if(4!=sscanf(bigenough,"%d%d%d%d",&nPacked,&nx,&ny,&nz)){
+        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("   Can't parse size line of file %s\n", localFile);
+        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        EXIT(1);
+      }
+    }else{
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Can't parse size line of file %s\n", localFile);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+    for(int pNo=0;pNo<nPacked;pNo++) {
+      double re,im; int x,y,z;
+      if(gzgets(zfp,bigenough,1000)!=Z_NULL){
+        if(5!=sscanf(bigenough,"%lg%lg%d%d%d",&re,&im,&x,&y,&z)){
           PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("   Can't parse packed state location");
           PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
           EXIT(1);
         }
-        if(pNo==0){minx=x; maxx=x;}
-        if(x<minx){minx=x;}
-        if(x>maxx){maxx=x;}
-        if(x==0){nplane0++;}
-        nktot++;
+        update_minmax(pNo, x, minx, maxx);
+        update_minmax(pNo, y, miny, maxy);
+        update_minmax(pNo, z, minz, maxz);
         if(x==0 && y==0 && z==0 && doublePack)break;
-      }//endfor
-      fclose(fp);
-
-    }//endif:: acii
-
-#if CMK_PROJECTIONS_USE_ZLIB
-    //---------------------------------------------------------------------------------
-    // Zipped ascii
-    if(ibinary_opt==2){
-
-      char bigenough[1000];  //we know our lines are shorter than this
-      char localFile[1000]; // fromFile is const
-      strncpy(localFile,fromFile,1000);
-      strncat(localFile,".gz",1000);
-      gzFile zfp=gzopen(localFile,"rb");
-      if (zfp==NULL){
-        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("   Can't open state file %s\n",localFile);
-        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        EXIT(1);
-      }//endif
-      int nPackedLoc;
-      if(gzgets(zfp,bigenough,1000)!=Z_NULL){
-        if(4!=sscanf(bigenough,"%d%d%d%d",&nPacked,&nx,&ny,&nz)){
-          PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-          PRINTF("   Can't parse size line of file %s\n", localFile);
-          PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-          EXIT(1);
-        }
       }else{
         PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("   Can't parse size line of file %s\n", localFile);
         PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         EXIT(1);
       }//endif
-      nktot=0;
-      nplane0=0;
-      for(int pNo=0;pNo<nPacked;pNo++) {
-        double re,im; int x,y,z;
-        if(gzgets(zfp,bigenough,1000)!=Z_NULL){
-          if(5!=sscanf(bigenough,"%lg%lg%d%d%d",&re,&im,&x,&y,&z)){
-            PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-            PRINTF("   Can't parse packed state location");
-            PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-            EXIT(1);
-          }
-          if(pNo==0){minx=x; maxx=x;}
-          if(x<minx){minx=x;}
-          if(x>maxx){maxx=x;}
-          if(x==0){nplane0++;}
-          nktot++;
-          if(x==0 && y==0 && z==0 && doublePack)break;
-        }else{
-          PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-          PRINTF("   Can't parse size line of file %s\n", localFile);
-          PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-          EXIT(1);
-        }//endif
-      }//endfor
-      gzclose(zfp);
+    }//endfor
+    gzclose(zfp);
 
-    }//endif:: zipped ascii
+  }//endif:: zipped ascii
 
-    //---------------------------------------------------------------------------------
-    // Zipped binary
-    if(ibinary_opt==3){
+  //---------------------------------------------------------------------------------
+  // Zipped binary
+  if(ibinary_opt==3){
 
-      char localFile[1000]; // fromFile is const
-      strncpy(localFile,fromFile,1000);
-      strncat(localFile,".gz",1000);
-      gzFile zfp=gzopen(localFile,"rb");
-      if (zfp==NULL){
-        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("   Can't open state file :%s", localFile);
-        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        EXIT(1);
-      }//endif
-      gzread(zfp,&(nPacked),sizeof(int));
-      gzread(zfp,&(nx),sizeof(int));
-      gzread(zfp,&(ny),sizeof(int));
-      gzread(zfp,&(nz),sizeof(int));
-      nktot=0;
-      nplane0=0;
-      for(int pNo=0;pNo<nPacked;pNo++) {
-        double re,im; int x,y,z;
-        gzread(zfp,&(re),sizeof(double));
-        gzread(zfp,&(im),sizeof(double));
-        gzread(zfp,&(x),sizeof(int));
-        gzread(zfp,&(y),sizeof(int));
-        gzread(zfp,&(z),sizeof(int));
-        if(pNo==0){minx=x; maxx=x;}
-        if(x<minx){minx=x;}
-        if(x>maxx){maxx=x;}
-        if(x==0){nplane0++;}
-        nktot++;
-        if(x==0 && y==0 && z==0 && doublePack)break;
-      }//endfor
-      gzclose(zfp);
+    char localFile[1000]; // fromFile is const
+    strncpy(localFile,fromFile,1000);
+    strncat(localFile,".gz",1000);
+    gzFile zfp=gzopen(localFile,"rb");
+    if (zfp==NULL){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Can't open state file :%s", localFile);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+    gzread(zfp,&(nPacked),sizeof(int));
+    gzread(zfp,&(nx),sizeof(int));
+    gzread(zfp,&(ny),sizeof(int));
+    gzread(zfp,&(nz),sizeof(int));
+    for(int pNo=0;pNo<nPacked;pNo++) {
+      double re,im; int x,y,z;
+      gzread(zfp,&(re),sizeof(double));
+      gzread(zfp,&(im),sizeof(double));
+      gzread(zfp,&(x),sizeof(int));
+      gzread(zfp,&(y),sizeof(int));
+      gzread(zfp,&(z),sizeof(int));
+      update_minmax(pNo, x, minx, maxx);
+      update_minmax(pNo, y, miny, maxy);
+      update_minmax(pNo, z, minz, maxz);
+      if(x==0 && y==0 && z==0 && doublePack)break;
+    }//endfor
+    gzclose(zfp);
 
-    }//endif :: zipped binary
+  }//endif :: zipped binary
 #endif
 
-    //---------------------------------------------------------------------------------
-    // Binary
-    if(ibinary_opt==1){
+  //---------------------------------------------------------------------------------
+  // Binary
+  if(ibinary_opt==1){
 
-      FILE *fp=fopen(fromFile,"rb");
-      if (fp==NULL){
-        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        PRINTF("   Can't open state file :%s", fromFile);
-        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        EXIT(1);
-      }//endif
-      if(fread(&(nPacked),sizeof(int),n,fp)){}
-      if(fread(&(nx),sizeof(int),n,fp)){}
-      if(fread(&(ny),sizeof(int),n,fp)){}
-      if(fread(&(nz),sizeof(int),n,fp)){}
-      nktot=0;
-      nplane0=0;
-      for(int pNo=0;pNo<nPacked;pNo++) {
-        double re,im; int x,y,z;
-        if(fread(&(re),sizeof(double),n,fp)){}
-        if(fread(&(im),sizeof(double),n,fp)){}
-        if(fread(&(x),sizeof(int),n,fp)){}
-        if(fread(&(y),sizeof(int),n,fp)){}
-        if(fread(&(z),sizeof(int),n,fp)){}
-        if(pNo==0){minx=x; maxx=x;}
-        if(x<minx){minx=x;}
-        if(x>maxx){maxx=x;}
-        if(x==0){nplane0++;}
-        nktot++;
-        if(x==0 && y==0 && z==0 && doublePack)break;
-      }//endfor
-      fclose(fp);
-
-    }//endif::binary
-  }//endif::gen_wave
-
-  //===================================================================================
-  // If we are generating the wave function from scratch
-
-  if(gen_wave==1){
-    nx    = nkf1;
-    ny    = nkf2;
-    nz    = nkf3;
-    nktot = ncoef;
-
-    int *ka       = (int *)cmalloc(nktot*sizeof(int),"parainfo")-1;
-    int *kb       = (int *)cmalloc(nktot*sizeof(int),"parainfo")-1;
-    int *kc       = (int *)cmalloc(nktot*sizeof(int),"parainfo")-1;
-
-    PhysicsParamTransfer::fetch_state_kvecs(ka,kb,kc,nktot,doublePack);
-
-    nplane0 = 0;
-    minx    = ka[1]; 
-    maxx    = ka[1];
-    for(int i=1;i<=nktot;i++){
-      if(ka[i]<minx){minx=ka[i];}
-      if(ka[i]>maxx){maxx=ka[i];}
-      if(ka[i]==0){nplane0++;}
+    FILE *fp=fopen(fromFile,"rb");
+    if (fp==NULL){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Can't open state file :%s", fromFile);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+    if(fread(&(nPacked),sizeof(int),n,fp)){}
+    if(fread(&(nx),sizeof(int),n,fp)){}
+    if(fread(&(ny),sizeof(int),n,fp)){}
+    if(fread(&(nz),sizeof(int),n,fp)){}
+    for(int pNo=0;pNo<nPacked;pNo++) {
+      double re,im; int x,y,z;
+      if(fread(&(re),sizeof(double),n,fp)){}
+      if(fread(&(im),sizeof(double),n,fp)){}
+      if(fread(&(x),sizeof(int),n,fp)){}
+      if(fread(&(y),sizeof(int),n,fp)){}
+      if(fread(&(z),sizeof(int),n,fp)){}
+      update_minmax(pNo, x, minx, maxx);
+      update_minmax(pNo, y, miny, maxy);
+      update_minmax(pNo, z, minz, maxz);
+      if(x==0 && y==0 && z==0 && doublePack)break;
     }//endfor
+    fclose(fp);
 
-    cfree(&ka[1],"configures.C"); 
-    cfree(&kb[1],"configures.C"); 
-    cfree(&kc[1],"configures.C"); 
+  }//endif::binary
 
-  }//endif
-
-  //===================================================================================
-  // Set a few parameters before you go home
-
-  if(doublePack){nPacked=nktot+nplane0-1;}
-  else {nPacked = nktot;}
-//-------------------------------------------------
-#endif //when_we_are_ready
   //----------------------------------------------------------------------------------
 }//end routine
 //===================================================================================
@@ -1211,3 +1232,117 @@ void Config::read_klist(GWBSEOPTS *gwbseopts){
   
 }//end routine 
 //========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS* gwbseopts) {
+  char fromFile[200];
+  // =======================================================================
+  // Share number of states with the epsilon for reading in eigen files
+  gw_epsilon->nspin = gwbseopts->nspin;
+  gw_epsilon->nkpt = gwbseopts->nkpt;
+  gw_epsilon->nocc = gwbseopts->nocc;
+  gw_epsilon->nunocc = gwbseopts->nunocc;
+
+  int nspin = gw_epsilon->nspin;
+  int nkpt = gw_epsilon->nkpt;
+  int nocc = gw_epsilon->nocc;
+  int nunocc = gw_epsilon->nunocc;
+  double*** Eocc;
+  double*** Eunocc;
+
+  Eocc = new double**[nspin];
+  Eunocc = new double**[nspin];
+  for (int s = 0; s < nspin; s++) {
+    Eocc[s] = new double*[nkpt];
+    Eunocc[s] = new double*[nkpt];
+    for (int k = 0; k < nkpt; k++) {
+      Eocc[s][k] = new double[nocc];
+      Eunocc[s][k] = new double[nunocc];
+    }
+  }
+  gw_epsilon->Eocc = Eocc;
+  gw_epsilon->Eunocc = Eunocc;
+
+  for (int s = 0; s < nspin; s++) {
+    for (int k = 0; k < nkpt; k++) {
+      sprintf(fromFile, "./Spin.%d_Kpt.%d_Bead.0_Temper.0/%s",s,k,gw_epsilon->eigFileName);
+      FILE* fp = fopen(fromFile, "r");
+      if (fp == NULL) {
+        PRINTF("Cannot open Eigen Value File: %s\n", fromFile);
+        EXIT(1);
+      }
+      for (int i = 0; i < nocc; i++) {
+        fscanf(fp,"%lg",&Eocc[s][k][i]);
+      }
+      for (int i = 0; i < nunocc; i++) {
+        fscanf(fp,"%lg",&Eunocc[s][k][i]);
+      }
+    } // endfor kpts
+  } // endfor spin
+      
+
+  // =======================================================================
+  // Share K-Points and number of states with the parallel controller
+  gw_parallel->K = gwbseopts->nkpt;
+  gw_parallel->L = gwbseopts->nocc;
+  gw_parallel->M = gwbseopts->nunocc;
+
+  // =======================================================================
+  // From a state file determine the fft sizes
+  int nfft[3];
+  sprintf(fromFile, "./Spin.0_Kpt.0_Bead.0_Temper.0/state1.out");
+  int nPacked,minga,mingb,mingc,maxga,maxgb,maxgc,nx,ny,nz;
+  int ibinary_opt = gwbseopts->ibinary_opt, doublePack = gwbseopts->doublePack;
+  
+  readStateInfo(nPacked,minga,mingb,mingc,maxga,maxgb,maxgc,nx,ny,nz,fromFile,
+      ibinary_opt,doublePack);
+
+  if (doublePack){
+    if (minga!=0){
+      CkPrintf("doublePack flag is on, but the minimum index for ga is not zero.\n");
+      CkPrintf("Are you sure about this calculation? I'm exiting the program. Check your state.\n");
+      CkExit();
+    }
+  }
+  if (doublePack){
+    nfft[0] = 2*maxga + 1;
+  }
+  else{
+    int maxgaabs = ((maxga > -minga) ? maxga : -minga);
+    nfft[0] = 2*maxgaabs + 1;
+  }
+  int maxgbabs = ((maxgb > -mingb) ? maxgb : -mingb);
+  nfft[1] = 2*maxgbabs + 1;
+  int maxgcabs = ((maxgc > -mingc) ? maxgc : -mingc);
+  nfft[2] = 2*maxgcabs + 1;
+
+  int nrad_in = 200;
+  int nrad;
+  int k;
+  int krad[201]; 
+  set_radix(nrad_in, &nrad, krad);
+  for (int j = 0; j < 3; j++) {
+    for (k = 1; k <= nrad; k++) {
+      if (krad[k] > nfft[j]) {
+        break;
+      }
+    }
+    nfft[j] = krad[k];
+  }
+
+  PRINTF("Using fft sizes %d %d %d\n", nfft[0], nfft[1], nfft[2]);
+  PRINTF("States constructed using fft sizes %d %d %d\n", nx, ny, nz);
+
+  // =======================================================================
+  // Determine the number of rows in P and how many chares it will have
+  // The number of rows in P right now must be evenly divisble by rows per chare
+  gw_parallel->n_elems = nfft[0] * nfft[1] * nfft[2];
+  gw_parallel->matrix_nchares = gw_parallel->n_elems / gw_parallel->rows_per_chare;
+  if (gw_parallel->n_elems % gw_parallel->rows_per_chare != 0) {
+    PRINTF("ERROR: Number of rows per chare does not divide evenly!\n");
+    EXIT();
+  }
+}

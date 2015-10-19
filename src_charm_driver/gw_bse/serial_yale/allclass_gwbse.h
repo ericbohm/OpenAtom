@@ -16,6 +16,7 @@
 #include "class_gwbseopts.h"
 #include "class_gw_epsilon.h"
 #include "class_gw_sigma.h"
+#include "class_gw_parallel.h"
 
 
 //==========================================================================
@@ -37,6 +38,9 @@ class GWBSE {
     GW_SIGMA          gw_sigma;   // variables for sigma
     int num_pup;
 
+    // Parallel configuration
+    GW_PARALLEL       gw_parallel; // variables for gw parallelization
+
     //-------------------------------------------------------------------------
     GWBSE(){num_pup=0;};
     ~GWBSE(){};
@@ -56,6 +60,7 @@ class GWBSE {
       gwbseopts.state_class_out();
       gw_epsilon.state_class_out();
       gw_sigma.state_class_out();
+      gw_parallel.state_class_out();
 
       PRINT_LINE_STAR;
       PRINTF("\n");
@@ -66,6 +71,9 @@ class GWBSE {
     void pup(PUP::er &p){
 
       gwbseopts.pup(p);
+      gw_epsilon.pup(p);
+      gw_sigma.pup(p);
+      gw_parallel.pup(p);
 
 
       num_pup++;

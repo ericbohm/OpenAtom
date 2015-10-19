@@ -1,4 +1,4 @@
 #!/bin/bash
 
 ./tidy
-./charmrun +p1 ./states 
+./charmrun ++local +p4 ./states 

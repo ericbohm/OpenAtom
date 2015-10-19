@@ -1,6 +1,8 @@
 #include "states.decl.h"
 #include "standard_include_gwbse.h"
 #include "states.h"
+#include "pmatrix.h"
+#include "fft_size.h"
 #include "main.decl.h"
 #include "allclass_gwbse.h"
 #include <assert.h>
@@ -12,30 +14,30 @@
 
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_states_occ states_occ_proxy;
-
-
+extern /* readonly */ CProxy_PsiCache psi_cache_proxy;
+extern /* readonly */ CProxy_PMatrix pmatrix_proxy;
 
 // ------------ OCCUPIED STATES MEMBERFUNCTIONS 
 states_occ::states_occ() {
 
-  CkPrintf("Hi I'm occupied state %d and I am constructed on processor %d.\n",thisIndex,CkMyPe());
+  CkPrintf("Hi I'm occupied spin, kpt, state (%d %d %d) and I am constructed on processor %d.\n",thisIndex.x, thisIndex.y, thisIndex.z,CkMyPe());
   countdebug = 0;
   GWBSE *gwbse = GWBSE::get();
 
   // read state file
   ibinary_opt = gwbse->gwbseopts.ibinary_opt;
   // set file name
-  ikpt = 0, ispin = 0;
-  sprintf(fileName, "./Spin.%d_Kpt.%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, thisIndex+1);
+  istate = thisIndex.z, ikpt = thisIndex.y, ispin = thisIndex.x;
+  sprintf(fileName, "./Spin.%d_Kpt.%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, istate+1);
   // gamma point only calculations
   doublePack = true;
   // read states from file
   readState(fileName);
 
   fft_G_to_R();
-  // nothing to do when the states_occ chare object is created.
-  //   this is where member variables would be initialized
-  //   just like in a c++ class constructor.
+
+  // Broadcast my psi to the psi_cache_proxy
+  sendToCache();
 }
 
 // constructor needed for chare object migration (ignore for now)
@@ -45,7 +47,7 @@ states_occ::states_occ(CkMigrateMessage *msg) { }
 void states_occ::fft_G_to_R(){
 
   // set fftsize
-  set_fftsize();
+  set_fftsize(numCoeff, doublePack, ga, gb, gc, nfft);
   
   // set 3D fft plan
   int backward = 1;
@@ -85,88 +87,39 @@ void states_occ::fft_G_to_R(){
 
   // delete stateCoeff
   delete [] stateCoeff;
+
   
 }
 
-
-// set size of fft box. The values are saved in nfft[3] array
-void states_occ::set_fftsize(){
-
-  // find the largest and the smallest value of ga, gb, and gc
-  // ga >= 0
-  int ndata = numCoeff;
-
-  // if ndata=0, there is no data stored. Print error message and exit the program
-  if (ndata==0){
-    CkPrintf("There seems no data to FFT. I'm exiting the program. Check your states.");
-    CkExit();
-  }
-
-  int maxga=0, maxgb=0, maxgc=0;
-  int minga=0, mingb=0, mingc=0;
-  for(int i=0; i<ndata; i++){
-    // check if maxga is smaller than ga[i]
-    if (maxga == ga[i] || maxga < ga[i]){ maxga = ga[i];}
-    if (maxgb == gb[i] || maxgb < gb[i]){ maxgb = gb[i];}
-    if (maxgc == gc[i] || maxgc < gc[i]){ maxgc = gc[i];}
-    // check if minga is larger than ga[i]
-    if (minga == ga[i] || minga > ga[i]){ minga = ga[i];}
-    if (mingb == gb[i] || mingb > gb[i]){ mingb = gb[i];}
-    if (mingc == gc[i] || mingc > gc[i]){ mingc = gc[i];}
-  }
-
-  if (doublePack){
-    if (minga!=0){
-      CkPrintf("doublePack flag is on, but the minimum index for ga is not zero.\n");
-      CkPrintf("Are you sure about this calculation? I'm exiting the program. Check your state.\n");
-      CkExit();
-    }
-  }
-  if (doublePack){
-    nfft[0] = 2*maxga + 1;
-  }
-  else{
-    nfft[0] = (maxga - minga) + 1;
-  }
-  nfft[1] = (maxgb - mingb) + 1;
-  nfft[2] = (maxgc - mingc) + 1;
-
-  // if nfft is not an even number, make it even
-  for (int i=0; i<3; i++){
-    if ( nfft[i] % 2 != 0 ){ nfft[i] += 1; }
-  }
-  
-#ifdef DEBUG_FFT
-  CkPrintf("----------------\n");
-  CkPrintf("size of fft grid: %d %d %d \n",nfft[0], nfft[1], nfft[2]);
-#endif
-    
+void states_occ::sendToCache() {
+  CkPrintf("[%i,%i,%i]: Sending psi to node cache...\n",thisIndex.x, thisIndex.y, thisIndex.z);
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
+  msg->spin_index = thisIndex.x;
+  msg->k_index = thisIndex.y;
+  msg->state_index = thisIndex.z;
+  psi_cache_proxy.receivePsi(msg);
 }
 
-
+void states_occ::sendToP() {
+  CkPrintf("[%i,%i,%i]: Sending psi to P matrix...\n",thisIndex.x, thisIndex.y, thisIndex.z);
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
+  msg->spin_index = thisIndex.x;
+  msg->k_index = thisIndex.y;
+  msg->state_index = thisIndex.z;
+  pmatrix_proxy.receivePsi(msg);
+}
 
 void states_occ::beamoutMyState(int iteration, int qindex) {
 
   // Have this chare object say states_occ to the user.
-  CkPrintf("\"States_Occ\" from States_Occ chare # %d on "
+  CkPrintf("\"States_occ\" from States_occ chare # (%d %d %d) on "
            "processor %d (for iteration %d and qindex %d).\n",
-           thisIndex, CkMyPe(), iteration, qindex);
+           thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe(), iteration, qindex);
 
-  // Tell the next chare object in this array of chare objects
-  //   to also say states_occ.  If this is the last chare object in
-  //   the array of chare objects, then tell the main chare
-  //   object to exit the program.
-#ifdef _ROUND_ROBIN_
-  GWBSE *gwbse = GWBSE::get();
-  int nocc = gwbse->gwbseopts.nocc;
-
-  if (thisIndex < (nocc - 1))
-    thisProxy[thisIndex + 1].beamoutMyState(0,0);  // message to next chare object
-  else
-    mainProxy.done();                           // message to main chare object
-#endif
-
-  states_occ_proxy[0].exitfordebugging();
+  // Contribute to a faux reduction for exiting
+  states_occ_proxy(0,0,0).exitfordebugging();
 
 }
 
@@ -176,11 +129,13 @@ void states_occ::exitfordebugging(){
 
   countdebug++;
   GWBSE *gwbse = GWBSE::get();
+  int nspin = gwbse->gwbseopts.nspin;
+  int nkpt = gwbse->gwbseopts.nkpt;
   int nocc = gwbse->gwbseopts.nocc;
   int nunocc = gwbse->gwbseopts.nunocc;
 
   CkPrintf("Hi! I am exitfordebugging!! %d %d %d\n",thisIndex, CkMyPe(),countdebug);
-  if (countdebug == nocc+nunocc){
+  if (countdebug == nkpt * nspin * (nocc+nunocc)){
     CkPrintf("Finished!\n");
     countdebug = 0;
     mainProxy.done();
@@ -198,7 +153,7 @@ void states_occ::readState(char *fromFile)
 {//begin routine
   //===================================================================================
   // A little screen output for the fans
-    CkPrintf("Reading state file: %s for chare %d, with binary option %d.\n ",fromFile,thisIndex,ibinary_opt);
+    CkPrintf("Reading state file: %s for chare (%d %d %d), with binary option %d.\n ",fromFile,thisIndex.x, thisIndex.y, thisIndex.z ,ibinary_opt);
 
 
   if(ibinary_opt < 0 || ibinary_opt > 3){
@@ -442,25 +397,24 @@ void states_occ::readState(char *fromFile)
 
 states_unocc::states_unocc() {
 
-  CkPrintf("Hi I'm unoccupied state %d and I am constructed on processor %d.\n",thisIndex,CkMyPe());
+  CkPrintf("Hi I'm unoccupied spin, kpt, state (%d %d %d) and I am constructed on processor %d.\n",thisIndex.x, thisIndex.y, thisIndex.z,CkMyPe());
 
   GWBSE *gwbse = GWBSE::get();
 
   // read state file
   ibinary_opt = gwbse->gwbseopts.ibinary_opt;
   // set file name
-  ikpt = 0, ispin = 0;
+  istate = thisIndex.z, ikpt = thisIndex.y, ispin = thisIndex.x;
   int nocc = gwbse->gwbseopts.nocc;
-  sprintf(fileName, "./Spin.%d_Kpt.%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, thisIndex+1+nocc);
+  sprintf(fileName, "./Spin.%d_Kpt.%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, istate+1+nocc);
   // gamma point only calculations
   doublePack = true;
   // read states from file
   readState(fileName);
   
   fft_G_to_R();
-  // nothing to do when the states_occ chare object is created.
-  //   this is where member variables would be initialized
-  //   just like in a c++ class constructor.
+
+  // Broadcast my psi to the psi_cache_proxy if needed
 }
 
 // constructor needed for chare object migration (ignore for now)
@@ -471,7 +425,7 @@ states_unocc::states_unocc(CkMigrateMessage *msg) { }
 void states_unocc::fft_G_to_R(){
 
   // set fftsize
-  set_fftsize();
+  set_fftsize(numCoeff, doublePack, ga, gb, gc, nfft);
   
   // set 3D fft plan
   int backward = 1;
@@ -513,86 +467,35 @@ void states_unocc::fft_G_to_R(){
   delete [] stateCoeff;
 }
 
-
-// set size of fft box. The values are saved in nfft[3] array
-void states_unocc::set_fftsize(){
-
-  // find the largest and the smallest value of ga, gb, and gc
-  // ga >= 0
-  int ndata = numCoeff;
-
-  // if ndata=0, there is no data stored. Print error message and exit the program
-  if (ndata==0){
-    CkPrintf("There seems no data to FFT. I'm exiting the program. Check your states.");
-    CkExit();
-  }
-
-  int maxga=0, maxgb=0, maxgc=0;
-  int minga=0, mingb=0, mingc=0;
-  for(int i=0; i<ndata; i++){
-    // check if maxga is smaller than ga[i]
-    if (maxga == ga[i] || maxga < ga[i]){ maxga = ga[i];}
-    if (maxgb == gb[i] || maxgb < gb[i]){ maxgb = gb[i];}
-    if (maxgc == gc[i] || maxgc < gc[i]){ maxgc = gc[i];}
-    // check if minga is larger than ga[i]
-    if (minga == ga[i] || minga > ga[i]){ minga = ga[i];}
-    if (mingb == gb[i] || mingb > gb[i]){ mingb = gb[i];}
-    if (mingc == gc[i] || mingc > gc[i]){ mingc = gc[i];}
-  }
-
-  if (doublePack){
-    if (minga!=0){
-      CkPrintf("doublePack flag is on, but the minimum index for ga is not zero.\n");
-      CkPrintf("Are you sure about this calculation? I'm exiting the program. Check your state.\n");
-      CkExit();
-    }
-  }
-  if (doublePack){
-    nfft[0] = 2*maxga + 1;
-  }
-  else{
-    nfft[0] = (maxga - minga) + 1;
-  }
-  nfft[1] = (maxgb - mingb) + 1;
-  nfft[2] = (maxgc - mingc) + 1;
-
-  // if nfft is not an even number, make it even
-  for (int i=0; i<3; i++){
-    if ( nfft[i] % 2 != 0 ){ nfft[i] += 1; }
-  }
-  
-#ifdef DEBUG_FFT
-  CkPrintf("----------------\n");
-  CkPrintf("size of fft grid: %d %d %d \n",nfft[0], nfft[1], nfft[2]);
-#endif
-    
+void states_unocc::sendToCache() {
+  CkPrintf("[%i,%i,%i]: Sending psi to node cache...\n",thisIndex.x, thisIndex.y, thisIndex.z);
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
+  msg->spin_index = thisIndex.x;
+  msg->k_index = thisIndex.y;
+  msg->state_index = thisIndex.z;
+  psi_cache_proxy.receivePsi(msg);
 }
 
-
-
+void states_unocc::sendToP() {
+  CkPrintf("[%i,%i,%i]: Sending psi to P matrix...\n",thisIndex.x, thisIndex.y, thisIndex.z);
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
+  msg->spin_index = thisIndex.x;
+  msg->k_index = thisIndex.y;
+  msg->state_index = thisIndex.z;
+  pmatrix_proxy.receivePsi(msg);
+}
 
 void states_unocc::beamoutMyState(int iteration, int qindex) {
 
   // Have this chare object say states_occ to the user.
-  CkPrintf("\"States_unocc\" from States_unocc chare # %d on "
+  CkPrintf("\"States_unocc\" from States_unocc chare # (%d %d %d) on "
            "processor %d (for iteration %d and qindex %d).\n",
-           thisIndex, CkMyPe(), iteration, qindex);
+           thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe(), iteration, qindex);
 
-  // Tell the next chare object in this array of chare objects
-  //   to also say states_occ.  If this is the last chare object in
-  //   the array of chare objects, then tell the main chare
-  //   object to exit the program.
-#ifdef _ROUND_ROBIN_
-  GWBSE *gwbse = GWBSE::get();
-  int nunocc = gwbse->gwbseopts.nunocc;
-  if (thisIndex < (nunocc - 1))
-    thisProxy[thisIndex + 1].beamoutMyState(0,0);  // message to next chare object
-
-  else
-    mainProxy.done();                           // message to main chare object
-#endif
-
-  states_occ_proxy[0].exitfordebugging();
+  // Contribute to a faux reduction for exiting
+  states_occ_proxy(0,0,0).exitfordebugging();
 
 }
 
@@ -612,7 +515,7 @@ void states_unocc::readState(char *fromFile)
   //===================================================================================
   // A little screen output for the fans
 
-    CkPrintf("Reading state file: %s for chare %d, with binary option %d.\n ",fromFile,thisIndex,ibinary_opt);
+    CkPrintf("Reading state file: %s for chare (%d %d %d), with binary option %d.\n ",fromFile,thisIndex.x, thisIndex.y, thisIndex.z ,ibinary_opt);
 
   if(ibinary_opt < 0 || ibinary_opt > 3){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -834,6 +737,40 @@ void states_unocc::readState(char *fromFile)
 }//end routine
 //===================================================================================
 
+
+PsiCache::PsiCache() {
+  GWBSE *gwbse = GWBSE::get();
+#include "allclass_strip_gwbse.h"
+  psi_count = gw_parallel->L;
+  psi_size = gw_parallel->n_elems;
+  received_psis = 0;
+  psis = new complex*[psi_count];
+  for (int i = 0; i < psi_count; i++) {
+    psis[i] = new complex[psi_size];
+  }
+}
+
+void PsiCache::receivePsi(PsiMessage* msg) {
+  /*CkPrintf("[%i]: Receiving psi from [%i,%i]\n",CkMyPe(), msg->k_index, msg->state_index);
+  CkAssert(msg->state_index < psi_count);
+  CkAssert(msg->size == psi_size);
+  std::copy(psis[msg->state_index], psis[msg->state_index]+psi_size, msg->psi);
+
+  // Once the cache has received all of it's data start the sliding pipeline
+  // sending of psis to P to start the accumulation of fxf'.
+  if (++received_psis == psi_count) {
+    for (int i = 0; i < config.pipeline_stages; i++) {
+      contribute(CkCallback(CkReductionTarget(Psi,sendToP), psi(0,config.L + i)));
+    }
+  }*/
+
+  delete msg;
+}
+
+complex* PsiCache::getPsi(unsigned index) const {
+  CkAssert(index < psi_count);
+  return psis[index];
+}
 
 
 #include "states.def.h"
