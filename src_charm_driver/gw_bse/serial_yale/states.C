@@ -23,11 +23,11 @@ states_occ::states_occ() {
   GWBSE *gwbse = GWBSE::get();
 
   // read state file
-  ibinary_opt=gwbse->gwbseopts.ibinary_opt;
+  ibinary_opt = gwbse->gwbseopts.ibinary_opt;
   // set file name
   ikpt = 0, ispin = 0;
   sprintf(fileName, "./Spin.%d_Kpt.%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, thisIndex+1);
-  // now we consider to have only gamma point
+  // gamma point only calculations
   doublePack = true;
   // read states from file
   readState(fileName);
@@ -444,7 +444,20 @@ states_unocc::states_unocc() {
 
   CkPrintf("Hi I'm unoccupied state %d and I am constructed on processor %d.\n",thisIndex,CkMyPe());
 
-  //fft_G_to_R();
+  GWBSE *gwbse = GWBSE::get();
+
+  // read state file
+  ibinary_opt = gwbse->gwbseopts.ibinary_opt;
+  // set file name
+  ikpt = 0, ispin = 0;
+  int nocc = gwbse->gwbseopts.nocc;
+  sprintf(fileName, "./Spin.%d_Kpt.%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, thisIndex+1+nocc);
+  // gamma point only calculations
+  doublePack = true;
+  // read states from file
+  readState(fileName);
+  
+  fft_G_to_R();
   // nothing to do when the states_occ chare object is created.
   //   this is where member variables would be initialized
   //   just like in a c++ class constructor.
@@ -454,8 +467,107 @@ states_unocc::states_unocc() {
 // note: this constructor does not need to appear in the ".ci" file
 states_unocc::states_unocc(CkMigrateMessage *msg) { }
 
+
 void states_unocc::fft_G_to_R(){
+
+  // set fftsize
+  set_fftsize();
+  
+  // set 3D fft plan
+  int backward = 1;
+  // this routine creates 3D fftw_plan
+  setup_fftw_3d(nfft,backward);
+  
+   // we need to setup fftidx
+  int *g[3]; // put_into_fftbox routine takes 2D g array, so we need to do this
+  g[0] = ga;
+  g[1] = gb;
+  g[2] = gc;
+
+  int **fftidx;
+  fftidx = new int *[numCoeff];
+  for(int i=0; i<numCoeff;i++){ fftidx[i] = new int [3]; }
+
+  // this routine changes negative g index to be a positive numbers
+  // since it is origianlly written with Fortran, fftidx has fortran counting,
+  // i.e., if gidx is (0,0,0), then (1,1,1) in fftidx
+  gidx_to_fftidx(numCoeff, g, nfft, fftidx);
+
+  // state coefficients are copied to in_pointer
+  // in_pointer and out_pointer are set in my_fftw.C
+  // put_into_fftbox was originally written for doublePack = 0 (false)
+  // for gamma point calculation, put_into_fftbox has been modified from the original version
+  put_into_fftbox(numCoeff, stateCoeff, fftidx, nfft, in_pointer, doublePack);
+  
+  // call fftw
+  do_fftw();
+
+  // transfer data from out_pointer to stateCoeffR
+  // malloc stateRspace first
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  stateCoeffR = new complex [ndata];
+  double scale = 1.0; // scale is 1 for now
+  fftbox_to_array(ndata, out_pointer, stateCoeffR, scale);
+
+  // delete stateCoeff
+  delete [] stateCoeff;
 }
+
+
+// set size of fft box. The values are saved in nfft[3] array
+void states_unocc::set_fftsize(){
+
+  // find the largest and the smallest value of ga, gb, and gc
+  // ga >= 0
+  int ndata = numCoeff;
+
+  // if ndata=0, there is no data stored. Print error message and exit the program
+  if (ndata==0){
+    CkPrintf("There seems no data to FFT. I'm exiting the program. Check your states.");
+    CkExit();
+  }
+
+  int maxga=0, maxgb=0, maxgc=0;
+  int minga=0, mingb=0, mingc=0;
+  for(int i=0; i<ndata; i++){
+    // check if maxga is smaller than ga[i]
+    if (maxga == ga[i] || maxga < ga[i]){ maxga = ga[i];}
+    if (maxgb == gb[i] || maxgb < gb[i]){ maxgb = gb[i];}
+    if (maxgc == gc[i] || maxgc < gc[i]){ maxgc = gc[i];}
+    // check if minga is larger than ga[i]
+    if (minga == ga[i] || minga > ga[i]){ minga = ga[i];}
+    if (mingb == gb[i] || mingb > gb[i]){ mingb = gb[i];}
+    if (mingc == gc[i] || mingc > gc[i]){ mingc = gc[i];}
+  }
+
+  if (doublePack){
+    if (minga!=0){
+      CkPrintf("doublePack flag is on, but the minimum index for ga is not zero.\n");
+      CkPrintf("Are you sure about this calculation? I'm exiting the program. Check your state.\n");
+      CkExit();
+    }
+  }
+  if (doublePack){
+    nfft[0] = 2*maxga + 1;
+  }
+  else{
+    nfft[0] = (maxga - minga) + 1;
+  }
+  nfft[1] = (maxgb - mingb) + 1;
+  nfft[2] = (maxgc - mingc) + 1;
+
+  // if nfft is not an even number, make it even
+  for (int i=0; i<3; i++){
+    if ( nfft[i] % 2 != 0 ){ nfft[i] += 1; }
+  }
+  
+#ifdef DEBUG_FFT
+  CkPrintf("----------------\n");
+  CkPrintf("size of fft grid: %d %d %d \n",nfft[0], nfft[1], nfft[2]);
+#endif
+    
+}
+
 
 
 

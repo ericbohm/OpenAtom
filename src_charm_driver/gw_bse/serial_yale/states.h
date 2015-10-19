@@ -28,8 +28,8 @@ class states_occ : public CBase_states_occ {
 
   /// scalar routines ///
   void readState(char *);
+  // fftw routines
   void fft_G_to_R();
-  /// routines for fftw
   void set_fftsize();
   
 };
@@ -38,7 +38,8 @@ class states_occ : public CBase_states_occ {
 class states_unocc : public CBase_states_unocc {
 
  public:
-  complex *stateCoeff;
+  complex *stateCoeff;   // state coefficient in reciprocal space (G space)
+  complex *stateCoeffR;  // state in R space (well.. it's not really coefficient in R space)
   int *ga, *gb, *gc;
   int numCoeff;
   int ikpt;        // index for k point
@@ -48,6 +49,8 @@ class states_unocc : public CBase_states_unocc {
   bool doublePack; // if only have gamma point, then true (=1). Otherwise, false(=0)
   char fileName[1000];  // file name for state
 
+  int nfft[3]; // number of fft grid in each direction
+  
   /// Constructors ///                                                                            
   states_unocc();
   states_unocc(CkMigrateMessage *msg);
@@ -57,7 +60,9 @@ class states_unocc : public CBase_states_unocc {
 
   /// scalar routines ///
   void readState(char *);
+  // fftw routines
   void fft_G_to_R();
+  void set_fftsize();
 };
 
 
