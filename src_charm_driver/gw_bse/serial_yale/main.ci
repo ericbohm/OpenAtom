@@ -1,0 +1,12 @@
+mainmodule main {
+
+  readonly CProxy_Main mainProxy;
+  readonly GWBSE  readonly_gwbse;
+  extern module states;
+
+  mainchare Main {
+    entry Main(CkArgMsg* msg);
+    entry void done();
+  };  
+
+}; 

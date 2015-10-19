@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./tidy
+./charmrun +p1 ./states 

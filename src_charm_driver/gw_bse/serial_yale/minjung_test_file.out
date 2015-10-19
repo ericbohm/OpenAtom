@@ -1,0 +1,60 @@
+================================================
+cccccccccccccccccccccccccccccccccccccccccccccccc
+================================================
+~gen_GW[
+------------------------------------------------
+  User defined parameters with software overides
+------------------------------------------------
+\gwbse_opt{on}       ERR:on or off
+\num_tot_state{6}       ERR:an integer > 1 
+\num_occ_state{4}       ERR:an integer > 0 
+\num_unocc_state{2}       ERR:an integer > 0
+\num_kpoint{8}       ERR:an integer > 0
+\num_spin{1}       ERR:an integer > 0
+\coulb_trunc_opt{0}       ERR:0-no truncation, 1-wire, 2-sheet, 3-molecule
+\statefile_binary_opt{off_gzip}       ERR:off,off_gzip,on,on_gzip
+------------------------------------------------
+  Default parameters with software overides
+------------------------------------------------
+------------------------------------------------
+]
+================================================
+
+
+================================================
+cccccccccccccccccccccccccccccccccccccccccccccccc
+================================================
+~GW_epsilon[
+------------------------------------------------
+  User defined parameters with software overides
+------------------------------------------------
+\Ecuteps{10}       ERR:a number > 0
+------------------------------------------------
+  Default parameters with software overides
+------------------------------------------------
+\tol_iter_mtxinv{0.001}       ERR:an integer > 1 
+------------------------------------------------
+]
+================================================
+
+
+================================================
+cccccccccccccccccccccccccccccccccccccccccccccccc
+================================================
+~GW_sigma[
+------------------------------------------------
+  User defined parameters with software overides
+------------------------------------------------
+\band_index_min{1}       ERR:an integer > 0 
+\band_index_max{5}       ERR:an integer > 1 
+------------------------------------------------
+  Default parameters with software overides
+------------------------------------------------
+\PP_num_mode{1}       ERR:an integer > 0
+\screened_coulomb_cutoff{1}       ERR:a number > 0 
+\bare_coulomb_cutoff{1}       ERR:a number > 0 
+------------------------------------------------
+]
+================================================
+
+

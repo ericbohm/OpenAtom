@@ -1,0 +1,19 @@
+module states {
+readonly CProxy_states_occ states_occ_proxy;
+readonly CProxy_states_unocc states_unocc_proxy;
+
+  array [1D] states_occ{
+    entry states_occ();
+    entry void beamoutMyState(int iteration, int qindex);
+    entry void exitfordebugging();
+  };  
+
+  array [1D] states_unocc{
+    entry states_unocc();
+    entry void beamoutMyState(int iteration, int qindex);
+  };  
+
+
+
+};
+
