@@ -6,9 +6,9 @@ cccccccccccccccccccccccccccccccccccccccccccccccc
   User defined parameters with software overides
 ------------------------------------------------
 \gwbse_opt{on}       ERR:on or off
-\num_tot_state{6}       ERR:an integer > 1 
+\num_tot_state{52}       ERR:an integer > 1 
 \num_occ_state{4}       ERR:an integer > 0 
-\num_unocc_state{2}       ERR:an integer > 0
+\num_unocc_state{48}       ERR:an integer > 0
 \num_kpoint{1}       ERR:an integer > 0
 \num_spin{1}       ERR:an integer > 0
 \coulb_trunc_opt{0}       ERR:0-no truncation, 1-wire, 2-sheet, 3-molecule

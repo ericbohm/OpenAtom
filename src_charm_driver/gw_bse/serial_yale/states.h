@@ -21,11 +21,11 @@ class PsiCache: public CBase_PsiCache {
     void receivePsi(PsiMessage*);
     complex* getPsi(unsigned) const;
   private:
-    unsigned psi_count, psi_size, received_psis;
+    unsigned psi_count, psi_size, received_psis, pipeline_stages;
     complex** psis;
 };
 
-class states_occ : public CBase_states_occ {
+class States : public CBase_States {
 
  public:
   complex *stateCoeff;   // state coefficient in reciprocal space (G space)
@@ -35,7 +35,6 @@ class states_occ : public CBase_states_occ {
   int ikpt;        // index for k point
   int ispin;       // index for spin
   int istate;      // index for state
-  int countdebug;
 
   int ibinary_opt; // binary file option to read state file
   bool doublePack; // if only have gamma point, then true (=1). Otherwise, false(=0)
@@ -44,55 +43,19 @@ class states_occ : public CBase_states_occ {
   int nfft[3]; // number of fft grid in each direction
   
   /// Constructors ///
-  states_occ();
-  states_occ(CkMigrateMessage *msg);
-  /// Entry Methods ///                                                                         
-  void sendToCache();
-  void sendToP();
-  void beamoutMyState(int iteration, int qindex);
-  void exitfordebugging();
-
-  /// scalar routines ///
-  void readState(char *);
-  // fftw routines
-  void fft_G_to_R();
-  
-};
-
-
-class states_unocc : public CBase_states_unocc {
-
- public:
-  complex *stateCoeff;   // state coefficient in reciprocal space (G space)
-  complex *stateCoeffR;  // state in R space (well.. it's not really coefficient in R space)
-  int *ga, *gb, *gc;
-  int numCoeff;
-  int ikpt;        // index for k point
-  int ispin;       // index for spin
-  int istate;      // index for state
-
-  int ibinary_opt; // binary file option to read state file
-  bool doublePack; // if only have gamma point, then true (=1). Otherwise, false(=0)
-  char fileName[1000];  // file name for state
-
-  int nfft[3]; // number of fft grid in each direction
-  
-  /// Constructors ///                                                                            
-  states_unocc();
-  states_unocc(CkMigrateMessage *msg);
+  States();
+  States(CkMigrateMessage *msg);
 
   /// Entry Methods ///                                                                         
   void sendToCache();
   void sendToP();
-  void beamoutMyState(int iteration, int qindex);
+
+  /// fftw routines ///
+  void fft_G_to_R();
 
   /// scalar routines ///
   void readState(char *);
-  // fftw routines
-  void fft_G_to_R();
+  
 };
-
-
-
 
 #endif //__STATES_H__
