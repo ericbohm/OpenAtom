@@ -30,7 +30,7 @@ states_occ::states_occ() {
   istate = thisIndex.z, ikpt = thisIndex.y, ispin = thisIndex.x;
   sprintf(fileName, "./Spin.%d_Kpt.%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, istate+1);
   // gamma point only calculations
-  doublePack = true;
+  doublePack = false;
   // read states from file
   readState(fileName);
 
@@ -82,7 +82,7 @@ void states_occ::fft_G_to_R(){
   // malloc stateRspace first
   int ndata = nfft[0]*nfft[1]*nfft[2];
   stateCoeffR = new complex [ndata];
-  double scale = 1.0; // scale is 1 for now
+  double scale = sqrt(1.0/double(ndata)); // IFFT requires normalization
   fftbox_to_array(ndata, out_pointer, stateCoeffR, scale);
 
   // delete stateCoeff
@@ -408,10 +408,10 @@ states_unocc::states_unocc() {
   int nocc = gwbse->gwbseopts.nocc;
   sprintf(fileName, "./Spin.%d_Kpt.%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, istate+1+nocc);
   // gamma point only calculations
-  doublePack = true;
+  doublePack = false;
   // read states from file
   readState(fileName);
-  
+
   fft_G_to_R();
 
   // Broadcast my psi to the psi_cache_proxy if needed
@@ -460,7 +460,7 @@ void states_unocc::fft_G_to_R(){
   // malloc stateRspace first
   int ndata = nfft[0]*nfft[1]*nfft[2];
   stateCoeffR = new complex [ndata];
-  double scale = 1.0; // scale is 1 for now
+  double scale = sqrt(1.0/double(ndata)); // IFFT requires normalization
   fftbox_to_array(ndata, out_pointer, stateCoeffR, scale);
 
   // delete stateCoeff

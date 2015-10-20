@@ -3,9 +3,9 @@ cccccccccccccccccccccccccccccccccccccccccccccccc
 ================================================
 ~gen_GW[
 \gwbse_opt{on}       ERR:on or off
-\num_tot_state{6}       ERR:an integer > 0 
+\num_tot_state{52}       ERR:an integer > 0 
 \num_occ_state{4}       ERR:an integer > 0 
-\num_unocc_state{2}       ERR:an integer > 0
+\num_unocc_state{48}       ERR:an integer > 0
 \num_kpoint{1}       ERR:an integer > 0
 \num_spin{1}
 \coulb_trunc_opt{0}
