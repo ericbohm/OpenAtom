@@ -1,0 +1,4 @@
+results for q=0 and k=0
+
+        IFFT      FFT
+P(r,r') -> P(G,r') -> P(G,G')
