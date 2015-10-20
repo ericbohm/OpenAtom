@@ -34,6 +34,8 @@ class TemperController : public CBase_TemperController
     void acceptData(int temper, EnergyStruct &energies);
     void acceptData();
     void output();
+    void barrier();
+
   private:
     int simType;
     int numTempers;

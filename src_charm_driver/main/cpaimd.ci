@@ -168,6 +168,7 @@ module instanceController
     entry void atomsDoneNewTemp(CkReductionMsg *m);
     entry void fmagMinTest(CkReductionMsg *m);
     entry void instancesReady(CkReductionMsg *m);
+    entry void resumeFromTemper();
   };
 };
 
@@ -176,6 +177,7 @@ module temperController
   array [1D] TemperController {
     entry void TemperController(int, double temperatures[numtemps], int numtemps, long seed, std::string historyfile, std::string output_directory);
     entry void acceptData(int temper, EnergyStruct);
+    entry [reductiontarget] void barrier();
   };
 };
 

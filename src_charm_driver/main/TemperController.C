@@ -88,6 +88,7 @@ void TemperController::acceptData()
   output();
 }
 
+
 void TemperController::output()
 {
   FILE *tFile =openTemperTrack(output_directory.c_str(),"temperature_order.out","w");
@@ -121,6 +122,12 @@ void TemperController::output()
     }
   fclose(tFile);
   fclose(atFile);
+}
+
+
+void TemperController::barrier()
+{
+  instControllerProxy.resumeFromTemper();
 }
 
 

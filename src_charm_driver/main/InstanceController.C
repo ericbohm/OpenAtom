@@ -10,6 +10,7 @@
 //============================================================================
 /* ostensibly the InstanceController may need to know about everything */
 extern CkVec < CkVec <int> > UplaneUsedByNLZ;
+extern CProxy_TemperController temperControllerProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
@@ -557,8 +558,13 @@ void InstanceController::useNewTemperature(double temperature){
 void InstanceController::atomsDoneNewTemp(CkReductionMsg *m)
 {
   atomsTempDone=true;
+#define TEMPERBARRIER 1
+#ifndef TEMPERBARRIER  
   if(gspTempDone)
-    UegroupProxy[thisIndex].resumeFromTemper();
+    resumeFromTemper();
+#else
+  contribute(CkCallback(CkReductionTarget(TemperController,barrier),temperControllerProxy));
+#endif
   delete m;
 }
 
@@ -568,12 +574,20 @@ void InstanceController::atomsDoneNewTemp(CkReductionMsg *m)
 void InstanceController::gspDoneNewTemp(CkReductionMsg *m)
 {
   gspTempDone=true;
+#ifndef TEMPERBARRIER  
   if(atomsTempDone)
-    UegroupProxy[thisIndex].resumeFromTemper();
+    resumeFromTemper();
+#else
+  contribute(CkCallback(CkReductionTarget(TemperController,barrier),temperControllerProxy));
+#endif
   delete m;
 }
 
-
+//in a nicer world this would be inlined
+void InstanceController::resumeFromTemper()
+{ 
+  UegroupProxy[thisIndex].resumeFromTemper(); 
+}
 
 // When the simulation is done, make a clean exit  
 // this gets called on the 0th element when everyone calls cleanExit
