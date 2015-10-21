@@ -25,30 +25,38 @@ PMatrix::PMatrix() {
 }
 
 void PMatrix::receivePsi(PsiMessage* msg) {
-  // Compute all f's associated with the received psi, and accumulate their
-  // contributions to P.
+  GWBSE* gwbse = GWBSE::get();
+
+  // Variables for f = psi(i) * psi(j)
   const unsigned size = msg->size;
   complex* psi1 = msg->psi;
   complex* psi2;
   complex f[size];
 
+  // Variables for indexing into the eigenvalues arrays
+  const unsigned ispin = msg->spin_index;
+  const unsigned ikpt = msg->k_index;
+  const unsigned m = msg->state_index - L;
+
+  // Eigenvalues used to scale the entries of f
+  double*** eocc = gwbse->gw_epsilon.Eocc;
+  double*** eunocc = gwbse->gw_epsilon.Eunocc;
+
   // Loop over all of the cached psis, and compute an f via pointwise
   // multiplication with the received psi. Then compute the outer product of
   // f x f' and accumulate it's contribution in P.
   for (int l = 0; l < L; l++) {
-    // Compute f based on each pair of Psis
-    // TODO: Figure out the most cache effective way to do this. Should we
-    // explicitly compute f or use the psis to compute the addition to P.
-    // TODO: Instead of computing f on the P chares should the cache do it?
+    // Compute f based on each pair of Psis, and the two associated eigenvalues
     psi2 = psi_cache_proxy.ckLocalBranch()->getPsi(l);
+    double scaling_factor = sqrt(4/(eocc[ispin][ikpt][l] - eunocc[ispin][ikpt][m]));
     for (int i = 0; i < size; i++) {
-      f[i] = psi1[i]*psi2[i];
+      f[i] = psi1[i]*psi2[i].conj() * scaling_factor;
     }
     
     // Once we've computed f, compute its contribution to our chunk of P.
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
-        data[r][c] += f[r+start_row]*f[c+start_col];
+        data[r][c] += f[r+start_row]*f[c+start_col].conj();
       }
     }
   }
