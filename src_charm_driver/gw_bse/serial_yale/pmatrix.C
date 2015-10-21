@@ -4,6 +4,7 @@
 #include "states.h"
 
 extern /* readonly */ CProxy_States states_proxy;
+extern /* readonly */ CProxy_PsiCache psi_cache_proxy;
 
 PMatrix::PMatrix() {
   GWBSE* gwbse = GWBSE::get();
@@ -24,23 +25,22 @@ PMatrix::PMatrix() {
 }
 
 void PMatrix::receivePsi(PsiMessage* msg) {
-  /*// Compute all f's associated with the received psi, and accumulate their
+  // Compute all f's associated with the received psi, and accumulate their
   // contributions to P.
-  CkPrintf("[%i]: Received psi [%i,%i]\n", thisIndex, msg->k_index, msg->state_index);
   const unsigned size = msg->size;
-  double* psi1 = msg->psi;
-  double* psi2;
-  double f[size];
+  complex* psi1 = msg->psi;
+  complex* psi2;
+  complex f[size];
 
   // Loop over all of the cached psis, and compute an f via pointwise
   // multiplication with the received psi. Then compute the outer product of
   // f x f' and accumulate it's contribution in P.
-  for (int l = 0; l < config.L; l++) {
+  for (int l = 0; l < L; l++) {
     // Compute f based on each pair of Psis
     // TODO: Figure out the most cache effective way to do this. Should we
     // explicitly compute f or use the psis to compute the addition to P.
     // TODO: Instead of computing f on the P chares should the cache do it?
-    psi2 = psicache.ckLocalBranch()->getPsi(l);
+    psi2 = psi_cache_proxy.ckLocalBranch()->getPsi(l);
     for (int i = 0; i < size; i++) {
       f[i] = psi1[i]*psi2[i];
     }
@@ -51,7 +51,7 @@ void PMatrix::receivePsi(PsiMessage* msg) {
         data[r][c] += f[r+start_row]*f[c+start_col];
       }
     }
-  }*/
+  }
 
   // Once all P chares have finished with this psi, the next psi can broadcast.
   if (msg->state_index + pipeline_stages < L + M) {
