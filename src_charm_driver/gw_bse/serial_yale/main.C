@@ -29,8 +29,7 @@
 // module states is defined in states.ci file, no external.
 /* readonly */ CProxy_Main mainProxy;
 /* readonly */ GWBSE readonly_gwbse;
-/* readonly */ CProxy_states_occ states_occ_proxy;
-/* readonly */ CProxy_states_unocc states_unocc_proxy;
+/* readonly */ CProxy_States states_proxy;
 /* readonly */ CProxy_PsiCache psi_cache_proxy;
 /* readonly */ CProxy_PMatrix pmatrix_proxy;
 
@@ -68,17 +67,21 @@ Main::Main(CkArgMsg* msg) {
   mainProxy = thisProxy;
 
   // -------------------------------------------------------------------
+  // Create the nodegroup for the psi cache
+  psi_cache_proxy = CProxy_PsiCache::ckNew();
+
+  // -------------------------------------------------------------------
+  // Create the array of P matrix chare objects.
+  int nchares = gwbse->gw_parallel.matrix_nchares;
+  pmatrix_proxy = CProxy_PMatrix::ckNew(nchares); 
+
+  // -------------------------------------------------------------------
   // Create the array of state chare objects.
   int nspin = gwbse->gwbseopts.nspin;
   int nkpt = gwbse->gwbseopts.nkpt;
   int nocc = gwbse->gwbseopts.nocc;  
-  states_occ_proxy = CProxy_states_occ::ckNew(nspin, nkpt, nocc);
   int nunocc = gwbse->gwbseopts.nunocc;  
-  states_unocc_proxy = CProxy_states_unocc::ckNew(nspin, nkpt, nunocc);
-
-  // -------------------------------------------------------------------
-  // Create the nodegroup for the psi cache
-  psi_cache_proxy = CProxy_PsiCache::ckNew();
+  states_proxy = CProxy_States::ckNew(nspin, nkpt, nocc + nunocc);
 
 }// end routine
 // End of the Main constructor

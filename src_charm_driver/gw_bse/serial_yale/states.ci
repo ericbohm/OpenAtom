@@ -1,22 +1,12 @@
 module states {
-readonly CProxy_states_occ states_occ_proxy;
-readonly CProxy_states_unocc states_unocc_proxy;
+readonly CProxy_States states_proxy;
 readonly CProxy_PsiCache psi_cache_proxy;
 readonly CProxy_PMatrix pmatrix_proxy;
 
-  array [3D] states_occ{
-    entry states_occ();
-    entry void beamoutMyState(int iteration, int qindex);
-    entry void exitfordebugging();
-    entry void sendToCache();
-    entry void sendToP();
-  };  
-
-  array [3D] states_unocc{
-    entry states_unocc();
-    entry void beamoutMyState(int iteration, int qindex);
-    entry void sendToCache();
-    entry void sendToP();
+  array [3D] States {
+    entry States();
+    entry [reductiontarget] void sendToCache();
+    entry [reductiontarget] void sendToP();
   };  
 
   message PsiMessage {
