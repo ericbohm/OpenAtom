@@ -3124,12 +3124,12 @@ void Config::Finale(int nkf1,int nkf2,int nkf3,int nplane_x,int nplane_x_rho, in
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
   }
-  if(usePairEtoM==1 && useCommlib!=1){
+  if(useCommlib || useCommlibMulticast){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("   EachToMany pairCalc requires Commlib!\n");
+    PRINTF("   Commlib is defunct. useGMulticast instead\n");
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
-  }//endif
+  }//endif                              
 
   if(phantomSym && !gSpaceSum){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
