@@ -44,7 +44,7 @@ extern CkVec <CProxy_StructFactCache>      UsfCacheProxy;
 extern CkVec <CProxy_eesCache>             UeesCacheProxy;
 extern CProxy_TemperController temperControllerProxy;
 extern CProxy_InstanceController instControllerProxy;
-extern CProxy_PhysScratchCache pScratchProxy;
+extern CkVec <CProxy_PhysScratchCache> UpScratchProxy;
 
 //----------------------------------------------------------------------------
 
@@ -662,7 +662,9 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
 
 #ifndef _CP_DEBUG_PSI_OFF_
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
-  CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr, pScratchProxy.ckLocalBranch()->psscratch,&potGrimmeVdw);
+
+  CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr, UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch,&potGrimmeVdw);
+
 #endif
 #endif
 

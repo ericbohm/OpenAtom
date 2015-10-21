@@ -427,10 +427,6 @@ main::main(CkArgMsg *msg) {
 
 #include "initializeUber.C"
 
-  CkPrintf("Before PhysScratchCache user mem %lf MB\n", 
-    (CmiMemoryUsage()/(1024.0*1024.0)));
-  pScratchProxy = CProxy_PhysScratchCache::ckNew();
-
   mainProxy=thishandle;
 
   // make one controller chare per instance
@@ -579,6 +575,7 @@ main::main(CkArgMsg *msg) {
                 }
 
 		// for each new instance we need a new Uber Index
+
 		CkVec  <int>  peUsedBySF;
 		CkVec  <int>  peUsedByNLZ;
 		CkVec  <int>  planeUsedByNLZ;
@@ -1909,7 +1906,8 @@ void control_physics_to_driver(UberCollection thisInstance){
   //============================================================================
   // make a group : create a proxy for the atom class and also a reduction client
 
-  // Make  groups for the atoms and energies
+
+  // Make  groups for the atoms and energies 
   if(thisInstance.idxU.y>0|| thisInstance.idxU.s>0)
     { // the set of chares being created is for a non-zero kpoint
       // all k-points use the same atoms and energies
@@ -1942,6 +1940,11 @@ void control_physics_to_driver(UberCollection thisInstance){
 
       Atom *atoms       = new Atom[natm];
       AtomNHC *atomsNHC = new AtomNHC[natm];
+
+      // every instance with its own atoms needs its own
+      // physcratchcache, because it is a horrible shared memory thing
+      // that needs to be walled off
+      UpScratchProxy.push_back(CProxy_PhysScratchCache::ckNew());
 
       PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC,ibead,itemper);
       UegroupProxy.push_back(CProxy_EnergyGroup::ckNew(thisInstance));

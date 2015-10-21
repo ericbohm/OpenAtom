@@ -71,6 +71,7 @@ CPcharmParaInfo simReadOnly;
 /** \addtogroup Uber */
 /**@{*/
 CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
+CkVec <CProxy_PhysScratchCache>       UpScratchProxy;
 CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;

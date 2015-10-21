@@ -21,7 +21,7 @@ extern CkVec <CProxy_StructureFactor> UsfCompProxy;
 extern CkVec <CProxy_StructFactCache> UsfCacheProxy;
 extern CkVec <CProxy_AtomsCache> UatomsCacheProxy;
 extern CkVec <CProxy_EnergyGroup> UegroupProxy;
-extern CProxy_PhysScratchCache  pScratchProxy;
+extern CkVec <CProxy_PhysScratchCache>  UpScratchProxy;
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
 //#define _CP_DEBUG_SF_CALC_
@@ -78,7 +78,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
     CPNONLOCAL::CP_calc_Struct_Fact(gsSize,k_x, k_y,k_z, 
         structFactor,structFactor_fx,structFactor_fy,
         structFactor_fz,fastAtoms, config.doublePack, 
-        numSfGrps,thisIndex.x, pScratchProxy.ckLocalBranch()->psscratch);
+        numSfGrps,thisIndex.x, UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch);
     //----------------------------------------------------------------------------
     // Communicate the results
     int totalsize=gsSize*natm_nl_grp_max;
