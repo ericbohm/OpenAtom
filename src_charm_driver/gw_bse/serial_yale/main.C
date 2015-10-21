@@ -71,6 +71,11 @@ Main::Main(CkArgMsg* msg) {
   psi_cache_proxy = CProxy_PsiCache::ckNew();
 
   // -------------------------------------------------------------------
+  // Create the array of P matrix chare objects.
+  int nchares = gwbse->gw_parallel.matrix_nchares;
+  pmatrix_proxy = CProxy_PMatrix::ckNew(nchares); 
+
+  // -------------------------------------------------------------------
   // Create the array of state chare objects.
   int nspin = gwbse->gwbseopts.nspin;
   int nkpt = gwbse->gwbseopts.nkpt;

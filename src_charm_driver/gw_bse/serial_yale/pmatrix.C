@@ -1,17 +1,26 @@
+#include "standard_include_gwbse.h"
+#include "allclass_gwbse.h"
 #include "pmatrix.h"
 #include "states.h"
 
+extern /* readonly */ CProxy_States states_proxy;
+
 PMatrix::PMatrix() {
-  /*num_rows = config.rows_per_chare;
-  num_cols = config.n_elems;
+  GWBSE* gwbse = GWBSE::get();
+  pipeline_stages = gwbse->gw_parallel.pipeline_stages;
+  L = gwbse->gw_parallel.L;
+  M = gwbse->gw_parallel.M;
+  num_rows = gwbse->gw_parallel.rows_per_chare;
+  num_cols = gwbse->gw_parallel.n_elems;
+
   start_row = thisIndex * num_rows;
   start_col = 0;
   done_count = 0;
 
-  data = new double*[num_rows];
+  data = new complex*[num_rows];
   for (int i = 0; i < num_rows; i++) {
-    data[i] = new double[num_cols];
-  }*/
+    data[i] = new complex[num_cols];
+  }
 }
 
 void PMatrix::receivePsi(PsiMessage* msg) {
@@ -42,13 +51,13 @@ void PMatrix::receivePsi(PsiMessage* msg) {
         data[r][c] += f[r+start_row]*f[c+start_col];
       }
     }
-  }
+  }*/
 
   // Once all P chares have finished with this psi, the next psi can broadcast.
-  if (msg->state_index + config.pipeline_stages < config.L + config.M) {
-    contribute(CkCallback(CkReductionTarget(Psi, sendToP), psi(msg->k_index, msg->state_index + config.pipeline_stages)));
+  if (msg->state_index + pipeline_stages < L + M) {
+    contribute(CkCallback(CkReductionTarget(States, sendToP), states_proxy(msg->spin_index, msg->k_index, msg->state_index + pipeline_stages)));
   }
-  if (++done_count == config.M) {
+  if (++done_count == M) {
     contribute(CkCallback(CkCallback::ckExit));
-  }*/
+  }
 }

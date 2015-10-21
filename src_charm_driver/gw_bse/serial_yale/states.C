@@ -399,10 +399,10 @@ void PsiCache::receivePsi(PsiMessage* msg) {
   // sending of psis to P to start the accumulation of fxf'.
   if (++received_psis == psi_count) {
     CkPrintf("[%d]: Cache filled\n", CkMyPe());
-    //for (int i = 0; i < pipeline_stages; i++) {
-    //  contribute(CkCallback(CkReductionTarget(States,sendToP), states_proxy(0,0,psi_count + i)));
-    //}
-    contribute(CkCallback(CkCallback::ckExit));
+    for (int i = 0; i < pipeline_stages; i++) {
+      contribute(CkCallback(CkReductionTarget(States,sendToP), states_proxy(0,0,psi_count + i)));
+    }
+    //contribute(CkCallback(CkCallback::ckExit));
   }
 
 }

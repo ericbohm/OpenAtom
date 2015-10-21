@@ -12,8 +12,10 @@ class PMatrix : public CBase_PMatrix {
     void receivePsi(PsiMessage*);
 
   private:
+    // TODO: These will be moved to the parallel controller
+    unsigned pipeline_stages, L, M;
     unsigned num_rows, num_cols, start_row, start_col, done_count;
-    double** data;
+    complex** data;
 };
 
 #endif
