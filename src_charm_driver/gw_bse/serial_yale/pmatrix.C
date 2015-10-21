@@ -31,28 +31,28 @@ void PMatrix::receivePsi(PsiMessage* msg) {
 
   // Variables for f = psi(i) * psi(j)
   const unsigned size = msg->size;
-  complex* psi1 = msg->psi;
-  complex* psi2;
-  complex f[size];
+  complex* psi_occ;               // Comes from the cache
+  complex* psi_unocc = msg->psi;  // Sent directly to us
+  complex f[size];                // Formed locally from the two psis
 
   // Variables for indexing into the eigenvalues arrays
   const unsigned ispin = msg->spin_index;
   const unsigned ikpt = msg->k_index;
-  const unsigned m = msg->state_index - L;
+  const unsigned m = msg->state_index - L; // Eigenvalues indexed separately for occ and unocc for now
 
   // Eigenvalues used to scale the entries of f
-  double*** eocc = gwbse->gw_epsilon.Eocc;
-  double*** eunocc = gwbse->gw_epsilon.Eunocc;
+  double*** e_occ = gwbse->gw_epsilon.Eocc;
+  double*** e_unocc = gwbse->gw_epsilon.Eunocc;
 
   // Loop over all of the cached psis, and compute an f via pointwise
   // multiplication with the received psi. Then compute the outer product of
   // f x f' and accumulate it's contribution in P.
   for (int l = 0; l < L; l++) {
     // Compute f based on each pair of Psis, and the two associated eigenvalues
-    psi2 = psi_cache_proxy.ckLocalBranch()->getPsi(l);
-    double scaling_factor = sqrt(4/(eocc[ispin][ikpt][l] - eunocc[ispin][ikpt][m]));
+    psi_occ = psi_cache_proxy.ckLocalBranch()->getPsi(l);
+    double scaling_factor = sqrt(4/(e_occ[ispin][ikpt][l] - e_unocc[ispin][ikpt][m]));
     for (int i = 0; i < size; i++) {
-      f[i] = psi1[i]*psi2[i].conj() * scaling_factor;
+      f[i] = psi_occ[i]*psi_unocc[i].conj() * scaling_factor;
     }
     
     // Once we've computed f, compute its contribution to our chunk of P.
