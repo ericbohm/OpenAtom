@@ -16,7 +16,9 @@
 #define PUP_ON
 #define _DEBUG_PUP_
 #include "main.h"
-#include "states.decl.h"
+#include "states.h"
+#include "pmatrix.h"
+#include "controller.h"
 #include "standard_include_gwbse.h"
 #include "allclass_gwbse.h"
 #include "configure_gwbse.h"
@@ -32,6 +34,7 @@
 /* readonly */ CProxy_States states_proxy;
 /* readonly */ CProxy_PsiCache psi_cache_proxy;
 /* readonly */ CProxy_PMatrix pmatrix_proxy;
+/* readonly */ CProxy_Controller controller_proxy;
 
 
 //==========================================================================
@@ -67,7 +70,8 @@ Main::Main(CkArgMsg* msg) {
   mainProxy = thisProxy;
 
   // -------------------------------------------------------------------
-  // Create the nodegroup for the psi cache
+  // Create the nodegroups
+  controller_proxy = CProxy_Controller::ckNew();
   psi_cache_proxy = CProxy_PsiCache::ckNew();
 
   // -------------------------------------------------------------------

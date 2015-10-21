@@ -15,8 +15,8 @@ default: all
 all: states
 
 
-states : my_fftw.o fft_routines.o piny_pup.o main.o states.o friend_lib.o interface_hand.o piny_malloc.o configure_gwbse.o fft_size.o pmatrix.o
-	$(CHARMC) -language charm++ -o states main.o states.o my_fftw.o fft_routines.o  friend_lib.o interface_hand.o piny_malloc.o piny_pup.o configure_gwbse.o fft_size.o pmatrix.o -lz $(FFTINC) $(FFTLIB)
+states : my_fftw.o fft_routines.o piny_pup.o main.o states.o friend_lib.o interface_hand.o piny_malloc.o configure_gwbse.o fft_size.o pmatrix.o controller.o messages.o
+	$(CHARMC) -language charm++ -o states main.o controller.o messages.o states.o my_fftw.o fft_routines.o  friend_lib.o interface_hand.o piny_malloc.o piny_pup.o configure_gwbse.o fft_size.o pmatrix.o -lz $(FFTINC) $(FFTLIB)
 
 main.o : main.C piny_pup.C main.h main.decl.h main.def.h states.decl.h 
 	$(CHARMC) -o main.o main.C
@@ -50,6 +50,12 @@ fft_size.o: fft_size.C fft_size.h
 
 pmatrix.o: pmatrix.C pmatrix.h
 	$(CHARMC) -o pmatrix.o pmatrix.C
+
+messages.o: messages.C messages.h
+	$(CHARMC) -o messages.o messages.C
+
+controller.o: controller.C controller.h
+	$(CHARMC) -o controller.o controller.C
 
 states.o : states.C states.h my_fftw.h fft_routines.h states.decl.h states.def.h main.decl.h
 	$(CHARMC) -o states.o states.C

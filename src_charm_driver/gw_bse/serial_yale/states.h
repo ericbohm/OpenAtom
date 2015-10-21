@@ -1,29 +1,8 @@
 #ifndef __STATES_H__
 #define __STATES_H__
+
+#include "states.decl.h"
 #include "ckcomplex.h"
-
-// Message sent from psi used to compute f. Some of these are cached on each
-// node, and others are streamed in to the PMatrix as needed.
-class PsiMessage : public CMessage_PsiMessage {
-  public:
-    PsiMessage(unsigned s, complex* p) : size(s) {
-      std::copy(p, p+size, psi);
-    }
-    unsigned spin_index, k_index, state_index, size;
-    complex* psi;
-};
-
-
-class PsiCache: public CBase_PsiCache {
-  public:
-    PsiCache();
-
-    void receivePsi(PsiMessage*);
-    complex* getPsi(unsigned) const;
-  private:
-    unsigned psi_count, psi_size, received_psis, pipeline_stages;
-    complex** psis;
-};
 
 class States : public CBase_States {
 
@@ -57,5 +36,7 @@ class States : public CBase_States {
   void readState(char *);
   
 };
+
+extern /* readonly */ CProxy_States states_proxy;
 
 #endif //__STATES_H__

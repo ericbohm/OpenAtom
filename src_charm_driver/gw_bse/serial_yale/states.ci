@@ -1,27 +1,51 @@
+// A module defining the various messages that are shared between modules
+module messages {
+  // A message used to package and send around psi arrays
+  message PsiMessage {
+    complex psi[];
+  };
+};
+
+module controller {
+  extern module messages;
+  readonly CProxy_Controller controller_proxy;
+  readonly CProxy_PsiCache psi_cache_proxy;
+
+  // Controls the coordination between the states, pmatrix, and cache based on
+  // the configuration of pipeline depth, number of stages, etc.
+  nodegroup Controller {
+    entry Controller();
+  };
+
+  // Caches psis locally on each node so they can be reused when forming P
+  nodegroup PsiCache {
+    entry PsiCache();
+    entry void receivePsi(PsiMessage*);
+  };
+};
+
 module states {
 readonly CProxy_States states_proxy;
-readonly CProxy_PsiCache psi_cache_proxy;
-readonly CProxy_PMatrix pmatrix_proxy;
 
+  // An array containing all of the states in the system. After reading in the
+  // states and performing an initial FFT it waits for the controller to tell it
+  // where and when to send its data.
   array [3D] States {
     entry States();
     entry [reductiontarget] void sendToCache();
     entry [reductiontarget] void sendToP();
   };  
+};
 
-  message PsiMessage {
-    complex psi[];
-  };
+module pmatrix {
+  extern module messages;
+  readonly CProxy_PMatrix pmatrix_proxy;
 
-  nodegroup PsiCache {
-    entry PsiCache();
-    entry void receivePsi(PsiMessage*);
-  };
-
+  // An array containing a distributed representation of P. Each time it
+  // receives a psi, it multiplies that psi against cached psis to incrementally
+  // compute its values.
   array [1D] PMatrix {
     entry PMatrix();
     entry [nokeep] void receivePsi(PsiMessage*);
   };
-
 };
-

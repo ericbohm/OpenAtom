@@ -1,6 +1,8 @@
 #include "standard_include_gwbse.h"
 #include "allclass_gwbse.h"
 #include "pmatrix.h"
+#include "messages.h"
+#include "controller.h"
 #include "states.h"
 
 extern /* readonly */ CProxy_States states_proxy;
@@ -69,3 +71,5 @@ void PMatrix::receivePsi(PsiMessage* msg) {
     contribute(CkCallback(CkCallback::ckExit));
   }
 }
+
+#include "pmatrix.def.h"
