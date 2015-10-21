@@ -48,11 +48,9 @@
 
 #include "fft_charm.h"
 
-//============================================================================
-
 extern CkVec <CProxy_CP_Rho_RealSpacePlane>     UrhoRealProxy;
 extern CProxy_CPcharmParaInfoGrp                scProxy;
-extern CProxy_PhysScratchCache                  pScratchProxy;
+extern CkVec <CProxy_PhysScratchCache>     UpScratchProxy;
 extern CkVec <CProxy_AtomsCache>                UatomsCacheProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>           UrhoGHartExtProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>           UrhoRHartExtProxy;
@@ -422,7 +420,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
   memset(Vks, 0, myGrid_size*sizeof(fftw_complex));
   CPLOCAL::CP_hart_eext_calc(numPoints, (*myPoints), Rho, natm, simReadOnly.iperd,
       fastAtoms, Vks, &ehart_ret, &eext_ret, &ewd_ret, thisIndex.x,
-      pScratchProxy.ckLocalBranch()->psscratch, config.nfreq_cplocal_hartext);
+      UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch, config.nfreq_cplocal_hartext);
 
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(HartExcVksG_, StartTime, CmiWallTimer());

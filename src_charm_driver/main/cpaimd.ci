@@ -251,7 +251,7 @@ mainmodule cpaimd {
   readonly CProxy_ENL_EKE_Collector ENLEKECollectorProxy;
 
   readonly CkVec <CProxy_PIBeadAtoms> UPIBeadAtomsProxy;
-
+  readonly CkVec <CProxy_PhysScratchCache> UpScratchProxy;
   readonly CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
   readonly CkVec <CProxy_GSpaceDriver> UgSpaceDriverProxy;
   readonly CkVec <CProxy_CP_State_ParticlePlane> UparticlePlaneProxy;

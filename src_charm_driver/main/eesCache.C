@@ -33,7 +33,7 @@ extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-extern CProxy_PhysScratchCache                   pScratchProxy;
+extern CkVec <CProxy_PhysScratchCache>           UpScratchProxy;
 extern CkVec <CProxy_AtomsCache>                 UatomsCacheProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 
@@ -370,6 +370,7 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
 #if CMK_TRACE_ENABLED
     double  StartTime=CmiWallTimer();
 #endif
+
 #ifdef _NAN_CHECK_
     for(int i=0;i<ag->natm;i++)
     {
@@ -378,7 +379,8 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
       CkAssert(finite(fastAtoms->z[i]));
     }
 #endif
-    CPNONLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRppChares,RppData, pScratchProxy.ckLocalBranch()->psscratch);
+
+    CPNONLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRppChares,RppData, UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch);
 
 #if CMK_TRACE_ENABLED
     traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());
@@ -426,7 +428,7 @@ void eesCache::queryCacheRHart(int index, int itime, int iter){
 #endif
 
     CPLOCAL::eesAtmBsplineRgrp(fastAtoms, RhoRHartData,
-        pScratchProxy.ckLocalBranch()->psscratch);
+        UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch);
 
 #if CMK_TRACE_ENABLED
     traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());
