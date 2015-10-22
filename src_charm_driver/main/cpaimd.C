@@ -435,13 +435,17 @@ main::main(CkArgMsg *msg) {
   // make one controller chare per instance
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
+
   char *output_directory=general_data->gentempering_ctrl.output_directory;
   if(output_directory==NULL)
     {
       output_directory="TEMPER_OUT";
     }
   CkPrintf("tempering output dir %s\n",output_directory);
+  
   char *historyfile=general_data->gentempering_ctrl.history_name;
+
+  config.temperCycle=general_data->gentempering_ctrl.switch_steps;
   if(historyfile==NULL)
     {
       historyfile="temperature_trace.out";

@@ -2481,7 +2481,9 @@ FILE *openTemperTrack(const char *dirnameBase, const char *fname,  const char *m
   strncpy(dirPath, dirnameBase, 1023);
   strncpy(lfname, fname, 1023);
   strncat(dirPath,subdir,1023);
+  strncat(dirPath,lfname,1023);
   FILE *file=fopen(dirPath,mode);
+  if (file==NULL) CkPrintf("unable to open file %s mode %s\n",dirPath, mode);
   return file;
 }
 

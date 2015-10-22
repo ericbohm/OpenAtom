@@ -91,10 +91,20 @@ void TemperController::acceptData()
 void TemperController::output()
 {
   FILE *tFile =openTemperTrack(output_directory.c_str(),"temperature_order.out","w");
+  if(!tFile)
+    {
+      CkPrintf("unable to open file %s/%s\n",output_directory.c_str(),"temperature_order.out");
+	
+    }
   FILE *atFile;
   if(first)
     {
-      atFile =openTemperTrack(output_directory.c_str() ,history.c_str(),"o");
+      atFile =openTemperTrack(output_directory.c_str() ,history.c_str(),"a");
+      if(!atFile)
+	{
+	  CkPrintf("unable to open file %s/%s\n",output_directory.c_str(),history.c_str());
+	  
+	}
       fprintf(atFile,"Temper Index Temperature NTemper %d\n", numTempers);
       first=false;
     }
