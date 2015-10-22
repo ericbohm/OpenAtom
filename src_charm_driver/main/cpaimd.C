@@ -442,6 +442,8 @@ main::main(CkArgMsg *msg) {
   char *historyfile=general_data->gentempering_ctrl.history_name;
 
   config.temperCycle=general_data->gentempering_ctrl.switch_steps;
+  CkPrintf("Temperature exchange frequency set to %d\n",config.temperCycle);
+
   if(historyfile==NULL)
     {
       historyfile="temperature_trace.out";
