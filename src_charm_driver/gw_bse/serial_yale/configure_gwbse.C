@@ -1282,7 +1282,6 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
       }
     } // endfor kpts
   } // endfor spin
-      
 
   // =======================================================================
   // Share K-Points and number of states with the parallel controller

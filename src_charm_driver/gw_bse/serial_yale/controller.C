@@ -21,7 +21,7 @@ void PsiCache::receivePsi(PsiMessage* msg) {
 
   CkAssert(msg->state_index < psi_count);
   CkAssert(msg->size == psi_size);
-  std::copy(psis[msg->state_index], psis[msg->state_index]+psi_size, msg->psi);
+  std::copy(msg->psi, msg->psi+psi_size, psis[msg->state_index]);
   delete msg;
 
   // Once the cache has received all of it's data start the sliding pipeline

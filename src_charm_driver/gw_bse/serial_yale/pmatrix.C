@@ -50,15 +50,15 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   for (int l = 0; l < L; l++) {
     // Compute f based on each pair of Psis, and the two associated eigenvalues
     psi_occ = psi_cache_proxy.ckLocalBranch()->getPsi(l);
-    double scaling_factor = sqrt(4/(e_occ[ispin][ikpt][l] - e_unocc[ispin][ikpt][m]));
     for (int i = 0; i < size; i++) {
-      f[i] = psi_occ[i]*psi_unocc[i].conj() * scaling_factor;
+      f[i] = psi_occ[i]*psi_unocc[i].conj();
     }
     
     // Once we've computed f, compute its contribution to our chunk of P.
+    double scaling_factor = 4/(e_occ[ispin][ikpt][l] - e_unocc[ispin][ikpt][m]);
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
-        data[r][c] += f[r+start_row]*f[c+start_col].conj();
+        data[r][c] += f[r+start_row]*f[c+start_col].conj() * scaling_factor;
       }
     }
   }
@@ -68,6 +68,15 @@ void PMatrix::receivePsi(PsiMessage* msg) {
     contribute(CkCallback(CkReductionTarget(States, sendToP), states_proxy(msg->spin_index, msg->k_index, msg->state_index + pipeline_stages)));
   }
   if (++done_count == M) {
+    if (thisIndex == 0) {
+      // Output row 0 to file to check
+      FILE* fp;
+      fp = fopen("P_RSpace_row0.dat", "w");
+      for (int i = 0; i < num_cols; i++) {
+        fprintf(fp,"row 0 col %d\t%g %g\n", i, data[0][i].re, data[0][i].im);
+      }
+      fclose(fp);
+    }
     contribute(CkCallback(CkCallback::ckExit));
   }
 }
