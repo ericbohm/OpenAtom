@@ -3,6 +3,7 @@
 #include "standard_include_gwbse.h"
 #include "allclass_gwbse.h"
 #include "messages.h"
+#include "pmatrix.h"
 #include "states.h"
 
 Controller::Controller() {
@@ -25,6 +26,10 @@ void Controller::sendInitialPsis() {
   for (int i = 0; i < pipeline_stages; i++) {
     states_proxy(0,0,next_state++).sendToP();
   }
+}
+
+void Controller::pComplete() {
+  pmatrix_proxy.printRowAndExit(0);
 }
 
 PsiCache::PsiCache() {

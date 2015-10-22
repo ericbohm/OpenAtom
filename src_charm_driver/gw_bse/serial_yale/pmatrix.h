@@ -10,6 +10,7 @@ class PMatrix : public CBase_PMatrix {
     PMatrix(CkMigrateMessage* msg) {}
 
     void receivePsi(PsiMessage*);
+    void printRowAndExit(int);
 
   private:
     // TODO: These will be moved to the parallel controller

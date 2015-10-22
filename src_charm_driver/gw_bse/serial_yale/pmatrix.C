@@ -65,4 +65,19 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
 }
 
+void PMatrix::printRowAndExit(int row) {
+  if (row >= start_row && row < start_row + num_rows) {
+    FILE* fp;
+    char filename[200];
+    sprintf(filename, "P_Rspace_row%d.dat", row);
+    fp = fopen(filename, "w");
+    for (int i = 0; i < num_cols; i++) {
+      fprintf(fp, "row %d col %d %lg %lg\n", row, i, data[row-start_row][i].re, data[row-start_row][i].im);
+    }
+    fclose(fp);
+  }
+  contribute(CkCallback(CkCallback::ckExit));
+}
+
+
 #include "pmatrix.def.h"

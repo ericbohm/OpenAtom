@@ -11,6 +11,7 @@ class Controller : public CBase_Controller {
     Controller();
     void fillCaches();
     void sendInitialPsis();
+    void pComplete();
 
   private:
     unsigned L, M, pipeline_stages, next_state;

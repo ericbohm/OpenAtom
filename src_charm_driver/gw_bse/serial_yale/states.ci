@@ -29,7 +29,7 @@ module controller {
         }
       }
 
-      when psiComplete() serial { CkExit(); }
+      when psiComplete() serial { pComplete(); }
     }
   };
 
@@ -63,5 +63,6 @@ module pmatrix {
   array [1D] PMatrix {
     entry PMatrix();
     entry [nokeep] void receivePsi(PsiMessage*);
+    entry void printRowAndExit(int);
   };
 };
