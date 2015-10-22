@@ -47,7 +47,7 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   // f x f' and accumulate it's contribution in P.
   for (int l = 0; l < L; l++) {
     // Compute f based on each pair of Psis, and the two associated eigenvalues
-    psi_occ = psi_cache_proxy.ckLocalBranch()->getPsi(l);
+    psi_occ = psi_cache_proxy.ckLocalBranch()->getPsi(0, ispin, ikpt, l);
     for (int i = 0; i < size; i++) {
       f[i] = psi_occ[i]*psi_unocc[i].conj();
     }

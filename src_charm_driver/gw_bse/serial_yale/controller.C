@@ -59,9 +59,9 @@ void PsiCache::receivePsi(PsiMessage* msg) {
 
 }
 
-complex* PsiCache::getPsi(unsigned index) const {
-  CkAssert(index < psi_count);
-  return psis[index];
+complex* PsiCache::getPsi(unsigned q, unsigned ispin, unsigned ikpt, unsigned istate) const {
+  // TODO: Minjung will use q and the three indices to decide which psi to return
+  return psis[istate];
 }
 
 #include "controller.def.h"

@@ -22,7 +22,7 @@ class PsiCache : public CBase_PsiCache {
     PsiCache();
 
     void receivePsi(PsiMessage*);
-    complex* getPsi(unsigned) const;
+    complex* getPsi(unsigned, unsigned, unsigned, unsigned) const;
   private:
     unsigned psi_count, psi_size, received_psis;
     complex** psis;
