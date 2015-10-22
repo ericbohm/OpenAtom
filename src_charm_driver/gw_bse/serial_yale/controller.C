@@ -13,25 +13,17 @@ Controller::Controller() {
   M = gwbse->gw_parallel.M;
   pipeline_stages = gwbse->gw_parallel.pipeline_stages;
 
-  next_state = 0;
+}
 
-  // First fill the cache with the occupied psis
+void Controller::fillCaches() {
   for (next_state = 0; next_state < L; next_state++) {
     states_proxy(0,0,next_state).sendToCache();
   }
 }
 
-void Controller::cachesFilled() {
+void Controller::sendInitialPsis() {
   for (int i = 0; i < pipeline_stages; i++) {
     states_proxy(0,0,next_state++).sendToP();
-  }
-}
-
-void Controller::psiComplete() {
-  if (next_state < L+M) {
-    states_proxy(0, 0, next_state++).sendToP();
-  } else {
-    CkExit();
   }
 }
 

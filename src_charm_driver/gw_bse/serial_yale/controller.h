@@ -6,10 +6,11 @@
 #include "controller.decl.h"
 
 class Controller : public CBase_Controller {
+  Controller_SDAG_CODE
   public:
     Controller();
-    void cachesFilled();
-    void psiComplete();
+    void fillCaches();
+    void sendInitialPsis();
 
   private:
     unsigned L, M, pipeline_stages, next_state;

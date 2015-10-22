@@ -17,6 +17,20 @@ module controller {
     entry Controller();
     entry [reductiontarget] void cachesFilled();
     entry [reductiontarget] void psiComplete();
+
+    entry void run() {
+      serial { fillCaches(); }
+
+      when cachesFilled() serial { sendInitialPsis(); }
+
+      while (next_state < L + M) {
+        when psiComplete() serial {
+          states_proxy(0,0,next_state++).sendToP();
+        }
+      }
+
+      when psiComplete() serial { CkExit(); }
+    }
   };
 
   // Caches psis locally on each node so they can be reused when forming P
