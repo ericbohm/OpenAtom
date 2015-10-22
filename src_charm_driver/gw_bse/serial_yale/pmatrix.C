@@ -5,9 +5,6 @@
 #include "controller.h"
 #include "states.h"
 
-extern /* readonly */ CProxy_States states_proxy;
-extern /* readonly */ CProxy_PsiCache psi_cache_proxy;
-
 PMatrix::PMatrix() {
   GWBSE* gwbse = GWBSE::get();
   pipeline_stages = gwbse->gw_parallel.pipeline_stages;
@@ -38,7 +35,8 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   // Variables for indexing into the eigenvalues arrays
   const unsigned ispin = msg->spin_index;
   const unsigned ikpt = msg->k_index;
-  const unsigned m = msg->state_index - L; // Eigenvalues indexed separately for occ and unocc for now
+  const unsigned istate = msg->state_index;
+  const unsigned m = istate - L; // Eigenvalues indexed separately for occ/unocc
 
   // Eigenvalues used to scale the entries of f
   double*** e_occ = gwbse->gw_epsilon.Eocc;
@@ -63,22 +61,8 @@ void PMatrix::receivePsi(PsiMessage* msg) {
     }
   }
 
-  // Once all P chares have finished with this psi, the next psi can broadcast.
-  if (msg->state_index + pipeline_stages < L + M) {
-    contribute(CkCallback(CkReductionTarget(States, sendToP), states_proxy(msg->spin_index, msg->k_index, msg->state_index + pipeline_stages)));
-  }
-  if (++done_count == M) {
-    if (thisIndex == 0) {
-      // Output row 0 to file to check
-      FILE* fp;
-      fp = fopen("P_RSpace_row0.dat", "w");
-      for (int i = 0; i < num_cols; i++) {
-        fprintf(fp,"row 0 col %d\t%g %g\n", i, data[0][i].re, data[0][i].im);
-      }
-      fclose(fp);
-    }
-    contribute(CkCallback(CkCallback::ckExit));
-  }
+  // Tell the controller we've completed work on this psi
+  contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
 }
 
 #include "pmatrix.def.h"

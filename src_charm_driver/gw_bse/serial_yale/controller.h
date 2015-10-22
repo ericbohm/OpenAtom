@@ -7,7 +7,12 @@
 
 class Controller : public CBase_Controller {
   public:
-    Controller() { CkPrintf("HI! %d\n", CkMyPe()); }
+    Controller();
+    void cachesFilled();
+    void psiComplete();
+
+  private:
+    unsigned L, M, pipeline_stages, next_state;
 };
 
 class PsiCache : public CBase_PsiCache {
@@ -17,7 +22,7 @@ class PsiCache : public CBase_PsiCache {
     void receivePsi(PsiMessage*);
     complex* getPsi(unsigned) const;
   private:
-    unsigned psi_count, psi_size, received_psis, pipeline_stages;
+    unsigned psi_count, psi_size, received_psis;
     complex** psis;
 };
 

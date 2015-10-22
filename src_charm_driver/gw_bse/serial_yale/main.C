@@ -70,11 +70,6 @@ Main::Main(CkArgMsg* msg) {
   mainProxy = thisProxy;
 
   // -------------------------------------------------------------------
-  // Create the nodegroups
-  controller_proxy = CProxy_Controller::ckNew();
-  psi_cache_proxy = CProxy_PsiCache::ckNew();
-
-  // -------------------------------------------------------------------
   // Create the array of P matrix chare objects.
   int nchares = gwbse->gw_parallel.matrix_nchares;
   pmatrix_proxy = CProxy_PMatrix::ckNew(nchares); 
@@ -86,6 +81,11 @@ Main::Main(CkArgMsg* msg) {
   int nocc = gwbse->gwbseopts.nocc;  
   int nunocc = gwbse->gwbseopts.nunocc;  
   states_proxy = CProxy_States::ckNew(nspin, nkpt, nocc + nunocc);
+
+  // -------------------------------------------------------------------
+  // Create the nodegroups
+  controller_proxy = CProxy_Controller::ckNew();
+  psi_cache_proxy = CProxy_PsiCache::ckNew();
 
 }// end routine
 // End of the Main constructor

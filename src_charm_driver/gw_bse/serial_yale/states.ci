@@ -13,8 +13,10 @@ module controller {
 
   // Controls the coordination between the states, pmatrix, and cache based on
   // the configuration of pipeline depth, number of stages, etc.
-  nodegroup Controller {
+  chare Controller {
     entry Controller();
+    entry [reductiontarget] void cachesFilled();
+    entry [reductiontarget] void psiComplete();
   };
 
   // Caches psis locally on each node so they can be reused when forming P
