@@ -24,34 +24,44 @@ void Controller::pComplete() {
 
 PsiCache::PsiCache() {
   GWBSE *gwbse = GWBSE::get();
-  psi_count = gwbse->gw_parallel.L;
+  K = gwbse->gw_parallel.K;
+  L = gwbse->gw_parallel.L;
   psi_size = gwbse->gw_parallel.n_elems;
   received_psis = 0;
-  psis = new complex*[psi_count];
-  for (int i = 0; i < psi_count; i++) {
-    psis[i] = new complex[psi_size];
+  psis = new complex**[K];
+  for (int k = 0; k < K; k++) {
+    psis[k] = new complex*[L];
+    for (int l = 0; l < L; l++) {
+      psis[k][l] = new complex[psi_size];
+    }
   }
 }
 
 void PsiCache::receivePsi(PsiMessage* msg) {
-
-  CkAssert(msg->state_index < psi_count);
+  if (msg->spin_index != 0) {
+    CkAbort("Error: We don't support multiple spins yet!\n");
+  }
+  CkAssert(msg->k_index < K);
+  CkAssert(msg->state_index < L);
   CkAssert(msg->size == psi_size);
-  std::copy(msg->psi, msg->psi+psi_size, psis[msg->state_index]);
+  std::copy(msg->psi, msg->psi+psi_size, psis[msg->k_index][msg->state_index]);
   delete msg;
 
   // Once the cache has received all of it's data start the sliding pipeline
   // sending of psis to P to start the accumulation of fxf'.
-  if (++received_psis == psi_count) {
+  if (++received_psis == K*L) {
     CkPrintf("[%d]: Cache filled\n", CkMyPe());
     contribute(CkCallback(CkReductionTarget(Controller,cachesFilled), controller_proxy));
   }
-
 }
 
-complex* PsiCache::getPsi(unsigned q, unsigned ispin, unsigned ikpt, unsigned istate) const {
-  // TODO: Minjung will use q and the three indices to decide which psi to return
-  return psis[istate];
+complex* PsiCache::getPsi(unsigned ispin, unsigned ikpt, unsigned istate) const {
+  if (ispin != 0) {
+    CkAbort("Error: We don't support multiple spins yet!\n");
+  }
+  CkAssert(ikpt >= 0 && ikpt < K);
+  CkAssert(istate >= 0 && istate < L);
+  return psis[ikpt][istate];
 }
 
 #include "controller.def.h"

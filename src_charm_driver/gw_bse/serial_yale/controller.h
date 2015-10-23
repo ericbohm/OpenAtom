@@ -21,10 +21,10 @@ class PsiCache : public CBase_PsiCache {
     PsiCache();
 
     void receivePsi(PsiMessage*);
-    complex* getPsi(unsigned, unsigned, unsigned, unsigned) const;
+    complex* getPsi(unsigned, unsigned, unsigned) const;
   private:
-    unsigned psi_count, psi_size, received_psis;
-    complex** psis;
+    unsigned K, L, psi_size, received_psis;
+    complex*** psis;
 };
 
 extern /* readonly */ CProxy_Controller controller_proxy;
