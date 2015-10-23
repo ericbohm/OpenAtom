@@ -86,8 +86,8 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 
 
   switchMoveNow = false;
-  new_t_ext=0.0;
-  old_t_ext=kT * BOLTZ;
+  new_t_ext=old_t_ext=kT * BOLTZ;
+  CkPrintf("constructor kT %g, old_t_ext %g\n",kT, old_t_ext);
   handleForcesCount=0;
   ktemps          = 0;
   pot_ewd_rs      = 0.0;
@@ -1384,6 +1384,7 @@ void AtomsCompute::acceptNewTemperature(double temp)
   //     to reflect the new temperature 
 
   switchMoveNow=true;
+  CkPrintf("old_t_ext %g, new_t_ext %g, temp %g\n",old_t_ext, new_t_ext, temp);
   old_t_ext=new_t_ext;  // soon to be old
   new_t_ext=temp;  // soon to be old
 

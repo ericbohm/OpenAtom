@@ -542,7 +542,7 @@ void InstanceController::acceptNewTemperature(double temperature){
 //============================================================================
 void InstanceController::useNewTemperature(double temperature){
   // broadcast the temp to your atoms and GSPs
-  //  CkPrintf("[%d] useNewTemperature\n",thisIndex);
+  CkPrintf("[%d] useNewTemperature\n",thisIndex);
   atomsTempDone=false;
   gspTempDone=false;
   UatomsComputeProxy[thisIndex].acceptNewTemperature(temperature);
@@ -559,11 +559,11 @@ void InstanceController::atomsDoneNewTemp(CkReductionMsg *m)
 {
   atomsTempDone=true;
 #define TEMPERBARRIER 1
-#ifndef TEMPERBARRIER  
   if(gspTempDone)
+#ifndef TEMPERBARRIER  
     resumeFromTemper();
 #else
-  contribute(CkCallback(CkReductionTarget(TemperController,barrier),temperControllerProxy));
+    contribute(CkCallback(CkReductionTarget(TemperController,barrier),temperControllerProxy));
 #endif
   delete m;
 }
@@ -574,11 +574,11 @@ void InstanceController::atomsDoneNewTemp(CkReductionMsg *m)
 void InstanceController::gspDoneNewTemp(CkReductionMsg *m)
 {
   gspTempDone=true;
-#ifndef TEMPERBARRIER  
   if(atomsTempDone)
+#ifndef TEMPERBARRIER  
     resumeFromTemper();
 #else
-  contribute(CkCallback(CkReductionTarget(TemperController,barrier),temperControllerProxy));
+    contribute(CkCallback(CkReductionTarget(TemperController,barrier),temperControllerProxy));
 #endif
   delete m;
 }
@@ -586,6 +586,7 @@ void InstanceController::gspDoneNewTemp(CkReductionMsg *m)
 //in a nicer world this would be inlined
 void InstanceController::resumeFromTemper()
 { 
+  //  CkPrintf("Instance Controller %d resumeFromTemper", thisIndex);
   UegroupProxy[thisIndex].resumeFromTemper(); 
 }
 

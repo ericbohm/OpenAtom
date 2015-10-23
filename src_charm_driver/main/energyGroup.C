@@ -130,10 +130,11 @@ void EnergyGroup::energyDone(CkReductionMsg *msg) {
   if(++kpointEnergyDoneCount==config.UberJmax)
   {
     kpointEnergyDoneCount=0;
-    if(config.UberKmax>1 && config.temperCycle >0 && iteration_atm % config.temperCycle == 0) // its temper time, 
+    if(config.UberKmax>1 && config.temperCycle >0 ) // its temper time, 
     { 
       ktemps=0;
       // resumeFromTemper will reactivate us later
+      // when all the energies are done, the 0th element calls sendToTemper
       int i=1;
       CkCallback cb(CkIndex_EnergyGroup::sendToTemper(NULL),0,  UegroupProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
@@ -147,18 +148,25 @@ void EnergyGroup::energyDone(CkReductionMsg *msg) {
 //==========================================================================
 
 
+// called on 0th element, send our energies to tempercontroller
+// when every instance has done so, it will switch them around
 void EnergyGroup::sendToTemper(CkReductionMsg *m)
 {
   delete m;
-  temperControllerProxy[0].acceptData(thisInstance.idxU.x, estruct);
+  //  CkPrintf("{%d,%d,%d} energyGroup %d sendToTemper iter %d at freq %d\n",thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, CkMyPe(), iteration_atm, config.temperCycle);
+  temperControllerProxy[0].acceptData(thisInstance.idxU.z, iteration_atm, estruct);
 }
 
+
+// triggered by instancecontroller
 void EnergyGroup::resumeFromTemper()
 {
   // you will receive 1 per kpoint, only release when all are ready
   ktemps++;
+
   if(ktemps==config.UberJmax)
   {
+    //    CkPrintf("{%d} energyGroup [%d] resumeFromTemper, my iter %d\n",thisInstance.idxU.z, CkMyPe(), iteration_atm);
     energyDone();
     ktemps=0;
   }
@@ -194,7 +202,7 @@ void EnergyGroup::energyDone(){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
       }//endif
-      //       CkPrintf("{%d}[%d] AtomsCache::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
+      //      if(state==0 && plane==0)      CkPrintf("{%d,%d,%d}[%d] energyGroup::energyDone calling gsp(%d,%d).doneComputingEnergy iteration %d thisPoint.idU.y %d thisPoint.idxU.s %d offset %d \n ", thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, CkMyPe(), state,plane, iteration_atm, thisPoint.idxU.y, thisPoint.idxU.s, thisPoint.proxyOffset);     
       UgSpaceDriverProxy[thisPoint.proxyOffset](state,plane).doneComputingEnergy(iteration_atm); 
     }//endfor
 }//end routine

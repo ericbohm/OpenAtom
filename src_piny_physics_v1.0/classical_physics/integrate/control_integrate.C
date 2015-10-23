@@ -108,6 +108,7 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
   //  3. modify all extended system parameters that depend on kT
   //     to reflect the new temperature 
   double fact=sqrt(new_t_ext/old_t_ext);
+
   if(switchMoveNow)
     {
       for(int i=natmStr;i<natmEnd;i++){
@@ -219,7 +220,7 @@ void ATOMINTEGRATE::integrate_1st_half_step(int natm,int len_nhc,int iextended_o
   MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
   int isokin_opt = mdtherm_info->isokin_opt;
 #ifdef _NAN_CHECK_
-  CkPrintf("iextended_on is %d isokin_opt %d\n",iextended_on, isokin_opt);
+  //  CkPrintf("iextended_on is %d isokin_opt %d\n",iextended_on, isokin_opt);
   for(int i=0; i<natm ; i++)
     {
      CkAssert(finite(atoms[i].x));
@@ -244,7 +245,7 @@ void ATOMINTEGRATE::integrate_1st_half_step(int natm,int len_nhc,int iextended_o
              break;
   }//endif
 #ifdef _NAN_CHECK_
-  CkPrintf("iextended_on is %d isokin_opt %d\n",iextended_on, isokin_opt);
+  //  CkPrintf("iextended_on is %d isokin_opt %d\n",iextended_on, isokin_opt);
   for(int i=0; i<natm ; i++)
     {
      CkAssert(finite(atoms[i].x));

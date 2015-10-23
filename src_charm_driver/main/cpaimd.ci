@@ -176,7 +176,7 @@ module temperController
 {
   array [1D] TemperController {
     entry void TemperController(int, double temperatures[numtemps], int numtemps, long seed, std::string historyfile, std::string output_directory);
-    entry void acceptData(int temper, EnergyStruct);
+    entry void acceptData(int temper, int iteration, EnergyStruct);
     entry [reductiontarget] void barrier();
   };
 };

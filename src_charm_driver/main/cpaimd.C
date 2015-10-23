@@ -1953,6 +1953,7 @@ void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim
       int proxyOffset=zeroKpointInstance.setPO();
       UatomsCacheProxy.push_back(UatomsCacheProxy[proxyOffset]);
       UatomsComputeProxy.push_back(UatomsComputeProxy[proxyOffset]);
+      UpScratchProxy.push_back(UpScratchProxy[proxyOffset]);
       UegroupProxy.push_back(UegroupProxy[proxyOffset]);
     }
   else
@@ -1969,18 +1970,11 @@ void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim
       int cp_bomd_opt   = PhysicsAtom->cp_bomd_opt;
       int isokin_opt    = PhysicsAtom->isokin_opt;
       int cp_grimme     = PhysicsAtom->cp_grimme;
-      if(sim->ntemper>1)
-	{
-
-	  for(int i=0;i<sim->ntemper;i++){
-	    CkPrintf("sim ntemper %d index[%d]=%d temp[%d]=%g\n",sim->ntemper, i,sim->t_ext_index[i],i,sim->temper_t_ext[i]);
-	  }
-	  PhysicsAtom->kT=sim->temper_t_ext[sim->t_ext_index[itemper]];
-	}
       double kT         = PhysicsAtom->kT;
+      // kT is the temperature/BOLTZ
       Atom *atoms       = new Atom[natm];
       AtomNHC *atomsNHC = new AtomNHC[natm];
-
+      CkPrintf("[%d] Temperature is %g\n",thisInstance.proxyOffset, kT*BOLTZ);
       // every instance with its own atoms needs its own
       // physcratchcache, because it is a horrible shared memory thing
       // that needs to be walled off

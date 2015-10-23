@@ -15,6 +15,7 @@ TemperController::TemperController(int _simtype, double *_temperatures, int numt
   /* insert initialization here */  
   first=true;
   reportedIn=0;
+  temperIteration=0;
   numTempers=config.UberKmax;
   numBeads=config.UberImax;
   CkPrintf("TemperController for Tempers %d and beads %d\n",numTempers,numBeads);
@@ -30,13 +31,26 @@ TemperController::TemperController(int _simtype, double *_temperatures, int numt
 
 }
 
-void TemperController::acceptData(int temper, EnergyStruct &energies)
+void TemperController::acceptData(int temper, int iteration, EnergyStruct &energies)
 {
   reportedIn++;
-  sumEnergies(energies, temper);
-  if(reportedIn == numTempers*numBeads)
-    acceptData();
 
+  if(reportedIn == numTempers*numBeads)
+    {
+      temperIteration++;
+      if(temperIteration % config.temperCycle ==0)
+	{ // this is a tempering cycle
+	  sumEnergies(energies, temper);
+	  acceptData();
+	}
+      else
+	{
+	  // this is just a sync to keep the instances in the same round
+	  reportedIn=0;
+	  //	  CkPrintf("TemperController hanging\n");
+	  barrier();
+	}
+    }
 }
 
 void TemperController::sumEnergies(EnergyStruct &inEnergy, int temper)
@@ -54,7 +68,8 @@ void TemperController::acceptData()
   /* switch energies based on a probability. Take into account nearest neighbor temperatures are moving around. 
      Index has the map.
    */
-  CkPrintf("TemperController is switching everyone\n");
+  static int switchcounter=0;
+  CkPrintf("TemperController switch %d\n",switchcounter++);
   /* Glenn wants his global crutch */
   CPcharmParaInfo *sim = CPcharmParaInfo::get();
   for(int i=switchdir; i<numTempers-switchdir; i+=2)
@@ -124,9 +139,9 @@ void TemperController::output()
   fclose(atFile);
 }
 
-
 void TemperController::barrier()
 {
+  static int barriercounter=0;
   instControllerProxy.resumeFromTemper();
 }
 
