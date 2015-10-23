@@ -371,6 +371,17 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
     double  StartTime=CmiWallTimer();
 #endif
 
+
+#ifdef _NAN_CHECK_
+    for(int i=0;i<ag->natm;i++)
+    {
+      CkAssert(finite(fastAtoms->x[i]));
+      CkAssert(finite(fastAtoms->y[i]));
+      CkAssert(finite(fastAtoms->z[i]));
+    }
+#endif
+
+
     CPNONLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRppChares,RppData, UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch);
 
 #if CMK_TRACE_ENABLED

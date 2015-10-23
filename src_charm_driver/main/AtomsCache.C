@@ -50,7 +50,7 @@ extern CProxy_CPcharmParaInfoGrp   scProxy;
  * @{ 
  */
 //==============================================================================
-AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstance) : natm(_natm), natm_nl(n_nl), thisInstance(_thisInstance)
+AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstance, std::string dirname) : natm(_natm), natm_nl(n_nl), thisInstance(_thisInstance), output_directory(dirname)
                                                                                       //==============================================================================
 {// begin routine
   //==============================================================================
@@ -77,11 +77,16 @@ AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstan
     fastAtoms.fx[i] = a[i].fx;
     fastAtoms.fy[i] = a[i].fy;
     fastAtoms.fz[i] = a[i].fz;
+#ifdef _NAN_CHECK_
+    CkAssert(finite(fastAtoms.x[i]));
+    CkAssert(finite(fastAtoms.y[i]));
+    CkAssert(finite(fastAtoms.z[i]));
+#endif
   }//endfor
   if(0 && (config.UberKmax>1 || config.UberImax>1 ))
   {
     // we will do the file output
-    temperScreenFile = openScreenfWrite("TEMPER_OUT", "screen", thisInstance.idxU.z,thisInstance.idxU.x, true);
+    temperScreenFile = openScreenfWrite(output_directory.c_str(), "screen", thisInstance.idxU.z,thisInstance.idxU.x, true);
   }
   else
   {
@@ -147,6 +152,12 @@ void AtomsCache::acceptAtoms(AtomMsg *msg)
     fastAtoms.x[atomI]=msg->data[j];
     fastAtoms.y[atomI]=msg->data[j+1];
     fastAtoms.z[atomI]=msg->data[j+2];
+#ifdef _NAN_CHECK_
+    CkAssert(finite(fastAtoms.x[atomI]));
+    CkAssert(finite(fastAtoms.y[atomI]));
+    CkAssert(finite(fastAtoms.z[atomI]));
+#endif
+
   } 
   zeroforces();
   int i=0;

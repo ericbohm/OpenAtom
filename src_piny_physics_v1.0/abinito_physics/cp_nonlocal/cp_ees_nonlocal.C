@@ -334,19 +334,37 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
 
   //==========================================================================
   // I) scaled coordinates                                                   
-
+#define _NAN_CHECK_ 1
 #ifdef TIME_BSPLINE
   cputime(&cpu1);
 #endif
 
   for(i=0;i<natm;i++){
+#ifdef _NAN_CHECK_
+    CkAssert(finite(xatm[i]));
+    CkAssert(finite(yatm[i]));
+    CkAssert(finite(zatm[i]));
+#endif
     int k = map_nl[(i+1)]-1;
     x     = xatm[k];
     y     = yatm[k];
     z     = zatm[k];
+#ifdef _NAN_CHECK_
+    CkAssert(finite(xatm[k]));
+    CkAssert(finite(yatm[k]));
+    CkAssert(finite(zatm[k]));
+#endif
+
     atemp = x*hmati[1] + y*hmati[4] + z*hmati[7];
     btemp = x*hmati[2] + y*hmati[5] + z*hmati[8];
     ctemp = x*hmati[3] + y*hmati[6] + z*hmati[9];
+
+#ifdef _NAN_CHECK_
+    CkAssert(finite(atemp));
+    CkAssert(finite(btemp));
+    CkAssert(finite(ctemp));
+#endif
+    
     atemp -= NINT((atemp-0.5));
     btemp -= NINT((btemp-0.5));
     ctemp -= NINT((ctemp-0.5));

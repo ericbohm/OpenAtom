@@ -95,9 +95,9 @@ struct EnergyStruct;
         FastAtoms fastAtoms;
         FILE *temperScreenFile;
 	int pimdchaincount;
+        std::string output_directory;
 
-
-        AtomsCache(int,int,Atom *,UberCollection thisInstance);
+        AtomsCache(int,int,Atom *,UberCollection thisInstance, std::string output_directory);
         AtomsCache(CkMigrateMessage *m) {}
         ~AtomsCache();
         void contributeforces();

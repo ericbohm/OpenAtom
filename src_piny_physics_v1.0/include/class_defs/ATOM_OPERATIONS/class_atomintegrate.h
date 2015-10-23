@@ -22,18 +22,18 @@ class ATOMINTEGRATE{
     // Functions
 
     static void ctrl_atom_integrate(int ,int ,int ,int, int, int ,int,int,Atom *,AtomNHC *,
-        int,double *,double *,double*,int *,int,int,int,int,int);
+				    int,double *,double *,double*,int *,int,int,int,int,int, bool, double, double);
 
-    static void integrate_1st_half_step(int ,int ,int ,Atom *,AtomNHC *,int,int,int);
+    static void integrate_1st_half_step(int ,int ,int ,Atom *,AtomNHC *,int,int,int, bool, double);
     static void integrate_2nd_half_step(int,int ,int ,int ,Atom *,AtomNHC *,
         double *,double *,double*,int,int,int);
 
     static void integrate_nve_1st_half(int ,Atom *,int,int,int);
     static void integrate_nve_2nd_half(int ,int ,Atom *,double *,int,int,int);
-    static void integrate_nvt_1st_half(int ,int ,Atom *,AtomNHC *,int,int,int);
+    static void integrate_nvt_1st_half(int ,int ,Atom *,AtomNHC *,int,int,int,bool, double);
     static void integrate_nvt_2nd_half(int ,int ,int ,Atom *,AtomNHC *,
         double *,double *,double *,int,int,int);
-    static void integrate_isonvt_1st_half(int ,int ,Atom *,AtomNHC *,int,int,int);
+    static void integrate_isonvt_1st_half(int ,int ,Atom *,AtomNHC *,int,int,int,bool, double);
     static void integrate_isonvt_2nd_half(int ,int ,int ,Atom *,AtomNHC *,
         double *,double *,double *,int,int,int);
 

@@ -71,6 +71,23 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 {// begin routine
   //==============================================================================
   // parameters, options and energies
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(a[i].x));
+      CkAssert(finite(a[i].y));
+      CkAssert(finite(a[i].z));
+      CkAssert(finite(a[i].fx));
+      CkAssert(finite(a[i].fy));
+      CkAssert(finite(a[i].fz));
+    }
+#endif
+
+
+  switchMoveNow = false;
+  new_t_ext=old_t_ext=kT * BOLTZ;
+  CkPrintf("constructor kT %g, old_t_ext %g\n",kT, old_t_ext);
   handleForcesCount=0;
   ktemps          = 0;
   pot_ewd_rs      = 0.0;
@@ -395,6 +412,18 @@ fclose(fp);
 CkExit();
 #endif
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(atoms[i].x));
+      CkAssert(finite(atoms[i].y));
+      CkAssert(finite(atoms[i].z));
+      CkAssert(finite(atoms[i].fx));
+      CkAssert(finite(atoms[i].fy));
+      CkAssert(finite(atoms[i].fz));
+    }
+#endif
+
 
 //==========================================================================
 // if classical go on to integration, otherwise Fx -> Fu
@@ -567,14 +596,41 @@ void AtomsCompute::integrateAtoms(){
   }//endif
   //============================================================
   // Integrate the atoms : Path Integral Ready
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(atoms[i].x));
+      CkAssert(finite(atoms[i].y));
+      CkAssert(finite(atoms[i].z));
+      CkAssert(finite(atoms[i].fx));
+      CkAssert(finite(atoms[i].fy));
+      CkAssert(finite(atoms[i].fz));
+    }
+#endif
 
 #ifndef  _CP_DEBUG_SCALC_ONLY_ 
   ATOMINTEGRATE::ctrl_atom_integrate(*iteration,natm,len_nhc,cp_min_opt,
       cp_wave_opt,cp_bomd_opt,tol_reached,iextended_on,atoms,atomsNHC,myid,
       &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
-      myoutput_on,natmNow,natmStr,natmEnd,mybead);
+      myoutput_on,natmNow,natmStr,natmEnd,mybead, switchMoveNow, 
+      new_t_ext, old_t_ext);
 #endif
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(atoms[i].x));
+      CkAssert(finite(atoms[i].y));
+      CkAssert(finite(atoms[i].z));
+      CkAssert(finite(atoms[i].fx));
+      CkAssert(finite(atoms[i].fy));
+      CkAssert(finite(atoms[i].fz));
+
+    }
+#endif
+
+
+  switchMoveNow=false;
   //============================================================
   // Path integral :  Rescale to the physical masses
 
@@ -660,12 +716,36 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   vbgr         = 0.0;
   potPerdCorr  = 0.0;
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(fastAtoms.x[i]));
+      CkAssert(finite(fastAtoms.y[i]));
+      CkAssert(finite(fastAtoms.z[i]));
+      CkAssert(finite(fastAtoms.fx[i]));
+      CkAssert(finite(fastAtoms.fy[i]));
+      CkAssert(finite(fastAtoms.fz[i]));
+    }
+#endif
+
+
 #ifndef _CP_DEBUG_PSI_OFF_
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
 
   CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr, UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch,&potGrimmeVdw);
 
 #endif
+#endif
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(fastAtoms.x[i]));
+      CkAssert(finite(fastAtoms.y[i]));
+      CkAssert(finite(fastAtoms.z[i]));
+      CkAssert(finite(fastAtoms.fx[i]));
+      CkAssert(finite(fastAtoms.fy[i]));
+      CkAssert(finite(fastAtoms.fz[i]));
+    }
 #endif
 
   //==========================================================================
@@ -677,6 +757,17 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   // get the atomCache working to collect the other force contribution for us
   if(thisIndex==0)
     UatomsCacheProxy[thisInstance.proxyOffset].contributeforces();
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(fastAtoms.x[i]));
+      CkAssert(finite(fastAtoms.y[i]));
+      CkAssert(finite(fastAtoms.z[i]));
+      CkAssert(finite(fastAtoms.fx[i]));
+      CkAssert(finite(fastAtoms.fy[i]));
+      CkAssert(finite(fastAtoms.fz[i]));
+    }
+#endif
 
   double *ftot           = new double[(3*natm+3)];
   for(int i=0,j=0; i<natm; i++,j+=3){
@@ -945,7 +1036,7 @@ void AtomsCompute::bcastAtomsToAtomCache()
 
   UatomsCacheProxy[thisInstance.proxyOffset].acceptAtoms(msg);
 
-  if(amBeadRoot && !amZerothBead){
+  if(numPIMDBeads>1 && amBeadRoot && !amZerothBead){
       UberCollection instance=thisInstance;
       instance.idxU.x=0;
       int offset=instance.calcPO();
@@ -1285,9 +1376,20 @@ void AtomsCompute::send_PIMD_x(){
 
 void AtomsCompute::acceptNewTemperature(double temp)
 {
-  // Hey GLENN do something with your new temperature here
-  // when you're done
+  // finish the old time step at the prior temperature
+  // in the integrator:
+  //  1. rescale particle velocities 
+  //  2. rescale extended system velocities 
+  //  3. modify all extended system parameters that depend on kT
+  //     to reflect the new temperature 
+
+  switchMoveNow=true;
+  CkPrintf("old_t_ext %g, new_t_ext %g, temp %g\n",old_t_ext, new_t_ext, temp);
+  old_t_ext=new_t_ext;  // soon to be old
+  new_t_ext=temp;  // soon to be old
+
   int i=1;
+  // when you're done
   contribute(sizeof(int), &i, CkReduction::sum_int, 
       CkCallback(CkIndex_InstanceController::atomsDoneNewTemp(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
   //==============================================================================

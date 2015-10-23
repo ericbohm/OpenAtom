@@ -2,3 +2,4 @@
 1.0  300.0                   : rcut in Angstrom , kT in Kelvin
 coords.in ATOMS_COORDS_IN water.coords_initial : filenameIn,directorynameOut,filenameOut
 masses.in :  masses in amu
+

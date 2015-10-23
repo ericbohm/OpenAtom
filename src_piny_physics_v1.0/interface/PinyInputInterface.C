@@ -188,8 +188,7 @@ void PinyInputInterface::getAtomPos (int** serial,
   CmiMemcpy (_vx, &(atomPosInit.mdclatoms_pos [1].vx [1]), sizeof (double)*nAtoms);
   CmiMemcpy (_vy, &(atomPosInit.mdclatoms_pos [1].vy [1]), sizeof (double)*nAtoms);
   CmiMemcpy (_vz, &(atomPosInit.mdclatoms_pos [1].vz [1]), sizeof (double)*nAtoms);
-
-  *x = _x;
+   *x = _x;
   *y = _y,
     *z = _z;
 

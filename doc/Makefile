@@ -1,7 +1,4 @@
-all: clean fullpdf fullhtml flowpdf flowhtml tgzimages
-
-tgzimages:
-	tar -vzcf OpenAtomFullDoc.images.tgz OpenAtomFullDoc/*.png
+all: clean fullpdf fullhtml flowpdf flowhtml
 
 fullpdf: OpenAtomFullDoc.tex
 	rm -r OpenAtomFullDoc | true
@@ -9,7 +6,7 @@ fullpdf: OpenAtomFullDoc.tex
 
 fullhtml: OpenAtomFullDoc.tex
 	rm -f *.pdf
-	rm -r OpenAtomFullDoc | true
+	rm -r OpenAtomFlow | true
 	latex2html -split 2 -local_icons OpenAtomFullDoc.tex
 
 flowpdf: OpenAtomFlow.tex
@@ -27,5 +24,5 @@ flowhtml: OpenAtomFlow.tex
 
 clean:
 	rm -f *.ilg *.aux *.log *.dvi *.idx *.toc *.lof *.lot
-	rm -f *.blg *.bbl *~ OpenAtomFullDoc.images.tgz
-	rm -rf OpenAtomFullDoc
+	rm -f *.blg *.bbl *~
+

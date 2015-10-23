@@ -327,7 +327,6 @@ main::main(CkArgMsg *msg) {
 
   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
   PhysicsParamTransfer::ParaInfoInit(sim);
-
   int ibinary_opt    = sim->ibinary_opt;
   int natm_nl        = sim->natm_nl;
   int ees_eext_opt   = sim->ees_eext_on;
@@ -425,32 +424,62 @@ main::main(CkArgMsg *msg) {
     (CmiMemoryUsage()/(1024.0*1024.0)));
   //make_rho_runs(sim);
 
+
 #include "initializeUber.C"
+
+  // make one controller chare per instance
+
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+
+  char *output_directory=general_data->gentempering_ctrl.output_directory;
+  if(output_directory==NULL)
+    {
+      output_directory="TEMPER_OUT";
+    }
+  CkPrintf("tempering output dir %s\n",output_directory);
+  
+  char *historyfile=general_data->gentempering_ctrl.history_name;
+
 
   mainProxy=thishandle;
 
   // make one controller chare per instance
+
+  config.temperCycle=general_data->gentempering_ctrl.switch_steps;
+  CkPrintf("Temperature exchange frequency set to %d\n",config.temperCycle);
+
+  if(historyfile==NULL)
+    {
+      historyfile="temperature_trace.out";
+    }
+
+
+
   int numFFTinstances = 0;
   numFFTinstances += 3; //3 ffts for divRhos
   numFFTinstances += 1; //one for hartExt
   if(sim->ees_eext_on) {
     numFFTinstances += config.nchareHartAtmT + 1; //these for atmSF
   }
+
   instControllerProxy= CProxy_InstanceController::ckNew(numFFTinstances,
       config.numInstances);
+
   instControllerProxy.doneInserting();
 
   // make one controller temper
   if(sim->ntemper>1) {
-      double faketemplist[sim->ntemper];
-      long seed=1888381834e3l;
-      temperControllerProxy= CProxy_TemperController::ckNew(1,faketemplist,sim->ntemper, seed, 1);
-      temperControllerProxy.doneInserting();
+
+    temperControllerProxy= CProxy_TemperController::ckNew(1,sim->temper_t_ext,sim->ntemper, sim->seed, std::string(historyfile), std::string(output_directory),1);
+    temperControllerProxy.doneInserting();
   }
   // make one collector per uberKmax
   CkArrayOptions enlopts(config.UberKmax);
-  ENLEKECollectorProxy = CProxy_ENL_EKE_Collector::ckNew(config.UberImax *
-      config.UberJmax * config.UberMmax, config.UberKmax, enlopts);
+
+  ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax * 
+	config.UberJmax * config.UberMmax, config.UberKmax, 
+        std::string(output_directory), enlopts); 
+
   ENLEKECollectorProxy.doneInserting();
 
   /**@}*/
@@ -588,7 +617,7 @@ main::main(CkArgMsg *msg) {
 		// We will need a different one of these per instance
 		// Transfer parameters from physics to driver
 		//    read in atoms : create atoms group
-		control_physics_to_driver(thisInstance);
+		control_physics_to_driver(thisInstance, sim);
 
 		//============================================================================
 
@@ -618,6 +647,7 @@ main::main(CkArgMsg *msg) {
 		orthostartup(&orthoCfg, &cfgSymmPC, &cfgAsymmPC, sim, peList4PCmapping);
 
 		// Create mapping classes for Paircalcular
+
 
 		//============================================================================
 		// Initialize the density chare arrays
@@ -1902,12 +1932,20 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void control_physics_to_driver(UberCollection thisInstance){
+void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim){
   //============================================================================
   // make a group : create a proxy for the atom class and also a reduction client
 
 
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  char *output_directory=general_data->gentempering_ctrl.output_directory;
+  if(output_directory==NULL)
+    {
+      output_directory="TEMPER_OUT";
+    }
+
   // Make  groups for the atoms and energies 
+
   if(thisInstance.idxU.y>0|| thisInstance.idxU.s>0)
     { // the set of chares being created is for a non-zero kpoint
       // all k-points use the same atoms and energies
@@ -1920,6 +1958,7 @@ void control_physics_to_driver(UberCollection thisInstance){
       int proxyOffset=zeroKpointInstance.setPO();
       UatomsCacheProxy.push_back(UatomsCacheProxy[proxyOffset]);
       UatomsComputeProxy.push_back(UatomsComputeProxy[proxyOffset]);
+      UpScratchProxy.push_back(UpScratchProxy[proxyOffset]);
       UegroupProxy.push_back(UegroupProxy[proxyOffset]);
     }
   else
@@ -1937,9 +1976,14 @@ void control_physics_to_driver(UberCollection thisInstance){
       int isokin_opt    = PhysicsAtom->isokin_opt;
       int cp_grimme     = PhysicsAtom->cp_grimme;
       double kT         = PhysicsAtom->kT;
-
+      // kT is the temperature/BOLTZ
       Atom *atoms       = new Atom[natm];
       AtomNHC *atomsNHC = new AtomNHC[natm];
+      CkPrintf("[%d] Temperature is %g\n",thisInstance.proxyOffset, kT*BOLTZ);
+      // every instance with its own atoms needs its own
+      // physcratchcache, because it is a horrible shared memory thing
+      // that needs to be walled off
+      UpScratchProxy.push_back(CProxy_PhysScratchCache::ckNew());
 
       // every instance with its own atoms needs its own
       // physcratchcache, because it is a horrible shared memory thing
@@ -1973,7 +2017,7 @@ void control_physics_to_driver(UberCollection thisInstance){
       atomOpts.setAnytimeMigration(false);
       atomOpts.setStaticInsertion(true);
       UatomsCacheProxy.push_back( CProxy_AtomsCache::ckNew(natm,natm_nl,
-							   atoms,thisInstance));
+      							   atoms,thisInstance, std::string(output_directory)) );
       UatomsComputeProxy.push_back( CProxy_AtomsCompute::ckNew(natm,natm_nl,
 							       len_nhc,
 							       iextended_on,

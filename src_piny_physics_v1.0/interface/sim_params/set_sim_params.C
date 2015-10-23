@@ -41,6 +41,7 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
   int npara_temps;
   double real_key_arg;
   double *t_ext,*p_ext,*s_ext;
+  int *t_ext_index;
   FILE *fp;
   char *fname,*directory;
 
@@ -145,15 +146,17 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
     tempering_ctrl->t_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
     tempering_ctrl->p_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
     tempering_ctrl->s_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
+    tempering_ctrl->t_ext_index = (int *)cmalloc(npara_temps*sizeof(int),"set_sim_prms_tmpr")-1;
     fname                 = (char   *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
 
     strcpy(fname,dict[3].keyarg);
     t_ext     = tempering_ctrl->t_ext;
     p_ext     = tempering_ctrl->p_ext;
     s_ext     = tempering_ctrl->s_ext;
+    t_ext_index = tempering_ctrl->t_ext_index;
     directory = tempering_ctrl->output_directory;
 
-    PRINTF("     Reading tempering state points from : %s\n",fname);
+    PRINTF("     Reading %d tempering state points from : %s\n",npara_temps, fname);
     PRINTF("      Tempering state points are:\n");
 
     fp = cfopen((const char *)fname,"r");
@@ -177,6 +180,40 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
     PRINTF("     Done reading from file: %s\n",fname);
     fflush(stdout);
 
+    if(tempering_ctrl->ipt_restart==1)
+      {
+	sprintf (fname, "%s",dict[13].keyarg);
+	fp = cfopen((const char *) fname,"r");
+	int in_temper;
+	fscanf(fp,"%*s %*s %*s %*s %d", &in_temper);
+	if(in_temper!=npara_temps)
+	  {
+	    PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	    PRINTF("    Temperature Index Count Mismatch, %d is not %d\n",in_temper, npara_temps);
+	    PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	    EXIT(1);
+	  }
+	for(i=1;i<=npara_temps;i++){
+	  int temperi;
+	  int indexi;
+	  double tempi;
+	  fscanf(fp,"%d %d %lg\n",&temperi, &indexi, &tempi);
+	  t_ext_index[i]=indexi;
+	  if(tempi!=t_ext[indexi])
+	    {
+	      PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	      PRINTF("    Temperature Index Temp Mismatch with master at %d %g is not %g\n",in_temper, tempi, t_ext[indexi]);
+	      PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	      EXIT(1);
+	    }
+	}
+      }
+    else
+      {
+	for(i=1;i<=npara_temps;i++){
+	  t_ext_index[i]=i;
+	}
+      }
     for(i=1;i<=npara_temps;i++){
       sprintf (fname, "%s/Temper.%d/ChkDirExistOAtom",directory,i);
       FILE *fpck = fopen(fname,"w");
@@ -1068,7 +1105,7 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   int ifound,index;
   double real_key_arg;
   int   int_key_arg;
-
+  long long_key_arg;
   /*========================================================================*/
   /*-----------------------------------------------------------------------*/ 
   /*  1)\simulation_typ{md,minimize,pimd,cp,cp_wave,cp_min,cp_wave_min,
@@ -1244,11 +1281,12 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     keyarg_barf(dict,filename_parse->input_name,fun_key,index);
   /*-----------------------------------------------------------------------*/ 
   /* 14)\rndm_seed{#} */
-  sscanf(dict[14].keyarg,"%d",&(int_key_arg));
-  mdvel_samp->iseed = (long) int_key_arg;
-  cpvel_samp->iseed = (long) int_key_arg;
-  mdvel_samp->qseed = (double) mdvel_samp->iseed;
-  cpvel_samp->qseed = (double) cpvel_samp->iseed;
+  sscanf(dict[14].keyarg,"%ld",&(long_key_arg));
+  mdvel_samp->iseed = long_key_arg;
+  cpvel_samp->iseed = long_key_arg;
+  mdvel_samp->qseed = (double) long_key_arg;
+  cpvel_samp->qseed = (double) long_key_arg;
+  gentempering_ctrl->seed = long_key_arg;
   /*-----------------------------------------------------------------------*/ 
   /* 15)\rndm_seed2{#} */
   sscanf(dict[15].keyarg,"%ld",&(mdvel_samp->iseed2));

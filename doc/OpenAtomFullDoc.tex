@@ -70,10 +70,10 @@ The first level, the meta-keywords, sort keywords into naturally
 connected groups. The second level, the keywords, are specific
 commands to the computer program. The third level, key-arguments,
 are the arguments to the keywords.  The syntax looks like: \\ 
-\hspace*{0.5in} \~{}meta\_keyword1[ \textbackslash keyword1\{keyarg1\}
-\textbackslash keyword2\{keyarg2\} ]. \\
-\hspace*{0.5in} \~{}meta\_keyword2[ \textbackslash keyword1\{keyarg1\}
-\textbackslash keyword2\{keyarg2\} ]. \\
+\hspace*{0.5in} \~{}meta\_keyword1[ \textbackslash{}keyword1\{keyarg1\}
+\textbackslash{}keyword2\{keyarg2\} ]. \\
+\hspace*{0.5in} \~{}meta\_keyword2[ \textbackslash{}keyword1\{keyarg1\}
+\textbackslash{}keyword2\{keyarg2\} ]. \\
 The commands are case insensitive and can be specified in any order.
 
 The present release of the code concentrates on the fine grained
@@ -146,7 +146,7 @@ The following commands maybe specified in the simulation setup file:
 \end{enumerate}
 A complete list of all commands employed including default
 values are placed in the file:
-\~{}sim\_write\_def[ \textbackslash sim\_name\_def\{sim\_input.out\} ]. 
+\~{}sim\_write\_def[ \textbackslash{}sim\_name\_def\{sim\_input.out\} ]. 
 
 
 \newpage
@@ -156,69 +156,68 @@ values are placed in the file:
 %-------------------------------------------------------------------
 \begin{enumerate}
  \vspace{0.15in}
- \item \textbackslash simulation\_typ\{cp,cp\_pimd,...\} : \\
+ \item \textbackslash{}simulation\_typ\{{\bf cp},cp\_pimd,...\} : \\
      This describes the type of simulation being performed.
      \begin{itemize}
-\item     cp\_wave\_min : Minimize/optimize the Kohn-Sham wave functions (fixed nuclei)
+      \item cp\_wave\_min : Minimize/optimize the Kohn-Sham wave functions (fixed nuclei)
               If you don't have initial wave functions, you have to
-	      use the gen\_wave option below.
-\item cp\_wave\_min\_pimd : Minimize/optimize the Kohn-Sham wave functions
+	      use the gen\_wave option below.\\
+      \item cp\_wave\_min\_pimd : Minimize/optimize the Kohn-Sham wave functions
 		   over all the beads in preparation for a path
 		   integral run (PIMD) with fixed nuclei.  If you need
-		   starting wave functions for all beads, you need gen\_wave.
-\item cp : Car-Parrinello molecular dynamics (MD)
-\item cp\_pimd : Car-Parinello path integral MD over all the beads
-\item bomd : Born-Oppenheimer molecular dynamics
-\item bomd\_pimd : Born-Oppenheimer molecular dynamics for beads in path integral MD
-\end{itemize}
+		   starting wave functions for all beads, you need gen\_wave.\\
+       \item cp : Car-Parrinello molecular dynamics (MD)\\
+       \item cp\_pimd : Car-Parinello path integral MD over all the beads\\
+       \item bomd : Born-Oppenheimer molecular dynamics\\
+       \item bomd\_pimd : Born-Oppenheimer molecular dynamics for beads in path integral MD\\
+       \item 
 {\it
 --- planned for the near future---\\
 cp\_min : Minimize nuclei on the Born-Oppenheimer surface (provided by DFT)
 }
- 
+ \end{itemize}
 
  \vspace{0.15in} 
- \item  \textbackslash ensemble\_typ\{{\bf nve},nvt,...\} : \\
-Contols the type of statistical ensemble used in the MD simulation
+ \item  \textbackslash{}ensemble\_typ\{{\bf nve},nvt,...\} : \\
+Contolls the type of statistical ensemble used in the MD simulation
 \begin{itemize}
-\item nve : Run a (N,V,E) microcanonical MD simulation
+\item nve : Run a (N,V,E) microcanonical MD simulation\\
 \item nvt : Run a (N,V,T) canonical simulation, temperature is controlled by 
-      temperature keyword below
-\end{itemize}
-{\it
+      temperature keyword below\\
+\item {\it
 --- planned for the near future ---\\
-npt\_i : (N,P,T) ensemble with volume scaling only (e.g., for liquids)
+npt\_i : (N,P,T) ensemble with volume scaling only (e.g., for liquids)\\
 npt\_f : (N,P,T) ensemble with full unit cell scaling  (e.g., solids
         with shear modes)
 }
-
+\end{itemize}
 
  \vspace{0.15in} 
- \item  \textbackslash restart\_type\{{\bf initial},
+ \item  \textbackslash{}restart\_type\{{\bf initial},
              restart\_pos,restart\_posvel,restart\_all\} : \\
      Option controlling how the coordinate input file is read in:
      \begin{itemize}
-       \item { initial} : Start using {\it initial} format 
+       \item  initial -- Start using {\it initial} format 
                                         with atomic positions in Angstroms.
-       \item { restart\_pos} : Restart only the atomic positions.
+       \item  restart\_pos -- Restart only the atomic positions.
                     Velocities and thermostat velocites (if used) are 
                     sampled from a Maxwell distribution.
-       \item { restart\_posvel} :  Restart both atmoic position 
+       \item  restart\_posvel -- Restart both atmoic position 
                      and atomic velocities.  Thermostat velocities (if used) 
                      are sampled from a Maxwell distribution.
-       \item { restart\_all} : Restart atomic positions, 
+       \item restart\_all -- Restart atomic positions, 
                      velocities, and thermostat velocities (if used).
      \end{itemize}
 
 
 
  \vspace{0.15in} 
- \item  \textbackslash num\_time\_step\{0\} : \\
+ \item  \textbackslash{}num\_time\_step\{0\} : \\
 Total number of time steps (or iterations) of the simulation.  Zero is
 an error, it must be a positive integer.  
 
  \vspace{0.15in} 
- \item   \textbackslash time\_step\{1\} : \\
+ \item   \textbackslash{}time\_step\{1\} : \\
 Units of femtoseconds.  This is the fundamental or smallest time
 step. If no multiple time step integration is used, then this is the
 time step.  For example, in a cp simulation, this is the time step for
@@ -227,27 +226,29 @@ the minimization step.
 
 
  \vspace{0.15in} 
- \item   \textbackslash temperature\{300\} : \\
-     Atomic temperature.  This is the temperature used for velocity rescaling,
-     velocity resampling, thermostatting, etc.
+ \item   \textbackslash{}temperature\{300\} : \\
+Tempeature for nuclei during MD simulations at finite temperature.
+This is the temperature used for velocity rescaling, velocity
+resampling, thermostatting, etc. The units are Kelvin.
 
 
  \vspace{0.15in} 
- \item   \textbackslash pressure\{0\} : \\
-     Pressure of system.  Only used for simulations in the NPT ensembles.
+ \item   \textbackslash{}pressure\{0\} : \\
+Pressure of system in bar. Only used for simulations in the NPT
+ensembles.
 
-~\\
 
 
  \vspace{0.15in} 
 {\it
---- planned for the near future ---
- \item  \textbackslash minimize\_typ\{min\_std,min\_cg,min\_diis\} : \\
+
+ \item  --- planned for the near future --- \\
+ \textbackslash{}minimize\_typ\{min\_std,min\_cg,min\_diis\} : \\
      Perform a minimization run using the method specified in curly brackets:
      \begin{itemize}
-        \item min\_std : Steepest descent.
-        \item min\_cg : Conjugate gradient.
-        \item min\_diis : Direct inversion in the 
+        \item min\_std -- Steepest descent.
+        \item min\_cg -- Conjugate gradient.
+        \item min\_diis -- Direct inversion in the 
                                           iterative subspace.
      \end{itemize}
 }
@@ -261,83 +262,81 @@ the minimization step.
 
 \begin{enumerate}
  \vspace{0.15in}
- \item   \textbackslash init\_resmp\_atm\_vel\{on,{\bf off}\} : \\
-     If turned on, initial atomic velocities are resampled from a 
-     Maxwell distribution at temperature set by \textbackslash temperature above.
-     Atomic masses are set elsewhere.
+ \item   \textbackslash{}init\_resmp\_atm\_vel\{on,{\bf off}\} : \\
+     If turned on, atomic velocities are initially sampled/resampled from a 
+     Maxwell distribution.
+
 
  \vspace{0.15in}
- \item   \textbackslash resmpl\_frq\_atm\_vel\{0\} : \\
-     Atomic velocities are resampled with a frequency equal to the number of time steps
+ \item   \textbackslash{}resmpl\_frq\_atm\_vel\{0\} : \\
+     Atomic velocities are resampled with a frequency equal to the number 
      in the curly brackets.  A zero indicates no resampling is to be done.
 
 
  \vspace{0.15in}
- \item   \textbackslash init\_rescale\_atm\_vel\{on,{\bf off}\} : \\
+ \item   \textbackslash{}init\_rescale\_atm\_vel\{on,{\bf off}\} : \\
     If turned on, atomic velocities are initially rescaled to preset 
-    temperature.   This does not randomize but just scales the velocities.
+    temperature.
 
  \vspace{0.15in}
- \item   \textbackslash rescale\_frq\_atm\_vel\{0\} : \\
+ \item   \textbackslash{}rescale\_frq\_atm\_vel\{0\} : \\
     Atomic velocities are rescaled to desired temperature
-    with a frequency equal to the number of time steps in the
+    with a frequency equal to the number in the
     curly brackets.  A zero indicates no resampling is to be done.
 
  \vspace{0.15in} 
- \item   \textbackslash init\_rescale\_atm\_nhc\{on,{\bf off}\} : \\
+ \item   \textbackslash{}init\_rescale\_atm\_nhc\{on,{\bf off}\} : \\
     If turned on, atomic thermostat velocities are initially rescaled to 
-    preset temperature.  This is about recalling the Nose-Hoover Chain (NHC) velocities.
+    preset temperature.
 
  \vspace{0.15in} 
- \item   \textbackslash zero\_com\_vel\{yes,{\bf no}\} : \\
-    If set to yes, the center of mass velocity is initialized to zero.
+ \item   \textbackslash{}zero\_com\_vel\{yes,{\bf no}\} : \\
+    If set to yes, the center of mass velocity is initially set to 0.
 
  \vspace{0.15in} 
- \item   \textbackslash shake\_tol\{1.0e-6\} : \\
+ \item   \textbackslash{}respa\_steps\_lrf\{0\} : \\
+    Number of short time steps to be taken between long range force updates.
+    A zero indicates long range forces are updated every step.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}respa\_rheal\{1\} : \\
+    If \textbackslash{}respa\_steps\_lrf is not zero, then the long range 
+    and short range forces are both switched off in space with a switching
+    function of healing length given in the curly brackets.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}respa\_steps\_torsion\{0\} : \\
+    Number of short time steps to be taken between updates of torsional
+    forces.  A zero indicates torsional forces are updated every step.
+
+ \vspace{0.15in} 
+  \item   \textbackslash{}respa\_steps\_intra\{0\} : \\
+    Number of short time steps to be taken between updates of 
+    {\it intermolcular} forces.  A zero indicates intermolecular forces are 
+    updated every step.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}shake\_tol\{1.0e-6\} : \\
      Constraints not treated by the group constraint method are iterated to a
      tolerance given in curly brackets.
 
 
  \vspace{0.15in} 
- \item   \textbackslash rattle\_tol\{1.0e-6\} : \\
+ \item   \textbackslash{}rattle\_tol\{1.0e-6\} : \\
       Time derivative of constraints not treated by the group constraint 
       method are iterated to a tolerance given in curly brackets.
 
 
  \vspace{0.15in} 
- \item   \textbackslash max\_constrnt\_iter\{200\} : \\
+ \item   \textbackslash{}max\_constrnt\_iter\{200\} : \\
      Maximum number of iterations to be performed on constraints before a 
      warning that the tolerance has not yet been reached is printed out and 
      iteration stops.
 
  \vspace{0.15in} 
- \item   \textbackslash group\_con\_tol\{1.0e-6\} : \\
+ \item   \textbackslash{}group\_con\_tol\{1.0e-6\} : \\
      Group constraint method is iterated to a tolerance given in curly 
      brackets.
-
-%
-% \vspace{0.15in} 
-% \item   \textbackslash respa\_steps\_lrf\{0\} : \\
-%    Number of short time steps to be taken between long range force updates.
-%    A zero indicates long range forces are updated every step.
-%
-% \vspace{0.15in} 
-% \item   \textbackslash respa\_rheal\{1\} : \\
-%    If \textbackslash respa\_steps\_lrf is not zero, then the long range 
-%    and short range forces are both switched off in space with a switching
-%    function of healing length given in the curly brackets.
-%
-% \vspace{0.15in} 
-% \item   \textbackslash respa\_steps\_torsion\{0\} : \\
-%    Number of short time steps to be taken between updates of torsional
-%    forces.  A zero indicates torsional forces are updated every step.
-%
-% \vspace{0.15in} 
-%  \item   \textbackslash respa\_steps\_intra\{0\} : \\
-%    Number of short time steps to be taken between updates of 
-%    {\it intermolcular} forces.  A zero indicates intermolecular forces are 
-%    updated every step.
-%
 
 \end{enumerate}
 
@@ -347,60 +346,60 @@ the minimization step.
 
 \begin{enumerate}
  \vspace{0.15in} 
- \item   \textbackslash atm\_nhc\_tau\_def\{1000\} : \\
+ \item   \textbackslash{}atm\_nhc\_tau\_def\{1000\} : \\
   Time scale (in femtoseconds) on which the thermostats should evolve. 
   Generally set to some characteristic time scale in the system.
 
  \vspace{0.15in} 
- \item   \textbackslash init\_resmp\_atm\_nhc\{on,{\bf off}\} : \\
+ \item   \textbackslash{}init\_resmp\_atm\_nhc\{on,{\bf off}\} : \\
    If turned on, atomic thermostat velocities will be initially resampled from
    a Maxwell distribution.
 
  \vspace{0.15in} 
- \item   \textbackslash atm\_nhc\_len\{2\} : \\
+ \item   \textbackslash{}atm\_nhc\_len\{2\} : \\
    Number of elements in the thermostat chain.  Generally 2-4 is adequate.
 
  \vspace{0.15in}
- \item   \textbackslash respa\_steps\_nhc\{2\} : \\
+ \item   \textbackslash{}respa\_steps\_nhc\{2\} : \\
      Number of individual Suzuki/Yoshida factorizations to be employed in
      integration of the thermostat variables.  Only
      increase if energy conservation not satisfactory with default value.
 
  \vspace{0.15in}
- \item   \textbackslash yosh\_steps\_nhc\{1,{\bf 3},5,7\} : \\
+ \item   \textbackslash{}yosh\_steps\_nhc\{1,{\bf 3},5,7\} : \\
    Order of the Suzuki/Yoshida integration scheme for the thermostat
    variables.  Only increase if energy conservation not satisfactory with
    default value.
 
  \vspace{0.15in} 
- \item   \textbackslash resmpl\_atm\_nhc\{0\} : \\
+ \item   \textbackslash{}resmpl\_atm\_nhc\{0\} : \\
    Atomic thermostat velocities will be resampled with a frequency specified
    in the curly brackets.  A zero indicates no resampling of thermostat
    velocities.
 
  \vspace{0.15in}
- \item   \textbackslash respa\_xi\_opt\{{\bf 1},2,3,4\} : \\
+ \item   \textbackslash{}respa\_xi\_opt\{{\bf 1},2,3,4\} : \\
    Depth of penetration of thermostat integration into multiple time step
    levels.  Larger numbers indicate deeper penetration.  A one indicates
    thermostat variables are updated at the beginning and end of 
    every step (XO option).
 
  \vspace{0.15in}
- \item   \textbackslash atm\_isokin\_opt\{on:on/off\}: \\
+ \item   \textbackslash{}atm\_isokin\_opt\{on:on/off\}: \\
     Thermostat the atoms using isokinetic NHC (on) or plain NHC (off).
 
  \vspace{0.15in}
- \item   \textbackslash cp\_thermstats\{on:on/off\}: \\
+ \item   \textbackslash{}cp\_thermstats\{on:on/off\}: \\
     Thermostat the electrons (on) or run them without control (off).
     If ``on'', at least one isokinetic octopus NHC thermostat is placed on each
     g-space plane of each state.
 
  \vspace{0.15in}
- \item   \textbackslash cp\_num\_nhc\_iso\{2\}: \\
+ \item   \textbackslash{}cp\_num\_nhc\_iso\{2\}: \\
     The number of tenticles in an isokinetic octopus NHC thermostat.
 
  \vspace{0.15in}
- \item   \textbackslash cp\_nhc\_chunk\{1\}: \\
+ \item   \textbackslash{}cp\_nhc\_chunk\{1\}: \\
     The number of thermostats per g-space electronic state plane.
 \end{enumerate}
 
@@ -410,115 +409,94 @@ the minimization step.
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item   \textbackslash sim\_name\{sim\_input.out\} : \\
-    A complete list of all commands specified and defaults used is outputted to the specified file.  This is useful for knowing exactly what is going on!  (What you set and what the code set by default.)
-
-\vspace{0.15in} 
- \item   \textbackslash mol\_set\_file\{sim\_atm\_mol\_set.in\} : \\
-    Name of file containing specifying the system: atoms and molecules in the system, the number of bands for the electronic wave functions and k-points, and the databases for the pseudopotentials.  Please see the HOWTO above for examples of what this contains.
-
-\vspace{0.15in} 
- \item   \textbackslash write\_binary\_cp\_coef\{on,{\bf off},off\_gzip,on\_gzip\} : \\
- How the wave function coefficients are written to files.
- \begin{itemize}
-\item off : plain ASCII text format
-\item on : binary
-\item off\_gzip : plain ASCII but compressed by gzip
-\item on\_gzip : binary and compressed by gzip
- \end{itemize}
- 
-\vspace{0.15in} 
- \item   \textbackslash read\_binary\_cp\_coef\{on,{\bf off},off\_gzip,on\_gzip\} : \\
- How the wave function coefficients are read from files, see above write for options.
-
-
+ \item   \textbackslash{}sim\_name\{sim\_input.out\} : \\
+    A complete list of all commands specified and defaults used.
 
  \vspace{0.15in} 
- \item   \textbackslash write\_dump\_freq\{1\} : \\
+ \item   \textbackslash{}write\_screen\_freq\{1\} : \\
+   Output information to screen will be written with a frequency specified
+   in curly brackets.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}write\_dump\_freq\{1\} : \\
      The restart file of atomic coordinates and velocities, etc. will be
-     written with a frequency of iterations specified in curly brackets.  Filename is specified by
-     next option out\_restart\_file.
+     written with a frequency specified in curly brackets.
 
-\vspace{0.15in} 
- \item   \textbackslash out\_restart\_file\{sim\_restart.out\} : \\
-   Name of the restart (dump) file containing final atomic 
-          coordinates and velocities.
-
+ \vspace{0.15in}
+ \item   \textbackslash{}write\_inst\_freq\{1\} : \\
+     Instantaneous averages of energy, temperature, pressure, etc. will be 
+     written to the instantaneous file with a frequency specified in curly 
+     brackets.
 
  \vspace{0.15in} 
- \item   \textbackslash write\_pos\_freq\{100\} : \\
+ \item   \textbackslash{}write\_pos\_freq\{100\} : \\
     Atomic positions will be appended to the trajectory position file with
-    a frequency in iterations specified in curly brackets.
+    a frequency specified in curly brackets.
 
  \vspace{0.15in} 
- \item   \textbackslash write\_vel\_freq\{100\} : \\
+ \item   \textbackslash{}write\_vel\_freq\{100\} : \\
     Atomic velocities will be appended to the trajectory velocity file with
     a frequency specified in curly brackets.
 
-
- 
  \vspace{0.15in} 
- \item   \textbackslash in\_restart\_file\{sim\_restart.in\} : \\
+ \item   \textbackslash{}sim\_name\{sim\_input.out\} : \\
+     Name of file containing all keywords, both user set a default.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}out\_restart\_file\{sim\_restart.out\} : \\
+   Name of the restart (dump) file containing final atomic 
+          coordinates and velocities.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}in\_restart\_file\{sim\_restart.in\} : \\
      Name of the file containing initial atomic coordinates and
      velocities for this run.
 
+ \vspace{0.15in} 
+ \item   \textbackslash{}instant\_file\{sim\_instant.out\} : \\
+     File to which instantaneous averages are to be written.
 
  \vspace{0.15in}
- \item   \textbackslash atm\_pos\_file\{sim\_atm\_pos.out\} : \\
+ \item   \textbackslash{}atm\_pos\_file\{sim\_atm\_pos.out\} : \\
      Trajectory position file name.
 
  \vspace{0.15in} 
- \item   \textbackslash atm\_vel\_file\{sim\_atm\_vel.out\} : \\
-  Trajectory velocity file name.  
+ \item   \textbackslash{}atm\_vel\_file\{sim\_atm\_vel.out\} : \\
+  Trajectory force file name.  
 
-
- 
-  
- 
  \vspace{0.15in} 
- \item   \textbackslash conf\_file\_format\{{\bf binary},formatted\} : \\
-   Trajectory files are written either in binary or formatted form.
+ \item   \textbackslash{}atm\_force\_file\{sim\_atm\_force.out\} : \\
+     Trajectory velocity file name.
 
-
-
-\end{enumerate}
-
-{\it 
-To be implemented in the near future
- \vspace{0.15in} 
- \begin{enumerate}
- \item   \textbackslash write\_screen\_freq\{1\} : \\
-   Output information to screen will be written with a frequency specified
-   in curly brackets.
- \item   \textbackslash write\_inst\_freq\{1\} : \\
-     Instantaneous averages of energy, temperature, pressure, etc. will be 
-     written to the instantaneous file with a frequency of iteration sspecified in curly 
-     brackets.
- \item   \textbackslash instant\_file\{sim\_instant.out\} : \\
-     File to which instantaneous averages are to be written.
-    
- \item   \textbackslash atm\_force\_file\{sim\_atm\_force.out\} : \\
-     Trajectory force file name.
-
- \item   \textbackslash conf\_partial\_file\{sim\_atm\_pos\_part.out\} : \\
+ \vspace{0.15in}
+ \item   \textbackslash{}conf\_partial\_file\{sim\_atm\_pos\_part.out\} : \\
      Partial trajectory position file name.
 
- \item   \textbackslash conf\_partial\_limits\{1,0\} : \\
-   Two numbers specifying the first and last atoms to be written to
-   the partial trajectory position file.
+ \vspace{0.15in} 
+ \item   \textbackslash{}mol\_set\_file\{sim\_atm\_mol\_set.in\} : \\
+    Name of file containing instructions on how to name and build molecules.
+    Detailed instructions on contents of this file given elsewhere.
 
- \item   \textbackslash write\_force\_freq\{1000000\} : \\
+ \vspace{0.15in} 
+ \item   \textbackslash{}write\_force\_freq\{1000000\} : \\
    Atomic forces are written to the trajectory force file with a
    frequency specified in the curly brackets.
 
- \item   \textbackslash screen\_output\_units\{{\bf au},kcal\_mol,kelvin\} : \\
+ \vspace{0.15in} 
+ \item   \textbackslash{}screen\_output\_units\{{\bf au},kcal\_mol,kelvin\} : \\
    Output information is written to the screen in units specified 
    in curly brackets.
 
-   
-\end{enumerate}
-}
+ \vspace{0.15in} 
+ \item   \textbackslash{}conf\_file\_format\{{\bf binary},formatted\} : \\
+   Trajectory files are written either in binary or formatted form.
 
+ \vspace{0.15in} 
+ \item   \textbackslash{}conf\_partial\_limits\{1,0\} : \\
+   Two numbers specifying the first and last atoms to be written to
+   the partial trajectory position file.
+
+\end{enumerate}
 
 \newpage
 %-------------------------------------------------------------------
@@ -527,21 +505,21 @@ To be implemented in the near future
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item   \textbackslash neighbor\_list\{no\_list,{\bf ver\_list},lnk\_list\} : \\
+ \item   \textbackslash{}neighbor\_list\{no\_list,{\bf ver\_list},lnk\_list\} : \\
    Type of neighbor list to use.  Optimal scheme for most systems: 
-   \textbackslash ver\_list with a \textbackslash lnk\_lst update type.
+   \textbackslash{}ver\_list with a \textbackslash{}lnk\_lst update type.
 
  \vspace{0.15in} 
- \item   \textbackslash update\_type\{{\bf lnk\_lst},no\_list\} : \\
+ \item   \textbackslash{}update\_type\{{\bf lnk\_lst},no\_list\} : \\
    Update the verlet list using either no list or a link list.
 
  \vspace{0.15in} 
- \item   \textbackslash verlist\_skin\{1\} : \\
+ \item   \textbackslash{}verlist\_skin\{1\} : \\
    Skin depth added to verlet list cutoff.  Needs to be optimized between
    extra neighbors added and average required update frequency.
 
  \vspace{0.15in} 
- \item   \textbackslash lnk\_cell\_divs\{7\} : \\
+ \item   \textbackslash{}lnk\_cell\_divs\{7\} : \\
    Number of link cell divisions in each dimension.  Needs to be optimized
    if used either as list type or update type.
 
@@ -554,51 +532,51 @@ To be implemented in the near future
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item   \textbackslash ewald\_kmax\{7\} : \\
-  Controls maximum length of k-vectors used in evaluating Ewald summation for 
-  electrostatic interactions.  The specified numbers gives the range of integer lattice vector coefficients along any dimension (from negative this number to this number).
+ \item   \textbackslash{}ewald\_kmax\{7\} : \\
+  Maximum length of k-vectors used in evaluating Ewald summation for 
+  electrostatic interactions.
 
  \vspace{0.15in} 
- \item   \textbackslash ewald\_alpha\{7\} : \\
-  Size of real-space damping (screening) parameter in Ewald sum.  More specifically, the specified number here divided by the Volume to the 1/3 power give the $\alpha$ coefficient in the Ewald cutoff erfc($\alpha r$) in real space.
-
-% \vspace{0.15in} 
-% \item   \textbackslash ewald\_respa\_kmax\{0\} : \\
-%   Maximum length of k-vectors used in long range force RESPA integration.
-%
-% \vspace{0.15in}
-% \item   \textbackslash ewald\_pme\_opt\{on,{\bf off}\} : \\
-%  If turned on, then electrostatic interactions are evaluated using the
-%  smooth particle mesh method.  Its use is recommended.
-%
-% \vspace{0.15in} 
-% \item   \textbackslash ewald\_kmax\_pme\{7\} : \\
-%  Maximum length of k-vectors used in evaluating Ewald summation for 
-%  electrostatic interactions via the smooth particle mesh method.
-%
-% \vspace{0.15in} 
-% \item   \textbackslash ewald\_interp\_pme\{4\} : \\
-%   Order of mesh interpolation in the smooth particle mesh Ewald method.
-%
-% \vspace{0.15in} 
-% \item   \textbackslash ewald\_respa\_pme\_opt\{on,{\bf off}\} : \\
-%  If turned on, then long range force RESPA is used in conjunction with the
-%  smooth particle mesh method.
-%
-% \vspace{0.15in} 
-% \item   \textbackslash ewald\_respa\_interp\_pme\{4\} : \\
-%  Order of mesh interpolation in the smooth particle mesh Ewald method used
-%  with RESPA.
-%
-% \vspace{0.15in}
-% \item   \textbackslash sep\_VanderWaals\{on,{\bf off}\} : \\
-%   If turned on, then the VanderWaals component of the {\it inter}molecular 
-%   interaction energy is printed separately to screen.
+ \item   \textbackslash{}ewald\_alpha\{7\} : \\
+  Size of real-space damping (screening) parameter in Ewald sum.
 
  \vspace{0.15in} 
- \item   \textbackslash inter\_spline\_pts\{2000\} : \\
+ \item   \textbackslash{}ewald\_respa\_kmax\{0\} : \\
+   Maximum length of k-vectors used in long range force RESPA integration.
+
+ \vspace{0.15in}
+ \item   \textbackslash{}ewald\_pme\_opt\{on,{\bf off}\} : \\
+  If turned on, then electrostatic interactions are evaluated using the
+  smooth particle mesh method.  Its use is recommended.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}ewald\_kmax\_pme\{7\} : \\
+  Maximum length of k-vectors used in evaluating Ewald summation for 
+  electrostatic interactions via the smooth particle mesh method.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}ewald\_interp\_pme\{4\} : \\
+   Order of mesh interpolation in the smooth particle mesh Ewald method.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}ewald\_respa\_pme\_opt\{on,{\bf off}\} : \\
+  If turned on, then long range force RESPA is used in conjunction with the
+  smooth particle mesh method.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}ewald\_respa\_interp\_pme\{4\} : \\
+  Order of mesh interpolation in the smooth particle mesh Ewald method used
+  with RESPA.
+
+ \vspace{0.15in}
+ \item   \textbackslash{}sep\_VanderWaals\{on,{\bf off}\} : \\
+   If turned on, then the VanderWaals component of the {\it inter}molecular 
+   interaction energy is printed separately to screen.
+
+ \vspace{0.15in} 
+ \item   \textbackslash{}inter\_spline\_pts\{2000\} : \\
     Number of spline points used {\it inter}molecular interaction 
-    potential and derivative.  Namely this is about creating spline fits to erfc and similar functions.
+    potential and derivative.
 
 \end{enumerate}
 
@@ -608,23 +586,13 @@ To be implemented in the near future
 
 \begin{enumerate}
 
-\vspace{0.15in} 
- \item  \textbackslash periodicity\{0,1,2,3\} : \\
-       The type of periodic boundary conditions.\\
-	3 = full 3D periodicity\\
-	{\it to be implemented in the near future:\\
-       0 = cluster\\
-       1 = wire\\
-       2 = slab}
-
-
  \vspace{0.15in} 
- \item  \textbackslash volume\_tau\{1000\} : \\
+ \item  \textbackslash{}volume\_tau\{1000\} : \\
      Time scale of volume evolution
      under constant pressure (NPT\_I or NPT\_F) in femtoseconds.
   
  \vspace{0.15in} 
- \item  \textbackslash volume\_nhc\_tau\{1000\} : \\
+ \item  \textbackslash{}volume\_nhc\_tau\{1000\} : \\
      Time scale of volume 
      heat bath evolution under constant pressure in femtoseconds.
 
@@ -637,146 +605,118 @@ To be implemented in the near future
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_e\_e\_interact\{{\bf on},off\} : \\
-     Electron-electron interactions can be turned off (mainly for  one electron problems or debugging).
-     Setting it off turns off exchange-correlation and Hartree energies and their contributions.
+ \item  \textbackslash{}cp\_e\_e\_interact\{{\bf on},off\} : \\
+     Electron-electron interactions can be turned off for 1e problems.
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_dft\_typ\{{\bf lda},lsda,gga\_lda,gga\_lsda\} : \\
-     Density functional exchange-correlation approximation type.\\
-     lda = local density approximation with no spin polarization.\\
-     lsda = lda but with spin.\\
-     gga\_lda = generalized gradient approximation with no spin polarization.\\
-     gga\_lsda = generalized gradient approximation with  spin polarization.
+ \item  \textbackslash{}cp\_dft\_typ\{{\bf lda},lsda,gga\_lda,gga\_lsda\} : \\
+     Density function type where gga mean gradient corrections are on.
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_vxc\_typ\{{\bf pz\_lda},pw\_lda,pz\_lsda\} : \\
-     Base local density exchange correlation function type which can be corrected or overwritten by a gga choice (if selected).  The local density types are Perdew-Zunger (pz), Perdew-Wang (pw), and Perdew-Zunger with spin (pz\_lsda).
+ \item  \textbackslash{}cp\_vxc\_typ\{{\bf pz\_lda},pw\_lda,pz\_lsda\} : \\
+     Exchange correlation function type.
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_ggax\_typ\{becke,pw91x,fila\_1x,fila\_2x,{\bf off}\} : \\
-     Gradient corrected exchange functional type.  fila\_1x and fila\_2x are Filatov gradient corrections.
+ \item  \textbackslash{}cp\_ggax\_typ\{becke,pw91x,fila\_1x,fil\_2x,{\bf off}\} : \\
+     Gradient corrected exchange function type.
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_ggac\_typ\{lyp,lypm1,pw91c,{\bf off}\} : \\
-     Gradient corrected correlation functional type.  lyp is Lee-Yang-Parr, lypm1 is a modified lyp.
+ \item  \textbackslash{}cp\_ggac\_typ\{lyp,lypm1,pw91c,{\bf off}\} : \\
+     Gradient corrected correlation function type.
 
  \vspace{0.15in} 
-\item \textbackslash cp\_grimme\_vdw\{on,{\bf off}\}:\\
-Enables the Grimme van der Walls treatment of long-range interactions.  Details are specified in the the DATA\_BASE\_DEF section of the input file specified by mol\_set\_file.
+ \item  \textbackslash{}cp\_norb\{full\_ortho,norm\_only,{\bf off}\} : \\
+     Non-orthogonal orbitals option (see Tuckerman-Hutter-Parr. papers).
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_norb\{full\_ortho,norm\_only,{\bf off}\} : \\
-     Non-orthogonal orbitals option (see papers by Tuckerman-Hutter-Parr).  Permits non-orthogonal wave functions.
+ \item  \textbackslash{}cp\_minimize\_typ\{{\bf min\_std},min\_cg\} : \\
+      Minimization type, steepest descent, conjugate gradient 
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_minimize\_typ\{{\bf min\_std},min\_cg\} : \\
-      Minimization of electronic degrees of freedom.  Steepest descent or conjugate gradient are the options but in practice please use min\_cg (unless debugging).
+ \item  \textbackslash{}cp\_mass\_tau\_def\{25\} : \\
+      CP fictitious dynamics time scale in femtoseconds.
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_mass\_tau\_def\{25\} : \\
-      CP fictitious dynamics time scale in femtoseconds.  This is equivalent to specifying the fictitious electronic mass for the fictitious CP dynamics of the electrons.  If the kinetic energy of a g-vector $g$ is $\hbar^2 g^2/2m_e$ where $m_e$ is the bare electron mass, then the oscillator frequency for that $g$ vector is $\sqrt{\hbar^2 g^2/2m_em_f}$ where $m_f$ is the fictitious mass for that $g$ vector.  The $\tau$ timescale is the inverse of this frequency which is set by this option.  This means the masses for the different $g$ vectors (below a cutoff below) are set separately to ensure a single time scale.
+ \item  \textbackslash{}cp\_energy\_cut\_def\{2\} : \\
+      Plane wave expansion cutoff $E_g<=\hbar^2g^2/2m_e$ 
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_energy\_cut\_def\{2\} : \\
-      Plane wave expansion cutoff $E_g\le \hbar^2g^2/2m_e$.  Units are Rydbergs.  One set of $g$ vectors is used for all k-points.
+ \item  \textbackslash{}cp\_mass\_cut\_def\{2\} : \\
+      Renormalize CP masses for $E_g<=\hbar^2g^2/2m_e$ Rhydberg.
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_mass\_cut\_def\{2\} : \\
-      Renormalize CP masses for $E_g\le\hbar^2g^2/2m_e$.  Units are Rydbergs.  This goes together with cp\_mass\_tau\_def.
+ \item  \textbackslash{}cp\_fict\_KE\{1000\} : \\
+      Energy give to the plane waves to create the Born-Oppenheimer
+      surface with there fake dynamics
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_fict\_KE\{1000\} : \\
-      Fictitious initial kinetic energy and/or target kinetic energy (via thermostats) of the electrons during CP simulations specified by a temperature.  Units are Kelvin.
-
- 
- \vspace{0.15in} 
- \item  \textbackslash cp\_init\_orthog\{on,{\bf off}\} : \\
-      Orthonormalize the states at the start.
-
- \vspace{0.15in} 
- \item  \textbackslash cp\_orth\_meth\{{\bf gram\_schmidt},lowdin\} : \\
-      Orthonormalize using gram-schmidt or lowdin.
-
- \vspace{0.15in} 
- \item  \textbackslash cp\_restart\_type\{{\bf gen\_wave},initial,
-                         restart\_pos,restart\_posvel,restart\_all\} : \\
-      Start the run by generating initial wave functions.
-      \begin{itemize}
-\item      gen\_wave = generates initial wave functions from atomic orbitals
-\item      initial = read them from files
-\item       restart\_pos = same as initial  
-\item       restart\_posvel = read coefficients and velocity coefficients from file (CP dynamics)
-\item       restart\_all = in addition to restart\_posvel also reads thermostat velocities
-      \end{itemize}
-
- \vspace{0.15in} 
- \item  \textbackslash cp\_nonloc\_ees\_opt\{{\bf on},off \}: \\     
- Compute the non-local pseudopotential energy and forces using Euler
- exponential spline interpolation (EES).  This is $N^2\ln N$ as opposed to $N^3$ when off.
- You should generally used EES unless perhaps you have an extremely small number of atoms
- in your simulation cell when the standard $N^3$ algorithm {\it might} be faster.  $N^3$ method is
- only supposed for s-wave non-local pseudopotentials.
-
- \vspace{0.15in} 
- \item  \textbackslash cp\_eext\_ees\_opt\{{\bf on},off \}: \\     
-     Compute the local pseudopotential energy and forces as well as the 
-     reciprocal space part of the Ewald sum using  EES.  This makes things $N\ln N$ instead of $N^2$.
-
- \vspace{0.15in} 
- \item  \textbackslash cp\_pseudo\_ees\_order\{6\}: \\     
-     Use a EES interpolation of specified order (polynomial interpolation order for Cardinal B-splines).
-
- \vspace{0.15in} 
- \item  \textbackslash cp\_pseudo\_ees\_scale\{1.4\}: \\     
-     Use a g-space expanded by specified factor to perform the EES interpolation.  This is a linear scaling of each dimension.
-\end{enumerate}
-
- \vspace{0.15in} 
-{\it
---- planned for the near future ---
-\vspace{0.15in} 
-\begin{itemize}
- \item  \textbackslash cp\_ptens\{on,{\bf off}\} : \\
+ \item  \textbackslash{}cp\_ptens\{on,{\bf off}\} : \\
       Evaluate the pressure tensor. 
-      \end{itemize}
-}
+
+ \vspace{0.15in} 
+ \item  \textbackslash{}cp\_init\_orthog\{on,{\bf off}\} : \\
+      Orthogonalize the states at the start.
+
+ \vspace{0.15in} 
+ \item  \textbackslash{}cp\_orth\_meth\{{\bf gram\_schmidt},lowdin\} : \\
+      Orthogonalize using gram-schmidt or lowdin.
+
+ \vspace{0.15in} 
+ \item  \textbackslash{}cp\_restart\_type\{{\bf gen\_wave},initial,
+                         restart\_pos,restart\_posvel,restart\_all\} : \\
+      Start the run by generating sum guess to the states, ...
+
+ \vspace{0.15in} 
+ \item  \textbackslash{}cp\_nonloc\_ees\_opt\{on:on/off \}: \\     
+ Compute the non-local pseudopotential energy and forces using Euler
+ exponential spline interpolation (EES).
+
+ \vspace{0.15in} 
+ \item  \textbackslash{}cp\_eext\_ees\_opt\{on:on/off \}: \\     
+     Compute the local pseudopotential energy and forces as well as the 
+     reciprocal space part of the Ewald sum using  EES.
+
+ \vspace{0.15in} 
+ \item  \textbackslash{}cp\_pseudo\_ees\_order\{6 \}: \\     
+     Use a EES interpolation order of 6.
+
+ \vspace{0.15in} 
+ \item  \textbackslash{}cp\_pseudo\_ees\_scale\{1.4 \}: \\     
+     Use a g-space expanded 1.4x to perform the EES interpolation.
+\end{enumerate}
 
 \newpage
 %-------------------------------------------------------------------
 \subsection*{\bf \~{}sim\_pimd\_def [10 keywords]}
 
-To setup the initial configuration of a bunch beads, you should use the\\
- src\_external\_conversion/spread\_coords routines from an existing set of atomic positions.
-
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash path\_int\_beads\{1\} : \\
+ \item  \textbackslash{}path\_int\_beads\{1\} : \\
      Number of path integral beads.
 
  \vspace{0.15in} 
- \item  \textbackslash path\_int\_md\_typ\{staging,centroid\} : \\
+ \item  \textbackslash{}path\_int\_md\_typ\{staging,centroid\} : \\
      Path integral molecular dynamics type, staging or centroid/normal mode.
      Staging gives the fastest equilibration.
 
  \vspace{0.15in} 
- \item  \textbackslash path\_int\_gamma\_adb\{1\} : \\
+ \item  \textbackslash{}path\_int\_gamma\_adb\{1\} : \\
      Path integral molecular dynamics type adiabaticity parameter.
-     Employed with the centroid option to give approxation to quantum dynamics.
+     Employed with the centroid option to give approx. to quantum dynamics.
 
-% \vspace{0.15in} 
-% \item  \textbackslash respa\_steps\_pimd\{1\} : \\
-%     Path integral bead respa steps.
+ \vspace{0.15in} 
+ \item  \textbackslash{}respa\_steps\_pimd\{1\} : \\
+     Path integral bead respa steps.
 
-% \vspace{0.15in} 
-% \item  \textbackslash initial\_spread\_size\{1\} : \\
-%    In growing cyclic initial paths, what is the how large do you
-%    want their diameter or spread in Angstroms.
+ \vspace{0.15in} 
+ \item  \textbackslash{}initial\_spread\_size\{1\} : \\
+    In growing cyclic initial paths, what is the how large do you
+    want their diameter or spread in Angstroms.
 
-% \vspace{0.15in} 
-% \item  \textbackslash initial\_spread\_opt\{on,{\bf off}\} : \\
-%    Do you want initial paths grown for you?
+ \vspace{0.15in} 
+ \item  \textbackslash{}initial\_spread\_opt\{on,{\bf off}\} : \\
+    Do you want initial paths grown for you?
 
 \end{enumerate}
 
@@ -789,27 +729,27 @@ To setup the initial configuration of a bunch beads, you should use the\\
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash num\{1\} : \\
+ \item  \textbackslash{}num\{1\} : \\
    Number of temperers
 
  \vspace{0.15in} 
- \item  \textbackslash ens\_opt\{nvt\} : \\
+ \item  \textbackslash{}ens\_opt\{nvt\} : \\
    Ensemble in which you are tempering
 
  \vspace{0.15in} 
- \item  \textbackslash statept\_infile\{statepoint.list\} : \\
+ \item  \textbackslash{}statept\_infile\{statepoint.list\} : \\
    List of statepoints to be tempered.
 
  \vspace{0.15in} 
- \item  \textbackslash screen\_name\{screen.out\} : \\
+ \item  \textbackslash{}screen\_name\{screen.out\} : \\
    Output name of any screen output for each temperer will be screen.out.\#
 
  \vspace{0.15in} 
- \item  \textbackslash switch\_steps\{1000\} : \\
+ \item  \textbackslash{}switch\_steps\{1000\} : \\
    Number of steps between switches
 
  \vspace{0.15in} 
- \item  \textbackslash output\_directory\{TEMPER\_OUT\} : \\
+ \item  \textbackslash{}output\_directory\{TEMPER\_OUT\} : \\
    Output directory where files are stored.
 
 \end{enumerate}
@@ -840,46 +780,46 @@ The following commands maybe specified in the system setup file:
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash mol\_name\{\} : \\
+ \item  \textbackslash{}mol\_name\{\} : \\
    The name of the molecule type.
 
  \vspace{0.15in} 
- \item  \textbackslash num\_mol\{ \} : \\ 
+ \item  \textbackslash{}num\_mol\{ \} : \\ 
    The number of this molecule type you want in your system.
 
  \vspace{0.15in} 
- \item  \textbackslash num\_residue\{ \} : \\
+ \item  \textbackslash{}num\_residue\{ \} : \\
    The number of residues in in this molecule type.
 
  \vspace{0.15in} 
- \item  \textbackslash mol\_index\{2\} : \\ 
+ \item  \textbackslash{}mol\_index\{2\} : \\ 
    This is the ``2nd'' molecule type defined in the system.
 
  \vspace{0.15in} 
- \item  \textbackslash mol\_parm\_file\{ \} : \\
+ \item  \textbackslash{}mol\_parm\_file\{ \} : \\
    The topology of the molecule type is described in this file.
 
  \vspace{0.15in} 
- \item  \textbackslash mol\_text\_nhc\{ \} : \\
+ \item  \textbackslash{}mol\_text\_nhc\{ \} : \\
    The temperature of this molecule type. It may be different than the
    external temperature for fancy simulation studies in the adiabatic limit.
 
  \vspace{0.15in} 
- \item  \textbackslash mol\_freeze\_opt\{{\bf none},all,backbone\} : \\
+ \item  \textbackslash{}mol\_freeze\_opt\{{\bf none},all,backbone\} : \\
     Freeze this molecule to equilibrate the system.
 
  \vspace{0.15in} 
- \item  \textbackslash hydrog\_mass\_opt\{A,B\} : \\
+ \item  \textbackslash{}hydrog\_mass\_opt\{A,B\} : \\
    Increase the mass of type A hydrogens where A is 
    {\bf off},all,backbone or sidechain to B amu. This allows
    selective deuteration for example.
 
  \vspace{0.15in} 
- \item  \textbackslash hydrog\_con\_opt\{{\bf off},all,polar\} : \\
+ \item  \textbackslash{}hydrog\_con\_opt\{{\bf off},all,polar\} : \\
    Constrain all bonds to this type of hydrogen in the molecule.
 
  \vspace{0.15in} 
- \item  \textbackslash mol\_nhc\_opt\{none,{\bf global},glob\_mol,ind\_mol,\\ 
+ \item  \textbackslash{}mol\_nhc\_opt\{none,{\bf global},glob\_mol,ind\_mol,\\ 
                  \hspace*{0.5in}res\_mol,atm\_mol,mass\_mol\} :  \\
    Nose-Hoover Chain option: Couple the atoms in this molecule to:
       \begin{itemize}
@@ -893,7 +833,7 @@ The following commands maybe specified in the system setup file:
       \end{itemize}
 
  \vspace{0.15in} 
- \item  \textbackslash mol\_tau\_nhc\{ \} : \\
+ \item  \textbackslash{}mol\_tau\_nhc\{ \} : \\
    Nose-Hoover Chain time scale in femtoseconds for this molecule type.
 
 \end{enumerate}
@@ -905,23 +845,23 @@ The following commands maybe specified in the system setup file:
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash nstate\_up\{1\} : \\ 
+ \item  \textbackslash{}nstate\_up\{1\} : \\ 
      Number of spin up states in the spin up electron density.
 
  \vspace{0.15in} 
- \item  \textbackslash nstate\_dn\{1\} : \\
+ \item  \textbackslash{}nstate\_dn\{1\} : \\
      Number of spin down states in the spin down electron density.
 
  \vspace{0.15in} 
- \item  \textbackslash cp\_tau\_nhc\{25\} : \\
+ \item  \textbackslash{}cp\_tau\_nhc\{25\} : \\
      Nose-Hoover Chain coupling time scale.
 
  \vspace{0.15in} 
- \item  \textbackslash num\_kpoint\{1\} : \\
+ \item  \textbackslash{}num\_kpoint\{1\} : \\
   Number of kpoints. If it is not set (default), code assumes gamma point.
 
  \vspace{0.15in} 
- \item  \textbackslash kpoint\_file\{pi\_md.kpts\} : \\
+ \item  \textbackslash{}kpoint\_file\{pi\_md.kpts\} : \\
  File where list of kpoints is stored. First line is number of kpoints followed
 by list of kpoints and weights each on a separate line (ka kb kc  wght) for a 
 file of nkpoint + 1 lines.
@@ -935,61 +875,61 @@ file of nkpoint + 1 lines.
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash atom1\_moltyp\_ind\{ \} : \\ 
+ \item  \textbackslash{}atom1\_moltyp\_ind\{ \} : \\ 
     Index of molecule type to which atom 1 belongs.
 
  \vspace{0.15in} 
- \item  \textbackslash atom2\_moltyp\_ind\{ \} : \\ 
+ \item  \textbackslash{}atom2\_moltyp\_ind\{ \} : \\ 
     Index of molecule type to which atom 2 belongs.
 
  \vspace{0.15in} 
- \item  \textbackslash atom1\_mol\_ind\{ \} : \\    
+ \item  \textbackslash{}atom1\_mol\_ind\{ \} : \\    
     Index of the molecule of the specified molecule type 
     to which atom 1 belongs.
 
  \vspace{0.15in} 
- \item  \textbackslash atom2\_mol\_ind\{ \} : \\    
+ \item  \textbackslash{}atom2\_mol\_ind\{ \} : \\    
     Index of the molecule of the specified molecule type 
     to which atom 2 belongs.
 
  \vspace{0.15in} 
- \item  \textbackslash atom1\_residue\_ind\{ \} : \\ 
+ \item  \textbackslash{}atom1\_residue\_ind\{ \} : \\ 
     Index of the residue in the molecule to which atom 1 belongs.
 
  \vspace{0.15in} 
- \item  \textbackslash atom2\_residue\_ind\{ \} : \\ 
+ \item  \textbackslash{}atom2\_residue\_ind\{ \} : \\ 
     Index of the residue in the molecule to which atom 2 belongs.
 
  \vspace{0.15in} 
- \item  \textbackslash atom1\_atm\_ind\{ \} : \\    
+ \item  \textbackslash{}atom1\_atm\_ind\{ \} : \\    
     Index of the atom 1 in the residue.
  
  \vspace{0.15in} 
- \item  \textbackslash atom2\_atm\_ind\{ \} : \\     
+ \item  \textbackslash{}atom2\_atm\_ind\{ \} : \\     
     Index of the atom 2 in the residue.
  
  \vspace{0.15in} 
- \item  \textbackslash eq\{ \} : \\               
+ \item  \textbackslash{}eq\{ \} : \\               
     Equilibrium bond length in Angstrom.
   
  \vspace{0.15in} 
- \item  \textbackslash fk\{ \} : \\               
-    Umbrella sampling force constant in K/Angstrom$^2$.
+ \item  \textbackslash{}fk\{ \} : \\               
+    Umbrella sampling force constant in K/Angstro${\rm m}^2$.
 
  \vspace{0.15in} 
- \item  \textbackslash rmin\_hist\{ \} : \\         
+ \item  \textbackslash{}rmin\_hist\{ \} : \\         
     Min Histogram distance in Angstrom.
 
  \vspace{0.15in} 
- \item  \textbackslash rmax\_hist\{ \} : \\         
+ \item  \textbackslash{}rmax\_hist\{ \} : \\         
     Max Histogram distance in Angstrom.
 
  \vspace{0.15in} 
- \item  \textbackslash num\_hist\{ \} : \\         
+ \item  \textbackslash{}num\_hist\{ \} : \\         
     Number of points in the histogram.
  
  \vspace{0.15in} 
- \item  \textbackslash hist\_file\{ \} : \\        
+ \item  \textbackslash{}hist\_file\{ \} : \\        
     File to which the histogram is printed.
 
 \end{enumerate}
@@ -1001,27 +941,27 @@ file of nkpoint + 1 lines.
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash inter\_file\{ \} : \\
+ \item  \textbackslash{}inter\_file\{ \} : \\
     File containing intermolecular interaction parameters.
 
  \vspace{0.15in} 
- \item  \textbackslash vps\_file\{pi\_md.inter\} : \\
+ \item  \textbackslash{}vps\_file\{pi\_md.inter\} : \\
     File containing pseudopotential interaction parameters.
 
  \vspace{0.15in} 
- \item  \textbackslash bond\_file\{pi\_md.bond\} : \\
+ \item  \textbackslash{}bond\_file\{pi\_md.bond\} : \\
     File containing bond interaction parameters.
 
  \vspace{0.15in} 
- \item  \textbackslash bend\_file\{pi\_md.bend\} : \\
+ \item  \textbackslash{}bend\_file\{pi\_md.bend\} : \\
     File containing bend interaction parameters.
 
  \vspace{0.15in} 
- \item  \textbackslash tors\_file\{pi\_md.tors\} : \\
+ \item  \textbackslash{}tors\_file\{pi\_md.tors\} : \\
     File containing torsion interaction parameters.
 
  \vspace{0.15in} 
- \item  \textbackslash onefour\_file\{pi\_md.onfo\} : \\
+ \item  \textbackslash{}onefour\_file\{pi\_md.onfo\} : \\
     File containing onefour interaction parameters.
 
 \end{enumerate}
@@ -1063,15 +1003,15 @@ and parameter files:
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash molecule\_name\{\} : \\ 
+ \item  \textbackslash{}molecule\_name\{\} : \\ 
     Molecule name in characters.
 
  \vspace{0.15in} 
- \item  \textbackslash nresidue\{\} : \\ 
+ \item  \textbackslash{}nresidue\{\} : \\ 
     Number of residues in the molecule.
 
  \vspace{0.15in} 
- \item  \textbackslash natom\{\} : \\ 
+ \item  \textbackslash{}natom\{\} : \\ 
     Number of atoms in the molecule.
 \end{enumerate}
 
@@ -1082,23 +1022,23 @@ and parameter files:
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash residue\_name\{\} : \\ 
+ \item  \textbackslash{}residue\_name\{\} : \\ 
     Residue name in characters.
 
  \vspace{0.15in} 
- \item  \textbackslash residue\_index\{\} : \\ 
+ \item  \textbackslash{}residue\_index\{\} : \\ 
     Residue index number (this is the third residue in the molecule).
 
  \vspace{0.15in} 
- \item  \textbackslash natom\{\} : \\ 
+ \item  \textbackslash{}natom\{\} : \\ 
     Number of atoms in the residue (after morphing).
 
  \vspace{0.15in} 
- \item  \textbackslash residue\_parm\_file\{\} : \\ 
+ \item  \textbackslash{}residue\_parm\_file\{\} : \\ 
     Residue parameter file.
 
  \vspace{0.15in} 
- \item  \textbackslash residue\_fix\_file\{\} : \\ 
+ \item  \textbackslash{}residue\_fix\_file\{\} : \\ 
     File containing morphing instructions for this residue if any.
 
 \end{enumerate}
@@ -1110,35 +1050,35 @@ and parameter files:
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash res1\_typ\{\} : \\ 
+ \item  \textbackslash{}res1\_typ\{\} : \\ 
     Residue name in characters.
 
  \vspace{0.15in} 
- \item  \textbackslash res2\_typ\{\} : \\ 
+ \item  \textbackslash{}res2\_typ\{\} : \\ 
     Residue name in characters.
 
  \vspace{0.15in} 
- \item  \textbackslash res1\_index\{\} : \\ 
+ \item  \textbackslash{}res1\_index\{\} : \\ 
     Numerical index of first residue.
 
  \vspace{0.15in} 
- \item  \textbackslash res2\_index\{\} : \\ 
+ \item  \textbackslash{}res2\_index\{\} : \\ 
     Numerical index of second residue.
 
  \vspace{0.15in} 
- \item  \textbackslash res1\_bond\_site\{\} : \\ 
+ \item  \textbackslash{}res1\_bond\_site\{\} : \\ 
    Connection point of residue bond in residue 1.
 
  \vspace{0.15in} 
- \item  \textbackslash res2\_bond\_site\{\} : \\ 
+ \item  \textbackslash{}res2\_bond\_site\{\} : \\ 
    Connection point of residue bond in residue 2.
 
  \vspace{0.15in} 
- \item  \textbackslash res1\_bondfile\{\} : \\ 
+ \item  \textbackslash{}res1\_bondfile\{\} : \\ 
    Morph file for residue 1 (lose a hydrogen, for example).
 
  \vspace{0.15in} 
- \item  \textbackslash res2\_bondfile\{\} : \\ 
+ \item  \textbackslash{}res2\_bondfile\{\} : \\ 
    Morph file for residue 2 (lose an halogen atom, for example).
   
 \end{enumerate}
@@ -1150,11 +1090,11 @@ and parameter files:
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash res\_name\{\} : \\ 
+ \item  \textbackslash{}res\_name\{\} : \\ 
    Name of the residue in characters.
 
  \vspace{0.15in} 
- \item  \textbackslash natom\{\} : \\ 
+ \item  \textbackslash{}natom\{\} : \\ 
    Number of atoms in the residue
 \end{enumerate}
 
@@ -1165,32 +1105,32 @@ and parameter files:
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash atom\_typ\{\} : \\ 
+ \item  \textbackslash{}atom\_typ\{\} : \\ 
    Type of atom in characters.
  
  \vspace{0.15in} 
- \item  \textbackslash atom\_ind\{\} : \\ 
+ \item  \textbackslash{}atom\_ind\{\} : \\ 
    This is the nth atom in the molecule. The number is used to 
    define bonds, bends, tors, etc involving this atom.
 
  \vspace{0.15in} 
- \item  \textbackslash mass\{\} : \\ 
+ \item  \textbackslash{}mass\{\} : \\ 
     The mass of the atom in amu.
 
  \vspace{0.15in} 
- \item  \textbackslash charge\{\} : \\ 
+ \item  \textbackslash{}charge\{\} : \\ 
     The charge on the atom in ``e''.
 
  \vspace{0.15in} 
- \item  \textbackslash valence\{\} : \\ 
+ \item  \textbackslash{}valence\{\} : \\ 
     The valence of the atom.
 
  \vspace{0.15in} 
- \item  \textbackslash improper\_def\{0,1,2,3\} : \\ 
+ \item  \textbackslash{}improper\_def\{0,1,2,3\} : \\ 
     How does this atom like its improper torsion constructed (if any).
 
  \vspace{0.15in} 
- \item  \textbackslash bond\_site\_1\{site,prim-branch,sec-branch\} : \\ 
+ \item  \textbackslash{}bond\_site\_1\{site,prim-branch,sec-branch\} : \\ 
     To what bond-site(s), character string, does this atom belong and where is
     it in the topology tree structure relative to the root (the atom
     that will bonded to some incoming atom).
@@ -1204,7 +1144,7 @@ and parameter files:
 
 
  \vspace{0.15in} 
- \item  \textbackslash def\_ghost1\{index,coeff\} : \\ 
+ \item  \textbackslash{}def\_ghost1\{index,coeff\} : \\ 
     If the atom is a ghost (these funky sites that TIP4P type
     models have), it spatial position is constructed by taking linear 
     combinations of the other atoms in the molecule specified by the index 
@@ -1219,15 +1159,15 @@ and parameter files:
 
 \begin{enumerate}
  \vspace{0.15in} 
- \item  \textbackslash atom1\{\} : \\
+ \item  \textbackslash{}atom1\{\} : \\
    Numerical index of atom 1.
 
  \vspace{0.15in} 
- \item  \textbackslash atom2\{\} : \\
+ \item  \textbackslash{}atom2\{\} : \\
    Numerical index of atom 2.
 
  \vspace{0.15in} 
- \item  \textbackslash modifier\{con,{\bf on},off\} : \\
+ \item  \textbackslash{}modifier\{con,{\bf on},off\} : \\
    The bond is active=on, inactive=off, or constrained=con.
 
 \end{enumerate}
@@ -1296,68 +1236,68 @@ The following commands maybe specified in the potential parameter files:
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash atom1\{\} : \\ 
+ \item  \textbackslash{}atom1\{\} : \\ 
     Atom type 1 (character data).
 
  \vspace{0.15in} 
- \item  \textbackslash atom2\{\} : \\ 
+ \item  \textbackslash{}atom2\{\} : \\ 
     Atom type 2 (character data).
 
  \vspace{0.15in} 
- \item  \textbackslash pot\_type\{lennard-jones,williams,aziz-chen,null\} : \\ 
+ \item  \textbackslash{}pot\_type\{lennard-jones,williams,aziz-chen,null\} : \\ 
     Potential type: Williams is an exponential c6-c8-c10. Aziz-chen has
     a short range switching function on the vanderwaals part.
 
  \vspace{0.15in} 
- \item  \textbackslash min\_dist\{\} : \\ 
+ \item  \textbackslash{}min\_dist\{\} : \\ 
     Minimum interaction distance.
 
  \vspace{0.15in} 
- \item  \textbackslash max\_dist\{\} : \\ 
+ \item  \textbackslash{}max\_dist\{\} : \\ 
     Spherical cutoff interaction distance.
 
  \vspace{0.15in} 
- \item  \textbackslash res\_dist\{\} : \\ 
+ \item  \textbackslash{}res\_dist\{\} : \\ 
     Respa Spherical cutoff interaction distance.
 
  \vspace{0.15in} 
- \item  \textbackslash sig\{\} : \\ 
+ \item  \textbackslash{}sig\{\} : \\ 
     Lennard-Jones parameter.
 
  \vspace{0.15in} 
- \item  \textbackslash eps\{\} : \\ 
+ \item  \textbackslash{}eps\{\} : \\ 
     Lennard-Jones parameter.
 
  \vspace{0.15in} 
- \item  \textbackslash c6\{\} : \\ 
+ \item  \textbackslash{}c6\{\} : \\ 
     Williams/Aziz-Chen Vdw parameter.
 
  \vspace{0.15in} 
- \item  \textbackslash c8\{\} : \\ 
+ \item  \textbackslash{}c8\{\} : \\ 
     Williams/Aziz-Chen Vdw parameter.
 
  \vspace{0.15in} 
- \item  \textbackslash c9\{\} : \\ 
+ \item  \textbackslash{}c9\{\} : \\ 
     Williams/Aziz-Chen Vdw parameter.
 
  \vspace{0.15in} 
- \item  \textbackslash c10\{\} : \\ 
+ \item  \textbackslash{}c10\{\} : \\ 
     Williams/Aziz-Chen Vdw parameter.
 
  \vspace{0.15in} 
- \item  \textbackslash Awill\{\} : \\ 
+ \item  \textbackslash{}Awill\{\} : \\ 
     Williams/Aziz-Chen parameter ($A\exp(-Br-Cr^2)$).
 
  \vspace{0.15in} 
- \item  \textbackslash Bwill\{\} : \\ 
+ \item  \textbackslash{}Bwill\{\} : \\ 
     Williams/Aziz-Chen parameter ($A\exp(-Br-Cr^2)$).
 
  \vspace{0.15in} 
- \item  \textbackslash Cwill\{\} : \\ 
+ \item  \textbackslash{}Cwill\{\} : \\ 
     Williams/Aziz-Chen parameter ($A\exp(-Br-Cr^2)$).
 
  \vspace{0.15in} 
- \item  \textbackslash rm\_swit\{\} : \\ 
+ \item  \textbackslash{}rm\_swit\{\} : \\ 
     Williams/Aziz-Chen parameter controlling Vdw switching 
    ($f(r,r_m) = $).
 
@@ -1370,36 +1310,36 @@ The following commands maybe specified in the potential parameter files:
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash atom1\{\} : \\
+ \item  \textbackslash{}atom1\{\} : \\
     Atom type 1 (character data).
    
  \vspace{0.15in} 
- \item  \textbackslash atom2\{\} : \\ 
+ \item  \textbackslash{}atom2\{\} : \\ 
     Atom type 2 (character data).
 
  \vspace{0.15in} 
- \item  \textbackslash pot\_type\{{\bf harmonic},power-series,morse,null\} : \\
+ \item  \textbackslash{}pot\_type\{{\bf harmonic},power-series,morse,null\} : \\
      Potential type of bond.
 
  \vspace{0.15in} 
- \item  \textbackslash fk\{\} : \\
-     Force constant of bond in K/Angstrom$^2$.
+ \item  \textbackslash{}fk\{\} : \\
+     Force constant of bond in K/Angstro${\rm m}^2$.
 
  \vspace{0.15in} 
- \item  \textbackslash eq\{\} : \\
+ \item  \textbackslash{}eq\{\} : \\
     Equilibrium bond length in Angstrom.
 
  \vspace{0.15in} 
- \item  \textbackslash eq\_res\{\} : \\
+ \item  \textbackslash{}eq\_res\{\} : \\
      Respa Equilibrium bond length in Angstrom.
 
  \vspace{0.15in} 
- \item  \textbackslash alpha\{\} : \\
+ \item  \textbackslash{}alpha\{\} : \\
     Morse parameter alpha in inverse Angstrom \\
     ($\phi(r) = d_0[\exp(-\alpha(r-r_0))-1]^2$).
 
  \vspace{0.15in} 
- \item  \textbackslash d0\{\} : \\
+ \item  \textbackslash{}d0\{\} : \\
     Morse d0 in Kelvin
     ($\phi(r) = d_0[\exp(-\alpha(r-r_0))-1]^2$).
 
@@ -1412,23 +1352,23 @@ The following commands maybe specified in the potential parameter files:
 \begin{enumerate}
 
  \vspace{0.15in} 
- \item  \textbackslash atom1\{\} : \\
+ \item  \textbackslash{}atom1\{\} : \\
     Atom type in character data.
 
  \vspace{0.15in} 
- \item  \textbackslash vps\_typ\{local,kb,vdb,null\} : \\
+ \item  \textbackslash{}vps\_typ\{local,kb,vdb,null\} : \\
     Pseudopotential type: local, Kleinman-Bylander, Vanderbilt or null.
 
  \vspace{0.15in} 
- \item  \textbackslash vps\_file\{\} : \\
+ \item  \textbackslash{}vps\_file\{\} : \\
     File containing the numerical generated pseudopotentials.
 
  \vspace{0.15in} 
- \item  \textbackslash n\_ang\{\} : \\
+ \item  \textbackslash{}n\_ang\{\} : \\
     Number of angular momentum projection operators required.
 
  \vspace{0.15in} 
- \item  \textbackslash loc\_opt\{\} : \\
+ \item  \textbackslash{}loc\_opt\{\} : \\
     Which angular momentum pseudopotential is taken to be the local.
 
 \end{enumerate}
@@ -1443,8 +1383,8 @@ The following commands maybe specified in the potential parameter files:
 
 At present the code will build topologies for the user. However,
 it will not build coordinates. Therefore, the user must provide
-an initial input coordinate file( see \textbackslash restart\_type\{initial\}
-and \textbackslash in\_restart\_file\{sim\_restart.in\})
+an initial input coordinate file( see \textbackslash{}restart\_type\{initial\}
+and \textbackslash{}in\_restart\_file\{sim\_restart.in\})
 The first line of the restart file must contain the number of atoms,
 followed by a one, followed by the number of path integral beads 
 (usually 1). The code will grow beads and only P=1 need be provided
@@ -1490,13 +1430,13 @@ refers to the number of processors to be used.
 
 \begin{enumerate}
   \vspace{0.15in} 
-  \item  \textbackslash useCommlib\{on:on,off \} : \\
+  \item  \textbackslash{}useCommlib\{on:on,off \} : \\
   Turn on/off Charm communication library use. Default on
   \vspace{0.15in} 
-  \item  \textbackslash useCommlibMulticast\{ \} : \\   
+  \item  \textbackslash{}useCommlibMulticast\{ \} : \\   
   \vspace{0.15in} 
   Turn on/off Charm multicast communication library use. Default on
-  \item  \textbackslash atmOutput\{on:on,off \} : \\   
+  \item  \textbackslash{}atmOutput\{on:on,off \} : \\   
   Turn on/off atom output. Default on
 \end{enumerate}
 
@@ -1506,30 +1446,30 @@ refers to the number of processors to be used.
 
 \begin{enumerate}
   \vspace{0.15in} 
-  \item \textbackslash gExpandFactRho\{1 \} : \\    
+  \item \textbackslash{}gExpandFactRho\{1 \} : \\    
   Expands the g-space parallelization of the electron density beyond
   the number of planes by the specified non-integer multiplicative factor. 
   \vspace{0.15in} 
-  \item \textbackslash rhoGHelpers\{1 \} : \\    
+  \item \textbackslash{}rhoGHelpers\{1 \} : \\    
   Expands the g-space parallelization of the local pseudopotential
   evaluation by the integer increment.
   \vspace{0.15in} 
-  \item \textbackslash rhoRsubplanes\{1 \} : \\    
+  \item \textbackslash{}rhoRsubplanes\{1 \} : \\    
   Expands the r-space parallelization of the exchange correlation and 
   local pseudopotential energies by the integer increment. 
   The latter only matters if EES is on.
   \vspace{0.15in} 
-  \item \textbackslash rhoLineOrder\{skip:skip,none,random \} : \\    
+  \item \textbackslash{}rhoLineOrder\{skip:skip,none,random \} : \\    
   Static Load balance scheme for density g-space parallelization.
   \vspace{0.15in} 
-  \item \textbackslash nchareHartAtmT\{1 : $1 \leq$ $\leq$ natmTyp\} : \\ 
+  \item \textbackslash{}nchareHartAtmT\{1 : $1 \leq$ $\leq$ natmTyp\} : \\ 
   Decomposition for the local pseudopotentil energy for use with the 
   EES method.
   \vspace{0.15in} 
-  \item \textbackslash rhoSubPlaneBalance\{off:on/off \} : \\    
+  \item \textbackslash{}rhoSubPlaneBalance\{off:on/off \} : \\    
   When rhoRsubplanes$>1$, balance the communication.
   \vspace{0.15in} 
-  \item \textbackslash rhoGToRhoRMsgCombine\{off:on/off \} : \\    
+  \item \textbackslash{}rhoGToRhoRMsgCombine\{off:on/off \} : \\    
   When rhoRsubplanes$>1$, combine messages.
 \end{enumerate}
 
@@ -1539,21 +1479,21 @@ refers to the number of processors to be used.
 
 \begin{enumerate}
   \vspace{0.15in} 
-  \item \textbackslash dataPath\{./STATES \} : \\    
+  \item \textbackslash{}dataPath\{./STATES \} : \\    
   The directory in which the electronic state input files are
   stored. If the ``gen\_wave'' option is selected, the dataPath
   command is ignored.
   \vspace{0.15in} 
-  \item \textbackslash dataPathOut\{./STATES\_OUT \} : \\    
+  \item \textbackslash{}dataPathOut\{./STATES\_OUT \} : \\    
   The directory in which the electronic state output files are stored.
   \vspace{0.15in} 
-  \item \textbackslash gExpandFact\{1.0 \} : \\    
+  \item \textbackslash{}gExpandFact\{1.0 \} : \\    
   Expands the g-space parallelization of the electronic states beyond the number of planes by
   the specified non-integer multiplicative factor. If the torus map option is
   employed, the product must be a power of 2, for example 
  (gexpandfact=2)x(nplane\_state=4)=8.
   \vspace{0.15in} 
-  \item \textbackslash stateOutput\{on: on/off \} : \\    
+  \item \textbackslash{}stateOutput\{on: on/off \} : \\    
   Turn the electronic state input on and off.
 \end{enumerate}
 
@@ -1563,29 +1503,29 @@ refers to the number of processors to be used.
 
 \begin{enumerate}
   \vspace{0.15in} 
-  \item \textbackslash sGrainSize\{ nstate\} : \\    
+  \item \textbackslash{}sGrainSize\{ nstate\} : \\    
   Integer smatrix decomposition parameter. The default value is number of
   electron states, e.g. the matrix is not decomposed.
   \vspace{0.15in} 
-  \item \textbackslash orthoGrainSize\{ nstate\} : \\    
+  \item \textbackslash{}orthoGrainSize\{ nstate\} : \\    
   Integer lowdix decomposition parameter. The default value is number of
   electron states, e.g. the matrix is not decomposed. This parameter
   must be $\leq$ sGrainSize and ${\rm mod}(sGrainSize,oGrainSize)=0$.
   \vspace{0.15in} 
-  \item \textbackslash numChunks\{ 1 \} : \\    
+  \item \textbackslash{}numChunks\{ 1 \} : \\    
   Increase the g-space decomposition by the integer factor.
   \vspace{0.15in} 
-  \item \textbackslash phantomSym\{ on:on/off\} : \\    
+  \item \textbackslash{}phantomSym\{ on:on/off\} : \\    
   Add some extra parallelization for Smatrix computations.
   \vspace{0.15in} 
-  \item \textbackslash useOrthoHelpers\{ off:on/off\} : \\    
+  \item \textbackslash{}useOrthoHelpers\{ off:on/off\} : \\    
   Add some extra parallelization for Lowdin orthogonalization.
   Use only if (nstates/orthograinsize)$^2<$ nproc.
   \vspace{0.15in} 
-  \item \textbackslash invsqr\_tolerance\{1e-15 \} : \\   
+  \item \textbackslash{}invsqr\_tolerance\{1e-15 \} : \\   
   Tolerence on the iterative matrix square root method.
   \vspace{0.15in} 
-  \item \textbackslash invsqr\_max\_iter\{10 \} : \\    
+  \item \textbackslash{}invsqr\_max\_iter\{10 \} : \\    
   Maximum number of iteration for the matrix square root method.
 \end{enumerate}
 
@@ -1595,14 +1535,14 @@ refers to the number of processors to be used.
 
 \begin{enumerate}
   \vspace{0.15in} 
-  \item \textbackslash numSfGrps\{ 1\} : \\    
+  \item \textbackslash{}numSfGrps\{ 1\} : \\    
   Decompose the $N^3$ non-local computation into the specified number of groups.
   \vspace{0.15in} 
-  \item \textbackslash numSfDups\{ \} : \\    
-  Duplicate the $N^2$ evaluation of the structure factor for the
+  \item \textbackslash{}numSfDups\{ \} : \\    
+  Duplicate the $N^2$ evalulation of the structure factor for the
   $N^3$ non-local computation the specified number of times.
   \vspace{0.15in} 
-  \item \textbackslash launchNLeesFromRho\{rs:rs,rhor,rhog \} : \\  
+  \item \textbackslash{}launchNLeesFromRho\{rs:rs,rhor,rhog \} : \\  
   Specify the launch point for the Non-local EES computation.
 \end{enumerate}
 
@@ -1612,40 +1552,40 @@ refers to the number of processors to be used.
 
 \begin{enumerate}
   \vspace{0.15in} 
-  \item \textbackslash Gstates\_per\_pe\{nstates \} : \\    
+  \item \textbackslash{}Gstates\_per\_pe\{nstates \} : \\    
   If torusMap is off, specify the g-space state decomposition.
   \vspace{0.15in} 
-  \item \textbackslash Rstates\_per\_pe\{nstates \} : \\    
+  \item \textbackslash{}Rstates\_per\_pe\{nstates \} : \\    
   If torusMap is off, specify the r-space state decomposition.
   \vspace{0.15in} 
-  \item \textbackslash torusMap\{on: on/off\} : \\    
+  \item \textbackslash{}torusMap\{on: on/off\} : \\    
   If your machine is a torus, this mapping scheme gives optimal performance.
   \vspace{0.15in} 
-  \item \textbackslash loadMapFiles\{off:on/off \} : \\    
+  \item \textbackslash{}loadMapFiles\{off:on/off \} : \\    
   Load pregenerated map files.
   \vspace{0.15in} 
-  \item \textbackslash dumpMapFiles\{off:on/off \} : \\    
+  \item \textbackslash{}dumpMapFiles\{off:on/off \} : \\    
   Create map files.
   \vspace{0.15in} 
-  \item \textbackslash fakeTorus\{off:on/off \} : \\    
+  \item \textbackslash{}fakeTorus\{off:on/off \} : \\    
   If your machine is a NOT torus, you can still use torus mapping.
   \vspace{0.15in} 
-  \item \textbackslash torusDimX\{ nproc\} : \\    
+  \item \textbackslash{}torusDimX\{ nproc\} : \\    
   Fake Torus dimension along x in processors/node
   \vspace{0.15in} 
-  \item \textbackslash torusDimY\{1 \} : \\    
+  \item \textbackslash{}torusDimY\{1 \} : \\    
   Fake Torus dimension along y in processors/node
   \vspace{0.15in} 
-  \item \textbackslash torusDimZ\{1 \} : \\    
+  \item \textbackslash{}torusDimZ\{1 \} : \\    
   Fake Torus dimension along z in processors/node
   \vspace{0.15in} 
-  \item \textbackslash torusDimNX\{1 \} : \\    
+  \item \textbackslash{}torusDimNX\{1 \} : \\    
   Fake Torus dimension along x in nodes
   \vspace{0.15in} 
-  \item \textbackslash torusDimNY\{1 \} : \\    
+  \item \textbackslash{}torusDimNY\{1 \} : \\    
   Fake Torus dimension along y in nodes
   \vspace{0.15in} 
-  \item \textbackslash torusDimNZ\{ 1\} : \\    
+  \item \textbackslash{}torusDimNZ\{ 1\} : \\    
   Fake Torus dimension along z in nodes
 \end{enumerate}
 

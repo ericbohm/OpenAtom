@@ -591,7 +591,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
     int doublePack, PeList *exclusion, CPcharmParaInfo *sim, UberCollection thisInstance);
 int init_rho_chares(CPcharmParaInfo*, UberCollection thisInstance);
-void control_physics_to_driver(UberCollection thisInstance);
+void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim);
 void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
     int *n_ret, int *istrt_ret, int *iend_ret);
 int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,

@@ -70,6 +70,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int ncoef           = ( (doublepack==1) ? (cpewald->nktot_sm+1) : (cpewald->nktot_sm)); 
   int nkpoint         = cpcoeffs_info->nkpoint;
 
+  double kT           = genstatepoint->t_ext;
   double vol          = gencell->vol;
   double dt           = gentimeinfo->dt;
   double bomd_scale   = gentimeinfo->bomd_scale;
@@ -91,7 +92,9 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int nmem_zmat_max   = cppseudo->nonlocal.nmax_zmat;
   int *nmem_zmat      = cppseudo->nonlocal.n_zmat;
   int *ioff_zmat      = cppseudo->nonlocal.ioff_zmat;
-
+  long seed           = gentempering_ctrl->seed;
+  double *temper_t_ext= gentempering_ctrl->t_ext;
+  int *t_ext_index= gentempering_ctrl->t_ext_index;
   //========================================================================
 
   if(cp_opt==0 && cp_min_opt==0){
@@ -204,6 +207,23 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
     sim->ioff_zmat[i] = ioff_zmat[(i+1)];
     sim->nmem_zmat[i] = nmem_zmat[(i+1)];
   }//endfor
+
+  sim->seed           = seed; 
+  sim->temper_t_ext    = new double[ntemper];
+  sim->t_ext_index    = new int[ntemper];
+  if(ntemper>1)
+    {
+      for(int i=0;i<ntemper;i++){
+	CkPrintf("sim ntemper %d index[%d]=%d temp[%d]=%g\n",ntemper, i,t_ext_index[i+1],i,temper_t_ext[i+1]);
+	sim->temper_t_ext[i] = temper_t_ext[(i+1)];
+	sim->t_ext_index[i] = t_ext_index[(i+1)]-1;
+      }//endfor
+    }
+  else
+    {
+      sim->temper_t_ext[0] = kT;
+      sim->t_ext_index[0] = 0;
+    }
 
   //-----------------------------------------------------------------------
 }//end routine

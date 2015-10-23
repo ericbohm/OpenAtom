@@ -133,6 +133,7 @@ class CPcharmParaInfo {
 
    double vol,dt,bomd_scale,tol_norb,tol_cp_min;
    double tol_cp_dyn;
+   long seed;
    int ntemper;
    int pi_beads;
    int nkpoint;
@@ -194,6 +195,8 @@ class CPcharmParaInfo {
    int **index_tran_upack;   // unpack indicies for each chareG
    int **index_tran_upackNL; // unpack indicies for each chareG
 
+   double *temper_t_ext;     // tempering master list of external temperatures
+   int *t_ext_index;     // tempering master list of external temperatures
 
    int nlines_tot_rho; // total number of lines in rhog-space
    int nlines_max_rho; // maximum number of lines in any rho collection
@@ -246,6 +249,7 @@ class CPcharmParaInfo {
      dt           = s.dt;
      bomd_scale   = s.bomd_scale;
 
+     seed         = s.seed;
      ntemper      = s.ntemper;
      pi_beads     = s.pi_beads;
      nkpoint      = s.nkpoint;
@@ -326,6 +330,14 @@ class CPcharmParaInfo {
      nlines_per_chareRhoGEext = new int[nchareRhoGEext];
      lines_per_chareRhoG  = new double[nchareRhoG];
      pts_per_chareRhoG    = new double[nchareRhoG];
+
+     temper_t_ext         = new double[ntemper];
+     t_ext_index         = new int[ntemper];
+     for(int i=0;i<ntemper;i++){
+       temper_t_ext[i]    = s.temper_t_ext[i];
+       t_ext_index[i]    = s.t_ext_index[i];
+     }//endfor
+
      if(nplane_rho_x==0 || nplane_rho_x > sizeX){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkPrintf("Error in CPcharmParaInfo constructor\n");
@@ -480,6 +492,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
      bomd_scale   = s.bomd_scale;
      nspin        = s.nspin;
      pi_beads     = s.pi_beads;;
+     seed         = s.seed;
      ntemper      = s.ntemper;
      nkpoint      = s.nkpoint;
      iperd        = s.iperd;
@@ -558,6 +571,14 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
      nlines_per_chareRhoGEext = new int[nchareRhoGEext];
      lines_per_chareRhoG  = new double[nchareRhoG];
      pts_per_chareRhoG    = new double[nchareRhoG];
+
+     temper_t_ext         = new double[ntemper];
+     t_ext_index          = new int[ntemper];
+     for(int i=0;i<ntemper;i++){
+       temper_t_ext[i]    = s.temper_t_ext[i];
+       t_ext_index[i]    = s.t_ext_index[i];
+     }//endfor
+
      if(nplane_rho_x==0 || nplane_rho_x > sizeX){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkPrintf("Error in CPcharmParaInfo constructor\n");
@@ -721,7 +742,9 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
 
        ioff_zmat = NULL;
        nmem_zmat = NULL;
-
+       ntemper = 1;
+       temper_t_ext = NULL;
+       t_ext_index = NULL;
        index_tran_upack_rho_y   = NULL;
        index_tran_pack_rho_y    = NULL;
        nline_send_rho_y         = NULL;
@@ -745,7 +768,8 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       delete []  pts_per_chareG;    pts_per_chareG   = NULL;
       delete [] npts_per_chareG;   npts_per_chareG   = NULL;
       delete [] index_output_off;   index_output_off   = NULL;
-
+      delete [] temper_t_ext; temper_t_ext = NULL;
+      delete [] t_ext_index; t_ext_index = NULL;
       delete []  lines_per_chareRhoG;  lines_per_chareRhoG = NULL;
       delete [] nlines_per_chareRhoG; nlines_per_chareRhoG = NULL;
       delete [] nlines_per_chareRhoGEext; nlines_per_chareRhoGEext = NULL;
@@ -789,7 +813,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
     CkPrintf("[%d] CPcharmParaInfo pup\n", CkMyPe());
 #endif
       p|vol;        p|dt;       p|bomd_scale; p|tol_norb; p|tol_cp_min; p|tol_cp_dyn;
-      p|ntemper;    p|pi_beads; p|nkpoint;    p|nspin;
+      p|seed; p|ntemper;    p|pi_beads; p|nkpoint;    p|nspin;
       p|iperd;      p|doublepack;
       p|fftopt;     p|kx_max;  p|ky_max;  p|kz_max; 
       p|cp_norb_rot_kescal; p|norb_fin_diff_order;
@@ -830,6 +854,8 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
         index_tran_upack_eext= cmall_int_mat(0,nchareRhoGEext,0,nlines_max_rho,
                                              "cpcharmparainfo.h");
         RhosortedRunDescriptors = new CkVec<RunDescriptor> [nchareRhoG];
+	temper_t_ext         = new double[ntemper];
+	t_ext_index         = new int[ntemper];
         if(rhoRsubplanes>1){
           index_tran_upack_rho_y  = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
                                                  0,nlines_max_rho,"cpcharmparainfo.h");
@@ -855,6 +881,8 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
       CkPrintf("CPcharmParaInfo pup 2 \n");
 #endif
+      PUParray(p,temper_t_ext, ntemper);
+      PUParray(p,t_ext_index, ntemper);
       PUParray(p,lines_per_chareRhoG, nchareRhoG);
       PUParray(p,nlines_per_chareRhoG, nchareRhoG);
       PUParray(p,nlines_per_chareRhoGEext, nchareRhoGEext);

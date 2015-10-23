@@ -10,6 +10,7 @@
 //============================================================================
 /* ostensibly the InstanceController may need to know about everything */
 extern CkVec < CkVec <int> > UplaneUsedByNLZ;
+extern CProxy_TemperController temperControllerProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
@@ -541,7 +542,7 @@ void InstanceController::acceptNewTemperature(double temperature){
 //============================================================================
 void InstanceController::useNewTemperature(double temperature){
   // broadcast the temp to your atoms and GSPs
-  //  CkPrintf("[%d] useNewTemperature\n",thisIndex);
+  CkPrintf("[%d] useNewTemperature\n",thisIndex);
   atomsTempDone=false;
   gspTempDone=false;
   UatomsComputeProxy[thisIndex].acceptNewTemperature(temperature);
@@ -557,8 +558,13 @@ void InstanceController::useNewTemperature(double temperature){
 void InstanceController::atomsDoneNewTemp(CkReductionMsg *m)
 {
   atomsTempDone=true;
+#define TEMPERBARRIER 1
   if(gspTempDone)
-    UegroupProxy[thisIndex].resumeFromTemper();
+#ifndef TEMPERBARRIER  
+    resumeFromTemper();
+#else
+    contribute(CkCallback(CkReductionTarget(TemperController,barrier),temperControllerProxy));
+#endif
   delete m;
 }
 
@@ -569,11 +575,20 @@ void InstanceController::gspDoneNewTemp(CkReductionMsg *m)
 {
   gspTempDone=true;
   if(atomsTempDone)
-    UegroupProxy[thisIndex].resumeFromTemper();
+#ifndef TEMPERBARRIER  
+    resumeFromTemper();
+#else
+    contribute(CkCallback(CkReductionTarget(TemperController,barrier),temperControllerProxy));
+#endif
   delete m;
 }
 
-
+//in a nicer world this would be inlined
+void InstanceController::resumeFromTemper()
+{ 
+  //  CkPrintf("Instance Controller %d resumeFromTemper", thisIndex);
+  UegroupProxy[thisIndex].resumeFromTemper(); 
+}
 
 // When the simulation is done, make a clean exit  
 // this gets called on the 0th element when everyone calls cleanExit

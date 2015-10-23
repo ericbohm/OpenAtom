@@ -3129,7 +3129,7 @@ void Config::Finale(int nkf1,int nkf2,int nkf3,int nplane_x,int nplane_x_rho, in
     PRINTF("   Commlib is defunct. useGMulticast instead\n");
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
-  }//endif
+  }//endif                              
 
   if(phantomSym && !gSpaceSum){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

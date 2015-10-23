@@ -37,6 +37,7 @@ class InstanceController: public CBase_InstanceController {
     void gspDoneNewTemp(CkReductionMsg *m);
     void fmagMinTest(CkReductionMsg *m);
     void instancesReady(CkReductionMsg *msg);
+    void resumeFromTemper();
     CProxySection_CP_State_GSpacePlane gTemperBeadProxy;
   private:
 

@@ -251,7 +251,11 @@ module gSpaceDriver
             when doneOutput() {}
           }
 
+	  // TODO: rewrite this to clarify that IntegrateModForce happens here
+	  ///      it should not be buried inside computeRedPsi
+
           serial "SDAG_dynComputeRedPsi" { myGSpaceObj->computeRedPsi(); }
+
           when doneRedPsi() {}
 
         }  // end if !_SDAG_DEBUG_PSI_OFF_
@@ -277,12 +281,13 @@ module gSpaceDriver
 
         //! Wait for both the energy computation, and the atoms to be moved
         //! before going to the next iteration.
-        overlap {
+//        overlap {
+
+          when doneMovingAtoms(const int AtomsGrpIter) {}
           if (!_SDAG_DEBUG_PSI_OFF_) {
             when doneComputingEnergy(const int AtomGrpIter) {}
           }
-          when doneMovingAtoms(const int AtomsGrpIter) {}
-        }
+//        }
 
         //! Print out the iteration times.
         serial "SDAG_dynScreenPrintWallTimes" {

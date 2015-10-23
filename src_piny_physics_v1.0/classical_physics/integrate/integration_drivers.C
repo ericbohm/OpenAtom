@@ -134,7 +134,7 @@ void ATOMINTEGRATE::integrate_nvt_2nd_half(int itime,int natm,int len_nhc,
 //============================================================================
 void ATOMINTEGRATE::integrate_nvt_1st_half(int natm,int len_nhc,
     Atom *atoms,AtomNHC *atomsNHC,
-    int natmNow,int natmStr,int natmEnd)
+    int natmNow,int natmStr,int natmEnd, bool switchMoveNow, double fact)
   //============================================================================
 {//begin routine 
   //============================================================================
@@ -151,8 +151,22 @@ void ATOMINTEGRATE::integrate_nvt_1st_half(int natm,int len_nhc,
   int nyosh  = mdtherm_info->nyosh_nhc;
 
   //============================================================================
+  // change the temperature
+  if(switchMoveNow)
+    {
+      for(int i=natmStr;i<natmEnd;i++){
+	{
+	  atomsNHC[i].kT*=fact*fact;
+	  for(int j=0;j<len_nhc;j++){
+	    atomsNHC[i].vx[j] *= fact;
+	    atomsNHC[i].vy[j] *= fact;
+	    atomsNHC[i].vz[j] *= fact;
+	  }
+	}
+      }
+    }
+  //----------------------------------------------------------------------------
   // Evolve the system : 
-
   applyNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp,natmNow,natmStr,natmEnd);
   for(int i=natmStr;i<natmEnd;i++){
     atoms[i].vx += dt2*atoms[i].fx/atoms[i].m;
@@ -223,7 +237,7 @@ void ATOMINTEGRATE::integrate_isonvt_2nd_half(int itime,int natm,int len_nhc,
 //============================================================================
 void ATOMINTEGRATE::integrate_isonvt_1st_half(int natm,int len_nhc,
     Atom *atoms,AtomNHC *atomsNHC,
-    int natmNow,int natmStr,int natmEnd)
+    int natmNow,int natmStr,int natmEnd, bool switchMoveNow,  double fact)
   //============================================================================
 {//begin routine 
   //============================================================================
@@ -240,16 +254,77 @@ void ATOMINTEGRATE::integrate_isonvt_1st_half(int natm,int len_nhc,
   int nyosh  = mdtherm_info->nyosh_nhc;
 
   //============================================================================
+  // change the temperature
+  if(switchMoveNow)
+    {
+      for(int i=natmStr;i<natmEnd;i++){
+	{
+	  atomsNHC[i].kT*=fact*fact;
+	  for(int j=0;j<len_nhc;j++){
+	    atomsNHC[i].vx[j] *= fact;
+	    atomsNHC[i].vy[j] *= fact;
+	    atomsNHC[i].vz[j] *= fact;
+	  }
+	}
+      }
+    }
+  //============================================================================
   // Evolve the system : 
 
+#ifdef _NAN_CHECK_
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+     CkAssert(finite(atoms[i].vx));
+     CkAssert(finite(atoms[i].vy));
+     CkAssert(finite(atoms[i].vz));
+    }
+#endif
+
   applyIsoNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp,natmNow,natmStr,natmEnd);
+
+#ifdef _NAN_CHECK_
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+     CkAssert(finite(atoms[i].vx));
+     CkAssert(finite(atoms[i].vy));
+     CkAssert(finite(atoms[i].vz));
+    }
+#endif
+
   applyIsoVel(natm,atoms,atomsNHC,dt,natmNow,natmStr,natmEnd);
+
+#ifdef _NAN_CHECK_
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+     CkAssert(finite(atoms[i].vx));
+     CkAssert(finite(atoms[i].vy));
+     CkAssert(finite(atoms[i].vz));
+    }
+#endif
 
   for(int i=natmStr;i<natmEnd;i++){
     atoms[i].x += dt*atoms[i].vx;
     atoms[i].y += dt*atoms[i].vy;
     atoms[i].z += dt*atoms[i].vz;
   }//endfor  
+
+#ifdef _NAN_CHECK_
+  for(int i=0; i<natm ; i++)
+    {
+     CkAssert(finite(atoms[i].x));
+     CkAssert(finite(atoms[i].y));
+     CkAssert(finite(atoms[i].z));
+    }
+#endif
 
   //----------------------------------------------------------------------------
 }//end routine
@@ -706,20 +781,96 @@ void ATOMINTEGRATE::applyIsoNHC(int natm,int len_nhc,Atom *atoms,AtomNHC *atomsN
       //  1) Evolve the last therm velocity in each chain                         
       evolve_vNHCM(natm,len_nhc,atomsNHC,wdti4[iyosh],natmNow,natmStr,natmEnd);
       //--------------------------------------------------------------------------
+
+
+#ifdef _NAN_CHECK_
+  for(int i=natmStr;i<natmEnd;i++){
+      for(int j=0;j<len_nhc;j++){
+	CkAssert(finite(atomsNHC[i].vx[j]));
+	CkAssert(finite(atomsNHC[i].vy[j]));
+	CkAssert(finite(atomsNHC[i].vz[j]));
+	CkAssert(finite(atomsNHC[i].fx[j]));
+	CkAssert(finite(atomsNHC[i].fy[j]));
+	CkAssert(finite(atomsNHC[i].fz[j]));
+      }
+    }
+#endif
+
+
       //  2) Evolve the last-1 to the first therm velocity in each chain        
       for(int ic=len_nhc-2;ic>=1;ic--){
         evolve_vNHC(natm,ic,atomsNHC,wdti4[iyosh],wdti8[iyosh],natmNow,natmStr,natmEnd);
       }//endfor
+
+#ifdef _NAN_CHECK_
+  for(int i=natmStr;i<natmEnd;i++){
+      for(int j=0;j<len_nhc;j++){
+	CkAssert(finite(atomsNHC[i].vx[j]));
+	CkAssert(finite(atomsNHC[i].vy[j]));
+	CkAssert(finite(atomsNHC[i].vz[j]));
+	CkAssert(finite(atomsNHC[i].fx[j]));
+	CkAssert(finite(atomsNHC[i].fy[j]));
+	CkAssert(finite(atomsNHC[i].fz[j]));
+      }
+    }
+#endif
+
       //--------------------------------------------------------------------------
       //  3) Evolve the particle velocities 
       evolve_vAtmIsoNHC(natm,atoms,atomsNHC,wdti2[iyosh],natmNow,natmStr,natmEnd);
       //--------------------------------------------------------------------------
+#ifdef _NAN_CHECK_
+  for(int i=natmStr;i<natmEnd;i++){
+      for(int j=0;j<len_nhc;j++){
+	CkAssert(finite(atomsNHC[i].vx[j]));
+	CkAssert(finite(atomsNHC[i].vy[j]));
+	CkAssert(finite(atomsNHC[i].vz[j]));
+	CkAssert(finite(atomsNHC[i].fx[j]));
+	CkAssert(finite(atomsNHC[i].fy[j]));
+	CkAssert(finite(atomsNHC[i].fz[j]));
+      }
+    }
+
+#endif
+
+
       //  4) Evolve the therm positions                                           
       evolve_pIsoNHC(natm,len_nhc,atomsNHC,wdti2[iyosh],natmNow,natmStr,natmEnd);
+#ifdef _NAN_CHECK_
+  for(int i=natmStr;i<natmEnd;i++){
+      for(int j=0;j<len_nhc;j++){
+	CkAssert(finite(atomsNHC[i].vx[j]));
+	CkAssert(finite(atomsNHC[i].vy[j]));
+	CkAssert(finite(atomsNHC[i].vz[j]));
+	CkAssert(finite(atomsNHC[i].fx[j]));
+	CkAssert(finite(atomsNHC[i].fy[j]));
+	CkAssert(finite(atomsNHC[i].fz[j]));
+      }
+    }
+
+#endif
+
+
       //--------------------------------------------------------------------------
       //  5) Evolve the particle velocities 
       evolve_vAtmIsoNHC(natm,atoms,atomsNHC,wdti2[iyosh],natmNow,natmStr,natmEnd);
       //--------------------------------------------------------------------------
+
+#ifdef _NAN_CHECK_
+  for(int i=natmStr;i<natmEnd;i++){
+      for(int j=0;j<len_nhc;j++){
+	CkAssert(finite(atomsNHC[i].vx[j]));
+	CkAssert(finite(atomsNHC[i].vy[j]));
+	CkAssert(finite(atomsNHC[i].vz[j]));
+	CkAssert(finite(atomsNHC[i].fx[j]));
+	CkAssert(finite(atomsNHC[i].fy[j]));
+	CkAssert(finite(atomsNHC[i].fz[j]));
+      }
+    }
+
+#endif
+
+
       //  6) Evolve the 1 to last-1 therm velocity in each chain : get forces
       get_forc_NHC(natm,1,atomsNHC,natmNow,natmStr,natmEnd);
       for(int ic=1,icp=2;ic<(len_nhc-1);ic++,icp++){
@@ -727,9 +878,36 @@ void ATOMINTEGRATE::applyIsoNHC(int natm,int len_nhc,Atom *atoms,AtomNHC *atomsN
         get_forc_NHC(natm,icp,atomsNHC,natmNow,natmStr,natmEnd);
       }//endfor
       //--------------------------------------------------------------------------
+
+#ifdef _NAN_CHECK_
+  for(int i=natmStr;i<natmEnd;i++){
+      for(int j=0;j<len_nhc;j++){
+	CkAssert(finite(atomsNHC[i].vx[j]));
+	CkAssert(finite(atomsNHC[i].vy[j]));
+	CkAssert(finite(atomsNHC[i].vz[j]));
+	CkAssert(finite(atomsNHC[i].fx[j]));
+	CkAssert(finite(atomsNHC[i].fy[j]));
+	CkAssert(finite(atomsNHC[i].fz[j]));
+      }
+    }
+#endif
+
       //  7) Evolve the last therm velocotiy in each chain                        
       evolve_vNHCM(natm,len_nhc,atomsNHC,wdti4[iyosh],natmNow,natmStr,natmEnd);
       //--------------------------------------------------------------------------
+#ifdef _NAN_CHECK_
+  for(int i=natmStr;i<natmEnd;i++){
+      for(int j=0;j<len_nhc;j++){
+	CkAssert(finite(atomsNHC[i].vx[j]));
+	CkAssert(finite(atomsNHC[i].vy[j]));
+	CkAssert(finite(atomsNHC[i].vz[j]));
+	CkAssert(finite(atomsNHC[i].fx[j]));
+	CkAssert(finite(atomsNHC[i].fy[j]));
+	CkAssert(finite(atomsNHC[i].fz[j]));
+      }
+    }
+#endif
+
     }}//endfor: iyosh,iresn
 
   //==========================================================================

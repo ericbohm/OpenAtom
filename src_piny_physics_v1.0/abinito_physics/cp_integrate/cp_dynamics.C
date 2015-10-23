@@ -33,7 +33,8 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
     double *mNHC,double *v0NHC, double *a2NHC, double *a4NHC, double kTCP,
     double *fictEke,int nkx0_red,int nkx0_uni,int nkx0_zero,
     double *ekeNhc, double *potNHC,double degfree,double degfreeNHC,
-    double *degFreeSplt,int *istrNHC, int *iendNHC,int halfStepEvolve)
+    double *degFreeSplt,int *istrNHC, int *iendNHC,int halfStepEvolve,
+    bool switchMoveNow, double new_t_ext, double old_t_ext)
   //============================================================================
 { // Begin Function 
   //----------------------------------------------------------------------------
@@ -59,7 +60,7 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
     cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
         mNHC,v0NHC,a2NHC,a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
         applyorder,iteration,degfree,degfreeNHC,degFreeSplt,
-        istrNHC,iendNHC,fwdFlag);
+	istrNHC,iendNHC,fwdFlag,  switchMoveNow, new_t_ext, old_t_ext);
   }//endif
 
   get_fictKE(ncoef,vpsi,cmass,len_nhc,num_nhc,nck_nhc,vNHC,xNHC,xNHCP,mNHC,
@@ -72,7 +73,7 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
   cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
       mNHC,v0NHC,a2NHC,a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
       applyorder,iteration,degfree,degfreeNHC,degFreeSplt,
-      istrNHC,iendNHC,fwdFlag);
+		istrNHC,iendNHC,fwdFlag, switchMoveNow, new_t_ext, old_t_ext);
 
   //============================================================================
   // Update the positions to the next step (t+dt)
@@ -100,7 +101,8 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
     int nkx0_red,int nkx0_uni,int nkx0_zero,
     int applyorder,int iteration,double degfree,
     double degfreeNHC,double *degFreeSplt,
-    int *istrNHC,int *iendNHC,int fwdFlag)
+    int *istrNHC,int *iendNHC,int fwdFlag, bool switchMoveNow, double new_t_ext,
+    double old_t_ext)
   //============================================================================
 { // Begin Function
   //----------------------------------------------------------------------------
@@ -119,7 +121,7 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
   int istrt1     = nkx0_red+nkx0_zero;
   int iend       = nkx0_uni+nkx0_red;
   int ncoef      = ncoef_full-istrt0;
-
+  double kTCP_loc=kTCP;
   if(applyorder==2 && iteration==1){
     PRINTF("@@@@@@@@@_ERROR_@@@@@@@@@@@\n");
     PRINTF("applyorder==2 when iteration==1 !\n");
@@ -128,6 +130,29 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
     EXIT(1);
   }//endif
 
+  //============================================================================
+  // switch the temperatures
+  // 1. the executive decision was made that the cp temperature would
+  //   scale up and down with the atom temperature- the atoms move
+  //   faster, cp is speeded up the atoms move slower, cp is slowed
+  //   down.  Glenn hopes he remembers how all these poxy variables
+  //   work.
+  if(switchMoveNow && applyorder==1)
+    {
+      double fact=sqrt(new_t_ext/old_t_ext);
+      for(int i=istrt0;i<ncoef_full;i++){
+	vpsi[i] *= fact;
+      }//endfor
+      kTCP_loc*=fact*fact; // this locally changed version will propagate
+		      // along the call stack. Changed for future
+		      // steps in integrateModForces.
+      for(int k=0;k<nck_nhc;k++){
+	for(int i=0;i<num_nhc;i++){
+	    vNHC[k][i][0]*=fact;
+	    vNHC[k][i][1]*=fact;
+	  }
+      }
+    }
 
   //============================================================================
   // Make life simple for gx=0 and g=0 at Gamma: This does nothing for kpoints
@@ -139,13 +164,15 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
     cmass[i]     *= 2.0;
   }//endif
 
+
+
   //============================================================================
   // Isokin-NHC apply first : start a new step
 
   if(applyorder==1 && ISOKIN_OPT==1){
     cp_isoNHC_update(ncoef,&vpsi[istrt0],&cmass[istrt0],
         len_nhc,num_nhc,nck_nhc,xNHC,xNHCP,vNHC,fNHC,mNHC,
-        v0,a2,a4,kTCP,degfree,degfreeNHC,degFreeSplt,
+        v0,a2,a4,kTCP_loc,degfree,degfreeNHC,degFreeSplt,
         istrNHC,iendNHC,fwdFlag);
   }//endif
 
@@ -162,7 +189,7 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
   if(ISOKIN_OPT==1 && applyorder==2){
     cp_isoNHC_update(ncoef,&vpsi[istrt0],&cmass[istrt0],
         len_nhc,num_nhc,nck_nhc,xNHC,xNHCP,vNHC,fNHC,mNHC,
-        v0,a2,a4,kTCP,degfree,degfreeNHC,degFreeSplt,
+        v0,a2,a4,kTCP_loc,degfree,degfreeNHC,degFreeSplt,
         istrNHC,iendNHC,fwdFlag);
   }//endif
 

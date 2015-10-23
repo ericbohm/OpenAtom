@@ -203,6 +203,7 @@ void processState(int , int, complex *, const char *,int ,int *,int *, int *, in
     int *, int *,int *,int *,int *, int ,int ,int,int);
 
 FILE *openScreenfWrite(const char *dirnameBase, const char *fname, int temper, int bead, bool beadfile);
+FILE *openTemperTrack(const char *dirnameBase, const char *fname, const char *mode);
 //===================================================================================
 
 #endif //__PFFTUTIL_H__

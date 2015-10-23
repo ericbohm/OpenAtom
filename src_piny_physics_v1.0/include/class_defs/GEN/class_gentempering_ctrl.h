@@ -19,6 +19,9 @@ class GENTEMPERING_CTRL {
     double *t_ext;      /* master temperature list */
     double *p_ext;      /* master pressure list    */
     double *s_ext;      /* master surface tension  */
+    int    *t_ext_index;/* master index of temperatures */
+
+    long seed;          /* master switch random seed */
 
     char *history_name; /* history file name to be appended        */
     char *wgt_name;     /* frenkel weight file name to be appended */
@@ -28,6 +31,7 @@ class GENTEMPERING_CTRL {
     //----------------
     //con-destruct:
     GENTEMPERING_CTRL(){
+      seed         = 1888381834e3l;
       npara_temps  = 1;
       nvt=npt=nst  = 0;
       rsmpl_opt    = 1; 
@@ -37,6 +41,7 @@ class GENTEMPERING_CTRL {
       t_ext        = NULL;
       p_ext        = NULL;
       s_ext        = NULL;
+      t_ext_index  = NULL;
       history_name = NULL;
       wgt_name     = NULL;
       troyer_name  = NULL;
@@ -55,10 +60,12 @@ class GENTEMPERING_CTRL {
       p | switch_steps;
       p | history_frq;
       p | ipt_restart;
+      p | seed; 
       if(npara_temps>1){
         pup1d_dbl(p,&t_ext,npara_temps);
         pup1d_dbl(p,&p_ext,npara_temps);
         pup1d_dbl(p,&s_ext,npara_temps);
+        pup1d_int(p,&t_ext_index,npara_temps);
         pup1d_char(p,&history_name,MAXWORD);
         pup1d_char(p,&wgt_name,MAXWORD);
         pup1d_char(p,&troyer_name,MAXWORD);
