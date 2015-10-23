@@ -34,6 +34,7 @@ class GWBSEOPTS{
     double h[9];                 // Num: lattice vectors (read it from lattice.dat)
     double **kvec;               // Num: klists (read it from klist.dat)
     double *kwt;                 // Num: k weights
+    double **qvec;               // Num: qlists (after reading klist, qvec will be calculated)
 
     char fileEpsMatInv[255];         // Chr: file name for inverse epsilon matrix
     char fileRho[255];               // Chr: file name for density
@@ -79,8 +80,10 @@ class GWBSEOPTS{
       if(p.isUnpacking()) {
          kvec   = new double* [nkpt];
 	 kwt = new double [nkpt];
+         qvec = new double* [nkpt];
          for(int i=0; i<nkpt ; i++){
            kvec[i] = new double [3];
+           qvec[i] = new double [3];
           }
       }
       //pupping 1d dble arrays;
@@ -91,6 +94,7 @@ class GWBSEOPTS{
       //pup2d_dbl(p,&kvec,nkpt,3,"gwbseopts");
       for(int i=0;i<nkpt;i++){
         PUParray(p,kvec[i],3);
+        PUParray(p,qvec[i],3);
       }
 #ifdef _PARALLEL_DEBUG_        
       if (p.isUnpacking())
@@ -124,6 +128,11 @@ class GWBSEOPTS{
       for (int i=0; i<nkpt; i++){
 	  fprintf(fp,"%lg   %lg   %lg   %lg\n",kvec[i][0],kvec[i][1],kvec[i][2],kwt[i]);
       }
+      fprintf(fp,"qpoint list \n");
+      for (int i=0; i<nkpt; i++){
+	  fprintf(fp,"%lg   %lg   %lg\n",qvec[i][0],qvec[i][1],qvec[i][2]);
+      }
+
 
       // dbles
       

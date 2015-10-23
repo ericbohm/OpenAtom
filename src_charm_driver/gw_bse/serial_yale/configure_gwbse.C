@@ -1205,15 +1205,17 @@ void Config::read_klist(GWBSEOPTS *gwbseopts){
   fscanf(fp,"%d",&nk);
 
   // this is necessary to malloc 
-  double ** kvec   = new double* [nk];
+  double **kvec   = new double *[nk];
+  double **qvec   = new double *[nk];
   for(int i=0; i<nk ; i++){
     kvec[i] = new double [3];
+    qvec[i] = new double [3];
   }
   double *kwt = new double [nk];
 
   gwbseopts->kvec = kvec;
   gwbseopts->kwt = kwt;
-
+  gwbseopts->qvec = qvec;
 
   // good to check if nk is the same as gwbseopts.nkpt
   if(nk!=gwbseopts->nkpt){
@@ -1229,6 +1231,14 @@ void Config::read_klist(GWBSEOPTS *gwbseopts){
     gwbseopts->kwt[i] = wt;
   }
   fclose(fp);
+
+  // calculate qpoint list
+  for(int k=0; k<nk; k++){
+    for(int i=0; i<3; i++){
+      gwbseopts->qvec[k][i] = gwbseopts->kvec[k][i] - gwbseopts->kvec[0][i];
+    }
+  }
+  
   
 }//end routine 
 //========================================================================
