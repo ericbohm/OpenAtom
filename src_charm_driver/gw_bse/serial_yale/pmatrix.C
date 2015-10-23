@@ -80,6 +80,16 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
 }
 
+void PMatrix::fftRows() {
+  // TODO: Minjung will add the serial code here to fft each row stored in this chare
+  // NOTE: The rows are stored in the data array
+  // The first row in this chare is start_row, and num_rows is the number of rows in this chare
+  // Each row will need to be fft'd.
+}
+
+void PMatrix::doTranspose() {
+}
+
 void PMatrix::printRowAndExit(int row) {
   if (row >= start_row && row < start_row + num_rows) {
     FILE* fp;

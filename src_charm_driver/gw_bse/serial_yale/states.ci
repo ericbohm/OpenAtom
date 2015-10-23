@@ -79,6 +79,8 @@ module pmatrix {
   array [1D] PMatrix {
     entry PMatrix();
     entry [nokeep] void receivePsi(PsiMessage*);
+    entry void fftRows();
+    entry void doTranspose();
     entry void printRowAndExit(int);
   };
 };
