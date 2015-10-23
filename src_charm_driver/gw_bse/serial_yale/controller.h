@@ -9,12 +9,11 @@ class Controller : public CBase_Controller {
   Controller_SDAG_CODE
   public:
     Controller();
-    void fillCaches();
-    void sendInitialPsis();
-    void pComplete();
+    void pComplete(); // Just for debugging
 
   private:
-    unsigned L, M, pipeline_stages, next_state;
+    unsigned K, L, M, pipeline_stages;
+    unsigned next_K, next_state, total_sent, total_complete;
 };
 
 class PsiCache : public CBase_PsiCache {

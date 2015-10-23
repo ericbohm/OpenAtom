@@ -10,22 +10,12 @@ Controller::Controller() {
   GWBSE *gwbse = GWBSE::get();
 
   // Set our class variables
+  K = gwbse->gw_parallel.K;
   L = gwbse->gw_parallel.L;
   M = gwbse->gw_parallel.M;
   pipeline_stages = gwbse->gw_parallel.pipeline_stages;
 
-}
-
-void Controller::fillCaches() {
-  for (next_state = 0; next_state < L; next_state++) {
-    states_proxy(0,0,next_state).sendToCache();
-  }
-}
-
-void Controller::sendInitialPsis() {
-  for (int i = 0; i < pipeline_stages; i++) {
-    states_proxy(0,0,next_state++).sendToP();
-  }
+  next_K = next_state = total_sent = total_complete = 0;
 }
 
 void Controller::pComplete() {
