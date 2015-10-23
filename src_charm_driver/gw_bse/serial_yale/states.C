@@ -34,10 +34,6 @@ States::States() {
 
   fft_G_to_R();
 
-  if (istate < gwbse->gwbseopts.nocc) {
-    sendToCache();
-  }
-
 }
 
 // constructor needed for chare object migration (ignore for now)

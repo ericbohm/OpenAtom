@@ -6,8 +6,15 @@
 #include "controller.decl.h"
 
 class Controller : public CBase_Controller {
+  Controller_SDAG_CODE
   public:
-    Controller() { CkPrintf("HI! %d\n", CkMyPe()); }
+    Controller();
+    void fillCaches();
+    void sendInitialPsis();
+    void pComplete();
+
+  private:
+    unsigned L, M, pipeline_stages, next_state;
 };
 
 class PsiCache : public CBase_PsiCache {
@@ -15,9 +22,9 @@ class PsiCache : public CBase_PsiCache {
     PsiCache();
 
     void receivePsi(PsiMessage*);
-    complex* getPsi(unsigned) const;
+    complex* getPsi(unsigned, unsigned, unsigned, unsigned) const;
   private:
-    unsigned psi_count, psi_size, received_psis, pipeline_stages;
+    unsigned psi_count, psi_size, received_psis;
     complex** psis;
 };
 

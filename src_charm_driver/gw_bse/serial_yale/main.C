@@ -70,7 +70,7 @@ Main::Main(CkArgMsg* msg) {
   mainProxy = thisProxy;
 
   // -------------------------------------------------------------------
-  // Create the nodegroups
+  // Create the controller chares
   controller_proxy = CProxy_Controller::ckNew();
   psi_cache_proxy = CProxy_PsiCache::ckNew();
 
@@ -86,6 +86,10 @@ Main::Main(CkArgMsg* msg) {
   int nocc = gwbse->gwbseopts.nocc;  
   int nunocc = gwbse->gwbseopts.nunocc;  
   states_proxy = CProxy_States::ckNew(nspin, nkpt, nocc + nunocc);
+
+  // -------------------------------------------------------------------
+  // Tell the controller to start the computation
+  controller_proxy.run();
 
 }// end routine
 // End of the Main constructor
