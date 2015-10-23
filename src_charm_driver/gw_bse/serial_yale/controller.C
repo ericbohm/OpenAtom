@@ -19,7 +19,7 @@ Controller::Controller() {
 }
 
 void Controller::pComplete() {
-  pmatrix_proxy.printRowAndExit(0);
+  pmatrix_proxy.printRowAndExit(1);
 }
 
 PsiCache::PsiCache() {
