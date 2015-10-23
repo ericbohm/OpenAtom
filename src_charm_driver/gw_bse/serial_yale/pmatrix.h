@@ -17,6 +17,11 @@ class PMatrix : public CBase_PMatrix {
     unsigned pipeline_stages, L, M;
     unsigned num_rows, num_cols, start_row, start_col, done_count;
     complex** data;
+
+    unsigned qindex;
+
+    void kqIndex(unsigned, unsigned, int(&)[3]);
+
 };
 
 extern /* readonly */ CProxy_PMatrix pmatrix_proxy;
