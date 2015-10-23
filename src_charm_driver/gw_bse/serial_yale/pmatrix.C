@@ -7,16 +7,13 @@
 
 PMatrix::PMatrix() {
   GWBSE* gwbse = GWBSE::get();
-  pipeline_stages = gwbse->gw_parallel.pipeline_stages;
   L = gwbse->gw_parallel.L;
-  M = gwbse->gw_parallel.M;
   num_rows = gwbse->gw_parallel.rows_per_chare;
   num_cols = gwbse->gw_parallel.n_elems;
-  qindex = 1; // let's make set it to 1 for now, but I think it should be something like thisIndex.x (if P is 2D Chare array) 
+  qindex = 0; // Eventually the controller will set this
 
   start_row = thisIndex * num_rows;
   start_col = 0;
-  done_count = 0;
 
   data = new complex*[num_rows];
   for (int i = 0; i < num_rows; i++) {
@@ -51,12 +48,18 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   // Loop over all of the cached psis, and compute an f via pointwise
   // multiplication with the received psi. Then compute the outer product of
   // f x f' and accumulate it's contribution in P.
+  /*if (thisIndex == 0) {
+    CkPrintf("Incoming kpt: %d, my qindex: %d, k+q: %d\n", ikpt, qindex, ikq);
+  }*/
   for (int l = 0; l < L; l++) {
     // Compute f based on each pair of Psis, and the two associated eigenvalues
-    psi_occ = psi_cache_proxy.ckLocalBranch()->getPsi(0, ispin, ikq, l); // k+q index (ikq)
+    psi_occ = psi_cache_proxy.ckLocalBranch()->getPsi(ispin, ikq, l);
     for (int i = 0; i < size; i++) {
       f[i] = psi_occ[i]*psi_unocc[i].conj();
     }
+    /*if (thisIndex == 0) {
+      CkPrintf("f[%i]: %lg %lg\n", 0, f[0].re, f[0].im);
+    }*/
     
     // Once we've computed f, compute its contribution to our chunk of P.
     double scaling_factor = 4/(e_occ[ispin][ikq][l] - e_unocc[ispin][ikpt][m]);
@@ -65,6 +68,12 @@ void PMatrix::receivePsi(PsiMessage* msg) {
         data[r][c] += f[r+start_row]*f[c+start_col].conj() * scaling_factor;
       }
     }
+    /*if (thisIndex == 0) {
+      CkPrintf("e_occ: %lg\n", e_occ[ispin][ikq][l]);
+      CkPrintf("e_unocc: %lg\n", e_unocc[ispin][ikpt][m]);
+      CkPrintf("scaling_factor: %lg\n", scaling_factor);
+      CkPrintf("P[0,0]: %lg %lg\n", data[0][0].re, data[0][0].im);
+    }*/
   }
 
   // Tell the controller we've completed work on this psi
@@ -75,7 +84,7 @@ void PMatrix::printRowAndExit(int row) {
   if (row >= start_row && row < start_row + num_rows) {
     FILE* fp;
     char filename[200];
-    sprintf(filename, "P_Rspace_row%d.dat", row);
+    sprintf(filename, "P_Rspace_q%d_row%d.dat", qindex, row);
     fp = fopen(filename, "w");
     for (int i = 0; i < num_cols; i++) {
       fprintf(fp, "row %d col %d %lg %lg\n", row, i, data[row-start_row][i].re, data[row-start_row][i].im);
@@ -86,7 +95,7 @@ void PMatrix::printRowAndExit(int row) {
 }
 
 
-void PMatrix::kqIndex(unsigned ikpt, unsigned ikq, int (&uklpp)[3]){
+void PMatrix::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   GWBSE* gwbse = GWBSE::get();
 
   // temporary space to save k/q/k+q vectors
@@ -111,21 +120,24 @@ void PMatrix::kqIndex(unsigned ikpt, unsigned ikq, int (&uklpp)[3]){
     
   // find k+q vector index
   for (int kk=0; kk < gwbse->gwbseopts.nkpt; kk++) {
-    double diff = 0;
+    bool match = true;
+    this_k = gwbse->gwbseopts.kvec[kk];
     //this_k is now a difference between k and k+q
     for (int i=0; i<3; i++) {
-      this_k[i] = abs( gwbse->gwbseopts.kvec[kk][i] - k_plus_q[i] );
-      diff += this_k[i];
+      if (this_k[i] != k_plus_q[i]) {
+        match = false;
+        break;
+      }
     }
-    if (diff == 0) {
-      ikq = kk;  //k+q index is found
+    if (match) {
+      ikq = kk;
+      break;
     }
   }
     // save umklapp scattering information
   for (int i=0; i<3; i++) {
-    uklpp[i] = int( k_plus_q_orig[i] - k_plus_q[i] );
+    uklapp[i] = int( k_plus_q_orig[i] - k_plus_q[i] );
   }
-
 
 }
 

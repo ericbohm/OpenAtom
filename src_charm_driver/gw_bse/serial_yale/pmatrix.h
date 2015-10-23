@@ -13,15 +13,13 @@ class PMatrix : public CBase_PMatrix {
     void printRowAndExit(int);
 
   private:
-    // TODO: These will be moved to the parallel controller
-    unsigned pipeline_stages, L, M;
-    unsigned num_rows, num_cols, start_row, start_col, done_count;
+    unsigned L; // Number of occupied psis
+    unsigned num_rows, num_cols, start_row, start_col; // The shape of our data
     complex** data;
 
     unsigned qindex;
 
-    void kqIndex(unsigned, unsigned, int(&)[3]);
-
+    void kqIndex(unsigned, unsigned&, int*);
 };
 
 extern /* readonly */ CProxy_PMatrix pmatrix_proxy;
