@@ -1178,13 +1178,33 @@ void Config::read_lattice(GWBSEOPTS *gwbseopts){
   fscanf(fp,"%lg",&lc);
   gwbseopts->latt = lc;
   
-  // read the rest
-  for(i=0; i<3; i++){
-    fscanf(fp,"%lg %lg %lg",&h1,&h2,&h3);
-    gwbseopts->h[i*3]=h1*lc;
-    gwbseopts->h[i*3+1]=h2*lc;
-    gwbseopts->h[i*3+2]=h3*lc;
-  }
+  // read lattice vectors
+  fscanf(fp,"%lg %lg %lg",&h1,&h2,&h3);
+  gwbseopts->a1[0]=h1*lc;
+  gwbseopts->a1[1]=h2*lc;
+  gwbseopts->a1[2]=h3*lc;
+  fscanf(fp,"%lg %lg %lg",&h1,&h2,&h3);
+  gwbseopts->a2[0]=h1*lc;
+  gwbseopts->a2[1]=h2*lc;
+  gwbseopts->a2[2]=h3*lc;
+  fscanf(fp,"%lg %lg %lg",&h1,&h2,&h3);
+  gwbseopts->a3[0]=h1*lc;
+  gwbseopts->a3[1]=h2*lc;
+  gwbseopts->a3[2]=h3*lc;
+  // read reciprocal lattice vectors
+  fscanf(fp,"%lg %lg %lg",&h1,&h2,&h3);
+  gwbseopts->b1[0]=h1;
+  gwbseopts->b1[1]=h2;
+  gwbseopts->b1[2]=h3;
+  fscanf(fp,"%lg %lg %lg",&h1,&h2,&h3);
+  gwbseopts->b2[0]=h1;
+  gwbseopts->b2[1]=h2;
+  gwbseopts->b2[2]=h3;
+  fscanf(fp,"%lg %lg %lg",&h1,&h2,&h3);
+  gwbseopts->b3[0]=h1;
+  gwbseopts->b3[1]=h2;
+  gwbseopts->b3[2]=h3;
+
   fclose(fp);
   
 }//end routine 

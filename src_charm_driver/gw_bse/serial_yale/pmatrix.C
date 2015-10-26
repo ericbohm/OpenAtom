@@ -57,6 +57,8 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   for (int l = 0; l < L; l++) {
     // Compute f based on each pair of Psis, and the two associated eigenvalues
     psi_occ = psi_cache_proxy.ckLocalBranch()->getPsi(ispin, ikq, l);
+    // psi_occ is modified if umklapp != 0
+    modifyPsiOcc(psi_occ, umklapp);
     for (int i = 0; i < size; i++) {
       f[i] = psi_occ[i]*psi_unocc[i].conj();
     }
@@ -161,5 +163,45 @@ void PMatrix::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   }
 
 }
+
+
+void PMatrix::modifyPsiOcc(complex* psi_occ, int uklpp[3]){
+
+  GWBSE *gwbse = GWBSE::get();
+  int* nfft;
+  nfft = gwbse->gw_parallel.fft_nelems;
+  double *a1, *a2, *a3, *b1, *b2, *b3;
+  a1 = gwbse->gwbseopts.a1;
+  a2 = gwbse->gwbseopts.a2;
+  a3 = gwbse->gwbseopts.a3;
+  b1 = gwbse->gwbseopts.b1;
+  b2 = gwbse->gwbseopts.b2;
+  b3 = gwbse->gwbseopts.b3;
+
+  double rijk, G0, phase;
+  complex factor;
+  unsigned counter = 0;
+  for(int i=0; i<nfft[0]; i++){
+    for(int j=0; j<nfft[1]; j++){
+      for(int k=0; k<nfft[2]; k++){
+        phase = 0;
+	factor = 0;
+	for (int l=0; l<3; l++){
+	  rijk = a1[l]*i/nfft[0] + a2[l]*j/nfft[1] + a3[l]*k/nfft[2];
+	  G0 = b1[l]*uklpp[0] + b2[l]*uklpp[1] + b3[l]*uklpp[2];
+	  phase += rijk*G0;
+	}
+	factor.re = cos(phase);
+	factor.im = cos(phase);
+	psi_occ[counter] = factor * psi_occ[counter];
+	counter += 1;
+      }// end k loop
+    }// end j loop
+  }// end i loop
+  
+}//end function
+
+
+
 
 #include "pmatrix.def.h"

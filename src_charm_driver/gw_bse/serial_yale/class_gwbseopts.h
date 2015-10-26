@@ -31,7 +31,8 @@ class GWBSEOPTS{
                                  // 0-no truncation 1-wire 2-sheet 3-molecule
     int ibinary_opt;             // Num: binary option 1, 2, 3
     double latt;                 // lattice parameter
-    double h[9];                 // Num: lattice vectors (read it from lattice.dat)
+    double a1[3], a2[3], a3[3];  // Num: lattice vectors (read it from lattice.dat)
+    double b1[3], b2[3], b3[3];  // Num: reciprocal lattice vectors (read it from lattice.dat)
     double **kvec;               // Num: klists (read it from klist.dat)
     double *kwt;                 // Num: k weights
     double **qvec;               // Num: qlists (after reading klist, qvec will be calculated)
@@ -87,8 +88,12 @@ class GWBSEOPTS{
           }
       }
       //pupping 1d dble arrays;
-      //pup1d_dbl(p,&h,9);
-      PUParray(p,h,9);
+      PUParray(p,a1,3);
+      PUParray(p,a2,3);
+      PUParray(p,a3,3);
+      PUParray(p,b1,3);
+      PUParray(p,b2,3);
+      PUParray(p,b3,3);
       PUParray(p,kwt,nkpt);
       //pupping 2d dble arrars;
       //pup2d_dbl(p,&kvec,nkpt,3,"gwbseopts");
@@ -121,9 +126,13 @@ class GWBSEOPTS{
       fprintf(fp,"ibinary_opt %d\n",ibinary_opt);
 
       fprintf(fp,"lattice vectors \n");
-      for (int i=0; i<3 ; i++){
-        fprintf(fp,"%lg   %lg   %lg\n",h[i*3],h[i*3+1],h[i*3+2]);
-      }
+      fprintf(fp,"%lg   %lg   %lg\n",a1[0],a1[1],a1[2]);
+      fprintf(fp,"%lg   %lg   %lg\n",a2[0],a2[1],a2[2]);
+      fprintf(fp,"%lg   %lg   %lg\n",a3[0],a3[1],a3[2]);
+      fprintf(fp,"reciprocal lattice vectors \n");
+      fprintf(fp,"%lg   %lg   %lg\n",b1[0],b1[1],b1[2]);
+      fprintf(fp,"%lg   %lg   %lg\n",b2[0],b2[1],b2[2]);
+      fprintf(fp,"%lg   %lg   %lg\n",b3[0],b3[1],b3[2]);
       fprintf(fp,"kpoint list and their weight \n");
       for (int i=0; i<nkpt; i++){
 	  fprintf(fp,"%lg   %lg   %lg   %lg\n",kvec[i][0],kvec[i][1],kvec[i][2],kwt[i]);
