@@ -133,7 +133,17 @@ void put_into_fftbox(int ng, complex *rawdata, int **fftidx, int nfft[3], fftw_c
     }
 }
 
+// function overloading, G->R or R->G when both space have the same number of data
+void put_into_fftbox(int nfft[3], complex *data, fftw_complex *in_pointer){
 
+    // number of data
+    int ndata=nfft[0]*nfft[1]*nfft[2];
+
+    for (int i=0; i<ndata; i++){
+        in_pointer[i][0] = data[i].re;
+        in_pointer[i][1] = data[i].im;
+    }   
+} 
 
 // after fftw_execute, we want to transfer data from "out" to "array"
 // you can scale the values because fftw doesn't do any scale for you

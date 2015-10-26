@@ -1349,6 +1349,9 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
   // Determine the number of rows in P and how many chares it will have
   // The number of rows in P right now must be evenly divisble by rows per chare
   gw_parallel->n_elems = nfft[0] * nfft[1] * nfft[2];
+  for(int i=0; i<3; i++){
+    gw_parallel->fft_nelems[i] = nfft[i]; // data point in each direction
+  }
   gw_parallel->matrix_nchares = gw_parallel->n_elems / gw_parallel->rows_per_chare;
   if (gw_parallel->n_elems % gw_parallel->rows_per_chare != 0) {
     PRINTF("ERROR: Number of rows per chare does not divide evenly!\n");

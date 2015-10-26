@@ -23,6 +23,8 @@ class GW_PARALLEL{
     unsigned rows_per_chare;  // Rows per PMatrix chare
     unsigned matrix_nchares;  // Number of chares in the PMatrix
 
+    int fft_nelems[3];        // Num: size of FFT
+
     //----------------
     //con-destruct:
     GW_PARALLEL(){
@@ -31,6 +33,7 @@ class GW_PARALLEL{
       pipeline_stages = 0;
       rows_per_chare = 0;
       matrix_nchares = 0;
+      for (int i; i<3; i++){ fft_nelems[i] = 0; }
     };
     ~GW_PARALLEL(){};
 
@@ -43,6 +46,8 @@ class GW_PARALLEL{
       p | pipeline_stages;
       p | rows_per_chare;
       p | matrix_nchares;
+
+      PUParray(p, fft_nelems, 3);
       
 #ifdef _PARALLEL_DEBUG_        
       if (p.isUnpacking())
@@ -62,6 +67,7 @@ class GW_PARALLEL{
       fprintf(fp,"pipeline_stages %i\n", pipeline_stages);
       fprintf(fp,"rows_per_chare %i\n", rows_per_chare);
       fprintf(fp,"matrix_nchares %i\n", matrix_nchares);
+      fprintf(fp,"fft size %d  %d  %d\n", fft_nelems[0], fft_nelems[1], fft_nelems[2]);
       fclose(fp);
     }// end routine
     

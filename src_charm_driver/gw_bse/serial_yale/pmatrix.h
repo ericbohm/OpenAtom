@@ -18,9 +18,8 @@ class PMatrix : public CBase_PMatrix {
     unsigned L; // Number of occupied psis
     unsigned num_rows, num_cols, start_row, start_col; // The shape of our data
     complex** data;
-
+    int* nfft; // number of fft grids in each direction
     unsigned qindex;
-
     void kqIndex(unsigned, unsigned&, int*);
 };
 

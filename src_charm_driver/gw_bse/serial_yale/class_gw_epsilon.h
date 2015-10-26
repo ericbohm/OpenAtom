@@ -17,16 +17,15 @@ class GW_EPSILON{
 
   //---------------
   public:
-    int nspin;
-    int nkpt;
-    int nocc;
-    int nunocc;
-    double*** Eocc;
-    double*** Eunocc;
+    int nspin;                   // Num: number of spins
+    int nkpt;                    // Num: number of k points
+    int nocc;                    // Num: number of occupied states
+    int nunocc;                  // Num: number of unoccupied states
+    double*** Eocc;              // Eigenvalues for occupied states
+    double*** Eunocc;            // Eigenvalues for unoccupied states
     double Ecuteps;              // Num: Epsilon matrix cutoff
     double tol_iter;             // Num: Tolerance of the iterative matrix inversion method
     char eigFileName[200];       // No need to pup this, contents stored in Eocc and Eunocc
-
 
     //----------------
     //con-destruct:
@@ -52,6 +51,7 @@ class GW_EPSILON{
       p | nocc;
       p | nunocc;
 
+      // pupping arrays
       if (p.isUnpacking()) {
         Eocc = new double**[nspin];
         Eunocc = new double**[nspin];

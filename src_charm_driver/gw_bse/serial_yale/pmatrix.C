@@ -4,17 +4,20 @@
 #include "messages.h"
 #include "controller.h"
 #include "states.h"
+#include "my_fftw.h"
+#include "fft_routines.h"
 
 PMatrix::PMatrix() {
   GWBSE* gwbse = GWBSE::get();
   L = gwbse->gw_parallel.L;
   num_rows = gwbse->gw_parallel.rows_per_chare;
   num_cols = gwbse->gw_parallel.n_elems;
+  nfft = gwbse->gw_parallel.fft_nelems;
   qindex = 0; // Eventually the controller will set this
 
   start_row = thisIndex * num_rows;
   start_col = 0;
-
+  
   data = new complex*[num_rows];
   for (int i = 0; i < num_rows; i++) {
     data[i] = new complex[num_cols];
@@ -85,6 +88,14 @@ void PMatrix::fftRows() {
   // NOTE: The rows are stored in the data array
   // The first row in this chare is start_row, and num_rows is the number of rows in this chare
   // Each row will need to be fft'd.
+  int direction = 1; // for rows, for column, direction should be -1
+  for (int i=0; i < num_rows; i++){
+    setup_fftw_3d(nfft,direction);
+    put_into_fftbox(nfft, data[i], in_pointer);
+    do_fftw();
+    fftbox_to_array(num_cols, out_pointer, data[i], 1);
+  }
+  // Minjung: Need to call destroy_fftw_stuff here?
 }
 
 void PMatrix::doTranspose() {
