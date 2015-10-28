@@ -252,7 +252,7 @@ void CP_Rho_RealSpacePlane::init(){
 
   // we need one RS proxy for each K-point until the cross proxies with
   // reductions work correctly
-  UberCollection RhoReductionSource = thisInstance;
+  UberCollection RhoReductionSource(thisInstance);
   realSpaceSectionProxyA= new CProxySection_CP_State_RealSpacePlane*[config.UberJmax];
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
   CkPrintf("[%d %d] RhoR create %d x %d mcast groups \n", thisIndex.x,
@@ -1074,7 +1074,7 @@ void CP_Rho_RealSpacePlane::doMulticast(){
         if(kp+1 < config.UberJmax) {
           // copying a message is perilous
           loopm = new (dataSize, 0) VksMsg;
-          msg->pencil_offset_y       = thisIndex.y;
+          loopm->pencil_offset_y       = thisIndex.y;
           memcpy(loopm->data, msg->data, dataSize * sizeof(double));
         } else {
           loopm = msg;

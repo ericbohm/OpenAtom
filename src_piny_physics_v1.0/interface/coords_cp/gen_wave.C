@@ -1220,7 +1220,7 @@ void GEN_WAVE::read_kpoints(int kpt_file_name_set,char *kpt_fname, int istart)
   /* ALL assigned after input and/or dynamic memory allocation */
   int igamma_kpt_ind;
   int nkpoint_now;
-  int doublepack=1;
+
   double *akpoint;
   double *bkpoint;
   double *ckpoint;
@@ -1377,7 +1377,7 @@ void GEN_WAVE::read_kpoints(int kpt_file_name_set,char *kpt_fname, int istart)
       igamma_kpt_ind = i;
     }/*endif*/
   }/*endfor*/
-
+  int doublepack=0;
   if(igamma_kpt_ind != 0 && nkpoint==1){doublepack = 1;}  // we have the gamma point
   if(cp_force_complex_psi==1 && doublepack==1){
     doublepack=0;

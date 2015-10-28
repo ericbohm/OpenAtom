@@ -1980,16 +1980,11 @@ void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim
       Atom *atoms       = new Atom[natm];
       AtomNHC *atomsNHC = new AtomNHC[natm];
       CkPrintf("[%d] Temperature is %g\n",thisInstance.proxyOffset, kT*BOLTZ);
-      // every instance with its own atoms needs its own
-      // physcratchcache, because it is a horrible shared memory thing
-      // that needs to be walled off
-      UpScratchProxy.push_back(CProxy_PhysScratchCache::ckNew());
 
       // every instance with its own atoms needs its own
       // physcratchcache, because it is a horrible shared memory thing
       // that needs to be walled off
       UpScratchProxy.push_back(CProxy_PhysScratchCache::ckNew());
-
       PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC,ibead,itemper);
       UegroupProxy.push_back(CProxy_EnergyGroup::ckNew(thisInstance));
       // FIXME, this needs a real computation
