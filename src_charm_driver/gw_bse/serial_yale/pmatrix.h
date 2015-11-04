@@ -11,12 +11,12 @@ class PMatrix : public CBase_PMatrix {
 
     void receivePsi(PsiMessage*);
     void fftRows();
-    void doTranspose();
     void printRowAndExit(int);
 
   private:
     unsigned L; // Number of occupied psis
     unsigned num_rows, num_cols, start_row, start_col; // The shape of our data
+    unsigned trans_count; // SDAG index counter
     complex** data;
     int* nfft; // number of fft grids in each direction
     unsigned qindex;

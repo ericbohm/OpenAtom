@@ -17,6 +17,8 @@ module controller {
     entry Controller();
     entry [reductiontarget] void cachesFilled();
     entry [reductiontarget] void psiComplete();
+    entry [reductiontarget] void fftComplete();
+    entry [reductiontarget] void transposeComplete();
 
     entry void run() {
       // Tell the occupied psis to duplicate them in the cache, the wait for
@@ -45,7 +47,10 @@ module controller {
         when psiComplete() serial { total_complete++; }
       }
 
-      serial { pComplete(); }
+      serial { pmatrix_proxy.fftRows(); }
+      when fftComplete()        serial { pmatrix_proxy.doTranspose(); }
+      when transposeComplete()  serial { pmatrix_proxy.fftRows(); }
+      when fftComplete()        serial { pComplete(); }
     }
   };
 
@@ -70,6 +75,7 @@ readonly CProxy_States states_proxy;
 };
 
 module pmatrix {
+  include "ckcomplex.h";
   extern module messages;
   readonly CProxy_PMatrix pmatrix_proxy;
 
@@ -80,7 +86,24 @@ module pmatrix {
     entry PMatrix();
     entry [nokeep] void receivePsi(PsiMessage*);
     entry void fftRows();
-    entry void doTranspose();
+    entry void receiveTransposeData(int, complex);
     entry void printRowAndExit(int);
+
+    entry void doTranspose() {
+      serial {
+        for (int i = 0; i < num_cols; i++) {
+          if (i == thisIndex) continue;
+          thisProxy[i].receiveTransposeData(thisIndex, data[0][i]);
+        }
+      }
+      for (trans_count = 0; trans_count < num_cols - 1; trans_count++) {
+        when receiveTransposeData(int new_col, complex element) serial {
+          data[0][new_col] = element;
+        }
+      }
+      serial {
+        contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
+      }
+    }
   };
 };

@@ -98,9 +98,8 @@ void PMatrix::fftRows() {
     fftbox_to_array(num_cols, out_pointer, data[i], 1);
   }
   // Minjung: Need to call destroy_fftw_stuff here?
-}
-
-void PMatrix::doTranspose() {
+  // Let the controller know we have completed the fft
+  contribute(CkCallback(CkReductionTarget(Controller, fftComplete), controller_proxy));
 }
 
 void PMatrix::printRowAndExit(int row) {
