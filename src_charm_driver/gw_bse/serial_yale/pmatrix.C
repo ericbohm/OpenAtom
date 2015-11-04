@@ -181,6 +181,7 @@ void PMatrix::modifyPsiOcc(complex* psi_occ, int uklpp[3]){
     b1 = gwbse->gwbseopts.b1;
     b2 = gwbse->gwbseopts.b2;
     b3 = gwbse->gwbseopts.b3;
+    double lattconst = gwbse->gwbseopts.latt;
 
     double rijk, G0, phase;
     complex factor;
@@ -193,10 +194,12 @@ void PMatrix::modifyPsiOcc(complex* psi_occ, int uklpp[3]){
           for (int l=0; l<3; l++){
             rijk = a1[l]*i/nfft[0] + a2[l]*j/nfft[1] + a3[l]*k/nfft[2];
             G0 = b1[l]*uklpp[0] + b2[l]*uklpp[1] + b3[l]*uklpp[2];
+            // FIXME sign check
+            G0 *= -2*M_PI/lattconst;
             phase += rijk*G0;
           }
           factor.re = cos(phase);
-          factor.im = cos(phase);
+          factor.im = sin(phase);
           psi_occ[counter] = factor * psi_occ[counter];
           counter += 1;
         }// end k loop
