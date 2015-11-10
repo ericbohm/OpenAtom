@@ -44,6 +44,18 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   int umklapp[3]; // modify wavefunction for psi_occ(ikq) if umklapp process applies
   kqIndex(ikpt, ikq, umklapp);
 
+  // U-process modification
+  bool Uproc; // if U-process, it's true
+  // if umklapp = 0, it is N-process, not U-process
+  if (umklapp[0]==0 && umklapp[1]==0 && umklapp[2]==0){
+      Uproc = false;}
+  // if umklapp != 0, it's U-process 
+  else{
+    Uproc = true;
+    umklapp_factor = new complex[num_cols];
+    getUmklappFactor(umklapp_factor, umklapp);
+  }
+
   // Eigenvalues used to scale the entries of f
   double*** e_occ = gwbse->gw_epsilon.Eocc;
   double*** e_unocc = gwbse->gw_epsilon.Eunocc;
@@ -57,10 +69,13 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   for (int l = 0; l < L; l++) {
     // Compute f based on each pair of Psis, and the two associated eigenvalues
     psi_occ = psi_cache_proxy.ckLocalBranch()->getPsi(ispin, ikq, l);
-    // psi_occ is modified if umklapp != 0
-    modifyPsiOcc(psi_occ, umklapp);
+   
     for (int i = 0; i < size; i++) {
-      f[i] = psi_occ[i]*psi_unocc[i].conj();
+      // if umklapp != 0, occupied state needs to be modified
+      if(Uproc){
+	f[i] = psi_occ[i]*psi_unocc[i].conj()*umklapp_factor[i];}
+      else{
+	f[i] = psi_occ[i]*psi_unocc[i].conj();}
     }
     /*if (thisIndex == 0) {
       CkPrintf("f[%i]: %lg %lg\n", 0, f[0].re, f[0].im);
@@ -80,6 +95,9 @@ void PMatrix::receivePsi(PsiMessage* msg) {
       CkPrintf("P[0,0]: %lg %lg\n", data[0][0].re, data[0][0].im);
     }*/
   }
+
+  // deallocate umklapp_factor as it's done
+  if (Uproc){ delete[] umklapp_factor; }
 
   // Tell the controller we've completed work on this psi
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
@@ -164,10 +182,10 @@ void PMatrix::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
 }
 
 
-void PMatrix::modifyPsiOcc(complex* psi_occ, int uklpp[3]){
+void PMatrix::getUmklappFactor(complex* umklapp_factor, int uklpp[3]){
 
   if (uklpp[0]==0 && uklpp[1]==0 && uklpp[2]==0){
-    //do nothing
+    // do nothing
   }
   else{
     GWBSE *gwbse = GWBSE::get();
@@ -183,23 +201,19 @@ void PMatrix::modifyPsiOcc(complex* psi_occ, int uklpp[3]){
     double lattconst = gwbse->gwbseopts.latt;
 
     double rijk, G0, phase;
-    complex factor;
     unsigned counter = 0;
     for(int i=0; i<nfft[0]; i++){
       for(int j=0; j<nfft[1]; j++){
         for(int k=0; k<nfft[2]; k++){
           phase = 0;
-          factor = 0;
           for (int l=0; l<3; l++){
             rijk = a1[l]*i/nfft[0] + a2[l]*j/nfft[1] + a3[l]*k/nfft[2];
             G0 = b1[l]*uklpp[0] + b2[l]*uklpp[1] + b3[l]*uklpp[2];
-            // FIXME sign check
             G0 *= -2*M_PI/lattconst;
             phase += rijk*G0;
           }
-          factor.re = cos(phase);
-          factor.im = sin(phase);
-          psi_occ[counter] = factor * psi_occ[counter];
+          umklapp_factor[counter].re = cos(phase);
+          umklapp_factor[counter].im = sin(phase);
           counter += 1;
         }// end k loop
       }// end j loop

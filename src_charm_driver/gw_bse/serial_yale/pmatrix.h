@@ -21,7 +21,8 @@ class PMatrix : public CBase_PMatrix {
     int* nfft; // number of fft grids in each direction
     unsigned qindex;
     void kqIndex(unsigned, unsigned&, int*);
-    void modifyPsiOcc(complex*, int[3]);
+    complex* umklapp_factor;
+    void getUmklappFactor(complex*, int[3]);
 };
 
 extern /* readonly */ CProxy_PMatrix pmatrix_proxy;
