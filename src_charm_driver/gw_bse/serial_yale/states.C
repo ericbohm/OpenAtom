@@ -26,7 +26,7 @@ States::States() {
   // set the option for the type of file read
   ibinary_opt = gwbse->gwbseopts.ibinary_opt;
   // set file name to read my state from
-  sprintf(fileName, "./Spin.%d_Kpt.%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, istate+1);
+  sprintf(fileName, "./STATES_IN/Spin.%d_Kpt.%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, istate+1);
   // gamma point only calculations
   doublePack = false;
   // read states from file
