@@ -1,3 +1,17 @@
+/* This routine calculates P matrix in R space first then perform FFT
+
+   P[r,r'] = 4/(Eocc(k+q)-Eunocc(k)) * f[r] * f[r'].conj()
+
+   (TODO: factor 4 has to be changed if nspin != 0.) 
+
+   f[r] = psi_occ(k+q)[r] * psi_unocc(k)[r].conj()
+ 
+           FFT       IFFT        
+   P[r,r'] => P[G,r'] => P[G,G']  (here it performs columns first)
+   no scaling factor is necessary because we did forward and backward consecutively
+
+*/
+
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
@@ -54,7 +68,7 @@ void calc_Pmtrx_Rspace(CMATRIX *P, SYSINFO sys, STATES *psiR_k, STATES *psiR_kq,
 	    double Eck = psiR_k->eig[ic];
 
 	    // update Pmtrx
-            update_Pmtrx( psiR_kq_tmp, Evkq, psiR_k->coeff[ic], Eck, ndata, sys.nkpt, P);
+            update_Pmtrx( psiR_kq_tmp, Evkq, psiR_k->coeff[ic], Eck, ndata, sys, P);
 	}
     }
     delete [] psiR_kq_tmp;
@@ -73,10 +87,16 @@ void calc_Pmtrx_Rspace(CMATRIX *P, SYSINFO sys, STATES *psiR_k, STATES *psiR_kq,
 
 // update_Pmtrx
 // this function updates P matrix
-void update_Pmtrx(complex *psi_vkq, double Evkq, complex *psi_ck, double Eck, int ndata, int nkpt, CMATRIX *P){
+void update_Pmtrx(complex *psi_vkq, double Evkq, complex *psi_ck, double Eck, int ndata, SYSINFO sys, CMATRIX *P){
 
     // TO DO: fact depends on nspin. check and modify
+#ifdef BGW
+    // if P(G,G') is compared with Berkeley GW...
+    double fact = (double)(2)/ (double)(sys.nkpt) / sys.vol / (Evkq-Eck);
+#else
     double fact = (double)(4)/( Evkq - Eck );
+#endif
+
     complex f[ndata];
 
     // calculate f
@@ -127,19 +147,19 @@ void modify_state_Uproc(complex *a_v, int uklpp[3], int nFFT[3], SYSINFO sys){
     for (int i=0; i<nFFT[0]; i++){
         for (int j=0; j<nFFT[1]; j++){
             for (int k=0; k<nFFT[2]; k++){
-  	            phase = 0;
-	            fact = 0;
-	            for (int ii=0; ii<3; ii++){
-	                rijk = sys.a1[ii]*i/nFFT[0] + sys.a2[ii]*j/nFFT[1] + sys.a3[ii]*k/nFFT[2];
-	                G0 = sys.b1[ii]*uklpp[0] + sys.b2[ii]*uklpp[1] + sys.b3[ii]*uklpp[2];
-	                G0 *= -2*PI/sys.alat;
-	                phase += rijk*G0;
-	            }
-	            fact.re = cos(phase);
-	            fact.im = sin(phase);
-	            a_v[icount] *= fact;
+  	        phase = 0;
+	        fact = 0;
+	        for (int ii=0; ii<3; ii++){
+	            rijk = sys.a1[ii]*i/nFFT[0] + sys.a2[ii]*j/nFFT[1] + sys.a3[ii]*k/nFFT[2];
+	            G0 = sys.b1[ii]*uklpp[0] + sys.b2[ii]*uklpp[1] + sys.b3[ii]*uklpp[2];
+	            G0 *= -2*PI/sys.alat;
+	            phase += rijk*G0;
+	        }
+	        fact.re = cos(phase);
+	        fact.im = sin(phase);
+	        a_v[icount] *= fact;
 
-	            icount += 1;
+	        icount += 1;
             }
         }
     }
@@ -172,14 +192,13 @@ void Pmtrx_R_to_G(int iq, CMATRIX* P, int nfft[3], double vol){
 	Die("number of data in P matrix does not match with total number of fftgrid");
     }
     
-    // setup_fftw_3d allocates in_pointer/out_pointer and set my_plan;
-    if(iq==0){setup_fftw_3d(nfft,1);}
-    if(iq!=0){setup_fftw_3d(nfft,-1);}
     
     int i, j;
     double real, imag;
     
     // loop over columns 
+    setup_fftw_3d(nfft,-1); 
+
     for (int j=0; j<ndata; j++) {
         //fftin = 0;
         for (int i=0; i<ndata; i++) {
@@ -195,13 +214,10 @@ void Pmtrx_R_to_G(int iq, CMATRIX* P, int nfft[3], double vol){
         }
     }// end loop for
 
-
-    // setup_fftw_3d allocates in_pointer/out_pointer and set my_plan;
-    if(iq==0){setup_fftw_3d(nfft,-1);}
-    if(iq!=0){setup_fftw_3d(nfft,1);}
-   
-
+    
     // loop over rows
+    setup_fftw_3d(nfft,1); 
+
     for (int i=0; i<ndata; i++) {
         
         for (int j=0; j<ndata; j++) {

@@ -6,24 +6,25 @@
 
 # compilers
 CC = g++
-CFLAGS = -g -O3
+CFLAGS = -g -O3 
 FFTWPATH = /sw/lib
 FFTLIB = -L$(FFTWPATH) -lfftw3 -lm
 FFTINC = -I/sw/include
 LAPACKLIB = -framework Accelerate
 
-MYFLAGS = -DUSE_LAPACK -DDEBUG
+MYFLAGS = -DUSE_LAPACK -DDEBUG #-DBGW
 
 
 .PHONY: all clean 
 .SUFFIXES: .C .o
 
 # source codes
-SRCF= matrix.C mylapack.C\
+SRCF= print_util.C matrix.C mylapack.C\
       iter_invmtrx.C coulomb.C calc_Eps.C gspace.C kqindex.C\
       fft_routines.C my_fftw.C calc_P.C do_fft_states.C\
-      get_fftsize.C read_states.C read_usrinput.C\
-      mtrxop_3x3.C read_sysinfo.C util.C epsilon.C 
+      get_fftsize.C read_states.C\
+      check_inputs.C mtrxop_3x3.C sysinfo.C usrinput.C util.C\
+      epsilon.C # main.C 
 
 
 
@@ -38,7 +39,7 @@ epsilon: $(OBJF)
 	$(CC) $(CFLAGS) $(MYFLAGS) -c $< -o $@
 
 clean:
-	rm *.o epsilon 
+	rm *.o epsilon
 
 depend:
 	$(CC) -MM $(SRCF) 

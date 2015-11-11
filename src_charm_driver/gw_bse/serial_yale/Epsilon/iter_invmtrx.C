@@ -1,4 +1,6 @@
 // do matrix inversion using iterative methods
+// TODO serial code is not here yet. Add it. You already have them!
+
 #include <cstdlib>
 #include <iostream>
 #include <fstream>

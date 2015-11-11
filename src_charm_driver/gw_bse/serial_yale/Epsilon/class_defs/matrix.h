@@ -4,6 +4,7 @@
 
 #include "../include/ckcomplex.h"
 #include "../util.h"
+#include "gspace.h"
 
 using namespace std;
 
@@ -14,6 +15,7 @@ class CMATRIX{
   private:
      
   public:
+    int thisIndex;  // index if array
     int nrow, ncol; // number of rows and colums
     int ndata;      // number of data ( = nrow * ncol )
     complex *m;
@@ -47,6 +49,11 @@ class CMATRIX{
 
     // in place conjugate tranpose of the matrix
     void ctranspose();
+
+    //printint matrix elements
+    void printRow(int, char*);
+    void printColumn(int, char*);
+    void printRowEps(int, char*, GSPACE*);
 
 };
 

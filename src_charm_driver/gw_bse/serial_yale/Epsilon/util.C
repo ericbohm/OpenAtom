@@ -47,6 +47,6 @@ void TimeStamp(){
 
 void mymessage(const char *message){
     printf("\n");
-    printf("** message delivered: %s\n", message);
+    printf("**  %s\n", message);
 }
     

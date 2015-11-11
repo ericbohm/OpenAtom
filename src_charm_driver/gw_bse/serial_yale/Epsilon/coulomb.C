@@ -1,3 +1,8 @@
+/* this routine calculates coulomb potential in G space,
+   i.e., vcoulb = 4*PI/(Nk*vol)/(q+G)^2  (q and G should be in cartesian coordinates (1/a.u.), so we transform it from crystal coordinates to the cartesian coordinates by multipying reciprocal lattice vectors) 
+   the total g vectors are passed into this routine
+*/
+
 #include <cstdlib>
 #include "class_defs/sysinfo.h"
 #include "class_defs/gspace.h"

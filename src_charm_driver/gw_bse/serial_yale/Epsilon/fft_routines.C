@@ -1,10 +1,21 @@
-#include "fft_routines.h"
-/* fft subroutines */
+/* some fft functions to call FFTW */
 
-// g index to fft index
-// This function takes g list from the wavefunction (in momentum space) and
-// get fft index
-// We do this because ng is ALWAYS less than nfft[0]*nfft[1]*nfft[2]
+#include "fft_routines.h"
+
+/* g index to fft index
+   This function takes g list from the wavefunction (in G space) and
+   get fft index 
+   We do this because ng is ALWAYS less than the number of fft grids
+   fftidx starts from 1 instead of 0 (because I initially wrote it with Fortran)
+   if your gindex is (0,0,0) then fftidx is (1,1,1), and your fftidx never gets negative value
+   let's assume that you have a fft grid with size 10
+   then, this routine do this for you:
+                    Gindex                           FFTindex
+   [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4] -> [6, 7, 8, 9, 10, 1, 2, 3, 4, 5]
+
+   fftidx value can be negative value, i.e., -1 if you G index is outside of the fftbox (e.g., Gindex = 5 in the above case)
+   This is neccessary so that we can know which wavefunction coefficient is not included in our fftbox
+*/
 void gidx_to_fftidx(int ng, int **g, int nfft[3], int **fftidx){
     
     int this_gidx[3];
@@ -60,10 +71,10 @@ void gidx_to_fftidx(int ng, int **g, int nfft[3], int **fftidx){
 
 
 
-// this routine takes g space wavefunction (array) and assign values into 1D array 
+// this routine takes g space wavefunction (array) and assign values into 1D array (which is fftbox)
 void put_into_fftbox(int ng, complex *rawdata, int **fftidx, int nfft[3], fftw_complex *in_pointer){
 
-    // initialize in
+    // initialize in_pointer
     int ndata=nfft[0]*nfft[1]*nfft[2];
     for (int i=0; i<ndata; i++){
 	in_pointer[i][0]=0;
@@ -73,15 +84,39 @@ void put_into_fftbox(int ng, complex *rawdata, int **fftidx, int nfft[3], fftw_c
     // temporary index
     int idxtmp;
     for (int ig=0; ig<ng; ig++){
-	idxtmp = (fftidx[ig][0]-1)*nfft[1]*nfft[2] +
-                    (fftidx[ig][1]-1)*nfft[2] +
+	// when fftidx is positive number, we put data into in_pointer
+	// if one of the fftidx is negavie number, that means your rawdata[ig] is outside of the fftbox
+	// so we don't put that into in_pointer
+	if (fftidx[ig][0] > 0 && fftidx[ig][1] > 0 && fftidx[ig][2] > 0){
+	    idxtmp = (fftidx[ig][0]-1)*nfft[1]*nfft[2] +
+                     (fftidx[ig][1]-1)*nfft[2] +
                      fftidx[ig][2];
-        // assign wavefunction value to in
-	// we subtract 1 since our arrays use C++ counting
-        in_pointer[idxtmp-1][0] = rawdata[ig].re;
-	in_pointer[idxtmp-1][1] = rawdata[ig].im;
+	    // assign wavefunction value to in
+	    // we subtract 1 since our arrays use C++ counting
+	    in_pointer[idxtmp-1][0] = rawdata[ig].re;
+	    in_pointer[idxtmp-1][1] = rawdata[ig].im;
+	}
     }
 }
+
+
+
+// function overloading (this takes different number of argument compared to the previous one!!!)
+// this routine takes real-space data and put into in_pointer
+// since number of Data in R space is always the same as fftbox, we can just put the nubmers
+// without much thinking!
+void put_into_fftbox(int nfft[3], complex *data, fftw_complex *in_pointer){
+
+    // number of data
+    int ndata=nfft[0]*nfft[1]*nfft[2];
+
+    for (int i=0; i<ndata; i++){
+	in_pointer[i][0] = data[i].re;
+	in_pointer[i][1] = data[i].im;
+    }
+}
+
+
 
 
 
@@ -96,7 +131,8 @@ void fftbox_to_array(int ndata, fftw_complex *out_pointer, complex *array, doubl
 }
 
 
-// fft index is all positive integers, so this routine changes fftindex to G index
+// fft index is all positive integers,
+// so this routine changes fftindex to the correspoinding G index
 void fftidx_to_gidx(int *gx, int *gy, int *gz, int nfft[3]){
     
     int ijk=0;

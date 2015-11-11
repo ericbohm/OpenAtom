@@ -1,3 +1,16 @@
+/* this one takes cubic g space glist
+   and convert it to sphere g space glist
+   since the volume of cubic is two times bigger than sphere
+   the resulting g space list have at least half number of g vectors
+   compared to cubic g space glist
+   it can contain less number if Eepscut is smaller
+   this function is called when we calculate epsilon matrix
+*/
+
+
+
+
+
 #include <cstdlib>
 #include <iostream>
 #include "class_defs/gspace.h"
@@ -68,6 +81,7 @@ void get_geps(GSPACE *geps, USRINPUT usrin, SYSINFO sys, int iq, int nfft[3], bo
         }
     }
     
+cout << " number of g vectors in epsilon matrix    " << count << endl;
     if ( j!= count ) {
         cout << " Oops. Error when reducing gspace!!!" << endl;
     }

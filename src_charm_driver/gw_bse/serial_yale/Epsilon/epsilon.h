@@ -8,18 +8,17 @@
 #include "class_defs/gspace.h"
 #include <string>
 #include "util.h"
-#include "read_sysinfo.h"
 #include "iter_invmtrx.h"
 #include "get_fftsize.h"
 #include "fft_routines.h"
 #include "calc_P.h"
+#include "print_util.h"
 
 using namespace std;
 
 // function declaration here. If functions are called in the main function, 
 // the function declaraions is in this header file
-void read_sysinfo(SYSINFO &);
-void read_usrinput(USRINPUT &, SYSINFO &);
+void check_inputs(USRINPUT, SYSINFO);
 void read_states(STATES *);
 void do_fft_states(STATES**, STATES**, SYSINFO, int[3]);
 void get_k_plus_q_index(int, int, int &, SYSINFO, int (&)[3]);
