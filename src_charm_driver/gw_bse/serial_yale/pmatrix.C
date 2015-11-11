@@ -42,17 +42,14 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   // index for k+q point
   unsigned ikq;
   int umklapp[3]; // modify wavefunction for psi_occ(ikq) if umklapp process applies
-  kqIndex(ikpt, ikq, umklapp);
+  kqIndex(ikpt, ikq, umklapp); // TODO: Rather than compute each time, just make a table at startup
 
   // U-process modification
-  bool Uproc; // if U-process, it's true
-  // if umklapp = 0, it is N-process, not U-process
-  if (umklapp[0]==0 && umklapp[1]==0 && umklapp[2]==0){
-      Uproc = false;}
-  // if umklapp != 0, it's U-process 
-  else{
+  bool Uproc = false;
+  complex umklapp_factor[size];
+  // if umklapp is non-zero then it is U-process, not N-process, so Uproc=true
+  if (umklapp[0] != 0 || umklapp[1] != 0 || umklapp[2] != 0) {
     Uproc = true;
-    umklapp_factor = new complex[num_cols];
     getUmklappFactor(umklapp_factor, umklapp);
   }
 
@@ -63,23 +60,16 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   // Loop over all of the cached psis, and compute an f via pointwise
   // multiplication with the received psi. Then compute the outer product of
   // f x f' and accumulate it's contribution in P.
-  /*if (thisIndex == 0) {
-    CkPrintf("Incoming kpt: %d, my qindex: %d, k+q: %d\n", ikpt, qindex, ikq);
-  }*/
   for (int l = 0; l < L; l++) {
-    // Compute f based on each pair of Psis, and the two associated eigenvalues
+    // Compute f based on each pair of Psis, taking into account Uproc
     psi_occ = psi_cache_proxy.ckLocalBranch()->getPsi(ispin, ikq, l);
-   
     for (int i = 0; i < size; i++) {
-      // if umklapp != 0, occupied state needs to be modified
-      if(Uproc){
-	f[i] = psi_occ[i]*psi_unocc[i].conj()*umklapp_factor[i];}
-      else{
-	f[i] = psi_occ[i]*psi_unocc[i].conj();}
+      f[i] = psi_occ[i]*psi_unocc[i].conj();
+      // If we are doing U-process, then multiply by our umklapp factor
+      if (Uproc) {
+        f[i] *= umklapp_factor[i];
+      }
     }
-    /*if (thisIndex == 0) {
-      CkPrintf("f[%i]: %lg %lg\n", 0, f[0].re, f[0].im);
-    }*/
     
     // Once we've computed f, compute its contribution to our chunk of P.
     double scaling_factor = 4/(e_occ[ispin][ikq][l] - e_unocc[ispin][ikpt][m]);
@@ -88,16 +78,7 @@ void PMatrix::receivePsi(PsiMessage* msg) {
         data[r][c] += f[r+start_row]*f[c+start_col].conj() * scaling_factor;
       }
     }
-    /*if (thisIndex == 0) {
-      CkPrintf("e_occ: %lg\n", e_occ[ispin][ikq][l]);
-      CkPrintf("e_unocc: %lg\n", e_unocc[ispin][ikpt][m]);
-      CkPrintf("scaling_factor: %lg\n", scaling_factor);
-      CkPrintf("P[0,0]: %lg %lg\n", data[0][0].re, data[0][0].im);
-    }*/
   }
-
-  // deallocate umklapp_factor as it's done
-  if (Uproc){ delete[] umklapp_factor; }
 
   // Tell the controller we've completed work on this psi
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
@@ -174,7 +155,7 @@ void PMatrix::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
       break;
     }
   }
-    // save umklapp scattering information
+  // save umklapp scattering information
   for (int i=0; i<3; i++) {
     uklapp[i] = int( k_plus_q_orig[i] - k_plus_q[i] );
   }
@@ -221,8 +202,5 @@ void PMatrix::getUmklappFactor(complex* umklapp_factor, int uklpp[3]){
   }//end if-else statement
 
 }//end function
-
-
-
 
 #include "pmatrix.def.h"
