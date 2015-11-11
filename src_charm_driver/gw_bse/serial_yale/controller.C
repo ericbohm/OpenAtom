@@ -18,10 +18,6 @@ Controller::Controller() {
   next_K = next_state = total_sent = total_complete = 0;
 }
 
-void Controller::pComplete() {
-  pmatrix_proxy.printRowAndExit(1);
-}
-
 PsiCache::PsiCache() {
   GWBSE *gwbse = GWBSE::get();
   K = gwbse->gw_parallel.K;

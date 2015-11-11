@@ -9,7 +9,6 @@ class Controller : public CBase_Controller {
   Controller_SDAG_CODE
   public:
     Controller();
-    void pComplete(); // Just for debugging
 
   private:
     unsigned K, L, M, pipeline_stages;

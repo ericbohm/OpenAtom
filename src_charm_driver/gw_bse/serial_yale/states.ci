@@ -19,6 +19,7 @@ module controller {
     entry [reductiontarget] void psiComplete();
     entry [reductiontarget] void fftComplete();
     entry [reductiontarget] void transposeComplete();
+    entry [reductiontarget] void printingComplete();
 
     entry void run() {
       // Tell the occupied psis to duplicate them in the cache, the wait for
@@ -47,10 +48,15 @@ module controller {
         when psiComplete() serial { total_complete++; }
       }
 
-      serial { pmatrix_proxy.fftRows(); }
-      when fftComplete()        serial { pmatrix_proxy.doTranspose(); }
+      serial { pmatrix_proxy.printRows(4, "P_Rspace"); }
+      when printingComplete()   serial { pmatrix_proxy.fftRows(); }
+      when fftComplete()        serial { pmatrix_proxy.printRows(4, "1FFT"); }
+      when printingComplete()   serial { pmatrix_proxy.doTranspose(); }
       when transposeComplete()  serial { pmatrix_proxy.fftRows(); }
-      when fftComplete()        serial { pComplete(); }
+      when fftComplete()        serial { pmatrix_proxy.printRows(4, "2FFT"); }
+      when printingComplete()   serial { pmatrix_proxy.doTranspose(); }
+      when transposeComplete()  serial { pmatrix_proxy.printRows(4, "P_Gspace"); }
+      when printingComplete()   serial { CkExit(); }
     }
   };
 
@@ -87,7 +93,7 @@ module pmatrix {
     entry [nokeep] void receivePsi(PsiMessage*);
     entry void fftRows();
     entry void receiveTransposeData(int, complex);
-    entry void printRowAndExit(int);
+    entry void printRows(int n, char prefix[16]);
 
     entry void doTranspose() {
       serial {

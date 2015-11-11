@@ -101,18 +101,19 @@ void PMatrix::fftRows() {
   contribute(CkCallback(CkReductionTarget(Controller, fftComplete), controller_proxy));
 }
 
-void PMatrix::printRowAndExit(int row) {
-  if (row >= start_row && row < start_row + num_rows) {
+// Print first n rows to file named with prefix
+void PMatrix::printRows(int n, const char* prefix) {
+  for (int r = start_row; r < n && r < start_row + num_rows; r++) {
     FILE* fp;
     char filename[200];
-    sprintf(filename, "P_Rspace_q%d_row%d.dat", qindex, row);
+    sprintf(filename, "row_data/%s_q%d_row%d.dat", prefix, qindex, r);
     fp = fopen(filename, "w");
     for (int i = 0; i < num_cols; i++) {
-      fprintf(fp, "row %d col %d %lg %lg\n", row, i, data[row-start_row][i].re, data[row-start_row][i].im);
+      fprintf(fp, "row %d col %d %lg %lg\n", r, i, data[r-start_row][i].re, data[r-start_row][i].im);
     }
     fclose(fp);
   }
-  contribute(CkCallback(CkCallback::ckExit));
+  contribute(CkCallback(CkReductionTarget(Controller, printingComplete), controller_proxy));
 }
 
 

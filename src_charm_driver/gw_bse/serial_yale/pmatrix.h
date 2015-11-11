@@ -11,7 +11,7 @@ class PMatrix : public CBase_PMatrix {
 
     void receivePsi(PsiMessage*);
     void fftRows();
-    void printRowAndExit(int);
+    void printRows(int, const char*);
 
   private:
     unsigned L; // Number of occupied psis
