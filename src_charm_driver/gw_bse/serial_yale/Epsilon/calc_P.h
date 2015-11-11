@@ -6,5 +6,5 @@
 #include "util.h"
 #include "my_fftw.h"
 
-void update_Pmtrx(complex *, double, complex *, double, int, int, CMATRIX*);
+void update_Pmtrx(complex *, double, complex *, double, int, SYSINFO, CMATRIX*);
 void modify_state_Uproc(complex *, int [3], int [3], SYSINFO);

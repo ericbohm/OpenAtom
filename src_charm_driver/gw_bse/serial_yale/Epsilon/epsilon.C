@@ -1,5 +1,15 @@
 /*
         main program for epsilon calculations
+
+        1. read information from sysinfo.dat
+        2. read user input file (epsilon.in)
+        3. set fftsize for psi
+        4. FFTW for all psi
+        5. P matrix in R space is calculated
+        6. P matrix in G space is calculated by performing dual FFTs
+        7. Epsilon matrix is calculated, and the size of the matrix is about 1/4 of P matrix
+        8. Epsilon inverse matrix is calculated by using iterative method
+
 */
 
 #include <cstdlib>
@@ -12,14 +22,18 @@
 
 int main(){
 
-
     // read system and cell information 
-    SYSINFO sys;
-    read_sysinfo(sys);
+    SYSINFO sys = SYSINFO();
 
     // read user input values 
-    USRINPUT usrin;
-    read_usrinput(usrin, sys);
+    USRINPUT usrin = USRINPUT();
+
+    // check consistency between userinput and system input
+    check_inputs(usrin, sys);
+
+    // okay, it's not a good way, but I'm just assigning occ/unocc to sys here
+    sys.nocc = usrin.nocc;
+    sys.nunocc = usrin.nunocc;
  
     // determine the size of FFT box for wavefunction conversion
     // number of fft points in 3D direction
@@ -112,7 +126,7 @@ int main(){
 
 
 #ifdef DEBUG
-nq = 2;
+nq = 4;
 #endif
 
 
@@ -123,7 +137,7 @@ nq = 2;
 
 	    // Polarizability calculation requires shifted wavefunctions
 	    // when q=0 & G=0
-
+/*
 	    if (iq==0){
 		bool shifted(true);
 		psi_[is] = new STATES *[nkpt];
@@ -156,7 +170,7 @@ nq = 2;
 	    }//end iq=0
 
 	    if(iq!=0){
-
+*/
 		// calculate P matrix
 		for (int ik=0; ik<nkpt; ik++){
 
@@ -166,7 +180,9 @@ nq = 2;
 		    // calculate P(r,r') matrix
 		    calc_Pmtrx_Rspace(P[is][iq], sys, psiR[is][ik], psiR[is][ikq], uklpp, nfft);
 		}
+/*
 	    }
+*/
 	    // P(r,r';q) is done
 
 #ifdef USE_LAPACK
@@ -175,25 +191,11 @@ nq = 2;
 #endif
 
 
-
-#ifdef DEBUG
-	    std::cout << " P(R,R'): " << std::endl;
-	    for(int ii=0; ii<12; ii++){
-		std::cout << P[is][iq]->get(0,ii) << std::endl;
-	    }
-
-#endif
-
 	    // FFT: P(r,r';q) -> P(g,g';q)
 	    Pmtrx_R_to_G(iq, P[is][iq], nfft, sys.vol);
 	    //------------------------ DONE Polarizability calculations -------------------------//
-#ifdef DEBUG
-	    std::cout << " P(G,G'): " << std::endl;
-	    for(int ii=0; ii<12; ii++){
-		std::cout << P[is][iq]->get(0,ii) << std::endl;
-	    }
-#endif
 
+	    
 
 	    // prep to calculate Epsmat
 	    
@@ -219,21 +221,12 @@ nq = 2;
 	    // calculate epsilon inverse matrix
 	    iter_invmtrx(Epsmat[is][iq], usrin, geps[iq]->ng);
 
-#ifdef DEBUG
-	    std::cout << " epsilon matrix inverse: " << std::endl;
-	    for(int ii=0; ii<12; ii++){
-		std::cout << Epsmat[is][iq]->get(0,ii) <<std::endl;
-	    }
-	    for(int ii=0; ii<12; ii++){
-		std::cout << Epsmat[is][iq]->get(ii,ii) <<std::endl;
-	    }
-#endif
+
 
 	}//end q loop
     }//end spin loop
 
     delete[] accept;
-
 
 
     TimeStamp();

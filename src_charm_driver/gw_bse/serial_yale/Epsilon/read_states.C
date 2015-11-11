@@ -1,8 +1,8 @@
 /*
       read_states.C
         1) read eignevalues and occupancies from file Eigenvalue
-        1) read wavefunctions from state*.out.gz files
-        2) read gvectors from state1.out.gz file. G vectors are saved only once when state index is 0 at each k point
+        1) read wavefunctions from state*.out files
+        2) read gvectors from state1.out file. G vectors are saved only once when state index is 0 at each k point
 */
 
 #include <iostream>
@@ -21,7 +21,6 @@ void read_states(STATES *psi){
 
     // memory allocation for wavefunction coefficient
     psi->coeff = new complex *[nstate];
-
     
     // string to open files 
     stringstream ss; // spin index
@@ -46,16 +45,18 @@ void read_states(STATES *psi){
 
 	// if the state is not shifted
 	if (!psi->shifted)
-	    fname =  "./Spin." + ss.str() + "_Kpt." + sk.str() + "_Bead.0_Temper.0/state" + sb.str() + ".out";
+	    fname =  "./STATES_IN/Spin." + ss.str() + "_Kpt." + sk.str() + "_Bead.0_Temper.0/state" + sb.str() + ".out";
 	// if the state is not shifted
 	if (psi->shifted)
-	    fname = "./Spin." + ss.str() + "_Kpt.0" + sk.str() + "_Bead.0_Temper.0/state" + sb.str() + ".out";
+	    fname = "./STATES_IN/Spin." + ss.str() + "_Kpt.0" + sk.str() + "_Bead.0_Temper.0/state" + sb.str() + ".out";
 
 	fp.open( fname.c_str() );
 
 	// read ng and dense fft size
 	fp >> ng >> nfftDen[0] >> nfftDen[1] >> nfftDen[2];
-	//	psi->gvec.ng = ng;
+	if (istate == 0) {
+          psi->ndata = ng;
+        }
 	// m'alloc for coefficient
 	psi->coeff[istate] = new complex [ng];
 
@@ -88,9 +89,9 @@ void read_states(STATES *psi){
     // read eigenvalues and occupancies
 
     if(!psi->shifted)
-	fname = "./Spin." + ss.str() + "_Kpt." + sk.str() + "_Bead.0_Temper.0/Eigenvalue";
+	fname = "./STATES_IN/Spin." + ss.str() + "_Kpt." + sk.str() + "_Bead.0_Temper.0/eigenvalues.in";
     if(psi->shifted)
-        fname = "./Spin." + ss.str() + "_Kpt.0" + sk.str() + "_Bead.0_Temper.0/Eigenvalue";
+        fname = "./STATES_IN/Spin." + ss.str() + "_Kpt.0" + sk.str() + "_Bead.0_Temper.0/eigenvalues.in";
 
     fp.open( fname.c_str() );
     
@@ -100,7 +101,7 @@ void read_states(STATES *psi){
     
     if(fp){
         for (int i=0; i < nstate; i++) {
-            fp >> psi->eig[i] >> psi->occ[i];
+            fp >> psi->eig[i];
         }
     }
     fp.close();

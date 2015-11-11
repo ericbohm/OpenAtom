@@ -2,6 +2,9 @@
    Input: Polarizability matrix
    nrow/ncol in Epsmat are smaller (about half) than nrow/ncol in P since we do spherical cutoff for Epsilon
    bool *accept tells us which G vectors we are going to use for Epsilon matrix
+
+   Epsmat^q[G,G'] = -1*sqrt(Vc[G+q])*P^q[G,G']*sqrt(Vc[G'+q])
+
 */
 
 
@@ -18,6 +21,7 @@ void calc_Epsmat(double* vcoulb, int iq, SYSINFO sys, GSPACE *geps, CMATRIX *Eps
     vcoulb = new double [geps->ng];
     
     // calculate Vcoulb
+    // vcoulb = 4*PI/(Nk*vol)/(q+G)^2 
     calc_vcoulb(iq, vcoulb, geps, sys);
     
     int inew=0;

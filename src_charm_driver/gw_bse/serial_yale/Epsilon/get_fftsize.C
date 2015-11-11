@@ -5,6 +5,9 @@
 #include <cmath>
 #include <iostream>
 
+// at this moment, this function takes the size of the dense fft grid from QEspresso output
+// and just multiply some number (which is given by user) to them, and make it the fftgrid for wavefunction
+// TODO maybe we should change this routine
 void wfn_fftsize(USRINPUT usrin, SYSINFO sys, int (&nfft)[3]){
 
     double frac = usrin.wfnFFTsize;
