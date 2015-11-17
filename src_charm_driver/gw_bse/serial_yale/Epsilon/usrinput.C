@@ -25,7 +25,7 @@ void USRINPUT::read_usrinput(){
 	fp >> nkpt;
 	fp >> nspin;
 	
-        fp >> wfnFFTsize;
+        fp >> EcutFFT;
         fp >> EpsCut;
         fp >> shift[0] >> shift[1] >> shift[2];
 

@@ -23,15 +23,17 @@ class GW_EPSILON{
     int nunocc;                  // Num: number of unoccupied states
     double*** Eocc;              // Eigenvalues for occupied states
     double*** Eunocc;            // Eigenvalues for unoccupied states
-    double Ecuteps;              // Num: Epsilon matrix cutoff
+    double EcutFFT;              // Num: Energy cutoff for FFT (Rydberg)
+    double Ecuteps;              // Num: Epsilon matrix cutoff (Rydberg)
     double tol_iter;             // Num: Tolerance of the iterative matrix inversion method
     char eigFileName[200];       // No need to pup this, contents stored in Eocc and Eunocc
 
     //----------------
     //con-destruct:
     GW_EPSILON(){
-      Ecuteps         = 0;
-      tol_iter        = 0;
+      EcutFFT  = 0;
+      Ecuteps  = 0;
+      tol_iter = 0;
       nocc = 0;
       nunocc = 0;
       Eocc = NULL;
@@ -44,6 +46,7 @@ class GW_EPSILON{
     //pupping
     void pup(PUP::er &p){
       //pupping dbles
+      p | EcutFFT;
       p | Ecuteps;
       p | tol_iter;
       p | nspin;
@@ -83,6 +86,7 @@ class GW_EPSILON{
       sprintf ( fileName, "%d_gw_epsilon.out", CKMYPE());
       FILE *fp; fp = fopen(fileName,"w");
       //dbles
+      fprintf(fp,"EcutFFT %lg\n",EcutFFT);
       fprintf(fp,"Ecuteps %lg\n",Ecuteps);
       fprintf(fp,"tol_iter %lg\n",tol_iter);
       fprintf(fp,"nocc %d\n",nocc);

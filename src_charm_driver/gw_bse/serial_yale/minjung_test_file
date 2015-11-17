@@ -14,6 +14,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccc
 ================================================
 
 ~GW_epsilon[
+\EcutFFT{25}
 \Ecuteps{10}
 ]
 

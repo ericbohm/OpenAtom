@@ -214,10 +214,10 @@ nq = 4;
 	    
 	    // calculate epsilon matrix
 	    calc_Epsmat(vcoulb, iq, sys, geps[iq], Epsmat[is][iq], P[is][iq], ndata, accept);	    
-
+/*
 	    //delete P matrix
 	    delete P[is][iq];
-
+*/
 	    // calculate epsilon inverse matrix
 	    iter_invmtrx(Epsmat[is][iq], usrin, geps[iq]->ng);
 
@@ -227,6 +227,10 @@ nq = 4;
     }//end spin loop
 
     delete[] accept;
+
+P[0][1]->printRow(1,"P_Rspace_q1_row1.dat");
+P[0][3]->printRow(1,"P_Rspace_q3_row1.dat");
+
 
 
     TimeStamp();
