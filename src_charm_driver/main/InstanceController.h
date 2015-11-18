@@ -1,5 +1,13 @@
 #ifndef _INSTANCECONTROLLER_H_
 #define _INSTANCECONTROLLER_H_
+
+//#include "preprocessor.h"
+
+//#if INTEROP
+//#include "mpi-interoperate.h"
+//#include "diagonalizer.h"
+//#endif
+
 class ICCookieMsg : public CkMcastBaseMsg, public CMessage_ICCookieMsg {
   public:
     int junk;
@@ -48,6 +56,15 @@ class InstanceController: public CBase_InstanceController {
     bool gspTempDone;
     bool printToScreen;
     CkSectionInfo allKPcookie;
+};
+
+class PublishMPI : public CBase_PublishMPI {
+  public:
+    PublishMPI();
+    void publishNow();
+    void publishDone(int tot1);
+    void publishLambda(int x, int y, int n, internalType *lmat);
+    void publishBack();
 };
 
 #endif

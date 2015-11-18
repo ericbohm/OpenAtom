@@ -12,6 +12,14 @@
   @{
  */
 
+CProxy_Ortho prorthoproxy;
+int numOrthosPerDim;
+int totalOrthos;
+int diagonalization;
+int grainSizeOrtho;
+int numStatesOA;
+//extern int numPes;
+
 namespace cp {
   namespace ortho {
 
@@ -110,6 +118,7 @@ namespace cp {
       orthoOpts.setStaticInsertion(false);
       orthoOpts.setAnytimeMigration(false);
       CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
+      prorthoproxy = orthoProxy;
 
       // Create maps for the Ortho helper chares
       if(config.useOrthoHelpers)
@@ -252,6 +261,17 @@ namespace cp {
       // Register with the time keeper
       int timekeep=keeperRegister("Ortho S to T");
       int maxorthoindex=(cfg.numStates/cfg.grainSize-1);
+      numOrthosPerDim = maxorthoindex + 1;
+      totalOrthos = numOrthosPerDim * numOrthosPerDim;
+      //if(totalOrthos <= config.numPes){
+#if INTEROP
+        diagonalization = 1;
+#else
+        diagonalization = 0;
+#endif
+      //}
+      grainSizeOrtho = cfg.grainSize;
+      numStatesOA = cfg.numStates;
       int maxorthostateindex=(cfg.numStates/cfg.grainSize-1) * cfg.grainSize;
       // Insert each element of the Ortho array
       for (int s1 = 0; s1 <= maxorthostateindex; s1 += cfg.grainSize)

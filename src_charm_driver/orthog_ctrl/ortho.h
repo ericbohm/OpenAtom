@@ -76,6 +76,7 @@
 #include "ortho.decl.h"
 #include "pcSectionManager.h"
 #include "CLA_Matrix.h"
+#include "mpi-interoperate.h"
 using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within namespace ortho
 
 #ifndef _ortho_h_
@@ -97,6 +98,11 @@ class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 };
 
 class orthoMtrigger : public CkMcastBaseMsg, public CMessage_initCookieMsg {
+};
+
+class CharmMPIBridge : public CBase_CharmMPIBridge {
+  public:
+    CharmMPIBridge();
 };
 
 /** @addtogroup Ortho
@@ -147,6 +153,12 @@ class Ortho : public CBase_Ortho
 
     // Accepts lamda reduced from the asymm PC instance. In min, acts as via point and mcasts lambda back to the asymm PCs. In dynamics, triggers computation of gamma = lambda x T
     void acceptSectionLambda(CkReductionMsg *msg);
+    //void makeMPICall(double totalcents);
+    void mpiDataSent();
+    void mpiDataGather(int nn, double* rmat);
+    void transfercontrol(int n);
+    //void makeMPICallComp(CkReductionMsg *m1);
+    void makeMPICallQD();
     /// Used in dynamics, to accept computed gamma and send it to the asymm PC instance. Also sends T if it hasnt yet been sent
     void gamma_done();
 
@@ -220,6 +232,8 @@ class Ortho : public CBase_Ortho
     internalType *A, *B, *C, *tmp_arr;
     int step;
     int m, n;
+    int numMpiDataSent;
+    int numorthosperdim;
     double invsqr_tolerance;
     int invsqr_max_iter;
     CLA_Matrix_interface matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3;

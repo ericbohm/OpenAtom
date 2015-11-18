@@ -156,8 +156,9 @@ int make_multiplier(
         (C->p(i * strideM, j * strideN)).insert(mult, M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_C, cbC, gid, gemmSplitOrtho);
     C->p.doneInserting();
   }
-
-  return SUCCESS;
+  
+  int successful_return = 0;
+  return successful_return;
 }
 
 

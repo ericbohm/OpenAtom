@@ -8,5 +8,5 @@ binary/
 # Ignore typically named build directories
 build*/
 # Ignore the configuration makefile
+data/
 config.mk
-

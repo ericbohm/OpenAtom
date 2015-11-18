@@ -147,6 +147,7 @@ module ENL_EKE_Collector
 
 module instanceController
 {
+  //include "preprocessor.h";
   message ICCookieMsg;
   include "fft_charm.h";
   array [1D] InstanceController {
@@ -170,6 +171,17 @@ module instanceController
     entry void instancesReady(CkReductionMsg *m);
     entry void resumeFromTemper();
   };
+
+//#define INTEROP 1
+//#if INTEROP
+  group PublishMPI {
+    entry PublishMPI();
+    entry void publishNow();
+    entry [reductiontarget] void publishDone(int tot1);
+    entry void publishLambda(int x, int y, int n, internalType lmat[n]);
+    entry void publishBack();
+  };
+//#endif
 };
 
 module temperController
@@ -183,7 +195,8 @@ module temperController
 
 
 
-mainmodule cpaimd {	
+mainmodule cpaimd {
+  //include "preprocessor.h";
   initnode void initFFTLock(void);
 
   readonly double Timer;
@@ -194,6 +207,8 @@ mainmodule cpaimd {
   readonly int done_init;
   readonly int TimeKeeperID;
   readonly int numPes;
+  //readonly int numOrthosPerDim;
+  //readonly int totalOrthos;
   readonly int planes_per_pe;
   readonly bool fakeTorus;
   readonly CProxy_TimeKeeper TimeKeeperProxy;
@@ -247,6 +262,11 @@ mainmodule cpaimd {
 
   readonly CProxy_PhysScratchCache pScratchProxy;
   readonly CProxy_InstanceController instControllerProxy;
+//#define INTEROP 1
+//#if INTEROP
+  readonly CProxy_PublishMPI publishMpiProxy;
+//#endif
+  //readonly CProxy_Ortho prorthoproxy;
 
   readonly CProxy_TemperController temperControllerProxy;
 

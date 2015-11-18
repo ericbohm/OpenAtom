@@ -1,12 +1,13 @@
 #===============================================================================
 #------------------------- Path to Charm++ and FFTW ----------------------------
   # Location of the charm installation
-  CHARMBASE	= $(HOME)/charm/netlrts-linux-x86_64-smp
+  CHARMBASE	= /scratch/prateek/myopenatom/charm-sep26
   # Location of the FFTW library installation
-  FFT3_HOME	= /usr
-  FFT2_HOME	= /usr
-  CHARMFFT_HOME = $(HOME)/fft
+  FFT3_HOME	= /scratch/prateek/myopenatom/fftw3/fftw-3.3.4/install
+  FFT2_HOME	= /scratch/prateek/myopenatom/fftw2/fftw-2.1.5/install
+  CHARMFFT_HOME = /scratch/prateek/myopenatom/charmfft-sep26
   ELPA_HOME	= /scratch/prateek/myopenatom/elpa/scalapack/myinstall
+  #ELPA_HOME	= /scratch/prateek/myopenatom/
   INTEROPMPI    = NO
   INTEROPVAL    = -DFUSE
 
@@ -35,9 +36,9 @@ endif
 #-------------------------------------------------------------------------------
 #------------------------- Flags for the whole code ----------------------------
   # Optimization level and debug (Dont add other flags to OPT)
-  OPT       = -O3
+  OPT       = -g -O0
   # What flags do we use when compiling the fragile portions of piny
-  OPT_CARE  = -O2
+  OPT_CARE  = -g -O0
   CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 $(INTEROPVAL) \
 	      -I$(FFT3_HOME)/include -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
 	      -Wl,--allow-multiple-definition

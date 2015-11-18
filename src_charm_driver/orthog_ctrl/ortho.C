@@ -45,8 +45,10 @@
 
 #include "ortho.h"
 #include "orthoHelper.h"
+#include "diagonalizer.h"
 //#include "gSpaceDriver.decl.h"
 #include "timeKeeper.decl.h"
+#include "instanceController.decl.h"
 
 #include "charm++.h"
 #include "utility/matrix2file.h"
@@ -54,6 +56,7 @@
 
 //#include "fft_slab_ctrl/fftCacheSlab.h"
 #include <unistd.h>
+//#include "mpi-interoperate.h"
 
 #ifdef TRACE_MEMORY
 #include <trace-projections.h>
@@ -66,12 +69,62 @@
 //============================================================================
 extern Config config;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
-
+extern diagData_t<internalType> *diagData;
+extern CProxy_PublishMPI publishMpiProxy;
+extern int numOrthosPerDim;
+extern int totalOrthos;
+extern int diagonalization;
 //============================================================================
 
 /** @addtogroup Ortho
   @{
  */
+
+/*CkReduction::reducerType concatOAMatricesType;
+
+void registerconcatOAMatrices(void)
+{
+  concatOAMatricesType=CkReduction::addReducer(concatOAMatrices);
+}
+
+inline CkReductionMsg *concatOAMatrices(int nMsg, CkReductionMsg **msgs)
+{
+  double *ret=(double *)msgs[0]->getData();
+
+  //  CkAssert ((unsigned int) ret % 8 == 0);
+  int size0=msgs[0]->getSize();
+  int size=size0/sizeof(double);
+
+  double *inmatrix;
+  //  int progcount=0;
+  if(nMsg>3) // switch loops and unroll
+  {
+    int i=1; 
+    // idea here is to have only 1 store for 4 loads
+    for(int d=0;d<size;d++)
+    {    
+      for(i=1; i<nMsg-3;i+=3)
+        ret[d]+= ((double *) msgs[i]->getData())[d] + ((double *) msgs[i+1]->getData())[d] + ((double *) msgs[i+2]->getData())[d];
+      for(; i<nMsg;i++)
+      {    
+        ret[d]+=((double *) msgs[i]->getData())[d];
+      }    
+    }    
+  }
+  else 
+    for(int i=1; i<nMsg;i++)
+    {    
+
+      inmatrix=(double *) msgs[i]->getData();
+      for(int d=0;d<size;d++)
+        ret[d]+=inmatrix[d];
+    }
+  return CkReductionMsg::buildNew(size*sizeof(double),ret);
+}
+*/
+
+CharmMPIBridge::CharmMPIBridge() {
+}
 
 Ortho::~Ortho()
 {
@@ -439,6 +492,15 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 
   internalType *lambda = (internalType*)msg->getData();
   int lambdaCount = msg->getSize()/sizeof(internalType);
+  int newcount = lambdaCount + 3;
+  internalType* templambda = new internalType[newcount];
+  memcpy(&templambda[3], lambda, lambdaCount*sizeof(internalType));
+  templambda[0] = (internalType) thisIndex.x;
+  templambda[1] = (internalType) thisIndex.y;
+  templambda[2] = (internalType) lambdaCount;
+  if(lambdaCount != (m*n)) {
+    CkAbort("incorrect value for lambdaCount\n");
+  }
 
 #ifdef _CP_ORTHO_DUMP_LMAT_
   dumpMatrix("lmat",lambda, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
@@ -495,6 +557,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
         thisIndex.x, thisIndex.y);
 
     //completed gamma will call finishPairCalcSection2
+    delete msg;
   }
   else
   {
@@ -505,19 +568,62 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
       CkAssert( isfinite(lambda[i]) );
 #endif
 
-    // finish pair calc
-    asymmSectionMgr.sendResults(lambdaCount, lambda, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
+    if (diagonalization == 0) { // cfg.diagonalization
+      // finish pair calc
+      asymmSectionMgr.sendResults(lambdaCount, lambda, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
 #ifdef _CP_DEBUG_ORTHO_VERBOSE_
-    if(thisIndex.x==0 && thisIndex.y==0)
-      CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
+      if(thisIndex.x==0 && thisIndex.y==0)
+        CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
 #endif
+      delete msg;
+    }
+    else {
+      int xind = thisIndex.x;
+      int yind = thisIndex.y;
+      int petoaddress = numOrthosPerDim * xind + yind;
+      CkPrintf("Prateek: petoaddress: <%d>\n", petoaddress);
+      publishMpiProxy[petoaddress].publishLambda(xind, yind, newcount, templambda);
+      CkPrintf("Prateek: I, <%d,%d>, contributed <%d> elements: <%.2f, %.2f, %.2f>\n", xind, yind, newcount, templambda[0], templambda[1], templambda[2]);
+    }
   }
-  delete msg;
-
   //----------------------------------------------------------------------------
 }// end routine
 //==============================================================================
 
+void Ortho::mpiDataSent() {
+  CkPrintf("mpiDataSent called on index: <%d,%d>\n", thisIndex.x, thisIndex.y);
+  int mycents = 1;
+  contribute(sizeof(int), &mycents, CkReduction::sum_int, CkCallback(CkReductionTarget(Ortho, transfercontrol), CkArrayIndex2D(0,0), thisProxy.ckGetArrayID()));
+}
+
+void Ortho::mpiDataGather(int nn, internalType* rmat){
+  CkPrintf("Prateek: [%d,%d] finishing asymm: rmat: <%.2f,%.2f,%.2f>\n",thisIndex.x, thisIndex.y, rmat[0], rmat[1], rmat[2]);
+  int mycount = nn - 3;
+  asymmSectionMgr.sendResults(mycount, &rmat[3], 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
+}
+
+void Ortho::transfercontrol(int totalcents) {
+  if ((thisIndex.x != 0) || (thisIndex.y != 0)) {
+    CkPrintf("***************Charm++ error ********************");
+    CkPrintf("******************exiting************************");
+    CkPrintf("***************Charm++ error ********************");
+    CkExit();
+  }
+  CkPrintf("In transfercontrol: Total Cents collected: <%d>\n", totalcents);
+  CkCallback qdcb(CkIndex_Ortho::makeMPICallQD(), CkArrayIndex2D(0,0), thisProxy.ckGetArrayID());
+  CkStartQD(qdcb);
+}
+
+void Ortho::makeMPICallQD() {
+  if ((thisIndex.x != 0) || (thisIndex.y != 0)) {
+    CkPrintf("***************Charm++ error ********************");
+    CkPrintf("******************exiting************************");
+    CkPrintf("***************Charm++ error ********************");
+    CkExit();
+  }
+  CkPrintf("\n\nQuiescence Has Been Detected\n\n");
+  CkExit();
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -643,7 +749,7 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
 
   /* do basic initialization */
   parallelStep2=config.useOrthoHelpers;
-
+  numMpiDataSent = 0;
   invsqr_max_iter=config.invsqr_max_iter;
   invsqr_tolerance=config.invsqr_tolerance;
   if(invsqr_tolerance==0)
@@ -655,6 +761,7 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
   this->matA3 = _matA3; this->matB3 = _matB3; this->matC3 = _matC3;
   timeKeep=timekeep;
   int borderOrtho = cfg.numStates / cfg.grainSize - 1;
+  this->numorthosperdim = borderOrtho + 1;
   int remOrtho = cfg.numStates%cfg.grainSize;
   if(thisIndex.x==borderOrtho)
     this->m = _m + remOrtho;
@@ -664,6 +771,12 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
     this->n = _n + remOrtho;
   else
     this->n = _n;
+  if(typeid(internalType)==typeid(double)){
+    CkPrintf("prateek: typeid for internalType is double\n");
+  }
+  else{
+    CkPrintf("prateek: typeid for internalType is complex\n");
+  }
   A = new internalType[this->m * this->n];
   B = new internalType[this->m * this->n];
   C = new internalType[this->m * this->n];
@@ -694,6 +807,19 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
 #ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
   savedtmat=NULL;
 #endif
+
+  //diagData = new diagData_t<internalType>;
+  //diagData->globalmatrix = new internalType**[numorthosperdim];
+  //for(int pr1 = 0 ; pr1 < numorthosperdim ; pr1++) {
+  //  diagData->globalmatrix[pr1] = new internalType*[numorthosperdim];
+  //}
+  //double* delme = new double;
+  //*delme = 123456.78;
+  //diagData->globalmatrix[0][0] = delme;
+  //diagData->numBlocks = cfg.numStates/cfg.grainSize;
+  //diagData->blockDim = cfg.grainSize;
+  //diagData->dim = diagData->numBlocks*diagData->blockDim;
+  //diagData->elpaInit = false; 
 }//end routine
 
 
@@ -871,5 +997,6 @@ void Ortho::print_results()
 
 #include "orthoMap.h"
 #include "ortho.def.h"
+//#include "instanceController.def.h"
 
 /*@}*/

@@ -1,0 +1,2 @@
+rm -rvf build-O0-g
+make -j16

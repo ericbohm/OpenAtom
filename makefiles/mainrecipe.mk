@@ -20,7 +20,11 @@ SRC       =
 HDR       =
 OBJ       = $(addsuffix .o, $(basename $(SRC)) )
 INTF      =
-LIBS      = $(moddriver) $(modphysics) $(modmath)
+#LIBS      = $(moddriver) $(modphysics) $(modmath) $(modinterop)
+LIBS      = $(moddriver) $(modphysics) $(modmath) 
+ifeq ($(INTEROPMPI), YES)
+  LIBS     += $(modinterop)
+endif
 
 # Compute the revision number (hash) of the build and feed it to the code
 ifeq ($(GIT),)
@@ -30,20 +34,28 @@ else
 endif
 CPPFLAGS += -DOPENATOM_REVISION=$(REVNUM)
 
-.PHONY: compile driver physics libs mathlib clean again test translateInterface
+.PHONY: compile driver physics libs mathlib interoplib clean again test translateInterface
 
 compile: $(TARGET)
 
 $(TARGET): $(LIBS:%=lib%.a) $(OBJ)
 	$(info-ld)
-	$q$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	ar q libmodulecpaimd.a *.o
+ifeq ($(INTEROPMPI), YES)
+	$(CXX) -mpi -nomain-module $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $(LDLIBS)
+else
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+endif
 	@echo "=========== Target produced from commit hash: $(REVNUM)"
+	@echo "=========== Go on to next stage now ==================="
 
 driver: $(libdriver)
 
 physics: $(libphysics)
 
 mathlib: $(libmath)
+
+interoplib: $(libinterop)
 
 libs: mathlib
 
@@ -64,5 +76,16 @@ depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(SRC)) ) )
 include $(driver)/makerules.mk
 include $(physics)/makerules.mk
 include $(mathlib)/makerules.mk
+include $(interoplib)/makerules.mk
 endif
 
+#all: prat
+#
+#CHARMBASE = /scratch/prateek/myopenatom/charm-sep26
+#CHARMINC = $(CHARMBASE)/include
+#CHARMBIN = $(CHARMBASE)/bin
+#CXX = $(CHARMBIN)/charmc -w
+#
+#prat:
+#clean:
+#	rm -rvf charmrun xpdsyev pdsyev.o objfiles libCharmDriver.a libMyMathLib.a libPinyInterface.a
