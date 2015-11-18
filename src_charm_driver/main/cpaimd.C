@@ -204,6 +204,9 @@ int Ortho_UE_error;
 bool Ortho_use_local_cb;
 int done_init=0;
 int planes_per_pe;
+extern int numOrthosPerDim;
+extern int totalOrthos;
+extern int diagonalization;
 
 //============================================================================
 
@@ -464,8 +467,9 @@ main::main(CkArgMsg *msg) {
 
   instControllerProxy= CProxy_InstanceController::ckNew(numFFTinstances,
       config.numInstances);
-
   instControllerProxy.doneInserting();
+
+  diagonalizerBridgeProxy = CProxy_DiagonalizerBridge::ckNew();
 
   // make one controller temper
   if(sim->ntemper>1) {
@@ -557,6 +561,7 @@ main::main(CkArgMsg *msg) {
   }
   newtime = CmiWallTimer();
   Timer = newtime;
+  diagonalization = sim->cp_min_diagonalize;
   /**@}*/
   /*
     ===============================================================================
@@ -2487,8 +2492,8 @@ void orthostartup( cp::ortho::orthoConfig *orthoCfg,  pc::pcConfig *cfgSymmPC, p
   // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
   cfgSymmPC->uponSetupCompletion  = CkCallback(CkIndex_InstanceController::doneInit(),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
   cfgAsymmPC->uponSetupCompletion = CkCallback(CkIndex_InstanceController::doneInit(),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
-		// Identify who is the owner for this bubble
-		CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
+  // Identify who is the owner for this bubble
+  CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
 
   // Fill out a structure with all configs needed for PC mapping
   cp::startup::PCMapConfig pcMapCfg(boxSize,

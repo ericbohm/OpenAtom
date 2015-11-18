@@ -45,8 +45,10 @@
 
 #include "ortho.h"
 #include "orthoHelper.h"
+#include "diagonalizer.h"
 //#include "gSpaceDriver.decl.h"
 #include "timeKeeper.decl.h"
+#include "instanceController.decl.h"
 
 #include "charm++.h"
 #include "utility/matrix2file.h"
@@ -66,12 +68,26 @@
 //============================================================================
 extern Config config;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
-
+extern diagData_t<internalType> *diagData;
+extern CProxy_DiagonalizerBridge diagonalizerBridgeProxy;
+extern int numOrthosPerDim;
+extern int totalOrthos;
+extern int diagonalization;
+extern CProxy_Ortho orthoProxy;
+extern CProxy_ExtendedOrtho eOrthoProxy;
 //============================================================================
 
 /** @addtogroup Ortho
   @{
  */
+
+ExtendedOrtho::ExtendedOrtho() {
+}
+
+void ExtendedOrtho::lambdaSentToDiagonalizer() {
+  int myContribution = 1;
+  contribute(sizeof(int), &myContribution, CkReduction::sum_int, CkCallback(CkReductionTarget(Ortho, waitForQuiescence), CkArrayIndex2D(0,0), orthoProxy));
+}
 
 Ortho::~Ortho()
 {
@@ -85,9 +101,6 @@ Ortho::~Ortho()
     delete [] orthoT;
   }
 }
-
-
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -439,6 +452,12 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 
   internalType *lambda = (internalType*)msg->getData();
   int lambdaCount = msg->getSize()/sizeof(internalType);
+  int newcount = lambdaCount;
+  templambda = new internalType[newcount];
+  memcpy(templambda, lambda, lambdaCount*sizeof(internalType));
+  if(lambdaCount != (m*n)) {
+    CkAbort("incorrect value for lambdaCount\n");
+  }
 
 #ifdef _CP_ORTHO_DUMP_LMAT_
   dumpMatrix("lmat",lambda, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
@@ -495,6 +514,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
         thisIndex.x, thisIndex.y);
 
     //completed gamma will call finishPairCalcSection2
+    delete msg;
   }
   else
   {
@@ -505,19 +525,69 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
       CkAssert( isfinite(lambda[i]) );
 #endif
 
-    // finish pair calc
-    asymmSectionMgr.sendResults(lambdaCount, lambda, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
+    if (diagonalization == 0) {
+      // finish pair calc
+      asymmSectionMgr.sendResults(lambdaCount, lambda, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
 #ifdef _CP_DEBUG_ORTHO_VERBOSE_
-    if(thisIndex.x==0 && thisIndex.y==0)
-      CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
+      if(thisIndex.x==0 && thisIndex.y==0)
+        CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
 #endif
+      delete msg;
+    }
+    else {
+      int xind = thisIndex.x;
+      int yind = thisIndex.y;
+      int petoaddress = numOrthosPerDim * xind + yind;
+      diagonalizerBridgeProxy[petoaddress].sendLambdaToDiagonalizer(xind, yind, newcount, templambda);
+    }
   }
-  delete msg;
-
   //----------------------------------------------------------------------------
 }// end routine
 //==============================================================================
 
+void Ortho::acceptDiagonalizedLambda(int nn, internalType* rmat){
+  int okstatus = -1;
+  if (nn == m*n) {
+    okstatus = 1;
+  }
+  if (okstatus != 1) {
+    CkAbort("Incorrect number of elements in acceptDiagonalizerLambda.\n");
+  }
+#ifdef CP_DIAGONALIZER_DEBUG
+  for (int i = 0 ; i < nn ; i++) {
+#ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+    CkAssert(fabs(rmat[i].re - templambda[i].re)<0.00001);
+    CkAssert(fabs(rmat[i].im - templambda[i].im)<0.00001);
+#else
+    CkAssert(fabs(rmat[i] - templambda[i])<0.00001);
+#endif
+  }
+#endif
+  asymmSectionMgr.sendResults(nn, rmat, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
+}
+
+void Ortho::transferControlToMPI() {
+  if ((thisIndex.x != 0) || (thisIndex.y != 0)) {
+    CkPrintf("***************Charm++ error ********************");
+    CkPrintf("******************exiting************************");
+    CkPrintf("***************Charm++ error ********************");
+    CkExit();
+  }
+  CkPrintf("\n\nQuiescence Has Been Detected in Ortho\n\n");
+  CkExit();
+}
+
+void Ortho::waitForQuiescence(int totalContribution) {
+  if ((thisIndex.x != 0) || (thisIndex.y != 0)) {
+    CkPrintf("***************Charm++ error ********************");
+    CkPrintf("******************exiting************************");
+    CkPrintf("***************Charm++ error ********************");
+    CkExit();
+  }
+  CkPrintf("In waitForQuiescence: Total Contribution: <%d>\n", totalContribution);
+  CkCallback qdcb(CkIndex_Ortho::transferControlToMPI(), CkArrayIndex2D(0,0), thisProxy.ckGetArrayID());
+  CkStartQD(qdcb);
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -643,7 +713,6 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
 
   /* do basic initialization */
   parallelStep2=config.useOrthoHelpers;
-
   invsqr_max_iter=config.invsqr_max_iter;
   invsqr_tolerance=config.invsqr_tolerance;
   if(invsqr_tolerance==0)
@@ -694,6 +763,7 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
 #ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
   savedtmat=NULL;
 #endif
+
 }//end routine
 
 

@@ -1,5 +1,6 @@
 #ifndef _INSTANCECONTROLLER_H_
 #define _INSTANCECONTROLLER_H_
+
 class ICCookieMsg : public CkMcastBaseMsg, public CMessage_ICCookieMsg {
   public:
     int junk;
@@ -48,6 +49,17 @@ class InstanceController: public CBase_InstanceController {
     bool gspTempDone;
     bool printToScreen;
     CkSectionInfo allKPcookie;
+};
+
+class DiagonalizerBridge : public CBase_DiagonalizerBridge {
+  public:
+    DiagonalizerBridge_SDAG_CODE
+    DiagonalizerBridge();
+    void sendLambdaToDiagonalizer(int x, int y, int n, internalType *lmat);
+    void prepareDiagonalizerInput(int x, int y, int n, internalType *lmat);
+    void sendLambdaBackToOrtho();
+    void integrateLambda(int n, internalType *lmat);
+    int x, y;
 };
 
 #endif

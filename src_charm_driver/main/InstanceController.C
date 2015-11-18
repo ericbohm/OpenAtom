@@ -3,6 +3,11 @@
 #include "cpaimd.h"
 #include "AtomsCache.h"
 #include "AtomsCompute.h"
+
+#if INTEROP
+#include "mpi-interoperate.h"
+#endif
+#include "diagonalizer.h"
 #include "InstanceController.h"
 
 //============================================================================
@@ -37,6 +42,16 @@ extern CkGroupID                                 mCastGrpId;
 extern CkVec <UberCollection>                    UberAlles;
 extern CProxy_ENL_EKE_Collector                  ENLEKECollectorProxy;
 extern CPcharmParaInfo                          simReadOnly;
+extern CProxy_DiagonalizerBridge diagonalizerBridgeProxy;
+diagData_t<internalType> *diagData;
+extern CProxy_Ortho orthoProxy;
+extern CProxy_ExtendedOrtho eOrthoProxy;
+extern int numOrthosPerDim;
+extern int numEOrthosPerDim;
+extern int orthoShrinkExpand;
+extern int numStatesOA;
+extern int totalOrthos;
+extern int grainSizeOrtho;
 //============================================================================
 
 InstanceController::InstanceController(int _fft_expected) {
@@ -607,6 +622,199 @@ void InstanceController::cleanExitAll(CkReductionMsg *m)
   CkPrintf("********************************************************************************\n");
   CkExit();
 }
+
+DiagonalizerBridge::DiagonalizerBridge() {
+}
+
+void DiagonalizerBridge::sendLambdaToDiagonalizer(int x, int y, int n, internalType *lmat) {
+  int remElems2 = numStatesOA % grainSizeOrtho;
+  int stdElems = grainSizeOrtho * grainSizeOrtho;
+  int remElems = remElems2 * grainSizeOrtho;
+  int cornerElems = remElems2 * remElems2;
+
+  if (orthoShrinkExpand == 1) {
+     bool borderX = false;
+     bool borderY = false;
+     if (x + 1 == numOrthosPerDim) {
+       borderX = true;
+     }
+     if (y + 1 == numOrthosPerDim) {
+       borderY = true;
+     }
+     if (borderX && !borderY) {
+       int pe1 = x * numEOrthosPerDim + y;
+       thisProxy[pe1].prepareDiagonalizerInput(x, y, stdElems, lmat);
+       int x2 = x + 1;
+       int pe2 = x2 * numEOrthosPerDim + y;
+       thisProxy[pe2].prepareDiagonalizerInput(x2, y, remElems, &lmat[stdElems]);
+     }
+     else if (!borderX && borderY) {
+       internalType* stdMatrix = new internalType[stdElems];
+       internalType* remMatrix = new internalType[remElems];
+       int totalCounter = 0;
+       int stdCounter = 0;
+       int remCounter = 0;
+       for (int myrow = 0 ; myrow < grainSizeOrtho ; myrow++) {
+         memcpy(&stdMatrix[stdCounter], &lmat[totalCounter], grainSizeOrtho * sizeof(internalType));
+         totalCounter += grainSizeOrtho;
+         stdCounter += grainSizeOrtho;
+         memcpy(&remMatrix[remCounter], &lmat[totalCounter], remElems2 * sizeof(internalType));
+         totalCounter += remElems2;
+         remCounter += remElems2;
+       }
+       int pe1 = x * numEOrthosPerDim + y;
+       thisProxy[pe1].prepareDiagonalizerInput(x, y, stdElems, stdMatrix);
+       int y2 = y + 1;
+       int pe2 = x * numEOrthosPerDim + y2;
+       thisProxy[pe2].prepareDiagonalizerInput(x, y2, remElems, remMatrix);
+     }
+     else if (borderX && borderY) {
+       internalType* stdMatrix = new internalType[stdElems];
+       internalType* remXMatrix = new internalType[remElems];
+       internalType* remYMatrix = new internalType[remElems];
+       internalType* cornerMatrix = new internalType[cornerElems];
+       int totalCounter = 0;
+       int stdCounter = 0;
+       int remXCounter = 0;
+       int remYCounter = 0;
+       int cornerCounter = 0;
+       for (int myrow = 0 ; myrow < grainSizeOrtho ; myrow++) {
+         memcpy(&stdMatrix[stdCounter], &lmat[totalCounter], grainSizeOrtho * sizeof(internalType));
+         totalCounter += grainSizeOrtho;
+         stdCounter += grainSizeOrtho;
+         memcpy(&remYMatrix[remYCounter], &lmat[totalCounter], remElems2 * sizeof(internalType));
+         totalCounter += remElems2;
+         remYCounter += remElems2;
+       }
+       for (int myrow = grainSizeOrtho ; myrow < grainSizeOrtho + remElems2 ; myrow++) {
+         memcpy(&remXMatrix[remXCounter], &lmat[totalCounter], grainSizeOrtho * sizeof(internalType));
+         totalCounter += grainSizeOrtho;
+         remXCounter += grainSizeOrtho;
+         memcpy(&cornerMatrix[cornerCounter], &lmat[totalCounter], remElems2 * sizeof(internalType));
+         totalCounter += remElems2;
+         cornerCounter += remElems2;
+       }
+       int pe1 = x * numEOrthosPerDim + y;
+       thisProxy[pe1].prepareDiagonalizerInput(x, y, stdElems, stdMatrix);
+       int y2 = y + 1;
+       int pe2 = x * numEOrthosPerDim + y2;
+       thisProxy[pe2].prepareDiagonalizerInput(x, y2, remElems, remYMatrix);
+       int x2 = x + 1;
+       int pe3 = x2 * numEOrthosPerDim + y;
+       thisProxy[pe3].prepareDiagonalizerInput(x2, y, remElems, remXMatrix);
+       int pe4 = x2 * numEOrthosPerDim + y2;
+       thisProxy[pe4].prepareDiagonalizerInput(x2, y2, cornerElems, cornerMatrix);
+     }
+     else {
+       int pe1 = x * numEOrthosPerDim + y;
+       thisProxy[pe1].prepareDiagonalizerInput(x, y, n, lmat);
+     }
+  }
+  else {
+     int pe1 = x * numEOrthosPerDim + y;
+     CkAssert(n == stdElems);
+     thisProxy[pe1].prepareDiagonalizerInput(x, y, n, lmat);
+  }
+}
+
+void DiagonalizerBridge::prepareDiagonalizerInput(int x, int y, int n, internalType *lmat) {
+  diagData = new diagData_t<internalType>();
+  diagData->plambda = new internalType[n];
+  memcpy(diagData->plambda, lmat, n*sizeof(internalType));
+  diagData->pelements = n;
+  eOrthoProxy(x,y).lambdaSentToDiagonalizer();
+}
+
+void DiagonalizerBridge::sendLambdaBackToOrtho() {
+  int mype = CkMyPe();
+  if (mype >= (numEOrthosPerDim * numEOrthosPerDim)) {
+    return;
+  }
+  int xind = mype / numEOrthosPerDim;
+  int yind = mype % numEOrthosPerDim;
+  if (orthoShrinkExpand == 1) {
+    bool borderX = false;
+    bool borderY = false;
+    if ((xind + 1) == numEOrthosPerDim) {
+      borderX = true;
+    }
+    if ((yind + 1) == numEOrthosPerDim) {
+      borderY = true;
+    }
+    if (borderX && (!borderY)) {
+      int x2 = xind - 1;
+      int pe = x2*numOrthosPerDim + yind;
+      thisProxy[pe].neighborX(diagData->pelements, diagData->rlambda);
+    }
+    else if ((!borderX) && borderY) {
+      int y2 = yind - 1;
+      int pe = xind*numOrthosPerDim + y2;
+      thisProxy[pe].neighborY(diagData->pelements, diagData->rlambda);
+    }
+    else if (borderX && borderY) {
+      int x2 = xind - 1;
+      int y2 = yind - 1;
+      int pe = x2*numOrthosPerDim + y2;
+      thisProxy[pe].neighborCorner(diagData->pelements, diagData->rlambda);
+    }
+    else {
+      int pe = xind * numOrthosPerDim + yind;
+      thisProxy[pe].integrateLambda(diagData->pelements, diagData->rlambda);
+    }
+  }
+  else {
+      int pe = xind * numOrthosPerDim + yind;
+      thisProxy[pe].integrateLambda(diagData->pelements, diagData->rlambda);
+  }
+}
+
+void DiagonalizerBridge::integrateLambda(int n, internalType* lmat) {
+  int mype = CkMyPe();
+  x = mype / numOrthosPerDim;
+  y = mype % numOrthosPerDim;
+  diagData->selflambda = new internalType[n];
+  diagData->selfsize = n;
+  memcpy(diagData->selflambda, lmat, n * sizeof(internalType));
+  int remElems2 = numStatesOA % grainSizeOrtho;
+  int stdElems = grainSizeOrtho * grainSizeOrtho;
+  int remElems = remElems2 * grainSizeOrtho;
+  int cornerElems = remElems2 * remElems2;
+  if (orthoShrinkExpand == 1) {
+     bool borderX = false;
+     bool borderY = false;
+     if (x + 1 == numOrthosPerDim) {
+       borderX = true;
+     }
+     if (y + 1 == numOrthosPerDim) {
+       borderY = true;
+     }
+     if (borderX && !borderY) {
+       integrateBorderX();
+     }
+     else if (!borderX && borderY) {
+       integrateBorderY();
+     }
+     else if (borderX && borderY) {
+       integrateBorderXY();
+     }
+     else {
+       orthoProxy(x,y).acceptDiagonalizedLambda(n, diagData->selflambda);
+     }
+  }
+  else {
+     orthoProxy(x,y).acceptDiagonalizedLambda(n, diagData->selflambda);
+  }
+}
+
+#if INTEROP
+void restartcharm() {
+  if(CkMyPe() == 0){
+    CkPrintf("restarting charm now\n");
+    diagonalizerBridgeProxy.sendLambdaBackToOrtho();
+  }
+  StartCharmScheduler();
+}
+#endif
 
 #include "instanceController.def.h"
 

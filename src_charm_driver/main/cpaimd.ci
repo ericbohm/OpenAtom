@@ -170,6 +170,84 @@ module instanceController
     entry void instancesReady(CkReductionMsg *m);
     entry void resumeFromTemper();
   };
+
+  group DiagonalizerBridge {
+    entry DiagonalizerBridge();
+    entry void sendLambdaToDiagonalizer(int x, int y, int n, internalType lmat[n]);
+    entry void prepareDiagonalizerInput(int x, int y, int n, internalType lmat[n]);
+    entry void sendLambdaBackToOrtho();
+    entry void integrateLambda(int n, internalType lmat[n]);
+
+    entry void neighborX(int n, internalType lm[n]);
+    entry void neighborY(int n, internalType lm[n]);
+    entry void neighborCorner(int n, internalType lm[n]);
+
+    entry void integrateBorderX() {
+      when neighborX(int n, internalType lm[n]) serial "SDAG_integrateBorderX" {
+        diagData->totalsize = diagData->selfsize + n;
+        diagData->ilambda = new internalType[diagData->totalsize];
+        memcpy(diagData->ilambda, diagData->selflambda, diagData->selfsize * sizeof(internalType));
+        memcpy(&diagData->ilambda[diagData->selfsize], lm, n * sizeof(internalType));
+        orthoProxy(x,y).acceptDiagonalizedLambda(diagData->totalsize, diagData->ilambda);
+      }
+    };
+    entry void integrateBorderY() {
+      when neighborY(int n, internalType lm[n]) serial "SDAG_integrateBorderY" {
+        int remElems2 = numStatesOA % grainSizeOrtho;
+        int stdElems = grainSizeOrtho * grainSizeOrtho;
+        int remElems = remElems2 * grainSizeOrtho;
+        int cornerElems = remElems2 * remElems2;
+        diagData->totalsize = diagData->selfsize + n;
+        diagData->ilambda = new internalType[diagData->totalsize];
+        int icounter = 0;
+        int scounter = 0;
+        int lcounter = 0;
+        for (int i = 0 ; i < grainSizeOrtho ; i++) {
+          memcpy(&diagData->ilambda[icounter], &diagData->selflambda[scounter], grainSizeOrtho * sizeof(internalType));
+          icounter += grainSizeOrtho;
+          scounter += grainSizeOrtho;
+          memcpy(&diagData->ilambda[icounter], &lm[lcounter], remElems2 * sizeof(internalType));
+          icounter += remElems2;
+          lcounter += remElems2;
+        }
+        orthoProxy(x,y).acceptDiagonalizedLambda(diagData->totalsize, diagData->ilambda);
+      }
+    };
+    entry void integrateBorderXY() {
+      when neighborX(int nx, internalType lmx[nx])
+      when neighborY(int ny, internalType lmy[ny])
+      when neighborCorner(int nc, internalType lmc[nc]) serial "SDAG_integrateBorderXY" {
+        int remElems2 = numStatesOA % grainSizeOrtho;
+        int stdElems = grainSizeOrtho * grainSizeOrtho;
+        int remElems = remElems2 * grainSizeOrtho;
+        int cornerElems = remElems2 * remElems2;
+        diagData->totalsize = diagData->selfsize + nx + ny + nc;
+        diagData->ilambda = new internalType[diagData->totalsize];
+        int icounter = 0;
+        int scounter = 0;
+        int xcounter = 0;
+        int ycounter = 0;
+        int ccounter = 0;
+        for (int i = 0 ; i < grainSizeOrtho ; i++) {
+          memcpy(&diagData->ilambda[icounter], &diagData->selflambda[scounter], grainSizeOrtho * sizeof(internalType));
+          icounter += grainSizeOrtho;
+          scounter += grainSizeOrtho;
+          memcpy(&diagData->ilambda[icounter], &lmy[ycounter], remElems2 * sizeof(internalType));
+          icounter += remElems2;
+          ycounter += remElems2;
+        }
+        for (int i = grainSizeOrtho ; i < grainSizeOrtho + remElems2 ; i++) {
+          memcpy(&diagData->ilambda[icounter], &lmx[xcounter], grainSizeOrtho * sizeof(internalType));
+          icounter += grainSizeOrtho;
+          xcounter += grainSizeOrtho;
+          memcpy(&diagData->ilambda[icounter], &lmc[ccounter], remElems2 * sizeof(internalType));
+          icounter += remElems2;
+          ccounter += remElems2;
+        }
+        orthoProxy(x,y).acceptDiagonalizedLambda(diagData->totalsize, diagData->ilambda);
+      }
+    };
+  };
 };
 
 module temperController
@@ -183,7 +261,7 @@ module temperController
 
 
 
-mainmodule cpaimd {	
+mainmodule cpaimd {
   initnode void initFFTLock(void);
 
   readonly double Timer;
@@ -247,6 +325,7 @@ mainmodule cpaimd {
 
   readonly CProxy_PhysScratchCache pScratchProxy;
   readonly CProxy_InstanceController instControllerProxy;
+  readonly CProxy_DiagonalizerBridge diagonalizerBridgeProxy;
 
   readonly CProxy_TemperController temperControllerProxy;
 

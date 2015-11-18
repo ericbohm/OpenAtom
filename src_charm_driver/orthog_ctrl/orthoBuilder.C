@@ -12,6 +12,16 @@
   @{
  */
 
+CProxy_Ortho orthoProxy;
+CProxy_ExtendedOrtho eOrthoProxy;
+int numOrthosPerDim;
+int numEOrthosPerDim;
+int orthoShrinkExpand;
+int totalOrthos;
+int diagonalization;
+int grainSizeOrtho;
+int numStatesOA;
+
 namespace cp {
   namespace ortho {
 
@@ -109,7 +119,7 @@ namespace cp {
       orthoOpts.setMap(orthoMap);
       orthoOpts.setStaticInsertion(false);
       orthoOpts.setAnytimeMigration(false);
-      CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
+      orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
 
       // Create maps for the Ortho helper chares
       if(config.useOrthoHelpers)
@@ -252,7 +262,33 @@ namespace cp {
       // Register with the time keeper
       int timekeep=keeperRegister("Ortho S to T");
       int maxorthoindex=(cfg.numStates/cfg.grainSize-1);
+      numOrthosPerDim = maxorthoindex + 1;
+      totalOrthos = numOrthosPerDim * numOrthosPerDim;
+      if ((cfg.numStates % cfg.grainSize) != 0) {
+        numEOrthosPerDim = numOrthosPerDim + 1;
+        orthoShrinkExpand = 1;
+      }
+      else {
+        numEOrthosPerDim = numOrthosPerDim;
+        orthoShrinkExpand = 0;
+      }
+      if (CkNumPes() < (numEOrthosPerDim * numEOrthosPerDim)) {
+          CkAbort("Insufficient number of pes for diagonalizer to run.\n");
+      }
+#if INTEROP
+        diagonalization = 1;
+#else
+        diagonalization = 0;
+#endif
+      grainSizeOrtho = cfg.grainSize;
+      numStatesOA = cfg.numStates;
       int maxorthostateindex=(cfg.numStates/cfg.grainSize-1) * cfg.grainSize;
+
+      CkArrayOptions eOrthoOpts(numEOrthosPerDim, numEOrthosPerDim);
+      eOrthoOpts.setStaticInsertion(true);
+      orthoOpts.setAnytimeMigration(false);
+      eOrthoProxy = CProxy_ExtendedOrtho::ckNew(eOrthoOpts);
+
       // Insert each element of the Ortho array
       for (int s1 = 0; s1 <= maxorthostateindex; s1 += cfg.grainSize)
         for (int s2 = 0; s2 <= maxorthostateindex; s2 += cfg.grainSize)

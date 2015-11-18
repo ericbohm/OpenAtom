@@ -157,7 +157,8 @@ int make_multiplier(
     C->p.doneInserting();
   }
 
-  return SUCCESS;
+  int successful_return = 0;
+  return successful_return;
 }
 
 

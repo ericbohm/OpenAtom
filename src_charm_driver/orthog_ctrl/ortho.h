@@ -76,6 +76,7 @@
 #include "ortho.decl.h"
 #include "pcSectionManager.h"
 #include "CLA_Matrix.h"
+#include "mpi-interoperate.h"
 using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within namespace ortho
 
 #ifndef _ortho_h_
@@ -97,6 +98,13 @@ class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 };
 
 class orthoMtrigger : public CkMcastBaseMsg, public CMessage_initCookieMsg {
+};
+
+class ExtendedOrtho : public CBase_ExtendedOrtho {
+  public:
+    ExtendedOrtho();
+    ExtendedOrtho(CkMigrateMessage *m) {}
+    void lambdaSentToDiagonalizer();
 };
 
 /** @addtogroup Ortho
@@ -147,6 +155,9 @@ class Ortho : public CBase_Ortho
 
     // Accepts lamda reduced from the asymm PC instance. In min, acts as via point and mcasts lambda back to the asymm PCs. In dynamics, triggers computation of gamma = lambda x T
     void acceptSectionLambda(CkReductionMsg *msg);
+    void acceptDiagonalizedLambda(int nn, internalType* rmat);
+    void transferControlToMPI();
+    void waitForQuiescence(int n);
     /// Used in dynamics, to accept computed gamma and send it to the asymm PC instance. Also sends T if it hasnt yet been sent
     void gamma_done();
 
@@ -200,6 +211,7 @@ class Ortho : public CBase_Ortho
     int timeKeep;
     internalType *orthoT; // only used on [0,0]
     internalType *ortho; //only used on [0,0]
+    internalType *templambda;
     int numGlobalIter; // global leanCP iterations
     // used in each element
     int iterations; //local inv_sq iterations
