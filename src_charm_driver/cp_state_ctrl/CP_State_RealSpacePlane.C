@@ -547,7 +547,7 @@ void CP_State_RealSpacePlane::unpackVks(VksMsg *msg) {
     }//endfor
   }else{
     complex *psiVks      = rs.planeArr;
-    int off = grid_num_b[pencil_offset_y]*ngrida;
+    int off = grid_offset_b[pencil_offset_y]*ngrida;
     for(int i = 0; i < myNgridb; i++){
       for(int j = i * ngrida; j < (i + 1) * ngrida; j++) {
         psiVks[(j + off)] *= (vks_tmp[j] * wght_rho);
