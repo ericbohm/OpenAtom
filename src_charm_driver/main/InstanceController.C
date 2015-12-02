@@ -75,30 +75,35 @@ InstanceController::InstanceController(int _fft_expected) {
 //============================================================================
 void InstanceController::init(){
   UberCollection instance=UberCollection(thisIndex);
-  // 0th bead, 0th temper makes this to sync beads and tempers
-  if((config.UberImax >1 || config.UberKmax>1) && instance.idxU.x==0 && instance.idxU.z==0)
+  // 0th bead, 0th k, 0th temper makes this to sync all instances
+  if((config.UberImax >1 || config.UberJmax>1 || config.UberKmax>1) 
+     && instance.idxU.x==0 && instance.idxU.y==0 && instance.idxU.z==0)
   {
-    // make section for beads and tempers
-    int numDestinations=config.UberImax*config.UberKmax;
+    // make section for beads and tempers and k-points
+    int numDestinations=config.UberImax*config.UberKmax*config.UberJmax;
     CkArrayID *beadArrayIds= new CkArrayID[numDestinations];
     CkArrayIndex **elems  = new CkArrayIndex*[numDestinations];
     int *naelems = new int[numDestinations];
     for(int bead =0; bead<config.UberImax; bead++)
     {
       instance.idxU.x=bead;
-      for(int temper =0; temper<config.UberKmax; temper++)
-      {
-        int index=bead*config.UberKmax+temper;
-        elems[index]= new CkArrayIndex2D[1];
-        naelems[index]=1;
-        instance.idxU.z=temper;
-        instance.setPO();
-        CkPrintf("fmag sync section adding bead %d temper %d index %d proxyOffset %d\n",bead, temper, index, instance.proxyOffset);
-        beadArrayIds[index]=UgSpacePlaneProxy[instance.proxyOffset].ckGetArrayID();
-        elems[index][0]=CkArrayIndex2D(0,0);
-      }
+      for(int kpt =0; kpt<config.UberJmax; kpt++)
+	{
+	  instance.idxU.y=kpt;
+	  for(int temper =0; temper<config.UberKmax; temper++)
+	    {
+	      instance.idxU.z=temper;
+	      instance.setPO();
+	      int index=instance.proxyOffset;
+	      naelems[index]=1;
+	      elems[index]= new CkArrayIndex2D[1];
+	      CkPrintf("fmag sync section adding bead %d kpt %d temper %d index %d proxyOffset %d\n",bead, kpt, temper, index, instance.proxyOffset);
+	      beadArrayIds[index]=UgSpacePlaneProxy[instance.proxyOffset].ckGetArrayID();
+	      elems[index][0]=CkArrayIndex2D(0,0);
+	    }
+	}
     }
-    //finish setting this up      
+  //finish setting this up      
     gTemperBeadProxy=CProxySection_CP_State_GSpacePlane(numDestinations, beadArrayIds, elems, naelems);
     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
     gTemperBeadProxy.ckSectionDelegate(mcastGrp);
