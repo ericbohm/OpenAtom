@@ -40,7 +40,6 @@ CProxy_PhysScratchCache           pScratchProxy;
 Config                            config;
 CProxy_TimeKeeper                 TimeKeeperProxy;
 CProxy_InstanceController         instControllerProxy;
-CProxy_PublishMPI         publishMpiProxy;
 CProxy_TemperController         temperControllerProxy;
 CProxy_ENL_EKE_Collector          ENLEKECollectorProxy;
 CPcharmParaInfo simReadOnly;

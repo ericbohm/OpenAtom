@@ -6,9 +6,6 @@
   FFT3_HOME	= /usr
   FFT2_HOME	= /usr
   CHARMFFT_HOME = $(HOME)/fft
-  ELPA_HOME	= /scratch/prateek/myopenatom/elpa/scalapack/myinstall
-  INTEROPMPI    = NO
-  INTEROPVAL    = -DFUSE
 
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
@@ -21,24 +18,12 @@
 # LDLIBS   - Extra libraries to be linked in
 
 #-------------------------------------------------------------------------------
-#------------------------------ Flags for linking ------------------------------
-ifeq ($(INTEROPMPI), YES)
-  LDFLAGS    += -L$(ELPA_HOME)/lib  
-  LDLIBS     += -lscalapack -ltmg -lreflapack -lrefblas -lgfortran -module cpaimd 
-  INTEROPVAL  = -DINTEROP=1
-else
-  INTEROPVAL  = -DINTEROP=0
-endif
-  LDFLAGS  += -L./ -L$(FFT3_HOME)/lib -L$(FFT2_HOME)/lib -L$(CHARMFFT_HOME)
-  LDLIBS   += -module CkMulticast -lz -lconv-util -lm
-
-#-------------------------------------------------------------------------------
 #------------------------- Flags for the whole code ----------------------------
   # Optimization level and debug (Dont add other flags to OPT)
   OPT       = -O3
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2
-  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 $(INTEROPVAL) \
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
 	      -I$(FFT3_HOME)/include -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
 	      -Wl,--allow-multiple-definition
   FFLAGS   += $(OPT)
@@ -46,9 +31,14 @@ endif
   CXXFLAGS += $(OPT)
 
 #-------------------------------------------------------------------------------
+#------------------------------ Flags for linking ------------------------------
+  LDFLAGS  += -L$(FFT3_HOME)/lib -L$(FFT2_HOME)/lib -L$(CHARMFFT_HOME)
+  LDLIBS   += -module CkMulticast -lz -lconv-util -lm
+
+#-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
-$(libdriver):  CPPFLAGS += -I. -I$(main) -I$(driver) -I$(base) -I$(base)/include \
-			   -I$(STANDARD_INC) -I$(interoplib)
+$(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include \
+			   -I$(STANDARD_INC)
 $(libdriver):  FFLAGS   +=
 $(libdriver):  CFLAGS   +=
 $(libdriver):  CXXFLAGS +=
@@ -69,14 +59,6 @@ $(libmath):    CPPFLAGS +=
 $(libmath):    FFLAGS   +=
 $(libmath):    CFLAGS   += -seq
 $(libmath):    CXXFLAGS += -seq
-
-#-------------------------------------------------------------------------------
-#------------------ Flags and settings just for the interop lib ------------------
-$(libinterop):    CXX       = mpicxx
-$(libinterop):    CPPFLAGS  = $(INTEROPVAL) -I. -I$(main) -I$(driver) -I$(base) -I$(STANDARD_INC) -I$(CHARMINC) -I$(topinclude)
-$(libinterop):    FFLAGS    =
-$(libinterop):    CFLAGS    = 
-$(libinterop):    CXXFLAGS  = 
 
 #===============================================================================
 #-------------------------------------------------------------------------------
@@ -102,4 +84,3 @@ $(libinterop):    CXXFLAGS  =
 # The location of the water (32M,10Ry) dataset that will be used in the tests
 w3210       = $(data)/water_32M_10Ry
 
-#LDLIBS   += -tracemode projections

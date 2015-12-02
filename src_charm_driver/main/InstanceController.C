@@ -3,12 +3,6 @@
 #include "cpaimd.h"
 #include "AtomsCache.h"
 #include "AtomsCompute.h"
-//#include "preprocessor.h"
-
-#if INTEROP
-#include "mpi-interoperate.h"
-#endif
-#include "diagonalizer.h"
 #include "InstanceController.h"
 
 //============================================================================
@@ -43,14 +37,6 @@ extern CkGroupID                                 mCastGrpId;
 extern CkVec <UberCollection>                    UberAlles;
 extern CProxy_ENL_EKE_Collector                  ENLEKECollectorProxy;
 extern CPcharmParaInfo                          simReadOnly;
-extern CProxy_PublishMPI publishMpiProxy;
-//extern double *mpiarray;
-//extern diagData_t<internalType> *diagData;
-diagData_t<internalType> *diagData;
-extern CProxy_Ortho prorthoproxy;
-extern int numOrthosPerDim;
-extern int totalOrthos;
-extern int grainSizeOrtho;
 //============================================================================
 
 InstanceController::InstanceController(int _fft_expected) {
@@ -619,72 +605,8 @@ void InstanceController::cleanExitAll(CkReductionMsg *m)
   CkPrintf("********************************************************************************\n");
   CkPrintf("         Open Atom Simulation Complete                \n");
   CkPrintf("********************************************************************************\n");
-  //publishMpiProxy.publishNow();
   CkExit();
 }
-
-PublishMPI::PublishMPI() {
-}
-
-void PublishMPI::publishNow() {
-  CkPrintf("Calling publishNow on Node: <%d>\n", CkMyPe());
-  int mpisize = 5;
-  //mpiarray = new double[mpisize];
-  for (int i = 0 ; i < mpisize ; i++) {
-    //mpiarray [i] = CkMyPe();
-  }
-  int mycent = 1;
-  contribute(sizeof(int), &mycent, CkReduction::sum_int, CkCallback(CkReductionTarget(PublishMPI, publishDone), 0, publishMpiProxy));
-}
-
-void PublishMPI::publishLambda(int x, int y, int n, internalType *lmat) {
-  diagData = new diagData_t<internalType>();
-  diagData->numStatesOA = config.nstates;
-  diagData->numOrthosPerDimOA = numOrthosPerDim;
-  diagData->orthoGrainSizeOA = grainSizeOrtho;
-  diagData->totalOrthosOA = totalOrthos;
-  diagData->plambda = new internalType[n];
-  memcpy(diagData->plambda, lmat, n*sizeof(internalType));
-  //diagData->plambda = lmat;
-  diagData->pelements = n;
-  prorthoproxy(x,y).mpiDataSent();
-}
-
-void PublishMPI::publishDone(int totalcents) {
-  if (CkMyPe() == 0) {
-    CkPrintf("Total Cents Collected: <%d>\n", totalcents);
-    CkExit();
-  }
-  else {
-    CkPrintf("**********************************************************\n");
-    CkPrintf("**************I should have never been called*************\n");
-    CkPrintf("**********************************************************\n");
-    CkExit();
-    //sleep(10);
-  }
-}
-
-void PublishMPI::publishBack() {
-  //int myid1 = CkMyPe();
-  int xind = (int) diagData->rlambda[0]; //myid1 / 2;
-  int yind = (int) diagData->rlambda[1]; //myid1 % 2;
-  int size1 = (int) diagData->rlambda[2]; // + 3
-  CkPrintf("I <%d,%d> received rlambda: <%.2f,%.2f,%.2f>\n", xind, yind, diagData->rlambda[0], diagData->rlambda[1], diagData->rlambda[2]);
-  prorthoproxy(xind, yind).mpiDataGather(size1+3, diagData->rlambda);
-  //if (CkMyPe() == 0) {
-  //  CkExit();
-  //}
-}
-
-#if INTEROP
-void restartcharm() {
-  if(CkMyPe() == 0){
-    CkPrintf("restarting charm now\n");
-    publishMpiProxy.publishBack();
-  }
-  StartCharmScheduler();
-}
-#endif
 
 #include "instanceController.def.h"
 

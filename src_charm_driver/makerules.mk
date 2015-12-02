@@ -36,7 +36,7 @@ $(libdriver): $(libdriver_obj)
 # Include the generated files containing dependency info
 depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(libdriver_src)) ) )
 ifneq ($(MAKECMDGOALS),clean)
-$(depFiles): CPPFLAGS += -I. -I$(main) -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC) -I$(interoplib)
+$(depFiles): CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC)
 -include $(depFiles)
 -include $(libdriver_intf:.ci=.di)
 endif

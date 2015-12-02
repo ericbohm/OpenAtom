@@ -22,7 +22,7 @@ CXXFLAGS += -language charm++
 FFLAGS   += -f77
 
 ####### Canned verbosity settings
-v ?= 1
+v ?= 0
 
 ifeq ($(strip $v),0)
   info-dep = @echo Generating dependencies for $(<F)
@@ -42,7 +42,7 @@ ifeq ($(strip $v),1)
   info-f   = @echo Compiling $(<F) with options $(FFLAGS)
   info-ar  = @echo =========== Producing archive $@ containing $^
   info-ld  = @echo =========== Linking to produce $@ with extra libs: $(LDLIBS)
-  q = 
+  q = @
 else 
 ifeq ($(strip $v),2)
   info-dep = @echo Generating dependencies for $(<F)
