@@ -31,6 +31,8 @@ States::States() {
   doublePack = false;
   // read states from file
   readState(fileName);
+  // set the size of fft grid
+  for(int i=0;i<3;i++){nfft[i] = gwbse->gw_parallel.fft_nelems[i];}
 
   fft_G_to_R();
 
@@ -87,9 +89,6 @@ void States::sendToP() {
 
 void States::fft_G_to_R() {
 
-  // set fftsize
-  set_fftsize(numCoeff, doublePack, ga, gb, gc, nfft);
-  
   // set 3D fft plan
   int backward = 1;
   // this routine creates 3D fftw_plan

@@ -56,10 +56,9 @@ class Config {
    void write_cpaimd_config    (FILE *, DICT_WORD *, int, char *);
 //   void load_cpaimd_config (DICT_WORD *, int, PINY_NAME *, PINY_NAME *, int, int *);
 
-
    void read_lattice(GWBSEOPTS *);
    void read_klist(GWBSEOPTS *);
-
+   void set_nfft( int (&)[3], double, GWBSEOPTS *);
 
 //============================================================================
   //==================================

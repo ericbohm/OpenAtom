@@ -3,7 +3,7 @@
 4
 8
 1
-0.5
+25
 10 
 0 0 0.001 
 100   
@@ -19,8 +19,8 @@
 #line3: numunocc
 #line4: nkpt
 #line5: nspin
-#line6: wfnFFTsize
-#line7: EpsCut (Hartree unit)
+#line6: EcutFFT (Rydberg unit)
+#line7: EpsCut (Hartree unit)  -> let's change it soon
 #line8: shift vector
 #line9: maximum iteration number of iterative method
 #line10: convergence for iterative method

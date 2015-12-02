@@ -164,6 +164,12 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
 //  simpleRangeCheck_gwbse(); // redundant checking   need to write this
 
 
+  ///==================================================================================
+  // read cell and k list
+  read_lattice( gwbseopts );
+  read_klist( gwbseopts );
+
+  
   //===================================================================================
   // Improve user parameters and/or try to optimize unset parameters
 
@@ -208,15 +214,6 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
   PRINTF("  =============================================================\n\n");
 
 
-
-  ///==================================================================================
-  // read cell and k list
-  read_lattice( gwbseopts );
-  read_klist( gwbseopts );
-
-
-
-  
 
 
   //----------------------------------------------------------------------------------
@@ -391,7 +388,7 @@ void Config::set_config_dict_gen_GW  (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_dict_GW_epsilon  (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
   //  I) Malloc the dictionary                                              
-  num_dict[0] = 3;
+  num_dict[0] = 4;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
 
   //=================================================================================
@@ -427,6 +424,22 @@ void Config::set_config_dict_GW_epsilon  (int *num_dict ,DICT_WORD **dict){
   strcpy((*dict)[ind].keyarg,"eigenvalues.in");
   strcpy((*dict)[ind].error_mes,"a file containing nocc + nunocc eigenvalues");
   //-----------------------------------------------------------------------------
+
+  //-----------------------------------------------------------------------------
+  //  4)\EcutFFT{}
+  ind =   4;   
+  strcpy((*dict)[ind].keyword,"EcutFFT");
+  strcpy((*dict)[ind].keyarg,"25");
+  strcpy((*dict)[ind].error_mes,"a number > 0");
+  //-----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
   
 }//end routine
@@ -739,9 +752,17 @@ void Config::set_config_params_GW_epsilon  (DICT_WORD *dict, char *fun_key, char
   if (strlen(gw_epsilon->eigFileName) == 0){keyarg_barf(dict,input_name,fun_key,ind);}  
 
   //----------------------------------------------------------------------------- 
+
+  //-----------------------------------------------------------------------------
+  //  4)\EcutFFT{}
+  ind =   4;  
+  sscanf(dict[ind].keyarg,"%lg",&real_arg);
+  if (real_arg<0){keyarg_barf(dict,input_name,fun_key,ind);}  
+  gw_epsilon->EcutFFT = real_arg;
+  //----------------------------------------------------------------------------- 
+
 }// end routine
 //================================================================================
-
 
 
 
@@ -1263,6 +1284,79 @@ void Config::read_klist(GWBSEOPTS *gwbseopts){
 }//end routine 
 //========================================================================
 
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void Config::set_nfft(int (&nfft)[3], double EcutFFT, GWBSEOPTS *gwbseopts){
+
+  // initially, nfft contains the 2*(maximum absolute value)+1 for G vectors in each direction
+
+  int maxgaabs = nfft[0];
+  int maxgbabs = nfft[1];
+  int maxgcabs = nfft[2];
+  double b1[3], b2[3], b3[3];
+  for (int i=0;i<3;i++){
+    b1[i] = gwbseopts->b1[i];
+    b2[i] = gwbseopts->b2[i];
+    b3[i] = gwbseopts->b3[i];
+  }
+  
+  double latt = gwbseopts->latt;
+
+  // the unit of EcutFFT is in rydberg, so change it to hartree
+  double Ecuthart = 0.5*EcutFFT;
+
+  printf("Eucthart: %lg\n",Ecuthart);
+
+  double xk, yk, zk;
+  double tryme;
+  const double factor = 2*M_PI/latt;
+ 
+  for (int ga=1; ga < maxgaabs+1; ga++){
+    printf("ga: %d    b1: %lg %lg %lg\n",ga,b1[0],b1[1],b1[2]);
+    xk = double(ga)*b1[0]*factor;
+    yk = double(ga)*b1[1]*factor;
+    zk = double(ga)*b1[2]*factor;
+    tryme = ( xk*xk + yk*yk + zk*zk ) * 0.5;
+    if ( Ecuthart <= tryme ){
+      nfft[0] = ga;
+      break;
+    }
+  }
+
+  for (int gb=1; gb < maxgbabs+1; gb++){
+    xk = double(gb)*b2[0]*factor;
+    yk = double(gb)*b2[1]*factor;
+    zk = double(gb)*b2[2]*factor;
+    tryme = ( xk*xk + yk*yk + zk*zk ) * 0.5;
+    if ( Ecuthart <= tryme ){     
+      nfft[1] = gb;
+      break;
+    }
+  }
+
+  for (int gc=1; gc < maxgcabs+1; gc++){
+    xk = double(gc)*b3[0]*factor;
+    yk = double(gc)*b3[1]*factor;
+    zk = double(gc)*b3[2]*factor;
+    tryme = ( xk*xk + yk*yk + zk*zk ) * 0.5;
+    if ( Ecuthart <= tryme ){
+      nfft[2] = gc;
+      break;
+    }
+  }
+  
+  for (int i=0; i<3; i++){
+    nfft[i] = 2*nfft[i]+1;
+  }
+
+}//end routine 
+//========================================================================
+
+
+
+
+
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1320,7 +1414,7 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
   gw_parallel->M = gwbseopts->nunocc;
 
   // =======================================================================
-  // From a state file determine the fft sizes
+  // Let's determine the FFT size for the epsilon calculation
   int nfft[3];
   sprintf(fromFile, "./STATES_IN/Spin.0_Kpt.0_Bead.0_Temper.0/state1.out");
   int nPacked,minga,mingb,mingc,maxga,maxgb,maxgc,nx,ny,nz;
@@ -1336,6 +1430,7 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
       CkExit();
     }
   }
+  // set maxga, maxgaabs, maxgbabs, maxgcabs and save it to nfft
   if (doublePack){
     nfft[0] = 2*maxga + 1;
   }
@@ -1348,6 +1443,12 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
   int maxgcabs = ((maxgc > -mingc) ? maxgc : -mingc);
   nfft[2] = 2*maxgcabs + 1;
 
+  // set size of fft for states and polarizability
+  double EcutFFT = gw_epsilon->EcutFFT;
+  set_nfft(nfft,EcutFFT,gwbseopts);
+
+
+  // find the optimal number for FFT grid
   int nrad_in = 200;
   int nrad;
   int k;
