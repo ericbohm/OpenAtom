@@ -49,10 +49,10 @@ module controller {
       }
 
       serial { pmatrix_proxy.printRows(4, "P_Rspace"); }
-      when printingComplete()   serial { pmatrix_proxy.fftRows(); }
+      when printingComplete()   serial { pmatrix_proxy.fftRows(1); }
       when fftComplete()        serial { pmatrix_proxy.printRows(4, "1FFT"); }
       when printingComplete()   serial { pmatrix_proxy.doTranspose(); }
-      when transposeComplete()  serial { pmatrix_proxy.fftRows(); }
+      when transposeComplete()  serial { pmatrix_proxy.fftRows(-1); }
       when fftComplete()        serial { pmatrix_proxy.printRows(4, "2FFT"); }
       when printingComplete()   serial { pmatrix_proxy.doTranspose(); }
       when transposeComplete()  serial { pmatrix_proxy.printRows(4, "P_Gspace"); }
@@ -91,7 +91,7 @@ module pmatrix {
   array [1D] PMatrix {
     entry PMatrix();
     entry [nokeep] void receivePsi(PsiMessage*);
-    entry void fftRows();
+    entry void fftRows(int);
     entry void receiveTransposeData(int, complex);
     entry void printRows(int n, char prefix[16]);
 

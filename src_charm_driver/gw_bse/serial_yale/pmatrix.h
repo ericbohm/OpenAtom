@@ -10,7 +10,7 @@ class PMatrix : public CBase_PMatrix {
     PMatrix(CkMigrateMessage* msg) {}
 
     void receivePsi(PsiMessage*);
-    void fftRows();
+    void fftRows(int);
     void printRows(int, const char*);
 
   private:

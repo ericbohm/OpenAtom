@@ -87,12 +87,11 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   delete[] umklapp_factor;
 }
 
-void PMatrix::fftRows() {
+void PMatrix::fftRows(int direction) {
   // TODO: Minjung will add the serial code here to fft each row stored in this chare
   // NOTE: The rows are stored in the data array
   // The first row in this chare is start_row, and num_rows is the number of rows in this chare
   // Each row will need to be fft'd.
-  int direction = 1; // for rows, for column, direction should be -1
   for (int i=0; i < num_rows; i++){
     setup_fftw_3d(nfft,direction);
     put_into_fftbox(nfft, data[i], in_pointer);
