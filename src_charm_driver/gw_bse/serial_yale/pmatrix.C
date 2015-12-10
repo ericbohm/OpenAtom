@@ -88,17 +88,15 @@ void PMatrix::receivePsi(PsiMessage* msg) {
 }
 
 void PMatrix::fftRows(int direction) {
-  // TODO: Minjung will add the serial code here to fft each row stored in this chare
-  // NOTE: The rows are stored in the data array
-  // The first row in this chare is start_row, and num_rows is the number of rows in this chare
-  // Each row will need to be fft'd.
+  // FFT each row stored in this chare
+  // TODO: The data for the FFTs shouldn't be stored in global variables
   for (int i=0; i < num_rows; i++){
-    setup_fftw_3d(nfft,direction);
+    setup_fftw_3d(nfft, direction);
     put_into_fftbox(nfft, data[i], in_pointer);
     do_fftw();
     fftbox_to_array(num_cols, out_pointer, data[i], 1);
   }
-  // Minjung: Need to call destroy_fftw_stuff here?
+
   // Let the controller know we have completed the fft
   contribute(CkCallback(CkReductionTarget(Controller, fftComplete), controller_proxy));
 }

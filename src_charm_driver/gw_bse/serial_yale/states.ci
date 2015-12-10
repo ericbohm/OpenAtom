@@ -48,15 +48,22 @@ module controller {
         when psiComplete() serial { total_complete++; }
       }
 
-      serial { pmatrix_proxy.printRows(4, "P_Rspace"); }
+      serial {
+        CkPrintf("P Formed in real space.\n");
+        pmatrix_proxy.printRows(4, "P_Rspace");
+      }
+
+      // FFT P from RSpace to GSpace
       when printingComplete()   serial { pmatrix_proxy.fftRows(1); }
-      when fftComplete()        serial { pmatrix_proxy.printRows(4, "1FFT"); }
-      when printingComplete()   serial { pmatrix_proxy.doTranspose(); }
+      when fftComplete()        serial { pmatrix_proxy.doTranspose(); }
       when transposeComplete()  serial { pmatrix_proxy.fftRows(-1); }
-      when fftComplete()        serial { pmatrix_proxy.printRows(4, "2FFT"); }
-      when printingComplete()   serial { pmatrix_proxy.doTranspose(); }
-      when transposeComplete()  serial { pmatrix_proxy.printRows(4, "P_Gspace"); }
-      when printingComplete()   serial { CkExit(); }
+      when fftComplete()        serial { pmatrix_proxy.doTranspose(); }
+
+      when transposeComplete()  serial {
+        CkPrintf("P formed in G space.\n");
+        pmatrix_proxy.printRows(4, "P_Gspace");
+      }
+      when printingComplete() serial { CkExit(); }
     }
   };
 
