@@ -31,7 +31,7 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   const unsigned size = msg->size;
   complex* psi_occ;               // Comes from the cache
   complex* psi_unocc = msg->psi;  // Sent directly to us
-  complex f[size];                // Formed locally from the two psis
+  complex* f = new complex[size]; // Formed locally from the two psis
 
   // Variables for indexing into the eigenvalues arrays
   const unsigned ispin = msg->spin_index;
@@ -46,7 +46,7 @@ void PMatrix::receivePsi(PsiMessage* msg) {
 
   // U-process modification
   bool Uproc = false;
-  complex umklapp_factor[size];
+  complex* umklapp_factor = new complex[size];
   // if umklapp is non-zero then it is U-process, not N-process, so Uproc=true
   if (umklapp[0] != 0 || umklapp[1] != 0 || umklapp[2] != 0) {
     Uproc = true;
@@ -82,6 +82,9 @@ void PMatrix::receivePsi(PsiMessage* msg) {
 
   // Tell the controller we've completed work on this psi
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
+
+  delete[] f;
+  delete[] umklapp_factor;
 }
 
 void PMatrix::fftRows() {
