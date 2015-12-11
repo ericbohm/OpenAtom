@@ -16,4 +16,11 @@ class PsiMessage : public CMessage_PsiMessage {
     complex* psi;
 };
 
+// Message sent between PMatrix chares to exchange data during a transpose.
+class TransposeMessage : public CMessage_TransposeMessage {
+  public:
+    complex* data;
+    unsigned start_col;
+};
+
 #endif

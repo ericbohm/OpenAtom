@@ -4,6 +4,11 @@ module messages {
   message PsiMessage {
     complex psi[];
   };
+
+  // A message containing data being moved during a transpose
+  message TransposeMessage {
+    complex data[];
+  };
 };
 
 module controller {
@@ -99,21 +104,46 @@ module pmatrix {
     entry PMatrix();
     entry [nokeep] void receivePsi(PsiMessage*);
     entry void fftRows(int);
-    entry void receiveTransposeData(int, complex);
+    entry [nokeep] void receiveTransposeData(TransposeMessage*);
     entry void printRows(int n, char prefix[16]);
 
     entry void doTranspose() {
       serial {
-        for (int i = 0; i < num_cols; i++) {
-          if (i == thisIndex) continue;
-          thisProxy[i].receiveTransposeData(thisIndex, data[0][i]);
+        // TODO: this only works when every chare has same amount of rows
+        TransposeMessage* msg;
+        unsigned my_start, their_start;
+        unsigned ndata = num_rows * num_rows;
+
+        // Create, fill, and send a transpose message for each chare
+        for (int dest = 0; dest < num_chares; dest++) {
+          my_start = num_rows * dest;
+          their_start = start_row;
+
+          msg = new (ndata) TransposeMessage();
+          msg->start_col = their_start;
+          for (int c = 0; c < num_rows; c++) {
+            for (int r = 0; r < num_rows; r++) {
+              // The data is transposed on the sender side
+              msg->data[c*num_rows + r] = data[r][c + my_start];
+            }
+          }
+          thisProxy(dest).receiveTransposeData(msg);
         }
       }
-      for (trans_count = 0; trans_count < num_cols - 1; trans_count++) {
-        when receiveTransposeData(int new_col, complex element) serial {
-          data[0][new_col] = element;
+
+      // Wait to receive the TransposeMessage from every other chare
+      for (trans_count = 0; trans_count < num_chares; trans_count++) {
+        when receiveTransposeData(TransposeMessage* msg) serial {
+          for (int r = 0; r < num_rows; r++) {
+            for (int c = 0; c < num_rows; c++) {
+              // The data being sent was already transposed on the sender side
+              data[r][c + msg->start_col] = msg->data[r*num_rows + c];
+            }
+          }
         }
       }
+
+      // Tell the controller that the transpose is complete
       serial {
         contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
       }

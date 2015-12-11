@@ -13,7 +13,9 @@ PMatrix::PMatrix() {
   num_rows = gwbse->gw_parallel.rows_per_chare;
   num_cols = gwbse->gw_parallel.n_elems;
   nfft = gwbse->gw_parallel.fft_nelems;
-  qindex = 0; // Eventually the controller will set this
+  qindex = 3; // Eventually the controller will set this
+
+  num_chares = num_cols / num_rows;
 
   start_row = thisIndex * num_rows;
   start_col = 0;
