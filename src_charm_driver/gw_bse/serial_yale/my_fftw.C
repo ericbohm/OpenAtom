@@ -25,9 +25,14 @@ fftw_complex *fftw_out_pointer(){
 
 // destroy fftw related variables. We only do once when fftw is all done
 void destroy_fftw_stuff(){
+  if (in_pointer) {
     fftw_destroy_plan(my_plan);
     fftw_free(in_pointer);
     fftw_free(out_pointer);
+
+    in_pointer = NULL;
+    out_pointer = NULL;
+  }
 }
 
 
