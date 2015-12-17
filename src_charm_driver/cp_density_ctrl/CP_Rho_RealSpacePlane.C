@@ -969,9 +969,12 @@ void CP_Rho_RealSpacePlane::acceptHartVks(){
  **/
 //============================================================================
 void CP_Rho_RealSpacePlane::RHartReport(){
-  doneRHart = true;
-  doMulticastCheck();
-  countRHart = 0;
+  countRHart++;
+  if(countRHart == config.nchareHartAtmT) {
+    doneRHart = true;
+    doMulticastCheck();
+    countRHart = 0;
+  }
 }
 //============================================================================
 
