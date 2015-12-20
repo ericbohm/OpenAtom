@@ -7,6 +7,10 @@
   FFT2_HOME	= /dcsdata/home/bohm/fftw64
   CHARMFFT_HOME = $(WORKSPACE)/fft
 
+  ELPA_HOME        = $(HOME)/scalapack/install
+  DIAGONALIZER     = NO
+  DIAGONALIZER_VAL =
+
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
 
@@ -23,22 +27,28 @@
   OPT       = -O3 -optimize -production
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2
-  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE  \
-	      -I$(FFT3_HOME)/include -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME)
-
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE $(DIAGONALIZER_VAL) \
+              -I$(FFT3_HOME)/include -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME)
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
   CXXFLAGS += $(OPT)
 
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
-  LDFLAGS  += -L$(FFT3_HOME)/lib -L$(FFT2_HOME)/lib -L$(CHARMFFT_HOME)
+ifeq ($(DIAGONALIZER), YES)
+  LDFLAGS    += -L$(ELPA_HOME)/lib
+  LDLIBS     += -lscalapack -ltmg -lreflapack -lrefblas -lgfortran -module cpaimd
+  DIAGONALIZER_VAL  = -DINTEROP=1
+else
+  DIAGONALIZER_VAL  = -DINTEROP=0
+endif
+  LDFLAGS  += -L./ -L$(FFT3_HOME)/lib -L$(FFT2_HOME)/lib -L$(CHARMFFT_HOME)
   LDLIBS   += -module CkMulticast -lz -lconv-util -lm
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
-$(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include \
-			   -I$(STANDARD_INC)
+$(libdriver):  CPPFLAGS += -I. -I$(main) -I$(driver) -I$(base) -I$(base)/include \
+			   -I$(STANDARD_INC) -I$(interoplib)
 $(libdriver):  FFLAGS   +=
 $(libdriver):  CFLAGS   +=
 $(libdriver):  CXXFLAGS +=
@@ -59,6 +69,14 @@ $(libmath):    CPPFLAGS +=
 $(libmath):    FFLAGS   +=
 $(libmath):    CFLAGS   += -seq
 $(libmath):    CXXFLAGS += -seq
+
+#-------------------------------------------------------------------------------
+#------------------ Flags and settings just for the interop lib ------------------
+$(libinterop):    CXX       = mpicxx
+$(libinterop):    CPPFLAGS  = $(DIAGONALIZER_VAL) -I. -I$(main) -I$(driver) -I$(base) -I$(STANDARD_INC) -I$(CHARMINC) -I$(topinclude)
+$(libinterop):    FFLAGS    =
+$(libinterop):    CFLAGS    =
+$(libinterop):    CXXFLAGS  =
 
 #===============================================================================
 #-------------------------------------------------------------------------------
