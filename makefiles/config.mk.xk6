@@ -9,6 +9,10 @@
   FFT2_HOME     = /opt/fftw/2.1.5.7
   CHARMFFT_HOME = $(HOME)/fft
 
+  ELPA_HOME        = $(HOME)/scalapack/install
+  DIAGONALIZER     = NO
+  DIAGONALIZER_VAL =
+
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
 
@@ -25,7 +29,7 @@
   OPT       = -O3
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2
-  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE  \
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE $(DIAGONALIZER_VAL) \
 	      -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
 	      -Wl,--allow-multiple-definition
  
@@ -42,8 +46,8 @@
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
-$(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include \
-			   -I$(STANDARD_INC)
+$(libdriver):  CPPFLAGS += -I. -I$(main) -I$(driver) -I$(base) -I$(base)/include \
+			   -I$(STANDARD_INC) -I$(interoplib)
 $(libdriver):  FFLAGS   +=
 $(libdriver):  CFLAGS   +=
 $(libdriver):  CXXFLAGS +=
@@ -65,6 +69,12 @@ $(libmath):    FFLAGS   +=
 $(libmath):    CFLAGS   += -seq
 $(libmath):    CXXFLAGS += -seq
 
+#-------------------------------------------------------------------------------
+#------------------ Flags and settings just for the interop lib ------------------
+$(libinterop):    CPPFLAGS  = $(DIAGONALIZER_VAL) -I. -I$(main) -I$(driver) -I$(base) -I$(STANDARD_INC) -I$(CHARMINC) -I$(topinclude)
+$(libinterop):    FFLAGS    =
+$(libinterop):    CFLAGS    =
+$(libinterop):    CXXFLAGS  =
 
 #===============================================================================
 #-------------------------------------------------------------------------------

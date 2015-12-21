@@ -272,14 +272,16 @@ namespace cp {
         numEOrthosPerDim = numOrthosPerDim;
         orthoShrinkExpand = 0;
       }
-      if (CkNumPes() < (numEOrthosPerDim * numEOrthosPerDim)) {
-          CkAbort("Insufficient number of pes for diagonalizer to run.\n");
-      }
 #if INTEROP
         diagonalization = 1;
 #else
         diagonalization = 0;
 #endif
+      if (diagonalization != 0) {
+        if (CkNumPes() < (numEOrthosPerDim * numEOrthosPerDim)) {
+          CkAbort("Insufficient number of pes for diagonalizer to run.\n");
+        }
+      }
       grainSizeOrtho = cfg.grainSize;
       numStatesOA = cfg.numStates;
       int maxorthostateindex=(cfg.numStates/cfg.grainSize-1) * cfg.grainSize;

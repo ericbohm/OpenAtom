@@ -7,6 +7,10 @@
   FFT3_HOME     = /soft/libraries/alcf/current/xl/FFTW3
   CHARMFFT_HOME = $(HOME)/fft
 
+  ELPA_HOME        = $(HOME)/scalapack/install
+  DIAGONALIZER     = NO
+  DIAGONALIZER_VAL =
+
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
 
@@ -24,7 +28,7 @@
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2 -g -DFORTRANUNDERSCORE_OFF
   CPPFLAGS += -DUSE_ESSL_WRAPPER=0 $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF \
-	      -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
+	      $(DIAGONALIZER_VAL) -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
 	      -Wl,--allow-multiple-definition
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
@@ -32,8 +36,8 @@
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
-$(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include \
-			   -I$(STANDARD_INC)
+$(libdriver):  CPPFLAGS += -I. -I$(main) -I$(driver) -I$(base) -I$(base)/include \
+			   -I$(STANDARD_INC) -I$(interoplib)
 $(libdriver):  FFLAGS   +=
 $(libdriver):  CFLAGS   +=
 $(libdriver):  CXXFLAGS +=
@@ -50,6 +54,12 @@ $(libmath):    FFLAGS   += -fno-second-underscore -fno-underscoring
 $(libmath):    CFLAGS   += -seq -DFORTRANUNDERSCORE_OFF=1
 $(libmath):    CXXFLAGS += -seq -DFORTRANUNDERSCORE_OFF=1
 
+#-------------------------------------------------------------------------------
+#------------------ Flags and settings just for the interop lib ------------------
+$(libinterop):    CPPFLAGS  = $(DIAGONALIZER_VAL) -I. -I$(main) -I$(driver) -I$(base) -I$(STANDARD_INC) -I$(CHARMINC) -I$(topinclude)
+$(libinterop):    FFLAGS    =
+$(libinterop):    CFLAGS    =
+$(libinterop):    CXXFLAGS  =
 
 #===============================================================================
 #-------------------------------------------------------------------------------
