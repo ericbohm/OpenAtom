@@ -269,6 +269,7 @@ mainmodule cpaimd {
   readonly int Ortho_UE_step3;
   readonly int Ortho_UE_error;
   readonly bool Ortho_use_local_cb;
+  readonly bool HartreeFockOn;
   readonly int done_init;
   readonly int TimeKeeperID;
   readonly int numPes;
@@ -337,6 +338,7 @@ mainmodule cpaimd {
   readonly CkVec <CProxy_GSpaceDriver> UgSpaceDriverProxy;
   readonly CkVec <CProxy_CP_State_ParticlePlane> UparticlePlaneProxy;
   readonly CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
+  readonly CProxy_HFCalculator HFCalculatorProxy;
   readonly CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
   readonly CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
   readonly CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;

@@ -28,6 +28,7 @@
 
 
 //============================================================================
+#include "HFCalculator.h"
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_ParticlePlane.h"
 #include "CP_State_Plane.h"
@@ -75,6 +76,8 @@ extern CProxy_main                    mainProxy;
 extern CProxy_InstanceController      instControllerProxy;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
 extern CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
+extern CProxy_HFCalculator HFCalculatorProxy;
+extern bool HartreeFockOn;
 extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>            UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>  UparticlePlaneProxy;

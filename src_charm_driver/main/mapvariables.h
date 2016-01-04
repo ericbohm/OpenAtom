@@ -78,6 +78,7 @@ CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 CkVec <CProxy_CP_State_RealSpacePlane>    UrealSpacePlaneProxy;
+CProxy_HFCalculator                       HFCalculatorProxy;
 CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
 CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
 CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;

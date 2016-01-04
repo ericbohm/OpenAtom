@@ -38,6 +38,8 @@
 //-----------------------------------------------------------------------
 //#define _CP_DEBUG_HARTEEXT_OFF_   // this leaves everything on but eext/hartree
 
+#define _HFCALCULATOR_VERBOSE_
+
 //-----------------------------------------------------------------------
 /// Debug the PairCalculator and its companion whistles
 //#define _PAIRCALC_DEBUG_

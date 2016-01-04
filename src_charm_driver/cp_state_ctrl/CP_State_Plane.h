@@ -18,6 +18,7 @@
 #include "structure_factor/StructureFactor.h"
 #include "fft_types.h"
 //#include "ckPairCalculator.h"
+extern bool HartreeFockOn;
 void getSplitDecomp(int *,int *,int *,int , int ,int );
 
 #define MY_X 0
@@ -41,6 +42,7 @@ class VksMsg : public CkMcastBaseMsg, public CMessage_VksMsg {
     int pencil_offset_y;
     double *data;
 };
+
 //============================================================================
 
 //============================================================================
@@ -137,6 +139,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
     int numCookies;
     int istate;
     int *grid_offset_b, *grid_num_b;
+    double* hartree1;
     int rho_rpencil_offset_x, rho_rpencil_num_y;
     UberCollection RhoReductionDest;
     RealStateSlab rs;

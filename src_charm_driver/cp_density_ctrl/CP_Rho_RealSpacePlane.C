@@ -43,6 +43,7 @@
 //============================================================================
 extern CProxy_TimeKeeper                                TimeKeeperProxy;
 extern CkVec <CProxy_CP_State_RealSpacePlane>           UrealSpacePlaneProxy;
+extern CProxy_HFCalculator HFCalculatorProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane>        UrealParticlePlaneProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane>             UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GSpacePlane>                UrhoGProxy;

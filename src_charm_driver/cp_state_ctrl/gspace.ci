@@ -369,12 +369,51 @@ module gParticlePlane
   };
 };
 
+module HartreeFock
+{
+  message HFInputMsg
+  {
+    double inputPsi[];
+  };
+
+  nodegroup HFCalculator {
+    entry HFCalculator ();
+    entry void acceptInputPsi(HFInputMsg *msg);
+    entry void run() {
+      while (true) {
+        serial {
+          initializeOuterproduct();
+        }
+        for (scount = 0; scount < totalStates; scount++) {
+          serial {
+            CProxy_CP_State_RealSpacePlane realproxy1 = UrealSpacePlaneProxy[0];
+            for (int ii = 0; ii < mygridz; ii++) {
+              realproxy1(scount, ii).sendPlease();
+            }
+          }
+          for (lcount = 0; lcount < mygridz; lcount++) {
+            when acceptInputPsi(HFInputMsg *msg) serial { fillOneState(msg); }
+          }
+          serial {
+            aggregateOuterproduct();
+          }
+        }
+        serial {
+          int mycount = 1;
+          contribute(sizeof(int), &mycount, CkReduction::sum_int, CkCallback
+            (CkReductionTarget(CP_State_RealSpacePlane, hfCalcOver), UrealSpacePlaneProxy[0]));
+        }
+      }
+    };
+  };
+};
 
 module gStatePlane
 {
   extern module pcMessages;
   extern module instanceController;
   extern module RDMAMessages;
+  extern module HartreeFock;
 
   class RDMApair_GSP_PC;
   class pcSetupMsg;
@@ -437,11 +476,25 @@ module gStatePlane
           // Send the partially FFTd force to GSpacePlane
           sendFPsiToGSP();
         }
+
+        if (HartreeFockOn) {
+          when hfCalcOver(int totalcount) serial {
+          }
+        }
+      }
+    };
+
+    entry void sendInputPsi (HFInputMsg* msg) {
+      when sendPlease()
+      serial {
+        HFCalculatorProxy.acceptInputPsi(msg);
       }
     };
 
     entry [nokeep] void acceptFFT(RSFFTMsg *m);
     entry [nokeep] void acceptVks(VksMsg *m);
+    entry [reductiontarget] void hfCalcOver(int totalcount);
+    entry void sendPlease();
     entry [local] void doFFT();
     entry [local] void doVksFFT();
     entry void setNumPlanesToExpect(int num);

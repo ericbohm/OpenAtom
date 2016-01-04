@@ -202,6 +202,7 @@ int Ortho_UE_step2;
 int Ortho_UE_step3;
 int Ortho_UE_error;
 bool Ortho_use_local_cb;
+bool HartreeFockOn;
 int done_init=0;
 int planes_per_pe;
 extern int numOrthosPerDim;
@@ -403,6 +404,7 @@ main::main(CkArgMsg *msg) {
 
   /* choose whether ortho should use local callback */
   Ortho_use_local_cb = true;
+  HartreeFockOn = false;
   paircalcstartup(&cfgSymmPC, &cfgAsymmPC, sim, doublePack);
   cp::ortho::orthoConfig orthoCfg;
   //============================================================================
@@ -677,6 +679,11 @@ main::main(CkArgMsg *msg) {
       UatomsComputeProxy[thisInstance.getPO()].init();
     } // end of per instance init
   //============================================================================
+
+  if (HartreeFockOn) {
+    HFCalculatorProxy = CProxy_HFCalculator::ckNew();
+    HFCalculatorProxy.run();
+  }
 
   TimeKeeperProxy.init();
 

@@ -36,6 +36,7 @@
 //============================================================================
 
 #include "CP_State_GSpacePlane.h"
+#include "HFCalculator.h"
 #include "CP_State_Plane.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "main/cpaimd.h"
@@ -52,6 +53,7 @@ extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>            UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane>   UrhoRealProxy;
 extern CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
+extern CProxy_HFCalculator HFCalculatorProxy;
 extern CProxy_main                            mainProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>  UparticlePlaneProxy;
 extern CkVec <CProxy_FFTcache>                UfftCacheProxy;
@@ -59,7 +61,9 @@ extern CProxy_InstanceController              instControllerProxy;
 extern CkGroupID            mCastGrpId;
 
 extern Config config;
+extern CPcharmParaInfo simReadOnly;
 extern CkReduction::reducerType sumFastDoubleType;
+extern bool HartreeFockOn;
 
 #define CHARM_ON
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
@@ -405,6 +409,24 @@ void CP_State_RealSpacePlane::doFFT(){
   fftcache->freeCacheMem("CP_State_RealSpacePlane::doFFT");
 #else
   doReduction();
+  if(HartreeFockOn){
+    int lHartSize = ngrida*ngridb;
+    hartree1 = new double[lHartSize];
+    CmiMemcpy(hartree1, data, lHartSize*sizeof(double));
+    HFInputMsg *msghf = new (lHartSize) HFInputMsg;
+    msghf->inputSize = lHartSize;
+    msghf->statenum = thisIndex.x;
+    msghf->chunknum = thisIndex.y;
+    CmiMemcpy(msghf->inputPsi, data, lHartSize*sizeof(double));
+    for(int i = 0;i < ngrida*ngridb; i++){
+      if(isnan(hartree1[i]) != 0){
+        CkPrintf("RS [%d %d] issuing nan at %d out of %d\n",
+            thisIndex.x, thisIndex.y, i, ngridb*ngrida);
+        CkAbort("RS nan in the fftcache");
+      }
+    }//endif
+    sendInputPsi(msghf);
+  }
 #endif
 
   //---------------------------------------------------------------------------
