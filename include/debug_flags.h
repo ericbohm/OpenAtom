@@ -198,6 +198,7 @@
 //#define _CP_GS_DUMP_VKS_
 //#define _CP_GS_DUMP_LAMBDA_
 //#define _CP_GS_DUMP_PSI_
+//#define _CP_GS_DEBUG_COMPARE_PSI_
 //#define _PAIRCALC_DEBUG_PARANOID_FW_
 //#define _CP_ORTHO_DUMP_SMAT_
 //#define _CP_ORTHO_DUMP_TMAT_

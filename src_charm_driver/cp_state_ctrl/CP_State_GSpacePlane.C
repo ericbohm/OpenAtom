@@ -1931,14 +1931,18 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
+    char name1[100];
+    char name2[100];
+    sprintf(name1, "lambdaBf.iter.%d", iteration);
+    sprintf(name2, "psiBf.iter.%d", iteration);
     if(savedlambdaBf==NULL){ // load it
       savedlambdaBf= new complex[gs.numPoints];
-      loadMatrix("lambdaBf",(double *)savedlambdaBf, 1,
+      loadMatrix(name1,(double *)savedlambdaBf, 1,
           gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
     }//endif
     if(savedpsiBf==NULL){ // load it
       savedpsiBf= new complex[gs.numPoints];
-      loadMatrix("psiBf",(double *)savedpsiBf, 1,
+      loadMatrix(name2,(double *)savedpsiBf, 1,
           gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
     }//endif
     double testvalue=0.00000001;
@@ -2000,7 +2004,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     int       N    = msg->getSize()/sizeof(complex);
     complex *data  = (complex *)msg->getData();
-    int offset     = msg->getUserFlag();  if(offset<0){offset=0;}
+    int offset     = msg->getUserFlag();   
+    if(offset<0) CkAbort("offset < 0, check for message corruption\n");
     //  CkPrintf("[%d %d] accepts lambda %d \n", thisIndex.x, thisIndex.y,offset);
     complex *force = gs.packedForceData;
     int chunksize  = gs.numPoints/config.numChunksAsym;
@@ -3045,7 +3050,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     int N           = msg->getSize()/sizeof(complex);
     complex *data   = (complex *)msg->getData();
-    int offset      = msg->getUserFlag();  if(offset<0){offset=0;}
+    int offset      = msg->getUserFlag();
+    if(offset<0) CkAbort("offset < 0, check for message corruption\n");
     complex *psi    = gs.packedPlaneData;
     int chunksize   = gs.numPoints/config.numChunksSym;
     int chunkoffset = offset*chunksize; // how far into the points this contribution lies
@@ -3117,7 +3123,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     int N           = msg->N;
     complex *data   = msg->result;
-    int offset      = msg->myoffset;  if(offset<0){offset=0;}
+    int offset      = msg->myoffset;
+    if(offset<0) CkAbort("msg->myoffset < 0, check for message corruption\n");
+
     complex *psi    = gs.packedPlaneData;
     int chunksize   = gs.numPoints/config.numChunksSym;
     int chunkoffset = offset*chunksize; // how far into the points this contribution lies
@@ -3197,7 +3205,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       CkPrintf("donewpsi %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
 
-    CkAssert(countPsi==AllPsiExpected);
+    if(countPsi!=AllPsiExpected) 
+      {
+	CkAbort("Flow of Control Error, cannot doNewPsi until all of it has arrived\n");
+      }
 
     complex *psi  = gs.packedPlaneData;
 #ifdef _NAN_CHECK_
@@ -3564,7 +3575,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     int N           = msg->getSize()/sizeof(complex);
     complex *data   = (complex *)msg->getData();
-    int offset      = msg->getUserFlag();  if(offset<0){offset=0;}
+    int offset      = msg->getUserFlag();
+    if(offset<0) CkAbort("offset < 0, check for message corruption\n");
 
     complex *vpsi   = gs.packedVelData;
     int chunksize   = gs.numPoints/config.numChunksSym;
@@ -3618,7 +3630,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     int N           = msg->N;
     complex *data   = msg->result;
-    int offset      = msg->myoffset;  if(offset<0){offset=0;}
+    int offset      = msg->myoffset;   if(offset<0){CkAbort("offset < 0 is bad\n");}
 
 #ifdef _NAN_CHECK_
     for(int i=0; i < N; i++)
