@@ -3,7 +3,7 @@
 #include <sstream> 
 
 CkReduction::reducerType sumMatrixDoubleType;
-
+//#define _PAIRCALC_DEBUG_PARANOID_BW_ 1
 
 void registersumMatrixDouble(void)
 {
@@ -1417,7 +1417,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     enqueueBWsend(unitcoef);
   else
   {
-    CkPrintf("[%d,%d,%d,%d,%d] not sending cfg.isBWstreaming %d cfg.areBWTilesCollected %d cfg.isBWbarriered %d actionType %d  numRecdBW %d numOrtho%d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,cfg.isBWstreaming,cfg.areBWTilesCollected,cfg.isBWbarriered,actionType, numRecdBW,numOrtho);
+    //    CkPrintf("[%d,%d,%d,%d,%d] not sending cfg.isBWstreaming %d cfg.areBWTilesCollected %d cfg.isBWbarriered %d actionType %d  numRecdBW %d numOrtho%d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,cfg.isBWstreaming,cfg.areBWTilesCollected,cfg.isBWbarriered,actionType, numRecdBW,numOrtho);
   }
 #endif
 
@@ -2063,22 +2063,23 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
                   sizeX=sizeY;
                   sizeY=size;
                   }*/
-      int index=orthoY;
-      if(notOnDiagonal)
-        index=orthoX;
+      int index=orthoX;
+      //      if(notOnDiagonal)
+      //        index=orthoY;
+      //      CkPrintf("[%d,%d,%d,%d,%d]: bwSendHelper !amPhantom orthoXgrain %d sizeX %d orthoYgrain %d sizeY %d columncount[%d] is %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric,  orthoXgrain, sizeX, orthoYgrain, sizeY, index, columnCount[index]);
       if(++columnCount[index]==numOrthoCol ) // BNC
       {
 #ifdef _PAIRCALC_DEBUG_
         CkPrintf("[%d,%d,%d,%d,%d]: bwSendHelper !amPhantom orthoXgrain %d sizeX %d orthoYgrain %d sizeY %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric,  orthoXgrain, sizeX, orthoYgrain, sizeY);
 #endif
 
-        int   startGrain=orthoYgrain;
-        int   endGrain=startGrain+sizeY;
-        if(notOnDiagonal)
-        {
-          startGrain=orthoXgrain;
-          endGrain=startGrain+sizeY;
-        }
+        int   startGrain=orthoXgrain;
+        int   endGrain=startGrain+sizeX;
+	if(notOnDiagonal)
+	  {
+	    //	    startGrain=orthoYgrain;
+	    endGrain=startGrain+sizeY;
+	  }
         // send orthoX in newData
         if(cfg.isOutputReduced)
           sendBWResultColumn(false, startGrain, endGrain);
@@ -2109,9 +2110,9 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
   // asymm off diag dynamics
   if((amPhantom || (!cfg.arePhantomsOn && (othernewData!=NULL)&& notOnDiagonal))&& existsRight)
   {
-    int index =orthoX;
+    int index =orthoY;
     if(cfg.isSymmetric)
-      index=orthoY;
+      index=orthoX;
     if(++columnCountOther[index]==numOrthoCol) // BTC
     {
 #ifdef _PAIRCALC_DEBUG_
@@ -2119,19 +2120,19 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 #endif
 
 
-      int startGrain=orthoXgrain;
-      int endGrain=sizeX+startGrain;
+      int startGrain=orthoYgrain;
+      int endGrain=sizeY+startGrain;
 
       //int startGrain=orthoYgrain;
       //int endGrain=sizeY+startGrain;
       if(cfg.isSymmetric)
       {
-        startGrain=orthoYgrain;
+        startGrain=orthoXgrain;
         endGrain=sizeX+startGrain;
       }
       if(amPhantom)
       {
-        startGrain=orthoYgrain;
+        startGrain=orthoXgrain;
         //startGrain=orthoYgrain;
         //		endGrain=startGrain+orthoGrainSizeY;
         //				endGrain=startGrain+sizeY;
