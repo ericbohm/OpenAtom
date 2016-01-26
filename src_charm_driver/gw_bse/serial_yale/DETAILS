@@ -1,0 +1,22 @@
+Flow of the code and What each function calculates:
+
+read_usrinput(USRINPUT &):
+	It reads input options from a gw.input file.
+
+read_sysinfo(SYSINFO &):
+	It reads system information from Quantum Espresso. 
+		lattice constant (in bohr unit)
+		lattice vectors (in bohr unit)
+		reciprocal lattice vectors (unit: 1/(2pi/alat) a.u.^-1 so 2pi/alatt should be multiplied to get the real one)
+		number of spin, number of kpoints, number of total states
+		number of planewaves at each k points 
+		k vectors (unit: 1/(2pi/alat) a.u.^-1 so 2pi/alat should be multiplied to get the real one. 
+		           Note that this is in cartesian unit. not crystal unit.)
+		
+	cartesian_to_crystal: calculating k vectors in crystal unit. 
+			      The basis is reciprocal lattice vectors, which has the unit of 1/(2pi/alat) a.u.^-1)
+
+	calc_qvec: calculating q vectors in crystal basis.
+
+	calc_vol: calculating volume of the simulation cell.
+

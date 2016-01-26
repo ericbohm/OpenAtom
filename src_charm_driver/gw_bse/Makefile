@@ -1,15 +1,35 @@
-CHARMC=~/Programming/ppl/charm/bin/charmc
+#CHARMDIR = /Users/minjung/packages/Charm
+#CHARMDIR = /scratch/mikida2/charm
+CHARMDIR = /Users/Eric/Programming/ppl/charm
+CHARMC = $(CHARMDIR)/bin/charmc
+#FFT3 = /dcsdata/home/bohm/fftw3
+FFT3 = /Users/Eric/Programming/ppl/fftw3
 
-OBJS=gw_bse.o psi.o pmatrix.o
+INCLUDES=-I$(FFT3)/include
+LIBS=-L$(FFT3)/lib -lfftw3 -lm -lz
+CFLAGS=-g $(INCLUDES) #-D_CP_DEBUG_UTIL_VERBOSE_ -DDEBUG_FFT
+LFLAGS=$(LIBS)
 
-all: gw_bse.decl.h $(OBJS)
-	$(CHARMC) -o gw_bse $(OBJS) -module CkMulticast -language charm++
+C_FILES=$(wildcard *.C)
+CI_FILES=$(wildcard *.ci)
+MODULES=$(CI_FILES:.ci=.decl.h)
+OBJS=$(C_FILES:.C=.o)
 
-gw_bse.decl.h: gw_bse.ci config.h
-	$(CHARMC) gw_bse.ci
+default: all
+all: gw_bse
 
-%.o: %.C %.h
+gw_bse: $(MODULES) $(OBJS)
+	$(CHARMC) $(LFLAGS) $(OBJS) -o $@
+
+%.decl.h: %.ci
 	$(CHARMC) $<
 
+%.o: %.C %.h $(MODULES)
+	$(CHARMC) $(CFLAGS) -c $< -o $@
+
+%.o: %.C $(MODULES)
+	$(CHARMC) $(CFLAGS) -c $< -o $@
+
 clean:
-	rm -rf *.decl.h *.def.h *.o charmrun gw_bse
+	rm -rf *.o *.decl.h *.def.h
+	rm -rf charmrun gw_bse

@@ -1,0 +1,152 @@
+// A module defining the various messages that are shared between modules
+module messages {
+  // A message used to package and send around psi arrays
+  message PsiMessage {
+    complex psi[];
+  };
+
+  // A message containing data being moved during a transpose
+  message TransposeMessage {
+    complex data[];
+  };
+};
+
+module controller {
+  extern module messages;
+  readonly CProxy_Controller controller_proxy;
+  readonly CProxy_PsiCache psi_cache_proxy;
+
+  // Controls the coordination between the states, pmatrix, and cache based on
+  // the configuration of pipeline depth, number of stages, etc.
+  chare Controller {
+    entry Controller();
+    entry [reductiontarget] void cachesFilled();
+    entry [reductiontarget] void psiComplete();
+    entry [reductiontarget] void fftComplete();
+    entry [reductiontarget] void transposeComplete();
+    entry [reductiontarget] void printingComplete();
+
+    entry void run() {
+      // Tell the occupied psis to duplicate them in the cache, the wait for
+      // the caches to report that they have been filled.
+      for (next_K = 0; next_K < K; next_K++) {
+        for (next_state = 0; next_state < L; next_state++) {
+          serial { states_proxy(0, next_K, next_state).sendToCache(); }
+        }
+      }
+      when cachesFilled() serial {}
+
+      // Tell the unoccupised psis to send themselves to P, sending the first
+      // chunk in the pipeline without waiting for any to complete.
+      for (next_K = 0; next_K < K; next_K++) {
+        for (next_state = L; next_state < L + M; next_state++) {
+          serial {
+            states_proxy(0, next_K, next_state).sendToP();
+            total_sent++;
+          }
+          if (total_sent >= pipeline_stages) {
+            when psiComplete() serial { total_complete++; }
+          }
+        }
+      }
+      while (total_complete < K * M) {
+        when psiComplete() serial { total_complete++; }
+      }
+
+      serial {
+        CkPrintf("P Formed in real space.\n");
+        pmatrix_proxy.printRows(4, "P_Rspace");
+      }
+
+      // FFT P from RSpace to GSpace
+      when printingComplete()   serial { pmatrix_proxy.fftRows(1); }
+      when fftComplete()        serial { pmatrix_proxy.doTranspose(); }
+      when transposeComplete()  serial { pmatrix_proxy.fftRows(-1); }
+      when fftComplete()        serial { pmatrix_proxy.doTranspose(); }
+
+      when transposeComplete()  serial {
+        CkPrintf("P formed in G space.\n");
+        pmatrix_proxy.printRows(4, "P_Gspace");
+      }
+      when printingComplete() serial { CkExit(); }
+    }
+  };
+
+  // Caches psis locally on each node so they can be reused when forming P
+  nodegroup PsiCache {
+    entry PsiCache();
+    entry void receivePsi(PsiMessage*);
+  };
+};
+
+module states {
+readonly CProxy_States states_proxy;
+
+  // An array containing all of the states in the system. After reading in the
+  // states and performing an initial FFT it waits for the controller to tell it
+  // where and when to send its data.
+  array [3D] States {
+    entry States();
+    entry [reductiontarget] void sendToCache();
+    entry [reductiontarget] void sendToP();
+  };  
+};
+
+module pmatrix {
+  include "ckcomplex.h";
+  extern module messages;
+  readonly CProxy_PMatrix pmatrix_proxy;
+
+  // An array containing a distributed representation of P. Each time it
+  // receives a psi, it multiplies that psi against cached psis to incrementally
+  // compute its values.
+  array [1D] PMatrix {
+    entry PMatrix();
+    entry [nokeep] void receivePsi(PsiMessage*);
+    entry void fftRows(int);
+    entry [nokeep] void receiveTransposeData(TransposeMessage*);
+    entry void printRows(int n, char prefix[16]);
+
+    entry void doTranspose() {
+      serial {
+        // TODO: this only works when every chare has same amount of rows
+        TransposeMessage* msg;
+        unsigned my_start, their_start;
+        unsigned ndata = num_rows * num_rows;
+
+        // Create, fill, and send a transpose message for each chare
+        for (int dest = 0; dest < num_chares; dest++) {
+          my_start = num_rows * dest;
+          their_start = start_row;
+
+          msg = new (ndata) TransposeMessage();
+          msg->start_col = their_start;
+          for (int c = 0; c < num_rows; c++) {
+            for (int r = 0; r < num_rows; r++) {
+              // The data is transposed on the sender side
+              msg->data[c*num_rows + r] = data[r][c + my_start];
+            }
+          }
+          thisProxy(dest).receiveTransposeData(msg);
+        }
+      }
+
+      // Wait to receive the TransposeMessage from every other chare
+      for (trans_count = 0; trans_count < num_chares; trans_count++) {
+        when receiveTransposeData(TransposeMessage* msg) serial {
+          for (int r = 0; r < num_rows; r++) {
+            for (int c = 0; c < num_rows; c++) {
+              // The data being sent was already transposed on the sender side
+              data[r][c + msg->start_col] = msg->data[r*num_rows + c];
+            }
+          }
+        }
+      }
+
+      // Tell the controller that the transpose is complete
+      serial {
+        contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
+      }
+    }
+  };
+};

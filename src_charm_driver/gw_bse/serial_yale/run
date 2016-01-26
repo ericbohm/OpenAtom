@@ -1,4 +1,0 @@
-#!/bin/bash
-
-./tidy
-./charmrun ++local +p4 ./gw_bse

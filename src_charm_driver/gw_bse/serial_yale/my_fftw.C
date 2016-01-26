@@ -1,10 +1,9 @@
 #include <cstdlib>
 #include <iostream>
 #include "my_fftw.h"
-#include "standard_include_gwbse.h"
+#include "util.h"
 
-
-// if we don't declare this, the code complains and doesn't compile
+// if we don't declare this, the code complains and don't compile
 fftw_complex *in_pointer;
 fftw_complex *out_pointer;
 fftw_plan my_plan;
@@ -25,14 +24,10 @@ fftw_complex *fftw_out_pointer(){
 
 // destroy fftw related variables. We only do once when fftw is all done
 void destroy_fftw_stuff(){
-  if (in_pointer) {
+    mymessage("fftw_plan and pointers are being destroyed");
     fftw_destroy_plan(my_plan);
     fftw_free(in_pointer);
     fftw_free(out_pointer);
-
-    in_pointer = NULL;
-    out_pointer = NULL;
-  }
 }
 
 
@@ -44,12 +39,10 @@ void setup_fftw_3d(int nfft[3], int direction){
 
     // check for some dumb input values
     if (nfft[0]<=0 || nfft[1] <=0 || nfft[2] <=0){
-        CkPrintf("setup_fftw_3d routine received illigal value for nfft. nfft should be positive number.");
-	CkExit();
+	Die("setup_fftw_3d routine received illigal value for nfft. nfft should be positive number.");
     }
     if (!(direction==-1 || direction==1)){
-        CkPrintf("setup_fftw_3d routine received illigal value for direction. FFTW direction must either 1 or -1");
-	CkExit();
+	Die("setup_fftw_3d routine received illigal value for direction. FFTW direction must either 1 or -1");
     }
 
     // if first time, we need to set up
