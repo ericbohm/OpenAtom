@@ -1,8 +1,8 @@
 include config.mk
 CHARMC = $(CHARMDIR)/bin/charmc
 
-INCLUDES=-I$(FFT3)/include
-LIBS=-L$(FFT3)/lib -lfftw3 -lm -lz
+INCLUDES=-I$(FFTW3)/include
+LIBS=-L$(FFTW3)/lib -lfftw3 -lm -lz
 
 CFLAGS=-g $(INCLUDES) #-D_CP_DEBUG_UTIL_VERBOSE_ -DDEBUG_FFT
 LFLAGS=$(LIBS)
