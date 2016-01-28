@@ -1,0 +1,10 @@
+To build:
+============
+> cp config.mk.template config.mk (Edit paths in config.mk to match your system)
+> make
+
+To run:
+============
+> cp gw_bse input
+> cd input
+> ./gw_bse minjung_test_file

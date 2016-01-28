@@ -1,0 +1,7 @@
+# Define the following paths in order to build gw_bse
+
+# Path to your build of charm
+CHARMDIR = /Users/Eric/Programming/ppl/charm
+
+# Path to the build of the fftw3 library
+FFTW3 = /Users/Eric/Programming/ppl/fftw3
