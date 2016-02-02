@@ -1,16 +1,17 @@
 #include "fft_controller.h"
 #include "fft_routines.h"
+#include "controller.h"
 
 FFTController::FFTController() {
   first_time = true;
   in_pointer = out_pointer = NULL;
+
+  // TODO: A group dependency could probably solve this better
+  contribute(CkCallback(CkReductionTarget(Controller, fftControllerReady), controller_proxy));
 }
 
 void FFTController::do_fftw() {
-  //setup_fftw_3d(nfft, direction);
-  //put_into_fftbox(nfft, in_data, in_pointer);
   fftw_execute(plan);
-  //fftbox_to_array(out_size, out_pointer, out_data, 1);
 }
 
 void FFTController::destroy_fftw_stuff() {

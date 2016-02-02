@@ -26,6 +26,7 @@ class States : public CBase_States {
   States(CkMigrateMessage *msg);
 
   /// Entry Methods ///                                                                         
+  void fftGtoR();
   void sendToCache();
   void sendToP();
 

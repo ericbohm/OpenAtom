@@ -14,12 +14,15 @@ module messages {
 module controller {
   extern module messages;
   readonly CProxy_Controller controller_proxy;
+  readonly CProxy_FFTController fft_controller_proxy;
   readonly CProxy_PsiCache psi_cache_proxy;
 
   // Controls the coordination between the states, pmatrix, and cache based on
   // the configuration of pipeline depth, number of stages, etc.
   chare Controller {
     entry Controller();
+    entry [reductiontarget] void fftControllerReady();
+    entry [reductiontarget] void stateFFTComplete();
     entry [reductiontarget] void cachesFilled();
     entry [reductiontarget] void psiComplete();
     entry [reductiontarget] void fftComplete();
@@ -27,6 +30,18 @@ module controller {
     entry [reductiontarget] void printingComplete();
 
     entry void run() {
+      when fftControllerReady() serial {
+        start = CmiWallTimer();
+        CkPrintf("[CONTROLLER] Starting the controller @%f\n", start);
+        states_proxy.fftGtoR();
+      }
+
+      when stateFFTComplete() serial {
+        end = CmiWallTimer();
+        CkPrintf("[CONTROLLER] States FFTd @%f (elapsed %f)\n", end, end - start);
+        start = CmiWallTimer();
+      }
+
       // Tell the occupied psis to duplicate them in the cache, the wait for
       // the caches to report that they have been filled.
       for (next_K = 0; next_K < K; next_K++) {
@@ -34,7 +49,11 @@ module controller {
           serial { states_proxy(0, next_K, next_state).sendToCache(); }
         }
       }
-      when cachesFilled() serial {}
+      when cachesFilled() serial {
+        end = CmiWallTimer();
+        CkPrintf("[CONTROLLER] Caches filled @%f (%f elapsed)\n", end, end - start);
+        start = CmiWallTimer();
+      }
 
       // Tell the unoccupised psis to send themselves to P, sending the first
       // chunk in the pipeline without waiting for any to complete.
@@ -54,18 +73,24 @@ module controller {
       }
 
       serial {
-        CkPrintf("P Formed in real space.\n");
+        end = CmiWallTimer();
+        CkPrintf("[CONTROLLER] P Formed in real space @%f (%f elapsed).\n", end, end - start);
         pmatrix_proxy.printRows(4, "P_Rspace");
       }
 
       // FFT P from RSpace to GSpace
-      when printingComplete()   serial { pmatrix_proxy.fftRows(1); }
+      when printingComplete()   serial {
+        start = CmiWallTimer();
+        CkPrintf("[CONTROLLER] FFT beginning @%f\n", start);
+        pmatrix_proxy.fftRows(1);
+      }
       when fftComplete()        serial { pmatrix_proxy.doTranspose(); }
       when transposeComplete()  serial { pmatrix_proxy.fftRows(-1); }
       when fftComplete()        serial { pmatrix_proxy.doTranspose(); }
 
       when transposeComplete()  serial {
-        CkPrintf("P formed in G space.\n");
+        end = CmiWallTimer();
+        CkPrintf("[CONTROLLER] P formed in G space @%f (%f elapsed).\n", end, end - start);
         pmatrix_proxy.printRows(4, "P_Gspace");
       }
       when printingComplete() serial { CkExit(); }
@@ -91,6 +116,7 @@ readonly CProxy_States states_proxy;
   // where and when to send its data.
   array [3D] States {
     entry States();
+    entry void fftGtoR();
     entry [reductiontarget] void sendToCache();
     entry [reductiontarget] void sendToP();
   };  

@@ -33,8 +33,6 @@ States::States() {
   // set the size of fft grid
   for(int i=0;i<3;i++){nfft[i] = gwbse->gw_parallel.fft_nelems[i];}
 
-  fft_G_to_R();
-
 }
 
 // constructor needed for chare object migration (ignore for now)
@@ -86,7 +84,7 @@ void States::sendToP() {
 // FFTW Routines
 //==============================================================================
 
-void States::fft_G_to_R() {
+void States::fftGtoR() {
 
   // Set up the FFT data structures in the FFTController
   FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
@@ -125,8 +123,15 @@ void States::fft_G_to_R() {
   double scale = sqrt(1.0/double(ndata)); // IFFT requires normalization
   fftbox_to_array(ndata, out_pointer, stateCoeffR, scale);
 
+  // delete space used for fftidx
+  for (int i = 0; i < numCoeff; i++) { delete [] fftidx[i]; }
+  delete [] fftidx;
+
   // delete stateCoeff
   delete [] stateCoeff;
+
+  // tell the controller that the states are ready
+  contribute(CkCallback(CkReductionTarget(Controller, stateFFTComplete), controller_proxy));
   
 }
 
@@ -143,7 +148,7 @@ void States::readState(char *fromFile)
 {//begin routine
   //===================================================================================
   // A little screen output for the fans
-    CkPrintf("Reading state file: %s for chare (%d %d %d), with binary option %d.\n ",fromFile,ispin,ikpt,istate,ibinary_opt);
+    CkPrintf("Reading state file: %s for chare (%d %d %d), with binary option %d.\n",fromFile,ispin,ikpt,istate,ibinary_opt);
 
 
   if(ibinary_opt < 0 || ibinary_opt > 3){
