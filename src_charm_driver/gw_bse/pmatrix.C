@@ -5,6 +5,7 @@
 #include "controller.h"
 #include "states.h"
 #include "fft_routines.h"
+#include "fft_controller.h"
 
 PMatrix::PMatrix() {
   GWBSE* gwbse = GWBSE::get();
@@ -18,6 +19,8 @@ PMatrix::PMatrix() {
 
   start_row = thisIndex * num_rows;
   start_col = 0;
+
+  fft_controller = fft_controller_proxy.ckLocalBranch();
   
   data = new complex*[num_rows];
   for (int i = 0; i < num_rows; i++) {
@@ -90,11 +93,15 @@ void PMatrix::receivePsi(PsiMessage* msg) {
 
 void PMatrix::fftRows(int direction) {
   // FFT each row stored in this chare
-  // TODO: The data for the FFTs shouldn't be stored in global variables
   for (int i=0; i < num_rows; i++){
-    setup_fftw_3d(nfft, direction);
+    // First set up the data structures in the FFTController
+    fft_controller->setup_fftw_3d(nfft, direction);
+    fftw_complex* in_pointer = fft_controller->get_in_pointer();
+    fftw_complex* out_pointer = fft_controller->get_out_pointer();
+
+    // Pack our data, do the fft, then get the output
     put_into_fftbox(nfft, data[i], in_pointer);
-    do_fftw();
+    fft_controller->do_fftw();
     fftbox_to_array(num_cols, out_pointer, data[i], 1);
   }
 

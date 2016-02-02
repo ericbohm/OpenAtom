@@ -11,6 +11,7 @@
 #include "zlib.h"
 #endif
 #include "fft_routines.h"
+#include "fft_controller.h"
 
 States::States() {
 
@@ -87,10 +88,12 @@ void States::sendToP() {
 
 void States::fft_G_to_R() {
 
-  // set 3D fft plan
+  // Set up the FFT data structures in the FFTController
+  FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
   int backward = 1;
-  // this routine creates 3D fftw_plan
-  setup_fftw_3d(nfft,backward);
+  fft_controller->setup_fftw_3d(nfft,backward);
+  fftw_complex* in_pointer = fft_controller->get_in_pointer();
+  fftw_complex* out_pointer = fft_controller->get_out_pointer();
   
    // we need to setup fftidx
   int *g[3]; // put_into_fftbox routine takes 2D g array, so we need to do this
@@ -108,13 +111,12 @@ void States::fft_G_to_R() {
   gidx_to_fftidx(numCoeff, g, nfft, fftidx);
 
   // state coefficients are copied to in_pointer
-  // in_pointer and out_pointer are set in my_fftw.C
   // put_into_fftbox was originally written for doublePack = 0 (false)
   // for gamma point calculation, put_into_fftbox has been modified from the original version
   put_into_fftbox(numCoeff, stateCoeff, fftidx, nfft, in_pointer, doublePack);
   
-  // call fftw
-  do_fftw();
+  // tell the FFTController to do the fft
+  fft_controller->do_fftw();
 
   // transfer data from out_pointer to stateCoeffR
   // malloc stateRspace first

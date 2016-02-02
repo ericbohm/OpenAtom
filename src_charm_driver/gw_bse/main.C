@@ -19,6 +19,7 @@
 #include "states.h"
 #include "pmatrix.h"
 #include "controller.h"
+#include "fft_controller.h"
 #include "standard_include.h"
 #include "allclass_gwbse.h"
 #include "configure_gwbse.h"
@@ -35,6 +36,7 @@
 /* readonly */ CProxy_PsiCache psi_cache_proxy;
 /* readonly */ CProxy_PMatrix pmatrix_proxy;
 /* readonly */ CProxy_Controller controller_proxy;
+/* readonly */ CProxy_FFTController fft_controller_proxy;
 
 
 //==========================================================================
@@ -73,6 +75,7 @@ Main::Main(CkArgMsg* msg) {
   // -------------------------------------------------------------------
   // Create the controller chares
   controller_proxy = CProxy_Controller::ckNew();
+  fft_controller_proxy = CProxy_FFTController::ckNew();
   psi_cache_proxy = CProxy_PsiCache::ckNew();
 
   // -------------------------------------------------------------------

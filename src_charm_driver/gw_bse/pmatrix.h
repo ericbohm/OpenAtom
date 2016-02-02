@@ -3,6 +3,8 @@
 
 #include "pmatrix.decl.h"
 
+class FFTController;
+
 class PMatrix : public CBase_PMatrix {
   PMatrix_SDAG_CODE
   public:
@@ -20,6 +22,8 @@ class PMatrix : public CBase_PMatrix {
     complex** data;
     int* nfft; // number of fft grids in each direction
     unsigned qindex;
+    FFTController* fft_controller;
+
     void kqIndex(unsigned, unsigned&, int*);
     complex* umklapp_factor;
     void getUmklappFactor(complex*, int[3]);

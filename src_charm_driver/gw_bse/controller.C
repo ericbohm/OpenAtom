@@ -5,6 +5,7 @@
 #include "messages.h"
 #include "pmatrix.h"
 #include "states.h"
+#include "fft_controller.h"
 
 Controller::Controller() {
   GWBSE *gwbse = GWBSE::get();

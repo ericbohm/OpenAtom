@@ -72,6 +72,10 @@ module controller {
     }
   };
 
+  group FFTController {
+    entry FFTController();
+  };
+
   // Caches psis locally on each node so they can be reused when forming P
   nodegroup PsiCache {
     entry PsiCache();

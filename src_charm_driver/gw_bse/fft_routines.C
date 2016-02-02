@@ -7,273 +7,177 @@
 // get fft index
 // We do this because ng is ALWAYS less than nfft[0]*nfft[1]*nfft[2]
 void gidx_to_fftidx(int ng, int **g, int nfft[3], int **fftidx){
-    
-    int this_gidx[3];
-    int keep_gidx[3];
-    int upper, lower, sumi;
+  int this_gidx[3];
+  int keep_gidx[3];
+  int upper, lower, sumi;
 
-    // loop over g index
-    for(int ig=0; ig<ng; ig++){
-	
-        // g index at ig
-        this_gidx[0] = g[0][ig];
-        this_gidx[1] = g[1][ig];
-        this_gidx[2] = g[2][ig];
+  // loop over g index
+  for (int ig=0; ig<ng; ig++) {
+    // g index at ig
+    this_gidx[0] = g[0][ig];
+    this_gidx[1] = g[1][ig];
+    this_gidx[2] = g[2][ig];
         
-        // speculate if this_gidx[3] is inside of the fftbox
-	// keep_gidx[i] has value -1 if this_gidx[i] is outside of the fftbox
-	// keep_gidx[i] has value 0 if this_gidx[i] is inside of the fftbox
-	// here, we initialize keep_gidx with -1
-        for (int i=0;i<3;i++){ keep_gidx[i]=-1; }
+    // speculate if this_gidx[3] is inside of the fftbox
+    // keep_gidx[i] has value -1 if this_gidx[i] is outside of the fftbox
+    // keep_gidx[i] has value 0 if this_gidx[i] is inside of the fftbox
+    // here, we initialize keep_gidx with -1
+    for (int i=0;i<3;i++) { keep_gidx[i]=-1; }
 
-        sumi = 0;
-        for (int j=0; j<3; j++) {
-	    // upper bound of the fftbox
-            upper = nfft[j]/2;
-	    // lower bound of the fftbox
-            lower = -1*nfft[j]/2;
-            if (this_gidx[j]<upper && this_gidx[j] >= lower) {
-                keep_gidx[j] = 0;
-            }
-            sumi += keep_gidx[j];
+    sumi = 0;
+    for (int j=0; j<3; j++) {
+      // upper bound of the fftbox
+      upper = nfft[j]/2;
+      // lower bound of the fftbox
+      lower = -1*nfft[j]/2;
+      if (this_gidx[j]<upper && this_gidx[j] >= lower) {
+        keep_gidx[j] = 0;
+      }
+      sumi += keep_gidx[j];
+    }
+    // put g index to fftbox index if keep_gidx[i] is 0 for all i
+    if (sumi == 0) {
+      for (int j=0; j<3; j++) {
+        fftidx[ig][j] = this_gidx[j] + 1;
+        // we don't want our fftbox index becomes negative
+        // make all fftidx positive
+        if (fftidx[ig][j]<=0) {
+          fftidx[ig][j] += nfft[j];
         }
-
-	// put g index to fftbox index if keep_gidx[i] is 0 for all i
-        if (sumi == 0) {
-            for (int j=0; j<3; j++) {
-                fftidx[ig][j] = this_gidx[j] + 1;
-		// we don't want our fftbox index becomes negative
-                // make all fftidx positive
-                if (fftidx[ig][j]<=0) {
-                    fftidx[ig][j] += nfft[j];
-                }
-            }
-        }
-        else{
-            // we need this to reject g if this_gidx doesn't fit into fftbox
-            for (int i=0;i<3;i++){ fftidx[ig][i] = -1; }
-        }
-        
-    }// end ig loop
-    
+      }
+    } else {
+      // we need this to reject g if this_gidx doesn't fit into fftbox
+      for (int i=0;i<3;i++) { fftidx[ig][i] = -1; }
+    }
+  }// end ig loop
 }
-
-
-
 
 // this routine takes g space wavefunction (array) and assign values into 1D array 
-void put_into_fftbox(int ng, complex *rawdata, int **fftidx, int nfft[3], fftw_complex *in_pointer, bool doublePack){
+void put_into_fftbox(int ng, complex *rawdata, int **fftidx, int nfft[3],
+    fftw_complex *in_pointer, bool doublePack) {
 
-    // initialize in_pointer
-    int ndata=nfft[0]*nfft[1]*nfft[2];
-    for (int i=0; i<ndata; i++){
-	in_pointer[i][0]=0;
-	in_pointer[i][1]=0;
-    }
+  // initialize in_pointer
+  int ndata=nfft[0]*nfft[1]*nfft[2];
+  for (int i=0; i<ndata; i++) {
+    in_pointer[i][0]=0;
+    in_pointer[i][1]=0;
+  }
 
-    // if doublePack, we have to put congujate numbers to the other half sphere (ga<0)
-    if (doublePack){
-        // temporary index to put data into 1D array
-	int idxtmp;
-	for (int ig=0; ig<ng; ig++){
-	    idxtmp = (fftidx[ig][0]-1)*nfft[1]*nfft[2] +
-                     (fftidx[ig][1]-1)*nfft[2] +
-                      fftidx[ig][2];
-	    // assign wavefunction value to in_pointer
-	    // we subtract 1 since our arrays use C++ counting
-            in_pointer[idxtmp-1][0] = rawdata[ig].re;
-	    in_pointer[idxtmp-1][1] = rawdata[ig].im;
-	    // if ga > 0, then stateCoeff(g) = stateCoeff(-g)
-	    if ( (fftidx[ig][0] > 1) && (fftidx[ig][0] < nfft[0]/2 + 1) ){
-	        int fftidxtmp[3]; // temporary fft index to find the other half sphere
-		int subtract_a = fftidx[ig][0]-2;
-		fftidxtmp[0] = nfft[0] - subtract_a;
-		// index for gb and gc
-		for (int ii=1; ii<3; ii++){
-		    // if gb/gc < 0 
-		    if ( fftidx[ig][ii] > nfft[ii]/2 +1 ){  // nfft[ii]/2 + 1 is exclueded
-		        int subtract = fftidx[ig][ii] - (nfft[ii]/2 + 2);
-		        fftidxtmp[ii] = nfft[ii]/2 - subtract;
-		    }
-		    // if gb/gc = 0, don't change it
-		    if ( fftidx[ig][ii] == 1 ){
-		        fftidxtmp[ii] = fftidx[ig][ii];
-		    }
-		    // if gb/gc > 0
-		    if ( (fftidx[ig][ii] > 1) &&  (fftidx[ig][0] < nfft[0]/2 + 1) ){
-		        int subtract = fftidx[ig][ii] - 2;
-			fftidxtmp[ii] = nfft[ii] - subtract;
-		    }
-		}// end for loop
-		idxtmp = (fftidxtmp[0]-1)*nfft[1]*nfft[2] +
-		         (fftidxtmp[1]-1)*nfft[2] +
-			  fftidxtmp[2];
-		// make complex conjugate
-		in_pointer[idxtmp-1][0] = rawdata[ig].re;
-		in_pointer[idxtmp-1][1] = -1*rawdata[ig].im;
+  // if doublePack, we have to put congujate numbers to the other half sphere (ga<0)
+  if (doublePack) {
+    // temporary index to put data into 1D array
+    int idxtmp;
+    for (int ig=0; ig<ng; ig++) {
+      idxtmp = (fftidx[ig][0]-1)*nfft[1]*nfft[2] +
+               (fftidx[ig][1]-1)*nfft[2] +
+                fftidx[ig][2];
+      // assign wavefunction value to in_pointer
+      // we subtract 1 since our arrays use C++ counting
+      in_pointer[idxtmp-1][0] = rawdata[ig].re;
+      in_pointer[idxtmp-1][1] = rawdata[ig].im;
+      // if ga > 0, then stateCoeff(g) = stateCoeff(-g)
+      if ( (fftidx[ig][0] > 1) && (fftidx[ig][0] < nfft[0]/2 + 1) ) {
+        int fftidxtmp[3]; // temporary fft index to find the other half sphere
+        int subtract_a = fftidx[ig][0]-2;
+        fftidxtmp[0] = nfft[0] - subtract_a;
+        // index for gb and gc
+        for (int ii=1; ii<3; ii++) {
+          // if gb/gc < 0
+          if (fftidx[ig][ii] > nfft[ii]/2 +1) {  // nfft[ii]/2 + 1 is exclueded
+            int subtract = fftidx[ig][ii] - (nfft[ii]/2 + 2);
+            fftidxtmp[ii] = nfft[ii]/2 - subtract;
+          }
+          // if gb/gc = 0, don't change it
+          if ( fftidx[ig][ii] == 1 ) {
+            fftidxtmp[ii] = fftidx[ig][ii];
+          }
+          // if gb/gc > 0
+          if ( (fftidx[ig][ii] > 1) &&  (fftidx[ig][0] < nfft[0]/2 + 1) ) {
+            int subtract = fftidx[ig][ii] - 2;
+            fftidxtmp[ii] = nfft[ii] - subtract;
+          }
+        } // end for loop
+        idxtmp = (fftidxtmp[0]-1)*nfft[1]*nfft[2] +
+                 (fftidxtmp[1]-1)*nfft[2] +
+                  fftidxtmp[2];
+        // make complex conjugate
+        in_pointer[idxtmp-1][0] = rawdata[ig].re;
+        in_pointer[idxtmp-1][1] = -1*rawdata[ig].im;
+
 #ifdef DEBUG_FFT_VERBOSE
-   printf("fftidx is   %d, %d, %d, and the tmporary index is %d, %d, %d.\n",fftidx[ig][0], fftidx[ig][1], fftidx[ig][2], fftidxtmp[0], fftidxtmp[1], fftidxtmp[2]);
+        printf("fftidx is %d, %d, %d, and the tmporary index is %d, %d, %d.\n",
+                fftidx[ig][0], fftidx[ig][1], fftidx[ig][2],
+                fftidxtmp[0], fftidxtmp[1], fftidxtmp[2]);
 #endif
-	    }//end if ga > 0
-	}
-    }// end if doublePack
+      } //end if ga > 0
+    } // end for ig
+  } // end if doublePack
 
-    // if not doublePack, all data are there, so just put it into in_pointer
-    if (!doublePack){
-        // temporary index to put data into 1D array
-        int idxtmp;
-        for (int ig=0; ig<ng; ig++){
-	    idxtmp = (fftidx[ig][0]-1)*nfft[1]*nfft[2] +
-                     (fftidx[ig][1]-1)*nfft[2] +
-                      fftidx[ig][2];
-            // assign wavefunction value to in_pointer
-	    // we subtract 1 since our arrays use C++ counting
-            in_pointer[idxtmp-1][0] = rawdata[ig].re;
-	    in_pointer[idxtmp-1][1] = rawdata[ig].im;
-	}    
+  // if not doublePack, all data are there, so just put it into in_pointer
+  if (!doublePack) {
+    // temporary index to put data into 1D array
+    int idxtmp;
+    for (int ig=0; ig<ng; ig++) {
+      idxtmp = (fftidx[ig][0]-1)*nfft[1]*nfft[2] +
+               (fftidx[ig][1]-1)*nfft[2] +
+                fftidx[ig][2];
+      // assign wavefunction value to in_pointer
+      // we subtract 1 since our arrays use C++ counting
+      in_pointer[idxtmp-1][0] = rawdata[ig].re;
+      in_pointer[idxtmp-1][1] = rawdata[ig].im;
     }
-}
-
-// function overloading, G->R or R->G when both space have the same number of data
-void put_into_fftbox(int nfft[3], complex *data, fftw_complex *in_pointer){
-
-    // number of data
-    int ndata=nfft[0]*nfft[1]*nfft[2];
-
-    for (int i=0; i<ndata; i++){
-        in_pointer[i][0] = data[i].re;
-        in_pointer[i][1] = data[i].im;
-    }   
-} 
-
-// after fftw_execute, we want to transfer data from "out" to "array"
-// you can scale the values because fftw doesn't do any scale for you
-void fftbox_to_array(int ndata, fftw_complex *out_pointer, complex *array, double scale){
-    for(int i=0; i<ndata; i++){
-	array[i].re = out_pointer[i][0]*scale;
-	array[i].im = out_pointer[i][1]*scale;
-    }
-    
-}
-
-
-// fft index is all positive integers, so this routine changes fftindex to G index
-void fftidx_to_gidx(int *gx, int *gy, int *gz, int nfft[3]){
-    
-    int ijk=0;
-    
-    for (int i=0; i<nfft[0]; i++) {
-        for (int j=0; j<nfft[1]; j++) {
-            for (int k=0; k<nfft[2]; k++) {
-                gx[ijk] = i;
-                gy[ijk] = j;
-                gz[ijk] = k;
-                ijk += 1;
-            }
-        }
-    }
-   
-   int ndata = nfft[0]*nfft[1]*nfft[2];
-    
-    for (int ijk=0; ijk<ndata; ijk++) {
-        if (gx[ijk] >= nfft[0]/2) {
-            gx[ijk] -= nfft[0];
-        }
-        if (gy[ijk] >= nfft[1]/2) {
-            gy[ijk] -= nfft[1];
-        }
-        if (gz[ijk] >= nfft[2]/2) {
-            gz[ijk] -= nfft[2];
-        }
-    }
-    
-    
-}
-
-// if we don't declare this, the code complains and doesn't compile
-fftw_complex *in_pointer;
-fftw_complex *out_pointer;
-fftw_plan my_plan;
-
-// execute fftw3
-void do_fftw(){
-    fftw_execute(my_plan);
-}
-
-// not so sure what the purpose of these two routines
-fftw_complex *fftw_in_pointer(){
-    return in_pointer;
-}
-fftw_complex *fftw_out_pointer(){
-    return out_pointer;
-}
-
-
-// destroy fftw related variables. We only do once when fftw is all done
-void destroy_fftw_stuff(){
-  if (in_pointer) {
-    fftw_destroy_plan(my_plan);
-    fftw_free(in_pointer);
-    fftw_free(out_pointer);
-
-    in_pointer = NULL;
-    out_pointer = NULL;
   }
 }
 
+// function overloading, G->R or R->G when both space have the same number of data
+void put_into_fftbox(int nfft[3], complex *data, fftw_complex *in_pointer) {
+  // number of data
+  int ndata=nfft[0]*nfft[1]*nfft[2];
 
-// setup 3D fftw plan
-void setup_fftw_3d(int nfft[3], int direction){
+  for (int i=0; i<ndata; i++) {
+    in_pointer[i][0] = data[i].re;
+    in_pointer[i][1] = data[i].im;
+  }
+}
 
-    static bool firsttime = true;
-    static int nfft0_old = 0, nfft1_old = 0, nfft2_old = 0, direction_old = 0;
+// after fftw_execute, we want to transfer data from "out" to "array"
+// you can scale the values because fftw doesn't do any scale for you
+void fftbox_to_array(int ndata, fftw_complex *out_pointer, complex *array,
+    double scale) {
+  for(int i=0; i<ndata; i++) {
+    array[i].re = out_pointer[i][0]*scale;
+    array[i].im = out_pointer[i][1]*scale;
+  }
+}
 
-    // check for some dumb input values
-    if (nfft[0]<=0 || nfft[1] <=0 || nfft[2] <=0){
-        CkPrintf("setup_fftw_3d routine received illigal value for nfft. nfft should be positive number.");
-	CkExit();
+// fft index is all positive integers, so this routine changes fftindex to G index
+void fftidx_to_gidx(int *gx, int *gy, int *gz, int nfft[3]) {
+  int ijk=0;
+    
+  for (int i=0; i<nfft[0]; i++) {
+    for (int j=0; j<nfft[1]; j++) {
+      for (int k=0; k<nfft[2]; k++) {
+        gx[ijk] = i;
+        gy[ijk] = j;
+        gz[ijk] = k;
+        ijk += 1;
+      }
     }
-    if (!(direction==-1 || direction==1)){
-        CkPrintf("setup_fftw_3d routine received illigal value for direction. FFTW direction must either 1 or -1");
-	CkExit();
+  }
+   
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+    
+  for (int ijk=0; ijk<ndata; ijk++) {
+    if (gx[ijk] >= nfft[0]/2) {
+      gx[ijk] -= nfft[0];
     }
-
-    // if first time, we need to set up
-    if(firsttime){
-	const int ndata = nfft[0]*nfft[1]*nfft[2];
-	in_pointer = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ndata);
-	out_pointer = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ndata);
-	my_plan = fftw_plan_dft_3d(nfft[0], nfft[1], nfft[2], in_pointer, out_pointer, direction, FFTW_ESTIMATE);
+    if (gy[ijk] >= nfft[1]/2) {
+      gy[ijk] -= nfft[1];
     }
-
-
-    // if not the first time and any parameters (size, direction) mismatch
-    // we need to destroy old plans to set up new ones
-    if (!firsttime && ((direction_old != direction) ||
-		       (nfft[0] != nfft0_old) ||
-		       (nfft[1] != nfft1_old) ||
-		       (nfft[2] != nfft2_old) ) ){
-	destroy_fftw_stuff();
-
-	const int ndata = nfft[0]*nfft[1]*nfft[2];
-	in_pointer = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ndata);
-	out_pointer = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ndata);
-	my_plan = fftw_plan_dft_3d(nfft[0], nfft[1], nfft[2], in_pointer, out_pointer, direction, FFTW_ESTIMATE);
+    if (gz[ijk] >= nfft[2]/2) {
+      gz[ijk] -= nfft[2];
     }
-
-    // if not first time but perfect match of parameters, then we don't need to set up
-    // since we did it already! Just do nothing.
-    if(!firsttime && direction_old==direction && nfft0_old == nfft[0] &&
-	  nfft1_old == nfft[1] && nfft2_old == nfft[2]){
-    }
-
-    // now the old value changes to new value
-    firsttime = false;
-    nfft0_old = nfft[0];
-    nfft1_old = nfft[1];
-    nfft2_old = nfft[2];
-    direction_old = direction;
-
+  }
 }
 
 // set size of fft box. The values are saved in nfft[3] array
@@ -342,20 +246,13 @@ void set_fftsize(int ndata, int doublePack, int* ga, int* gb, int* gc, int* nfft
   CkPrintf("----------------\n");
   CkPrintf("%d: size of fft grid: %d %d %d \n", CkMyPe(), nfft[0], nfft[1], nfft[2]);
 //#endif
-    
-    
 }
 
-void set_radix(int nrad_in,int *nrad_ret, int *krad)
-
-  /*==========================================================================*/
-{/*begin routine */
-  /*-------------------------------------------------------------------------*/
-
+void set_radix(int nrad_in,int *nrad_ret, int *krad) {
   int nrad=179;
-  (*nrad_ret)  = nrad;
+  (*nrad_ret) = nrad;
 
-  if(nrad_in<nrad){
+  if (nrad_in<nrad){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("Internal Error in hardcoded radix size array.\n");
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -542,7 +439,4 @@ void set_radix(int nrad_in,int *nrad_ret, int *krad)
   krad[177] = 14080;
   krad[178] = 14336;
   krad[179] = 14784;
-
-  /*--------------------------------------------------------------------------*/
-}/*end routine */
-/*==========================================================================*/
+}

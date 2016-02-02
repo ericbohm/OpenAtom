@@ -10,12 +10,3 @@ void put_into_fftbox(int, complex*, int**, int [3], fftw_complex*, bool);
 void put_into_fftbox(int [3], complex*, fftw_complex*);
 void fftbox_to_array(int, fftw_complex*, complex*, double);
 void fftidx_to_gidx(int*, int*, int*, int[3]);
-
-void setup_fftw_3d(int [3], int);
-void destroy_fftw_stuff();
-void do_fftw();
-
-// global variables
-extern fftw_complex *in_pointer;
-extern fftw_complex *out_pointer;
-extern fftw_plan my_plan;
