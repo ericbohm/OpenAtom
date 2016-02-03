@@ -61,7 +61,7 @@ module controller {
       for (next_K = 0; next_K < K; next_K++) {
         for (next_state = L; next_state < L + M; next_state++) {
           serial {
-            states_proxy(0, next_K, next_state).sendToP();
+            states_proxy(0, next_K, next_state).sendToComputeF();
             total_sent++;
           }
           if (total_sent >= pipeline_stages) {
@@ -106,6 +106,7 @@ module controller {
   nodegroup PsiCache {
     entry PsiCache();
     entry void receivePsi(PsiMessage*);
+    entry void computeFs(PsiMessage*);
   };
 };
 
@@ -120,6 +121,7 @@ readonly CProxy_States states_proxy;
     entry void fftGtoR();
     entry [reductiontarget] void sendToCache();
     entry [reductiontarget] void sendToP();
+    entry [reductiontarget] void sendToComputeF();
   };  
 };
 
@@ -134,6 +136,7 @@ module pmatrix {
   array [1D] PMatrix {
     entry PMatrix();
     entry [nokeep] void receivePsi(PsiMessage*);
+    entry [nokeep,reductiontarget] void applyFs(int, int, int, int);
     entry void fftRows(int);
     entry [nokeep] void receiveTransposeData(TransposeMessage*);
     entry void printRows(int n, char prefix[16]);

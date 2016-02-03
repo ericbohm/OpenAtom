@@ -13,7 +13,7 @@ PMatrix::PMatrix() {
   num_rows = gwbse->gw_parallel.rows_per_chare;
   num_cols = gwbse->gw_parallel.n_elems;
   nfft = gwbse->gw_parallel.fft_nelems;
-  qindex = 3; // Eventually the controller will set this
+  qindex = 1; // Eventually the controller will set this
 
   num_chares = num_cols / num_rows;
 
@@ -29,6 +29,7 @@ PMatrix::PMatrix() {
 }
 
 void PMatrix::receivePsi(PsiMessage* msg) {
+  double end, start = CmiWallTimer();
   GWBSE* gwbse = GWBSE::get();
 
   // Variables for f = psi(i) * psi(j)
@@ -89,6 +90,36 @@ void PMatrix::receivePsi(PsiMessage* msg) {
 
   delete[] f;
   delete[] umklapp_factor;
+
+  end = CmiWallTimer();
+  if (thisIndex == 0) {
+    CkPrintf("[PMATRIX] Received and applied a psi in %fs\n", end - start);
+  }
+}
+
+void PMatrix::applyFs(int ispin, int ikpt, int m, int ikq) {
+  double end, start = CmiWallTimer();
+  // Eigenvalues used to scale the entries of f
+  GWBSE* gwbse = GWBSE::get();
+  double*** e_occ = gwbse->gw_epsilon.Eocc;
+  double*** e_unocc = gwbse->gw_epsilon.Eunocc;
+
+  PsiCache* psi_cache = psi_cache_proxy.ckLocalBranch();
+
+  for (int l = 0; l < L; l++) {
+    complex* f = psi_cache->getF(l);
+    double scaling_factor = 4/(e_occ[ispin][ikq][l] - e_unocc[ispin][ikpt][m]);
+    for (int r = 0; r < num_rows; r++) {
+      for (int c = 0; c < num_cols; c++) {
+        data[r][c] += f[r+start_row]*f[c+start_col].conj() * scaling_factor;
+      }
+    }
+  }
+  contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
+  end = CmiWallTimer();
+  if (thisIndex == 0) {
+    CkPrintf("[PMATRIX] Applied fs in %fs\n", end - start);
+  }
 }
 
 void PMatrix::fftRows(int direction) {

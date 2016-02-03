@@ -78,6 +78,16 @@ void States::sendToP() {
 
 }
 
+void States::sendToComputeF() {
+  CkPrintf("[%i,%i,%i]: Sending psi for f-comp...\n", ispin, ikpt, istate);
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
+  msg->spin_index = ispin;
+  msg->k_index = ikpt;
+  msg->state_index = istate;
+  psi_cache_proxy.computeFs(msg);
+}
+
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
