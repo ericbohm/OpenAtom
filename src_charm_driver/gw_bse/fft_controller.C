@@ -2,6 +2,11 @@
 #include "fft_routines.h"
 #include "controller.h"
 
+static CmiNodeLock fft_plan_lock;
+void init_plan_lock() {
+  fft_plan_lock = CmiCreateLock();
+}
+
 FFTController::FFTController() {
   first_time = true;
   in_pointer = out_pointer = NULL;
@@ -49,8 +54,11 @@ void FFTController::setup_fftw_3d(int nfft[3], int direction) {
     const int ndata = nfft[0]*nfft[1]*nfft[2];
     in_pointer = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ndata);
     out_pointer = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ndata);
+
+    CmiLock(fft_plan_lock);
     plan = fftw_plan_dft_3d(nfft[0], nfft[1], nfft[2],
         in_pointer, out_pointer, direction, FFTW_ESTIMATE);
+    CmiUnlock(fft_plan_lock);
   }
 
   // now the old value changes to new value

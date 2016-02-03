@@ -7,6 +7,8 @@
 #include "states.h"
 #include "fft_controller.h"
 
+void init_plan_lock();
+
 Controller::Controller() {
   GWBSE *gwbse = GWBSE::get();
 

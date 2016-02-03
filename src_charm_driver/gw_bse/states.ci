@@ -16,6 +16,7 @@ module controller {
   readonly CProxy_Controller controller_proxy;
   readonly CProxy_FFTController fft_controller_proxy;
   readonly CProxy_PsiCache psi_cache_proxy;
+  initnode void init_plan_lock();
 
   // Controls the coordination between the states, pmatrix, and cache based on
   // the configuration of pipeline depth, number of stages, etc.
