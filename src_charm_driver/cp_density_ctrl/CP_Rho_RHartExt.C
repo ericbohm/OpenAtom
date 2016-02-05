@@ -492,9 +492,8 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 
 #ifndef _CP_DEBUG_STOP_RHART_
   if(iterAtmTyp == natmTyp && nAtmTypRecv == nrecvMax) {
-    //contribute(CkCallback(CkIndex_CP_Rho_RealSpacePlane::RHartReport(),
-    //    UrhoRealProxy[thisInstance.proxyOffset]));
-    UrhoRealProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).RHartReport();
+    contribute(CkCallback(CkIndex_CP_Rho_RealSpacePlane::RHartReport(),
+        UrhoRealProxy[thisInstance.proxyOffset]));
     iterAtmTyp  = 0;
     nAtmTypRecv = 0;
   }//endif
