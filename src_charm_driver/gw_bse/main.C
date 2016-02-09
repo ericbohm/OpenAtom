@@ -14,7 +14,6 @@
 
 #define CHARM_ON
 #define PUP_ON
-#define _DEBUG_PUP_
 #include "main.h"
 #include "states.h"
 #include "pmatrix.h"
@@ -81,7 +80,10 @@ Main::Main(CkArgMsg* msg) {
   // -------------------------------------------------------------------
   // Create the array of P matrix chare objects.
   int nchares = gwbse->gw_parallel.matrix_nchares;
+  int nrows = gwbse->gw_parallel.rows_per_chare;
   pmatrix_proxy = CProxy_PMatrix::ckNew(nchares); 
+  CkPrintf("[MAIN] Creating %i matrix chares with %i rows each\n",
+      nchares, nrows);
 
   // -------------------------------------------------------------------
   // Create the array of state chare objects.
@@ -90,6 +92,8 @@ Main::Main(CkArgMsg* msg) {
   int nocc = gwbse->gwbseopts.nocc;  
   int nunocc = gwbse->gwbseopts.nunocc;  
   states_proxy = CProxy_States::ckNew(nspin, nkpt, nocc + nunocc);
+  CkPrintf("[MAIN] Creating %i occupied states and %i unoccupied states\n",
+      nspin*nkpt*nocc, nspin*nkpt*nunocc);
 
   // -------------------------------------------------------------------
   // Tell the controller to start the computation

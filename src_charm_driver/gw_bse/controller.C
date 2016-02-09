@@ -25,7 +25,7 @@ PsiCache::PsiCache() {
   GWBSE *gwbse = GWBSE::get();
   K = gwbse->gw_parallel.K;
   L = gwbse->gw_parallel.L;
-  qindex = 1;
+  qindex = 0;
   psi_size = gwbse->gw_parallel.n_elems;
   received_psis = 0;
   psis = new complex**[K];
@@ -96,6 +96,7 @@ void PsiCache::computeFs(PsiMessage* msg) {
   contribute(4*sizeof(int), tmp, CkReduction::nop, cb);
 
   delete [] umklapp_factor;
+  delete msg;
 
   end = CmiWallTimer();
   if (CkMyNode() == 0) {
@@ -113,7 +114,7 @@ complex* PsiCache::getPsi(unsigned ispin, unsigned ikpt, unsigned istate) const 
 }
 
 complex* PsiCache::getF(unsigned idx) const {
-  CkAssert(idx >= 0 && istate < L);
+  CkAssert(idx >= 0 && idx < L);
   return fs[idx];
 }
 

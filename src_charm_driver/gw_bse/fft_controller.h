@@ -1,6 +1,7 @@
 #ifndef __FFT_CONTROLLER_H__
 #define __FFT_CONTROLLER_H__
 
+#include <cstdlib>
 #include "ckcomplex.h"
 #include "fftw3.h"
 

@@ -17,7 +17,7 @@ States::States() {
 
   // Set my relevant indices and print out a debug message
   ispin = thisIndex.x, ikpt = thisIndex.y, istate = thisIndex.z;
-  CkPrintf("State chare with spin, kpt, state (%d %d %d) constructed on PE %d.\n", ispin, ikpt, istate, CkMyPe());
+  //CkPrintf("State chare with spin, kpt, state (%d %d %d) constructed on PE %d.\n", ispin, ikpt, istate, CkMyPe());
 
   // Get access to the global struct of readonlies
   GWBSE *gwbse = GWBSE::get();
@@ -134,8 +134,8 @@ void States::fftGtoR() {
   fftbox_to_array(ndata, out_pointer, stateCoeffR, scale);
 
   // delete space used for fftidx
-  for (int i = 0; i < numCoeff; i++) { delete [] fftidx[i]; }
-  delete [] fftidx;
+  //for (int i = 0; i < numCoeff; i++) { delete [] fftidx[i]; }
+  //delete [] fftidx;
 
   // delete stateCoeff
   delete [] stateCoeff;
@@ -158,7 +158,7 @@ void States::readState(char *fromFile)
 {//begin routine
   //===================================================================================
   // A little screen output for the fans
-    CkPrintf("Reading state file: %s for chare (%d %d %d), with binary option %d.\n",fromFile,ispin,ikpt,istate,ibinary_opt);
+    //CkPrintf("Reading state file: %s for chare (%d %d %d), with binary option %d.\n",fromFile,ispin,ikpt,istate,ibinary_opt);
 
 
   if(ibinary_opt < 0 || ibinary_opt > 3){

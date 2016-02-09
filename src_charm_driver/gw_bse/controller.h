@@ -1,6 +1,7 @@
 #ifndef __CONTROLLER_H__
 #define __CONTROLLER_H__
 
+#include <cstdlib>
 #include "ckcomplex.h"
 
 #include "controller.decl.h"
