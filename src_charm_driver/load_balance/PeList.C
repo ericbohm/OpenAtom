@@ -18,8 +18,8 @@ static inline int IN_THIS_INSTANCE(int globalCount, int instanceIndex) {
   } else return 0;
 }
 #else
-static inline int IN_THIS_INSTANCE(globalCount, instanceIndex) {
-  if(globalCount % config.numInstances == instanceIndex)
+static inline int IN_THIS_INSTANCE(int globalCount, int instanceIndex) {
+  if(globalCount % config.numInstances == instanceIndex) {
     return 1;
   } else return 0;
 }
