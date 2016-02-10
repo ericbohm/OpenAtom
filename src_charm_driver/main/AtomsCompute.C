@@ -87,7 +87,6 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 
   switchMoveNow = false;
   new_t_ext=old_t_ext=kT * BOLTZ;
-  CkPrintf("constructor kT %g, old_t_ext %g\n",kT, old_t_ext);
   handleForcesCount=0;
   ktemps          = 0;
   pot_ewd_rs      = 0.0;
