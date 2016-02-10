@@ -40,6 +40,7 @@ extern CProxy_TemperController temperControllerProxy;
 extern CProxy_InstanceController instControllerProxy;
 extern CProxy_CPcharmParaInfoGrp   scProxy;
 
+//#define _CP_DEBUG_ATMS_
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

@@ -1283,8 +1283,8 @@ void AtomsCompute::accept_PIMD_Fu(AtomXYZMsg *msg){
   delete msg;
   acceptCountfu++;
 #ifdef _CP_DEBUG_ATMS_
-  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
-      thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, atomI, _fxu, _fyu, _fzu);     
+  //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
+  //      thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, _fxu, _fyu, _fzu);     
 #endif
   if(acceptCountfu == config.numBeadAtomChares){
     //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu done calling integrator iteration %d\n ", 
@@ -1320,8 +1320,8 @@ void AtomsCompute::accept_PIMD_Fu_and_u(AtomXYZMsg* msg) {
 
   acceptCountfu++;
 #ifdef _CP_DEBUG_ATMS_
-  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
-      thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, atomI, _fxu, _fyu, _fzu);     
+  //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
+	   //      thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, atomI, _fxu, _fyu, _fzu);     
 #endif
   if(acceptCountfu == config.numBeadAtomChares){
     //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu done calling integrator iteration %d\n ", 

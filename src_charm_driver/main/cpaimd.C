@@ -594,14 +594,13 @@ main::main(CkArgMsg *msg) {
       object construction of the elements in each of those arrays.  Note that while we are inside Main the chares for PE 0 will be constructed inline in program order.  No assumptions should be made about chares constructed on other PEs until we exit main and pass control to the Charm++ scheduler for parallel launch.
   */
   /**@{*/
-  CkPrintf("NumInstances %d: Beads %d  * Kpoints %d * Tempers %d * Spin %d\n",
-      config.numInstances, config.UberImax, config.UberJmax, config.UberKmax,
+  CkPrintf("NumInstances %d: Tempers %d * Beads %d  * Kpoints %d * Spin %d\n",
+      config.numInstances, config.UberKmax, config.UberImax, config.UberJmax,
       config.UberMmax);
-  for(int integral=0; integral< config.UberImax; integral++) {
+  for(int temper=0; temper< config.UberKmax; temper++) {
+    for(int integral=0; integral< config.UberImax; integral++) {
       for(int kpoint=0; kpoint< config.UberJmax; kpoint++) {
-	  for(int temper=0; temper< config.UberKmax; temper++) {
-	      for(int spin=0; spin< config.UberMmax; spin++) {
-
+	for(int spin=0; spin< config.UberMmax; spin++) {
                 if(config.simpleTopo) {
                   Timer = newtime;
                   int ndims;
@@ -625,7 +624,12 @@ main::main(CkArgMsg *msg) {
 
 		UberIndex thisInstanceIndex(integral, kpoint, temper, spin); // Internal labels{x,y,z,s}
 		thisInstance = UberCollection(thisInstanceIndex);
+
 		UberAlles.push_back(thisInstance);// collection of proxies for all instances
+		CkPrintf("Making offset %d: Bead %d  * Kpoint %d * Temper %d * Spin %d, idx(%d,%d,%d,%d) calc %d\n",
+			 thisInstance.proxyOffset,
+			 integral, kpoint, temper, spin, thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, thisInstance.idxU.s, thisInstance.calcPO());
+
 
 		//============================================================================
 		// We will need a different one of these per instance
@@ -693,13 +697,13 @@ main::main(CkArgMsg *msg) {
                   delete rfoo;
                   delete gfoo;
                   delete excludePes;
-                }
-	      }
-	    }
+		}
 	}
+      }
       // now safe to init atom bead commanders
       UatomsComputeProxy[thisInstance.getPO()].init();
-    } // end of per instance init
+    }
+  } // end of per instance init
   //============================================================================
 
   if (HartreeFockOn) {
@@ -2077,6 +2081,7 @@ void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim
         int z=mapOffsets[numInst].getz();
         AtomImaptable[numInst].translate(&AtomImaptable[0], x,y,z, config.torusMap==1);
       }
+
       CProxy_AtomComputeMap aMap = CProxy_AtomComputeMap::ckNew(thisInstance);
       CkArrayOptions atomOpts(nChareAtoms);
       atomOpts.setMap(aMap);

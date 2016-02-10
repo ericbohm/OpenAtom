@@ -101,15 +101,15 @@ void InstanceController::init(){
     CkArrayID *beadArrayIds= new CkArrayID[numDestinations];
     CkArrayIndex **elems  = new CkArrayIndex*[numDestinations];
     int *naelems = new int[numDestinations];
-    for(int bead =0; bead<config.UberImax; bead++)
-    {
-      instance.idxU.x=bead;
+    for(int temper =0; temper<config.UberKmax; temper++){
+      instance.idxU.z=temper;
       for(int kpt =0; kpt<config.UberJmax; kpt++)
 	{
 	  instance.idxU.y=kpt;
-	  for(int temper =0; temper<config.UberKmax; temper++)
+	  for(int bead =0; bead<config.UberImax; bead++)
 	    {
-	      instance.idxU.z=temper;
+	      instance.idxU.x=bead;
+
 	      instance.setPO();
 	      int index=instance.proxyOffset;
 	      naelems[index]=1;
@@ -140,7 +140,7 @@ void InstanceController::fmagMinTest(CkReductionMsg *m){
 
 
   int result=( (int *) (m->getData()) )[0];
-  // CkPrintf("[%d] fmagMinTest %d\n",thisIndex, result);
+  //  CkPrintf("[%d] fmagMinTest %d\n",thisIndex, result);
   ICCookieMsg *out=new ICCookieMsg;
   out->junk = result;
   delete m;
@@ -165,7 +165,7 @@ void InstanceController::instancesReady(CkReductionMsg *m){
 void InstanceController::doneFFTCreation(idMsg *msg) {
   delete msg;
   fft_expected--;
-  CkPrintf("Received FFT completion %d\n", fft_expected);
+  //  CkPrintf("Received FFT completion %d\n", fft_expected);
   if(fft_expected == 0) {
     done_fft_creation = true;
     if(done_init > 3) {
@@ -600,6 +600,7 @@ void InstanceController::useNewTemperature(double temperature){
 void InstanceController::atomsDoneNewTemp(CkReductionMsg *m)
 {
   atomsTempDone=true;
+  //  CkPrintf("Instance Controller %d atomsDoneNewTemp\n", thisIndex);
 #define TEMPERBARRIER 1
   if(gspTempDone)
 #ifndef TEMPERBARRIER  
@@ -615,6 +616,7 @@ void InstanceController::atomsDoneNewTemp(CkReductionMsg *m)
 //============================================================================
 void InstanceController::gspDoneNewTemp(CkReductionMsg *m)
 {
+  //  CkPrintf("Instance Controller %d gspDoneNewTemp\n", thisIndex);
   gspTempDone=true;
   if(atomsTempDone)
 #ifndef TEMPERBARRIER  
@@ -628,7 +630,7 @@ void InstanceController::gspDoneNewTemp(CkReductionMsg *m)
 //in a nicer world this would be inlined
 void InstanceController::resumeFromTemper()
 { 
-  //  CkPrintf("Instance Controller %d resumeFromTemper", thisIndex);
+  //  CkPrintf("Instance Controller %d resumeFromTemper\n", thisIndex);
   UegroupProxy[thisIndex].resumeFromTemper(); 
 }
 

@@ -235,7 +235,7 @@ void CP_State_GSpacePlane::initBeadCookie(ICCookieMsg *m){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_GSpacePlane::minimizeSync(ICCookieMsg *m){
-  CkPrintf("{%d} [%d,%d] minimizeSync %d\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, m->junk);
+  //  CkPrintf("{%d} [%d,%d] minimizeSync %d\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, m->junk);
   CkGetSectionInfo(beadCookie,m);
   if(m->junk==1)
     thisProxy.setExitFlag();
