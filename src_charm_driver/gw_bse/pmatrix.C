@@ -7,6 +7,8 @@
 #include "fft_routines.h"
 #include "fft_controller.h"
 
+#define IDX(r,c) ((r)*num_cols + (c))
+
 PMatrix::PMatrix() {
   GWBSE* gwbse = GWBSE::get();
   L = gwbse->gw_parallel.L;
@@ -22,10 +24,7 @@ PMatrix::PMatrix() {
 
   fft_controller = fft_controller_proxy.ckLocalBranch();
   
-  data = new complex*[num_rows];
-  for (int i = 0; i < num_rows; i++) {
-    data[i] = new complex[num_cols];
-  }
+  data = new complex[num_rows * num_cols];
 }
 
 void PMatrix::receivePsi(PsiMessage* msg) {
@@ -80,7 +79,7 @@ void PMatrix::receivePsi(PsiMessage* msg) {
     double scaling_factor = 4/(e_occ[ispin][ikq][l] - e_unocc[ispin][ikpt][m]);
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
-        data[r][c] += f[r+start_row]*f[c+start_col].conj() * scaling_factor;
+        data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj() * scaling_factor;
       }
     }
   }
@@ -109,12 +108,21 @@ void PMatrix::applyFs(int ispin, int ikpt, int m, int ikq) {
   for (int l = 0; l < L; l++) {
     complex* f = psi_cache->getF(l);
     double scaling_factor = 4/(e_occ[ispin][ikq][l] - e_unocc[ispin][ikpt][m]);
+
+#ifndef USE_LAPACK
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
-        data[r][c] += f[r+start_row]*f[c+start_col].conj() * scaling_factor;
+        data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj() * scaling_factor;
       }
     }
+#else
+    complex alpha = scaling_factor;
+    int M = num_rows, N = num_cols;
+    int inc = 1;
+    ZGERC(&N, &M, &alpha, &f[start_row], &inc, f, &inc, data, &N);
+#endif
   }
+
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
   end = CmiWallTimer();
   if (thisIndex == 0) {
@@ -131,9 +139,9 @@ void PMatrix::fftRows(int direction) {
     fftw_complex* out_pointer = fft_controller->get_out_pointer();
 
     // Pack our data, do the fft, then get the output
-    put_into_fftbox(nfft, data[i], in_pointer);
+    put_into_fftbox(nfft, &data[IDX(i,0)], in_pointer);
     fft_controller->do_fftw();
-    fftbox_to_array(num_cols, out_pointer, data[i], 1);
+    fftbox_to_array(num_cols, out_pointer, &data[IDX(i,0)], 1);
   }
 
   // Let the controller know we have completed the fft
@@ -147,8 +155,8 @@ void PMatrix::printRows(int n, const char* prefix) {
     char filename[200];
     sprintf(filename, "row_data/%s_q%d_row%d.dat", prefix, qindex, r);
     fp = fopen(filename, "w");
-    for (int i = 0; i < num_cols; i++) {
-      fprintf(fp, "row %d col %d %lg %lg\n", r, i, data[r-start_row][i].re, data[r-start_row][i].im);
+    for (int c = 0; c < num_cols; c++) {
+      fprintf(fp, "row %d col %d %lg %lg\n", r, c, data[IDX(r,c)].re, data[IDX(r,c)].im);
     }
     fclose(fp);
   }

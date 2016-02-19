@@ -138,6 +138,8 @@ module pmatrix {
   extern module messages;
   readonly CProxy_PMatrix pmatrix_proxy;
 
+#define IDX(r,c) ((r)*num_cols + (c))
+
   // An array containing a distributed representation of P. Each time it
   // receives a psi, it multiplies that psi against cached psis to incrementally
   // compute its values.
@@ -166,7 +168,7 @@ module pmatrix {
           for (int c = 0; c < num_rows; c++) {
             for (int r = 0; r < num_rows; r++) {
               // The data is transposed on the sender side
-              msg->data[c*num_rows + r] = data[r][c + my_start];
+              msg->data[c*num_rows + r] = data[IDX(r,c+my_start)];
             }
           }
           thisProxy(dest).receiveTransposeData(msg);
@@ -179,7 +181,7 @@ module pmatrix {
           for (int r = 0; r < num_rows; r++) {
             for (int c = 0; c < num_rows; c++) {
               // The data being sent was already transposed on the sender side
-              data[r][c + msg->start_col] = msg->data[r*num_rows + c];
+              data[IDX(r,c + msg->start_col)] = msg->data[r*num_rows + c];
             }
           }
         }

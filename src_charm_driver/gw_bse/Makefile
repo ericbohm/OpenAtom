@@ -4,8 +4,8 @@ CHARMC = $(CHARMDIR)/bin/charmc
 INCLUDES=-I$(FFTW3)/include
 LIBS=-L$(FFTW3)/lib -lfftw3 -lm -lz -module CkLoop
 
-CFLAGS=-g $(INCLUDES) #-D_CP_DEBUG_UTIL_VERBOSE_ -DDEBUG_FFT
-LFLAGS=$(LIBS)
+CFLAGS+=-g $(INCLUDES)
+LFLAGS+=$(LIBS) $(LAPACKLIB)
 
 C_FILES=$(wildcard *.C)
 CI_FILES=$(wildcard *.ci)
