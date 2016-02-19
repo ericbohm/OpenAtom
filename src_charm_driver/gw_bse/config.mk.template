@@ -12,3 +12,6 @@ LAPACKLIB = -framework Accelerate
 
 # Toggle CkLoop
 CFLAGS += -DUSE_CKLOOP
+
+# Set the q index
+CFLAGS += -DQ_IDX=0

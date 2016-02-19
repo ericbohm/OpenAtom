@@ -28,7 +28,7 @@ PsiCache::PsiCache() {
   GWBSE *gwbse = GWBSE::get();
   K = gwbse->gw_parallel.K;
   L = gwbse->gw_parallel.L;
-  qindex = 0;
+  qindex = Q_IDX;
   psi_size = gwbse->gw_parallel.n_elems;
   received_psis = 0;
   psis = new complex**[K];
