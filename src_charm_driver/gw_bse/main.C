@@ -68,7 +68,9 @@ Main::Main(CkArgMsg* msg) {
 
   // -------------------------------------------------------------------
   // Initialize CkLoop, which is used by the PsiCache
+#ifdef USE_CKLOOP
   CkLoop_Init(1);
+#endif
 
   // -------------------------------------------------------------------
   // Set the mainProxy readonly to point to a

@@ -9,3 +9,6 @@ FFTW3 = /Users/Eric/Programming/ppl/fftw3
 # Path to LAPACK if using LAPACK
 CFLAGS += -DUSE_LAPACK
 LAPACKLIB = -framework Accelerate
+
+# Toggle CkLoop
+CFLAGS += -DUSE_CKLOOP
