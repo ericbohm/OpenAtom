@@ -76,11 +76,11 @@ module controller {
       serial {
         end = CmiWallTimer();
         CkPrintf("[CONTROLLER] P Formed in real space @%f (%f elapsed).\n", end, end - start);
-        //pmatrix_proxy.printRows(4, "P_Rspace");
-      //}
+        pmatrix_proxy.printRows(4, "P_Rspace");
+      }
 
       // FFT P from RSpace to GSpace
-      //when printingComplete()   serial {
+      when printingComplete()   serial {
         start = CmiWallTimer();
         CkPrintf("[CONTROLLER] FFT beginning @%f\n", start);
         pmatrix_proxy.fftRows(1);
@@ -92,7 +92,7 @@ module controller {
       when transposeComplete()  serial {
         end = CmiWallTimer();
         CkPrintf("[CONTROLLER] P formed in G space @%f (%f elapsed).\n", end, end - start);
-        //pmatrix_proxy.printRows(4, "P_Gspace");
+        pmatrix_proxy.printRows(4, "P_Gspace");
         CkExit();
       }
       when printingComplete() serial { CkExit(); }
@@ -108,6 +108,7 @@ module controller {
     entry PsiCache();
     entry [exclusive] void receivePsi(PsiMessage*);
     entry [exclusive] void computeFs(PsiMessage*);
+    //entry void computeF(unsigned int, unsigned int, unsigned int);
   };
 };
 

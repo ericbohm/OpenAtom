@@ -6,6 +6,7 @@
 #include "pmatrix.h"
 #include "states.h"
 #include "fft_controller.h"
+#include "CkLoopAPI.h"
 
 void init_plan_lock();
 
@@ -40,6 +41,8 @@ PsiCache::PsiCache() {
   for (int l = 0; l < L; l++) {
     fs[l] = new complex[psi_size];
   }
+
+  umklapp_factor = new complex[psi_size];
 }
 
 void PsiCache::receivePsi(PsiMessage* msg) {
@@ -60,6 +63,29 @@ void PsiCache::receivePsi(PsiMessage* msg) {
   }
 }
 
+// Called by CkLoop to spread the computation of f vectors across the node
+void computeF(int first, int last, void* result, int count, void* params) {
+  FComputePacket* f_packet = (FComputePacket*)params;
+  unsigned ikq = f_packet->ikq;
+  unsigned psi_size = f_packet->size;
+  complex* psi_unocc = f_packet->unocc_psi;
+  complex* umklapp_factor = f_packet->umklapp_factor;
+  complex** fs = f_packet->fs;
+
+  for (int l = first; l <= last; l++) {
+    complex* psi_occ = f_packet->occ_psis[ikq][l];
+
+    for (int i = 0; i < psi_size; i++) {
+      fs[l][i] = psi_occ[i] * psi_unocc[i].conj();
+      if (umklapp_factor) {
+        fs[l][i] *= umklapp_factor[i];
+      }
+    }
+  }
+}
+
+// Receive an unoccupied psi, and split off the computation of all associated f
+// vectors across the node using CkLoop.
 void PsiCache::computeFs(PsiMessage* msg) {
   double end, start = CmiWallTimer();
   if (msg->spin_index != 0) {
@@ -67,6 +93,7 @@ void PsiCache::computeFs(PsiMessage* msg) {
   }
   CkAssert(msg->size == psi_size);
 
+  // Compute ikq index and the associated umklapp factor
   unsigned ikq;
   int umklapp[3];
   kqIndex(msg->k_index, ikq, umklapp);
@@ -75,27 +102,31 @@ void PsiCache::computeFs(PsiMessage* msg) {
   complex* umklapp_factor = NULL;
   if (umklapp[0] != 0 || umklapp[1] != 0 || umklapp[2] != 0) {
     uproc = true;
-    umklapp_factor = new complex[psi_size];
-    getUmklappFactor(umklapp_factor, umklapp);
+    computeUmklappFactor(umklapp);
   }
 
-  complex* psi_occ;
-  complex* psi_unocc = msg->psi;
-  for (int l = 0; l < L; l++) {
-    psi_occ = psis[ikq][l];
-    for (int i = 0; i < psi_size; i++) {
-      fs[l][i] = psi_occ[i] * psi_unocc[i].conj();
-      if (uproc) {
-        fs[l][i] *= umklapp_factor[i];
-      }
-    }
-  }
+  // Create the FComputePacket for this set of f vectors and start CkLoop
+  f_packet.ikq = ikq;
+  f_packet.size = psi_size;
+  f_packet.unocc_psi = msg->psi;
+  f_packet.fs = fs;
+  f_packet.occ_psis = psis;
+  if (uproc) { f_packet.umklapp_factor = umklapp_factor; }
+  else { f_packet.umklapp_factor = NULL; }
 
-  int tmp[4] = { msg->spin_index, msg->k_index, msg->state_index - L, ikq };
+  CkLoop_Parallelize(computeF, 1, &f_packet, L, 0, L - 1);
+
+  // Let the matrix chares know that the f vectors are ready
+  int tmp[4] = {
+    (int) msg->spin_index,
+    (int) msg->k_index,
+    (int) (msg->state_index - L),
+    (int) ikq
+  };
   CkCallback cb(CkReductionTarget(PMatrix, applyFs), pmatrix_proxy);
   contribute(4*sizeof(int), tmp, CkReduction::nop, cb);
 
-  delete [] umklapp_factor;
+  // Cleanup
   delete msg;
 
   end = CmiWallTimer();
@@ -166,7 +197,7 @@ void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
 }
 
 
-void PsiCache::getUmklappFactor(complex* umklapp_factor, int uklpp[3]){
+void PsiCache::computeUmklappFactor(int uklpp[3]){
 
   if (uklpp[0]==0 && uklpp[1]==0 && uklpp[2]==0){
     // do nothing

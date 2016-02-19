@@ -23,6 +23,7 @@
 #include "allclass_gwbse.h"
 #include "configure_gwbse.h"
 #include "states.h"
+#include "CkLoopAPI.h"
 
 // =========================================================================
 // states_occ_proxy is declared readonly in states.ci file that makes them parallel global.
@@ -64,6 +65,10 @@ Main::Main(CkArgMsg* msg) {
   // -------------------------------------------------------------------
   // Display some info about this execution for the user
   CkPrintf("Running GWBSE_V0 using %d processors.\n\n",CkNumPes());
+
+  // -------------------------------------------------------------------
+  // Initialize CkLoop, which is used by the PsiCache
+  CkLoop_Init(1);
 
   // -------------------------------------------------------------------
   // Set the mainProxy readonly to point to a
