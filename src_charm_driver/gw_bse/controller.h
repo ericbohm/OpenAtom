@@ -12,6 +12,7 @@ class Controller : public CBase_Controller {
     Controller();
 
   private:
+    bool do_output;
     double start, end;
     unsigned K, L, M, pipeline_stages;
     unsigned next_K, next_state, total_sent, total_complete;

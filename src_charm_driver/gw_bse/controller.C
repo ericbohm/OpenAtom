@@ -20,6 +20,8 @@ Controller::Controller() {
   pipeline_stages = gwbse->gw_parallel.pipeline_stages;
 
   next_K = next_state = total_sent = total_complete = 0;
+
+  do_output = false;
 }
 
 PsiCache::PsiCache() {
