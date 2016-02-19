@@ -592,15 +592,15 @@ main::main(CkArgMsg *msg) {
 
       In each case we are constructing the proxy and calling for parallel
       object construction of the elements in each of those arrays.  Note that while we are inside Main the chares for PE 0 will be constructed inline in program order.  No assumptions should be made about chares constructed on other PEs until we exit main and pass control to the Charm++ scheduler for parallel launch.
-  */
+  */q
   /**@{*/
   CkPrintf("NumInstances %d: Tempers %d * Beads %d  * Kpoints %d * Spin %d\n",
       config.numInstances, config.UberKmax, config.UberImax, config.UberJmax,
       config.UberMmax);
-  for(int temper=0; temper< config.UberKmax; temper++) {
-    for(int integral=0; integral< config.UberImax; integral++) {
+  for(int spin=0; spin< config.UberMmax; spin++) {
+    for(int temper=0; temper< config.UberKmax; temper++) {
       for(int kpoint=0; kpoint< config.UberJmax; kpoint++) {
-	for(int spin=0; spin< config.UberMmax; spin++) {
+	for(int integral=0; integral< config.UberImax; integral++) {
                 if(config.simpleTopo) {
                   Timer = newtime;
                   int ndims;
@@ -626,9 +626,9 @@ main::main(CkArgMsg *msg) {
 		thisInstance = UberCollection(thisInstanceIndex);
 
 		UberAlles.push_back(thisInstance);// collection of proxies for all instances
-		CkPrintf("Making offset %d: Bead %d  * Kpoint %d * Temper %d * Spin %d, idx(%d,%d,%d,%d) calc %d\n",
+		CkPrintf("Making offset %d: * Temper %d * Bead %d * Kpoint %d * Spin %d, idx(%d,%d,%d,%d) calc %d\n",
 			 thisInstance.proxyOffset,
-			 integral, kpoint, temper, spin, thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, thisInstance.idxU.s, thisInstance.calcPO());
+			 temper, integral, kpoint, spin, thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, thisInstance.idxU.s, thisInstance.calcPO());
 
 
 		//============================================================================
@@ -691,20 +691,22 @@ main::main(CkArgMsg *msg) {
                 newtime = CmiWallTimer();
                 CkPrintf("NL created in %g s\n", newtime-Timer);
 		firstInstance=false;
-		numInst++;
+
 
                 if(config.simpleTopo) {
                   delete rfoo;
                   delete gfoo;
                   delete excludePes;
 		}
-	}
+		// now safe to init atom bead commanders
+		UatomsComputeProxy[numInst].init();
+		numInst++;
+	  }
       }
-      // now safe to init atom bead commanders
-      UatomsComputeProxy[thisInstance.getPO()].init();
     }
   } // end of per instance init
   //============================================================================
+
 
   if (HartreeFockOn) {
     HFCalculatorProxy = CProxy_HFCalculator::ckNew();
