@@ -101,7 +101,6 @@ void PsiCache::computeFs(PsiMessage* msg) {
   kqIndex(msg->k_index, ikq, umklapp);
 
   bool uproc = false;
-  complex* umklapp_factor = NULL;
   if (umklapp[0] != 0 || umklapp[1] != 0 || umklapp[2] != 0) {
     uproc = true;
     computeUmklappFactor(umklapp);
