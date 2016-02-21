@@ -592,7 +592,7 @@ main::main(CkArgMsg *msg) {
 
       In each case we are constructing the proxy and calling for parallel
       object construction of the elements in each of those arrays.  Note that while we are inside Main the chares for PE 0 will be constructed inline in program order.  No assumptions should be made about chares constructed on other PEs until we exit main and pass control to the Charm++ scheduler for parallel launch.
-  */q
+  */
   /**@{*/
   CkPrintf("NumInstances %d: Tempers %d * Beads %d  * Kpoints %d * Spin %d\n",
       config.numInstances, config.UberKmax, config.UberImax, config.UberJmax,
