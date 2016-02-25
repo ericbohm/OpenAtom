@@ -58,8 +58,8 @@ module controller {
 
       // Tell the unoccupised psis to send themselves to P, sending the first
       // chunk in the pipeline without waiting for any to complete.
-      for (next_K = 0; next_K < K; next_K++) {
-        for (next_state = L; next_state < L + M; next_state++) {
+      for (next_K = 0; next_K < K && total_sent < debug_stages; next_K++) {
+        for (next_state = L; next_state < L + M && total_sent < debug_stages; next_state++) {
           serial {
             states_proxy(0, next_K, next_state).sendToComputeF();
             total_sent++;
@@ -69,7 +69,7 @@ module controller {
           }
         }
       }
-      while (total_complete < K * M) {
+      while (total_complete < K * M && total_complete < debug_stages) {
         when psiComplete() serial { total_complete++; }
       }
 
