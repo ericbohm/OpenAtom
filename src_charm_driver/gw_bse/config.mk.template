@@ -7,11 +7,14 @@ CHARMDIR = /Users/Eric/Programming/ppl/charm
 FFTW3 = /Users/Eric/Programming/ppl/fftw3
 
 # Path to LAPACK if using LAPACK
-CFLAGS += -DUSE_LAPACK
 LAPACKLIB = -framework Accelerate
+LAPACKINC = -I/System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Headers/
+CFLAGS += -DUSE_LAPACK $(LAPACKINC)
+LFLAGS += $(LAPACKLIB)
 
 # Toggle CkLoop
 CFLAGS += -DUSE_CKLOOP
+LFLAGS += -module CkLoop
 
 # Set the q index
 CFLAGS += -DQ_IDX=0

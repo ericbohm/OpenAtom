@@ -109,17 +109,16 @@ void PMatrix::applyFs(int ispin, int ikpt, int m, int ikq) {
     complex* f = psi_cache->getF(l);
     double scaling_factor = 4/(e_occ[ispin][ikq][l] - e_unocc[ispin][ikpt][m]);
 
-#ifndef USE_LAPACK
+#ifdef USE_LAPACK
+    int M = num_rows, N = num_cols;
+    complex alpha = scaling_factor;
+    cblas_zgerc(CblasRowMajor, M, N, &alpha, &f[start_row], 1, f, 1, data, N);
+#else
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
-        data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj() * scaling_factor;
+        data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj()*scaling_factor;
       }
     }
-#else
-    complex alpha = scaling_factor;
-    int M = num_rows, N = num_cols;
-    int inc = 1;
-    ZGERC(&N, &M, &alpha, &f[start_row], &inc, f, &inc, data, &N);
 #endif
   }
 

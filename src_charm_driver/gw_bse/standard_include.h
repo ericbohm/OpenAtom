@@ -21,4 +21,8 @@
 #include "gwbse_constants.h"
 #include "proto_friend_lib_entry.h"
 
+#ifdef USE_LAPACK
+#include "cblas.h"
+#endif
+
 #endif

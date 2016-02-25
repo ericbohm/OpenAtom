@@ -2,10 +2,10 @@ include config.mk
 CHARMC = $(CHARMDIR)/bin/charmc
 
 INCLUDES=-I$(FFTW3)/include
-LIBS=-L$(FFTW3)/lib -lfftw3 -lm -lz -module CkLoop
+LIBS=-L$(FFTW3)/lib -lfftw3 -lm -lz
 
 CFLAGS+=-g $(INCLUDES)
-LFLAGS+=$(LIBS) $(LAPACKLIB)
+LFLAGS+=$(LIBS)
 
 C_FILES=$(wildcard *.C)
 CI_FILES=$(wildcard *.ci)
