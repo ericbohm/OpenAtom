@@ -116,12 +116,12 @@ void PsiCache::computeFs(PsiMessage* msg) {
   if (uproc) { f_packet.umklapp_factor = umklapp_factor; }
   else { f_packet.umklapp_factor = NULL; }
 
-#ifndef USE_CKLOOP
+#ifdef USE_CKLOOP
+  CkLoop_Parallelize(computeF, 1, &f_packet, L, 0, L - 1);
+#else
   for (int l = 0; l < L; l++) {
     computeF(l,l,NULL,1,&f_packet);
   }
-#else
-  CkLoop_Parallelize(computeF, 1, &f_packet, L, 0, L - 1);
 #endif
 
   // Let the matrix chares know that the f vectors are ready

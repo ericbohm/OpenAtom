@@ -149,10 +149,10 @@ void PMatrix::fftRows(int direction) {
 
 // Print first n rows to file named with prefix
 void PMatrix::printRows(int n, const char* prefix) {
-  for (int r = start_row; r < n && r < start_row + num_rows; r++) {
+  for (int r = 0; r + start_row < n && r < num_rows; r++) {
     FILE* fp;
     char filename[200];
-    sprintf(filename, "row_data/%s_q%d_row%d.dat", prefix, qindex, r);
+    sprintf(filename, "row_data/%s_q%d_row%d.dat", prefix, qindex, r+start_row);
     fp = fopen(filename, "w");
     for (int c = 0; c < num_cols; c++) {
       fprintf(fp, "row %d col %d %lg %lg\n", r, c, data[IDX(r,c)].re, data[IDX(r,c)].im);
