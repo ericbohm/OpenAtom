@@ -3,6 +3,16 @@
 
 #include "pmatrix.decl.h"
 
+#ifdef FORTRANUNDERSCORE
+#define ZGEMM zgemm_
+#else
+#define ZGEMM zgemm
+#endif
+
+extern "C" {
+  void ZGEMM (char*, char*, int*, int*, int*, complex*, complex*, int*, complex*, int*, complex*, complex*, int*);
+}
+
 class FFTController;
 
 class PMatrix : public CBase_PMatrix {
