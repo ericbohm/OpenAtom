@@ -113,8 +113,11 @@ void PMatrix::applyFs(int ispin, int ikpt, int m, int ikq) {
     int M = num_rows, N = num_cols, K = 1;
     complex alpha = scaling_factor, beta = 1.0;
     char opA = 'C', opB = 'N';
-    //cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasConjTrans, M, N, K, &alpha, &f[start_row], K, f, K, &beta, data, N);
+#ifdef USE_ZGERC
+    ZGERC(&N, &M, &alpha, f, &K, &(f[start_row]), &K, data, &N);
+#else
     ZGEMM(&opA, &opB, &N, &M, &K, &alpha, f, &K, &(f[start_row]), &K, &beta, data, &N);
+#endif
 #else
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {

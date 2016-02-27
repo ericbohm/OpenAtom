@@ -83,6 +83,9 @@ void computeF(int first, int last, void* result, int count, void* params) {
       if (umklapp_factor) {
         fs[l][i] *= umklapp_factor[i];
       }
+#ifdef USE_ZGERC
+      fs[l][i] = fs[l][i].conj();
+#endif
     }
   }
 }
