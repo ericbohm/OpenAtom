@@ -30,7 +30,7 @@
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2
   CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE $(DIAGONALIZER_VAL) \
-	      -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
+	      -I$(FFT2_HOME)/include -I$(FFT3_HOME)/include -I$(CHARMFFT_HOME) \
 	      -Wl,--allow-multiple-definition
  
   FFLAGS   += $(OPT)

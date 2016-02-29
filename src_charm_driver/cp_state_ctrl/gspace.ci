@@ -391,9 +391,15 @@ module HartreeFock
     double inputPsi[];
   };
 
+  message HFTransposeMsg
+  {
+    complex partialColumn[];
+  };
+
   nodegroup HFCalculator {
-    entry HFCalculator ();
+    entry HFCalculator();
     entry void acceptInputPsi(HFInputMsg *msg);
+    entry void sendTransposeMsg(HFTransposeMsg *tmsgrcvd);
     entry void run() {
       while (true) {
         serial {
@@ -414,6 +420,67 @@ module HartreeFock
           }
         }
         serial {
+          doRowFFTs(myouterproduct, -1);
+        }
+        for (lcount = 0 ; lcount < totalnodes ; lcount++) {
+          serial {
+            scount = ((lcount + mynode) % totalnodes);
+            mynumcols = regularSize;
+            if (scount == (totalnodes - 1)) {
+              mynumcols = extendedSize;
+            }
+            int msgSize = mynumrows * mynumcols;
+            HFTransposeMsg *transmsg = new (msgSize) HFTransposeMsg;
+            transmsg->tmsgsize = msgSize;
+            transmsg->srcNode = mynode;
+            transmsg->destNode = scount;
+            int mycol = scount * regularSize;
+            transmsg->startColumnNumber = mycol;
+            transmsg->endColumnNumber = mycol + mynumcols - 1;
+            transmsg->totalColumns = mynumcols;
+            transmsg->numRows = mynumrows;
+            transmsg->startingRow = myrowstart;
+            for (int ctr = 0 ; ctr < mynumcols ; ctr++) {
+              for (int myrow = 0 ; myrow < mynumrows ; myrow++) {
+                transmsg->partialColumn[ctr*mynumrows+myrow].re = myouterproduct[myrow][mycol].re;
+                transmsg->partialColumn[ctr*mynumrows+myrow].im = myouterproduct[myrow][mycol].im;
+              }
+              mycol++;
+            }
+            HFCalculatorProxy[scount].sendTransposeMsg(transmsg);
+          }
+          when sendTransposeMsg(HFTransposeMsg *tmsgrcvd) serial {
+            if (tmsgrcvd->destNode != mynode) {
+              CkAbort("abort because of destNode\n");
+            }
+            if (tmsgrcvd->startColumnNumber != myrowstart) {
+              CkAbort("abort because of startColumnNumber\n");
+            }
+            if (tmsgrcvd->totalColumns != mynumrows) {
+              CkAbort("abort because of totalColumns\n");
+            }
+            if (tmsgrcvd->startingRow >= oneStateSize) {
+              CkAbort("abort because of startingRow\n");
+            }
+            if ((tmsgrcvd->startingRow + tmsgrcvd->numRows - 1) >= oneStateSize) {
+              CkAbort("abort because of numRows\n");
+            }
+            if (tmsgrcvd->tmsgsize != (mynumrows * (tmsgrcvd->numRows))) {
+              CkAbort("abort because of tmsgsize\n");
+            }
+            int indexpc = 0;
+            for (int srow = 0 ; srow < mynumrows ; srow++) {
+              for (int scol = tmsgrcvd->startingRow ; scol < (tmsgrcvd->startingRow + tmsgrcvd->numRows) ; scol++) {
+                transposedouterproduct[srow][scol].re = tmsgrcvd->partialColumn[indexpc].re;
+                transposedouterproduct[srow][scol].im = tmsgrcvd->partialColumn[indexpc].im;
+                indexpc++;
+              }
+            }
+            delete tmsgrcvd;
+          }
+        }
+        serial {
+          doRowFFTs(transposedouterproduct, 1);
           int mycount = 1;
           contribute(sizeof(int), &mycount, CkReduction::sum_int, CkCallback
             (CkReductionTarget(CP_State_RealSpacePlane, hfCalcOver), UrealSpacePlaneProxy[0]));

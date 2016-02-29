@@ -3,7 +3,7 @@
   # Location of the charm installation
   CHARMBASE     = $(HOME)/charm/pamilrts-bluegeneq-async-smp
   # Location of the FFTW2 and FFTW3 library installation
-  FFT2_HOME     =  /soft/libraries/alcf/current/xl/FFTW2
+  FFT2_HOME     = /soft/libraries/alcf/current/xl/FFTW2
   FFT3_HOME     = /soft/libraries/alcf/current/xl/FFTW3
   CHARMFFT_HOME = $(HOME)/fft
 
@@ -28,7 +28,7 @@
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2 -g -DFORTRANUNDERSCORE_OFF
   CPPFLAGS += -DUSE_ESSL_WRAPPER=0 $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF \
-	      $(DIAGONALIZER_VAL) -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
+	      $(DIAGONALIZER_VAL) -I$(FFT2_HOME)/include -I$(FFT3_HOME)/include -I$(CHARMFFT_HOME) \
 	      -Wl,--allow-multiple-definition
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
