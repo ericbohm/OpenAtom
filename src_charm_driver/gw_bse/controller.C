@@ -66,22 +66,26 @@ void PsiCache::receivePsi(PsiMessage* msg) {
 // Called by CkLoop to spread the computation of f vectors across the node
 void computeF(int first, int last, void* result, int count, void* params) {
   FComputePacket* f_packet = (FComputePacket*)params;
-  unsigned ikq = f_packet->ikq;
   unsigned psi_size = f_packet->size;
   complex* psi_unocc = f_packet->unocc_psi;
   complex* umklapp_factor = f_packet->umklapp_factor;
+  double* e_occ = f_packet->e_occ;
+  double e_unocc = f_packet->e_unocc;
   complex* fs = f_packet->fs;
 
   for (int l = first; l <= last; l++) {
     complex* f = &(fs[l*psi_size]);
-    complex* psi_occ = f_packet->occ_psis[ikq][l];
+    complex* psi_occ = f_packet->occ_psis[l];
+    double scaling_factor = 2/sqrt(e_unocc - e_occ[l]);
 
     for (int i = 0; i < psi_size; i++) {
-      f[i] = psi_occ[i] * psi_unocc[i].conj();
+      f[i] = psi_occ[i] * psi_unocc[i].conj() * scaling_factor;
       if (umklapp_factor) {
         f[i] *= umklapp_factor[i];
       }
 #ifdef USE_ZGERC
+      // ZGERC computes the complex conjugate of P, which is hermitian. This
+      // change to f corrects that so we get the correct P.
       f[i] = f[i].conj();
 #endif
     }
@@ -108,12 +112,18 @@ void PsiCache::computeFs(PsiMessage* msg) {
     computeUmklappFactor(umklapp);
   }
 
+  GWBSE* gwbse = GWBSE::get();
+  double*** e_occ = gwbse->gw_epsilon.Eocc;
+  double*** e_unocc = gwbse->gw_epsilon.Eunocc;
+
   // Create the FComputePacket for this set of f vectors and start CkLoop
-  f_packet.ikq = ikq;
   f_packet.size = psi_size;
   f_packet.unocc_psi = msg->psi;
+  f_packet.occ_psis = psis[ikq];
+  f_packet.e_occ = e_occ[msg->spin_index][ikq];
+  f_packet.e_unocc = e_unocc[msg->spin_index][msg->k_index][msg->state_index-L];
   f_packet.fs = fs;
-  f_packet.occ_psis = psis;
+
   if (uproc) { f_packet.umklapp_factor = umklapp_factor; }
   else { f_packet.umklapp_factor = NULL; }
 
@@ -126,14 +136,8 @@ void PsiCache::computeFs(PsiMessage* msg) {
 #endif
 
   // Let the matrix chares know that the f vectors are ready
-  int tmp[4] = {
-    (int) msg->spin_index,
-    (int) msg->k_index,
-    (int) (msg->state_index - L),
-    (int) ikq
-  };
   CkCallback cb(CkReductionTarget(PMatrix, applyFs), pmatrix_proxy);
-  contribute(4*sizeof(int), tmp, CkReduction::nop, cb);
+  contribute(cb);
 
   // Cleanup
   delete msg;

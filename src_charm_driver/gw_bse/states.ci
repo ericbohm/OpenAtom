@@ -146,7 +146,7 @@ module pmatrix {
   array [1D] PMatrix {
     entry PMatrix();
     entry [nokeep] void receivePsi(PsiMessage*);
-    entry [nokeep,reductiontarget] void applyFs(int, int, int, int);
+    entry [nokeep,reductiontarget] void applyFs();
     entry void fftRows(int);
     entry [nokeep] void receiveTransposeData(TransposeMessage*);
     entry void printRows(int n, char prefix[16]);

@@ -19,13 +19,21 @@ class Controller : public CBase_Controller {
     unsigned next_K, next_state, total_sent, total_complete;
 };
 
+// A struct containing the required info for computing a set of f vectors for a
+// single unoccupied state. For each f the equation is:
+// f[i] = psi_occ[i] * psi_unocc[i].conj() * scaling_factor * umklapp_factor[i]
+// f, psi vectors, and umklapp_factor all have 'size' elements
+// e_unocc and umklapp_factor are the same for every f
+// e_occ has an entry for each f to be computed
+// The set of occupied psis are all occupied psis needed for the given unocc psi
 struct FComputePacket {
-  unsigned int ikq;
   unsigned int size;
+  double e_unocc;
+  double* e_occ;
   complex* unocc_psi;
+  complex** occ_psis;
   complex* umklapp_factor;
   complex* fs;
-  complex*** occ_psis;
 };
 
 class PsiCache : public CBase_PsiCache {

@@ -96,22 +96,17 @@ void PMatrix::receivePsi(PsiMessage* msg) {
   }
 }
 
-void PMatrix::applyFs(int ispin, int ikpt, int m, int ikq) {
+void PMatrix::applyFs() {
   double end, start = CmiWallTimer();
-  // Eigenvalues used to scale the entries of f
-  GWBSE* gwbse = GWBSE::get();
-  double*** e_occ = gwbse->gw_epsilon.Eocc;
-  double*** e_unocc = gwbse->gw_epsilon.Eunocc;
 
   PsiCache* psi_cache = psi_cache_proxy.ckLocalBranch();
 
   for (int l = 0; l < L; l++) {
     complex* f = psi_cache->getF(l);
-    double scaling_factor = 4/(e_occ[ispin][ikq][l] - e_unocc[ispin][ikpt][m]);
 
 #ifdef USE_LAPACK
     int M = num_rows, N = num_cols, K = 1;
-    complex alpha = scaling_factor, beta = 1.0;
+    complex alpha = -1.0, beta = 1.0;
     char opA = 'C', opB = 'N';
 #ifdef USE_ZGERC
     ZGERC(&N, &M, &alpha, f, &K, &(f[start_row]), &K, data, &N);
@@ -121,7 +116,7 @@ void PMatrix::applyFs(int ispin, int ikpt, int m, int ikq) {
 #else
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
-        data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj()*scaling_factor;
+        data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj() * -1.0;
       }
     }
 #endif

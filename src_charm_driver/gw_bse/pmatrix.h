@@ -25,7 +25,7 @@ class PMatrix : public CBase_PMatrix {
     PMatrix(CkMigrateMessage* msg) {}
 
     void receivePsi(PsiMessage*);
-    void applyFs(int, int, int, int);
+    void applyFs();
     void fftRows(int);
     void printRows(int, const char*);
 
