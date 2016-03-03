@@ -40,10 +40,7 @@ PsiCache::PsiCache() {
     }
   }
 
-  fs = new complex*[L];
-  for (int l = 0; l < L; l++) {
-    fs[l] = new complex[psi_size];
-  }
+  fs = new complex[L*psi_size];
 
   umklapp_factor = new complex[psi_size];
 }
@@ -73,18 +70,19 @@ void computeF(int first, int last, void* result, int count, void* params) {
   unsigned psi_size = f_packet->size;
   complex* psi_unocc = f_packet->unocc_psi;
   complex* umklapp_factor = f_packet->umklapp_factor;
-  complex** fs = f_packet->fs;
+  complex* fs = f_packet->fs;
 
   for (int l = first; l <= last; l++) {
+    complex* f = &(fs[l*psi_size]);
     complex* psi_occ = f_packet->occ_psis[ikq][l];
 
     for (int i = 0; i < psi_size; i++) {
-      fs[l][i] = psi_occ[i] * psi_unocc[i].conj();
+      f[i] = psi_occ[i] * psi_unocc[i].conj();
       if (umklapp_factor) {
-        fs[l][i] *= umklapp_factor[i];
+        f[i] *= umklapp_factor[i];
       }
 #ifdef USE_ZGERC
-      fs[l][i] = fs[l][i].conj();
+      f[i] = f[i].conj();
 #endif
     }
   }
@@ -157,7 +155,7 @@ complex* PsiCache::getPsi(unsigned ispin, unsigned ikpt, unsigned istate) const 
 
 complex* PsiCache::getF(unsigned idx) const {
   CkAssert(idx >= 0 && idx < L);
-  return fs[idx];
+  return &(fs[idx*psi_size]);
 }
 
 

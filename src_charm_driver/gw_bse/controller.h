@@ -24,7 +24,7 @@ struct FComputePacket {
   unsigned int size;
   complex* unocc_psi;
   complex* umklapp_factor;
-  complex** fs;
+  complex* fs;
   complex*** occ_psis;
 };
 
@@ -45,7 +45,7 @@ class PsiCache : public CBase_PsiCache {
 
     unsigned K, L, psi_size, received_psis, qindex;
     complex*** psis;
-    complex** fs;
+    complex* fs;
     complex* umklapp_factor;
 };
 
