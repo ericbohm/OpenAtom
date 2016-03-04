@@ -115,7 +115,7 @@ void PMatrix::applyFs() {
   int K = 1; // If using ZGERC, we compute each outer product one at a time
   for (int l = 0; l < L; l++) {
     complex* f = psi_cache->getF(l);
-    ZGERC(&N, &M, &alpha, f, &ONE, &(f[start_row]), &ONE, data, &N);
+    ZGERC(&N, &M, &alpha, f, &K, &(f[start_row]), &K, data, &N);
   }
 #endif // endif for ifdef USE_ZGEMM
 #else
