@@ -1,3 +1,4 @@
 #!/bin/bash
 rm *.out
 rm row_data/*
+rm check*

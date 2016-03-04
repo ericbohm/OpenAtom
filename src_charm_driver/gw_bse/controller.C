@@ -21,7 +21,7 @@ Controller::Controller() {
 
   next_K = next_state = total_sent = total_complete = 0;
 
-  do_output = false;
+  do_output = true;
   debug_stages = M*K;
 }
 
@@ -83,8 +83,8 @@ void computeF(int first, int last, void* result, int count, void* params) {
       if (umklapp_factor) {
         f[i] *= umklapp_factor[i];
       }
-#ifdef USE_ZGERC
-      // ZGERC computes the complex conjugate of P, which is hermitian. This
+#ifdef USE_LAPACK
+      // BLAS calls compute the complex conjugate of P, which is hermitian. This
       // change to f corrects that so we get the correct P.
       f[i] = f[i].conj();
 #endif

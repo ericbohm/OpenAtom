@@ -101,26 +101,32 @@ void PMatrix::applyFs() {
 
   PsiCache* psi_cache = psi_cache_proxy.ckLocalBranch();
 
+#ifdef USE_LAPACK
+  // Common variables for both ZGERC and ZGEMM
+  int M = num_rows, N = num_cols;
+  complex alpha = -1.0;
+#ifdef USE_ZGEMM
+  int K = L; // If using ZGEMM, we compute all outer products with one call
+  complex beta = 1.0;
+  char opA = 'N', opB = 'C';
+  complex* fs = psi_cache->getF(0);
+  ZGEMM(&opA, &opB, &N, &M, &K, &alpha, fs, &N, &(fs[start_row]), &N, &beta, data, &N);
+#else
+  int K = 1; // If using ZGERC, we compute each outer product one at a time
   for (int l = 0; l < L; l++) {
     complex* f = psi_cache->getF(l);
-
-#ifdef USE_LAPACK
-    int M = num_rows, N = num_cols, K = 1;
-    complex alpha = -1.0, beta = 1.0;
-    char opA = 'C', opB = 'N';
-#ifdef USE_ZGERC
-    ZGERC(&N, &M, &alpha, f, &K, &(f[start_row]), &K, data, &N);
+    ZGERC(&N, &M, &alpha, f, &ONE, &(f[start_row]), &ONE, data, &N);
+  }
+#endif // endif for ifdef USE_ZGEMM
 #else
-    ZGEMM(&opA, &opB, &N, &M, &K, &alpha, f, &K, &(f[start_row]), &K, &beta, data, &N);
-#endif
-#else
+  for (int l = 0; l < L; l++) {
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
         data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj() * -1.0;
       }
     }
-#endif
   }
+#endif // endif for ifdef USE_LAPACK
 
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
   end = CmiWallTimer();
