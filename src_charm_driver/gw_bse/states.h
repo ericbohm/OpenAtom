@@ -29,7 +29,6 @@ class States : public CBase_States {
   void fftGtoR();
   void sendToCache();
   void sendToComputeF();
-  void sendToP();
 
   /// fftw routines ///
   void fft_G_to_R();

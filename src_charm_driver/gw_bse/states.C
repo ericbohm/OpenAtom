@@ -63,21 +63,8 @@ void States::sendToCache() {
 }
 
 //==============================================================================
-// Pack up our realspace coefficients and broadcast them to P. The broadcast
-// is [nokeep] so only one copy will exist on each node, and will be deleted
-// as soon as P is done using it.
-void States::sendToP() {
-
-  CkPrintf("[%i,%i,%i]: Sending psi to P matrix...\n", ispin, ikpt, istate);
-  int ndata = nfft[0]*nfft[1]*nfft[2];
-  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
-  msg->spin_index = ispin;
-  msg->k_index = ikpt;
-  msg->state_index = istate;
-  pmatrix_proxy.receivePsi(msg);
-
-}
-
+// Pack up our realspace coefficients and broadcast them to the cache to be
+// multiplied with each occupied psi to create a set of f vectors.
 void States::sendToComputeF() {
   CkPrintf("[%i,%i,%i]: Sending psi for f-comp...\n", ispin, ikpt, istate);
   int ndata = nfft[0]*nfft[1]*nfft[2];
