@@ -145,15 +145,15 @@ module pmatrix {
   // compute its values.
   array [1D] PMatrix {
     entry PMatrix();
-    entry [nokeep] void receivePsi(PsiMessage*);
-    entry [nokeep,reductiontarget] void applyFs();
-    entry void fftRows(int);
+    entry [nokeep] void applyFs(CkReductionMsg* msg);
     entry [nokeep] void receiveTransposeData(TransposeMessage*);
+    entry void fftRows(int);
     entry void printRows(int n, char prefix[16]);
 
     entry void doTranspose() {
       serial {
         // TODO: this only works when every chare has same amount of rows
+        // TODO: this only works with 1D decomp right now
         TransposeMessage* msg;
         unsigned my_start, their_start;
         unsigned ndata = num_rows * num_rows;

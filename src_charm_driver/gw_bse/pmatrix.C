@@ -27,76 +27,7 @@ PMatrix::PMatrix() {
   data = new complex[num_rows * num_cols];
 }
 
-void PMatrix::receivePsi(PsiMessage* msg) {
-  double end, start = CmiWallTimer();
-  GWBSE* gwbse = GWBSE::get();
-
-  // Variables for f = psi(i) * psi(j)
-  const unsigned size = msg->size;
-  complex* psi_occ;               // Comes from the cache
-  complex* psi_unocc = msg->psi;  // Sent directly to us
-  complex* f = new complex[size]; // Formed locally from the two psis
-
-  // Variables for indexing into the eigenvalues arrays
-  const unsigned ispin = msg->spin_index;
-  const unsigned ikpt = msg->k_index;
-  const unsigned istate = msg->state_index;
-  const unsigned m = istate - L; // Eigenvalues indexed separately for occ/unocc
-
-  // index for k+q point
-  unsigned ikq;
-  int umklapp[3]; // modify wavefunction for psi_occ(ikq) if umklapp process applies
-  kqIndex(ikpt, ikq, umklapp); // TODO: Rather than compute each time, just make a table at startup
-
-  // U-process modification
-  bool Uproc = false;
-  complex* umklapp_factor = new complex[size];
-  // if umklapp is non-zero then it is U-process, not N-process, so Uproc=true
-  if (umklapp[0] != 0 || umklapp[1] != 0 || umklapp[2] != 0) {
-    Uproc = true;
-    getUmklappFactor(umklapp_factor, umklapp);
-  }
-
-  // Eigenvalues used to scale the entries of f
-  double*** e_occ = gwbse->gw_epsilon.Eocc;
-  double*** e_unocc = gwbse->gw_epsilon.Eunocc;
-
-  // Loop over all of the cached psis, and compute an f via pointwise
-  // multiplication with the received psi. Then compute the outer product of
-  // f x f' and accumulate it's contribution in P.
-  for (int l = 0; l < L; l++) {
-    // Compute f based on each pair of Psis, taking into account Uproc
-    psi_occ = psi_cache_proxy.ckLocalBranch()->getPsi(ispin, ikq, l);
-    for (int i = 0; i < size; i++) {
-      f[i] = psi_occ[i]*psi_unocc[i].conj();
-      // If we are doing U-process, then multiply by our umklapp factor
-      if (Uproc) {
-        f[i] *= umklapp_factor[i];
-      }
-    }
-    
-    // Once we've computed f, compute its contribution to our chunk of P.
-    double scaling_factor = 4/(e_occ[ispin][ikq][l] - e_unocc[ispin][ikpt][m]);
-    for (int r = 0; r < num_rows; r++) {
-      for (int c = 0; c < num_cols; c++) {
-        data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj() * scaling_factor;
-      }
-    }
-  }
-
-  // Tell the controller we've completed work on this psi
-  contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
-
-  delete[] f;
-  delete[] umklapp_factor;
-
-  end = CmiWallTimer();
-  if (thisIndex == 0) {
-    CkPrintf("[PMATRIX] Received and applied a psi in %fs\n", end - start);
-  }
-}
-
-void PMatrix::applyFs() {
+void PMatrix::applyFs(CkReductionMsg* msg) {
   double end, start = CmiWallTimer();
 
   PsiCache* psi_cache = psi_cache_proxy.ckLocalBranch();
@@ -167,7 +98,6 @@ void PMatrix::printRows(int n, const char* prefix) {
   }
   contribute(CkCallback(CkReductionTarget(Controller, printingComplete), controller_proxy));
 }
-
 
 void PMatrix::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   GWBSE* gwbse = GWBSE::get();
