@@ -80,7 +80,7 @@ module controller {
 
       if (do_output) {
         serial { pmatrix_proxy.printRows(4, "P_Rspace"); }
-        when printingComplete() {}
+        when printingComplete() serial { CkExit(); }
       }
 
       // FFT P from RSpace to GSpace
@@ -142,7 +142,7 @@ module pmatrix {
   // An array containing a distributed representation of P. Each time it
   // receives a psi, it multiplies that psi against cached psis to incrementally
   // compute its values.
-  array [1D] PMatrix {
+  array [2D] PMatrix {
     entry PMatrix();
     entry [reductiontarget] void applyFs();
     entry void fftRows(int);

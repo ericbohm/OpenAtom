@@ -21,7 +21,7 @@ class GW_PARALLEL{
     unsigned n_elems;         // Number of elements in psi
     unsigned pipeline_stages; // Number of stages in the M pipeline
     unsigned rows_per_chare;  // Rows per PMatrix chare
-    unsigned matrix_nchares;  // Number of chares in the PMatrix
+    unsigned cols_per_chare;  // Columns per PMatrix chare
 
     int fft_nelems[3];        // Num: size of FFT
 
@@ -32,7 +32,7 @@ class GW_PARALLEL{
       n_elems = 0;
       pipeline_stages = 0;
       rows_per_chare = 0;
-      matrix_nchares = 0;
+      cols_per_chare = 0;
       for (int i; i<3; i++){ fft_nelems[i] = 0; }
     };
     ~GW_PARALLEL(){};
@@ -45,7 +45,7 @@ class GW_PARALLEL{
       p | n_elems;
       p | pipeline_stages;
       p | rows_per_chare;
-      p | matrix_nchares;
+      p | cols_per_chare;
 
       PUParray(p, fft_nelems, 3);
       
@@ -66,7 +66,7 @@ class GW_PARALLEL{
       fprintf(fp,"M %i\n", M);
       fprintf(fp,"pipeline_stages %i\n", pipeline_stages);
       fprintf(fp,"rows_per_chare %i\n", rows_per_chare);
-      fprintf(fp,"matrix_nchares %i\n", matrix_nchares);
+      fprintf(fp,"cols_per_chare %i\n", rows_per_chare);
       fprintf(fp,"fft size %d  %d  %d\n", fft_nelems[0], fft_nelems[1], fft_nelems[2]);
       fclose(fp);
     }// end routine

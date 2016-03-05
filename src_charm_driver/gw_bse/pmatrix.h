@@ -30,6 +30,7 @@ class PMatrix : public CBase_PMatrix {
 
   private:
     unsigned L; // Number of occupied psis
+    unsigned matrix_dimension; // Size of the entire matrix
     unsigned num_rows, num_cols, start_row, start_col; // The shape of our data
     unsigned trans_count, num_chares; // SDAG variables
     complex* data;

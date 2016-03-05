@@ -11,18 +11,23 @@
 
 PMatrix::PMatrix() {
   GWBSE* gwbse = GWBSE::get();
+
+  // Set some constants
   L = gwbse->gw_parallel.L;
-  num_rows = gwbse->gw_parallel.rows_per_chare;
-  num_cols = gwbse->gw_parallel.n_elems;
   nfft = gwbse->gw_parallel.fft_nelems;
   qindex = Q_IDX; // Eventually the controller will set this
 
-  num_chares = num_cols / num_rows;
-
-  start_row = thisIndex * num_rows;
-  start_col = 0;
-
+  // Grab a local pointer to the fft controller for fft-ing our rows
+  // TODO: Is this guaranteed to be safe (is the local branch created for sure)?
   fft_controller = fft_controller_proxy.ckLocalBranch();
+
+  // Figure out what part of the matrix we have and allocate space
+  matrix_dimension = gwbse->gw_parallel.n_elems;
+  num_rows = gwbse->gw_parallel.rows_per_chare;
+  num_cols = gwbse->gw_parallel.cols_per_chare;
+  num_chares = (matrix_dimension / num_rows) * (matrix_dimension / num_cols);
+  start_row = thisIndex.x * num_rows;
+  start_col = thisIndex.y * num_cols;
   
   data = new complex[num_rows * num_cols];
 }
@@ -38,19 +43,24 @@ void PMatrix::applyFs() {
   complex alpha = -1.0;
 #ifdef USE_ZGEMM
   int K = L; // If using ZGEMM, we compute all outer products with one call
+  int LDF = matrix_dimension; // Leading dimension of fs
   complex beta = 1.0;
   char opA = 'N', opB = 'C';
   complex* fs = psi_cache->getF(0);
-  ZGEMM(&opA, &opB, &N, &M, &K, &alpha, fs, &N, &(fs[start_row]), &N, &beta, data, &N);
+  ZGEMM(&opA, &opB, &N, &M, &K,
+    &alpha, &(fs[start_col]), &LDF,
+    &(fs[start_row]), &LDF,
+    &beta, data, &N);
 #else
   int K = 1; // If using ZGERC, we compute each outer product one at a time
   for (int l = 0; l < L; l++) {
     complex* f = psi_cache->getF(l);
-    ZGERC(&N, &M, &alpha, f, &K, &(f[start_row]), &K, data, &N);
+    ZGERC(&N, &M, &alpha, &(f[start_col]), &K, &(f[start_row]), &K, data, &N);
   }
 #endif // endif for ifdef USE_ZGEMM
 #else
   for (int l = 0; l < L; l++) {
+    complex* f = psi_cache->getF(l);
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
         data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj() * -1.0;
@@ -61,7 +71,7 @@ void PMatrix::applyFs() {
 
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
   end = CmiWallTimer();
-  if (thisIndex == 0) {
+  if (thisIndex.x == 0 && thisIndex.y == 0) {
     CkPrintf("[PMATRIX] Applied fs in %fs\n", end - start);
   }
 }
@@ -89,10 +99,10 @@ void PMatrix::printRows(int n, const char* prefix) {
   for (int r = 0; r + start_row < n && r < num_rows; r++) {
     FILE* fp;
     char filename[200];
-    sprintf(filename, "row_data/%s_q%d_row%d.dat", prefix, qindex, r+start_row);
+    sprintf(filename, "row_data/%s_q%d_row%d_chunk%d.dat", prefix, qindex, r+start_row, thisIndex.y);
     fp = fopen(filename, "w");
     for (int c = 0; c < num_cols; c++) {
-      fprintf(fp, "row %d col %d %lg %lg\n", r, c, data[IDX(r,c)].re, data[IDX(r,c)].im);
+      fprintf(fp, "row %d col %d %lg %lg\n", r+start_row, c+start_col, data[IDX(r,c)].re, data[IDX(r,c)].im);
     }
     fclose(fp);
   }

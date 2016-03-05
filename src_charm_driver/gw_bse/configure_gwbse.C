@@ -582,7 +582,7 @@ void Config::set_config_dict_GW_file  (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_dict_GW_parallel  (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
   //  I) Malloc the dictionary                                              
-  num_dict[0] = 2;
+  num_dict[0] = 3;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
 
   //=================================================================================
@@ -607,6 +607,13 @@ void Config::set_config_dict_GW_parallel  (int *num_dict ,DICT_WORD **dict){
   //  2)\rows_per_chare{}
   ind =   2;   
   strcpy((*dict)[ind].keyword,"rows_per_chare");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes,"a number >= 1");
+
+  //-----------------------------------------------------------------------------
+  //  3)\cols_per_chare{}
+  ind =   3;
+  strcpy((*dict)[ind].keyword,"cols_per_chare");
   strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number >= 1");
   //-----------------------------------------------------------------------------
@@ -893,6 +900,12 @@ void Config::set_config_params_GW_parallel  (DICT_WORD *dict, char *fun_key, cha
   if (int_arg<1){keyarg_barf(dict,input_name,fun_key,ind);}  
   gw_parallel->rows_per_chare = int_arg;
   
+  //  3)\cols_per_chare{}
+  ind =   3;
+  sscanf(dict[ind].keyarg,"%d",&int_arg);
+  if (int_arg<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  gw_parallel->cols_per_chare = int_arg;
+
   //----------------------------------------------------------------------------- 
 }// end routine
 //================================================================================
@@ -1467,15 +1480,18 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
   PRINTF("States constructed using fft sizes %d %d %d\n", nx, ny, nz);
 
   // =======================================================================
-  // Determine the number of rows in P and how many chares it will have
-  // The number of rows in P right now must be evenly divisble by rows per chare
+  // Determine the dimension of P, and make sure the rows and columns per chare
+  // divide this dimension evenly.
   gw_parallel->n_elems = nfft[0] * nfft[1] * nfft[2];
   for(int i=0; i<3; i++){
     gw_parallel->fft_nelems[i] = nfft[i]; // data point in each direction
   }
-  gw_parallel->matrix_nchares = gw_parallel->n_elems / gw_parallel->rows_per_chare;
   if (gw_parallel->n_elems % gw_parallel->rows_per_chare != 0) {
     PRINTF("ERROR: Number of rows per chare does not divide evenly!\n");
+    EXIT();
+  }
+  if (gw_parallel->n_elems % gw_parallel->cols_per_chare != 0) {
+    PRINTF("ERROR: Number of cols per chare does not divide evenly!\n");
     EXIT();
   }
 }
