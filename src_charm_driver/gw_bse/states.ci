@@ -170,7 +170,7 @@ module pmatrix {
               msg->data[c*num_rows + r] = data[IDX(r,c+my_start)];
             }
           }
-          thisProxy(dest).receiveTransposeData(msg);
+          thisProxy(dest,0).receiveTransposeData(msg);
         }
       }
 
