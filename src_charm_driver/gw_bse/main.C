@@ -88,10 +88,11 @@ Main::Main(CkArgMsg* msg) {
   // Create the array of P matrix chare objects.
   int dimension = gwbse->gw_parallel.n_elems;
   int nrows = gwbse->gw_parallel.rows_per_chare;
-  int ncols = gwbse->gw_parallel.rows_per_chare;
-  pmatrix_proxy = CProxy_PMatrix::ckNew(dimension/nrows, dimension/ncols);
+  int ncols = gwbse->gw_parallel.cols_per_chare;
   CkPrintf("[MAIN] Creating %ix%i matrix chares with %i rows and %i cols each\n",
       dimension/nrows, dimension/ncols, nrows, ncols);
+
+  pmatrix_proxy = CProxy_PMatrix::ckNew(dimension/nrows, dimension/ncols);
 
   // -------------------------------------------------------------------
   // Create the array of state chare objects.
