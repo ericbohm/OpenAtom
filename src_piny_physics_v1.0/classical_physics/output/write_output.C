@@ -82,7 +82,7 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads_in
       }//endif
     }//endif
 
-    if( (itime % iwrite_dump)==0 || itime==ntime){
+    if( (itime % iwrite_dump)==0 || itime==ntime || itime==ntime-1 ){
       iwrite_atm++;
       if(myid==0){
         sprintf (temp_ext,"%s/Bead.%d_Temper.%d/%s",dump_dir,ibead,itemper,dname);
