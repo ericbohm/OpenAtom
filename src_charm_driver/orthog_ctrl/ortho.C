@@ -506,6 +506,12 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
     if(ortho==NULL)
       ortho= new internalType[m*n];
     CmiMemcpy(ortho,orthoT,m*n*sizeof(internalType));
+    if(lsda)
+      {
+	// scale lambda by 2
+	for(int i=0; i<m*n; i++)
+	  lambda[i]=lambda[i]* 2.0d;
+      }
     matA1.multiply(1, 0, orthoT, Ortho::gamma_done_cb, (void*) this,
         thisIndex.x, thisIndex.y);
     matB1.multiply(1, 0, lambda, Ortho::gamma_done_cb, (void*) this,
@@ -524,6 +530,12 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
     for(int i=0; i<m*n; i++)
       CkAssert( isfinite(lambda[i]) );
 #endif
+    if(lsda)
+      {
+	// scale lambda by 2
+	for(int i=0; i<m*n; i++)
+	  lambda[i]=lambda[i]* 2.0d;
+      }
 
     if (diagonalization == 0) {
       // finish pair calc
@@ -705,10 +717,11 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
     CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
     orthoConfig &_cfg,
     CkArrayID _step2Helper,
-    int timekeep, CkGroupID _oMCastGID, CkGroupID _oRedGID):
+	     int timekeep, CkGroupID _oMCastGID, CkGroupID _oRedGID, bool _lsda):
   cfg(_cfg),
   oMCastGID(_oMCastGID), oRedGID(_oRedGID),
-  step2Helper(_step2Helper)
+  step2Helper(_step2Helper),
+  lsda(_lsda)
 {
 
   /* do basic initialization */

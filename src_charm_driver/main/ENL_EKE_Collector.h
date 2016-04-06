@@ -31,7 +31,7 @@ class ENL_EKE_Collector : public CBase_ENL_EKE_Collector
 {
   public:
     ENL_EKE_Collector(CkMigrateMessage *m) {}
-    ENL_EKE_Collector(int _numEnergyInputs, int _numInstance, std::string dirname);
+    ENL_EKE_Collector(int _numEnergyInputs, int _numInstance, int beads, std::string dirname);
     void acceptENL(double _enl);
     void acceptEKE(double _eke);
     ~ENL_EKE_Collector(){}
@@ -45,6 +45,7 @@ class ENL_EKE_Collector : public CBase_ENL_EKE_Collector
     int countENL;
     double EKE;
     double ENL;
+    int beads;
 };
 
 

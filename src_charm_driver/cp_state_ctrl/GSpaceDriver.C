@@ -136,8 +136,8 @@ void GSpaceDriver::needUpdatedPsiV()
 /// Trigger the nonlocal computations
 void GSpaceDriver::startNonLocalEes(int iteration_loc)
 {
-  //if(iteration_loc!=myGSpaceObj->iteration)
-  //  CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
+  if(iteration_loc!=myGSpaceObj->iteration)
+    CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
 
   /// Set to false, just before I spawn the nonlocal work
 

@@ -60,7 +60,7 @@ class CPNONLOCAL{
 
     static void eesProjGchare(int , complex *,int *,int *, int *,int , int , int ,
         double *, double *, double *, double *,complex *,int **,
-        double **,int, int, int, int nfreq_cmi_update=100);
+			      double **,int, int, int, int nfreq_cmi_update, int);
 
     static void eesYlmOnD(int ,int ,int ,int *,int *,int *,double *,double *, double *, 
         double *,double *,int, int nfreq_cmi_update);
@@ -81,7 +81,7 @@ class CPNONLOCAL{
         int, int, int, FastAtoms *);
 
     static void eesPsiForcGspace(int, int , int ,int, complex *,complex *, double *,double *,
-        int *,int *, int *,int , int, int, int nfreq_cmi_update = 100);
+				 int *,int *, int *,int , int, int, int nfreq_cmi_update, int);
 
     static void genericSetKvector(int ,int *,int *,int *,
         int ,RunDescriptor *,GCHAREPKG *,int ,int ,int ,int,

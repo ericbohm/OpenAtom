@@ -27,6 +27,43 @@
  * forward fft in z and x directions is performed. The resulting data is
  * summed with the result of CP_exc_calc. The sum is sent to the
  * CP_State_RealSpacePlane objects.
+ *
+ * LSDA has up states and down states.  Not the same.
+ * We create two densities, and up and a down. Not the same.
+ * Exc, is a function of rho= rhoUp + rhoDn and rhoUp-rhoDn
+ * derivative of Exc wrt rhoUp is VksUp
+ * derivative of Exc wrt rhoDn is VksDn
+ * VksUp!=VksDn
+ * 
+ * VksUp is multicast back to realspace up.
+ * VksDn is multicast back to realspace dn.
+ *
+ * the Down instance creates the down density
+ * then sends it to the up instance to compute Exc
+ * therefore, Up needs to have both densities before it can compute exc
+ * 
+ * in computing Exc, VksUp and VksDn are computed on the up instance
+ * then vksDn is sent to the down instance for the multicast back to the down states
+ * 
+ * gradient corrected lsda, needs the gradients of the up density and
+ * the gradients of the down density.  The up instance will compute
+ * its gradients and the down will compute its gradients.
+ * 
+ * Exc will depend on rhoUp, rhoDn, gradRhoUp, gradRhoDn down will
+ * send both density and gradients to up.  compute the eext and vksUp
+ * and vksDn and the components needed for the whitebyrd correction,
+ * which has up and down parts.  The down parts are sent back to down
+ * (vksDn and whitebyrdDn) down instance will do its whitebyrd add it
+ * to vksDn and multicast back to the down states.
+
+ * Within each instance there is a vks and a density and gradients.
+ * these are not given separate labels within the instance.  The down
+ * is labeled with a Dn suffix only in the up instance, where we need
+ * to maintain the two simultaneously.  
+ * 
+ * Only the up instance computes the Exc and its derivatives. 
+ * Both instances assemble the density. do whitebyrd (if necessary)
+ * and multicast back to their states. 
  */
 //============================================================================
 #include <iostream>
@@ -57,6 +94,8 @@ extern CkGroupID                                mCastGrpId;
 extern CPcharmParaInfo                          simReadOnly;
 extern Config                                   config;
 
+//#define _CP_DEBUG_RHOR_VERBOSE_
+
 //! return true if input is power of 2
 bool is_pow2(int input){
   unsigned x = input;
@@ -81,10 +120,10 @@ bool is_pow2(int input){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// This class (array) accepts the real space densities from all the states
-// Performs lots of operations to get exc, eext energies and vks
-//
+/**
+ * This class (array) accepts the real space densities from all the states
+ * Performs lots of operations to get exc, eext energies and vks
+ */
 //============================================================================
 CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int _rhokeeperid,
     UberCollection _instance) : rhoKeeperId(_rhokeeperid), thisInstance(_instance)
@@ -104,6 +143,8 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int _rhokeeperid,
   VksC      = NULL;
   density   = NULL;
   densityC  = NULL;
+  densityDn = NULL;
+  densityDnC= NULL;
   rhoIRX    = NULL;
   rhoIRXC   = NULL;
   rhoIRY    = NULL;
@@ -127,6 +168,10 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int _rhokeeperid,
 
   //============================================================================
   // Migration
+
+  //RAZ:  Added spin flags;
+  cp_lsda              = simReadOnly.cp_lsda;        
+  mySpinIndex          = thisInstance.idxU.s; 
 
   usesAtSync = true;
   setMigratable(false);
@@ -180,6 +225,10 @@ void CP_Rho_RealSpacePlane::init(){
     RedMsg[i] = NULL;
   }
 
+  //RAZ: init spin booleans:
+  doneRhoUp       = false;
+  doneRhoDn       = (cp_lsda==1) ? false : true;
+
   //============================================================================
   // Set up the data class : mallocs rho,gradrho, etc.
   // The following replaces the Rho slab and related code.
@@ -196,10 +245,36 @@ void CP_Rho_RealSpacePlane::init(){
   dummy    = (complex*) fftw_malloc(data_size * sizeof(complex));
   densityC = dummy;
   density  = reinterpret_cast<double*> (dummy);
+  if (cp_lsda==1 && mySpinIndex==0){ //up will get the down spin
+    dummy      = (complex*) fftw_malloc(data_size * sizeof(complex));
+    densityDnC = dummy;
+    densityDn  = reinterpret_cast<double*> (dummy);
+    dummy      = (complex*) fftw_malloc(data_size * sizeof(complex));
+    VksDnC     = dummy;
+    VksDn      = reinterpret_cast<double*> (dummy);
+    memset(VksDn, 0, myGrid_size*sizeof(double));
+    memset(Vks, 0, myGrid_size*sizeof(double));
+    dummy    = (complex*) fftw_malloc(data_size * sizeof(complex));
+    rhoIRXDnC  = dummy;
+    rhoIRXDn   = reinterpret_cast<double*> (dummy);
+
+    dummy    = (complex*) fftw_malloc(data_size * sizeof(complex));
+    rhoIRYDnC  = dummy;
+    rhoIRYDn   = reinterpret_cast<double*> (dummy);
+
+    dummy    = (complex*) fftw_malloc(data_size * sizeof(complex));
+    rhoIRZDnC  = dummy;
+    rhoIRZDn   = reinterpret_cast<double*> (dummy);
+
+  }
+
+
 
   dummy    = (complex*) fftw_malloc(data_size * sizeof(complex));
   rhoIRXC  = dummy;
   rhoIRX   = reinterpret_cast<double*> (dummy);
+
+  // this is where we set the memory locations for the result of the FFTs
   Charm_setInputMemory((void*)rhoIRX, Urho_fft_xProxy[thisInstance.proxyOffset],
       fft_xoffset);
   Charm_createInputPlan(Urho_fft_xProxy[thisInstance.proxyOffset], fft_xoffset);
@@ -295,6 +370,7 @@ void CP_Rho_RealSpacePlane::init(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane(){
+  /* todo, add spin issues here for up*/
   fftw_free((void*)VksC);
   fftw_free((void*)densityC);
   fftw_free((void*)rhoIRXC);
@@ -307,9 +383,8 @@ CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-//  Data comes from StateRspacePlane once an algorithm step.
 /**
+ *  Data comes from StateRspacePlane once an algorithm step.
  * Here the density from all the states is added up. The data from all the
  * states is received via possibly multiple array section reductions. Nothing
  * happens in this chare until the density arrives.
@@ -327,8 +402,8 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
   plane_c -= myGrid_start[MY_C];
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("[%d] RhoReal accepting Density %d %d for plane %d \n",
-      CkMyPe(), thisIndex.x, thisIndex.y, plane_c);
+  CkPrintf("{%d} RhoReal accepting Density %d %d for plane %d \n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, plane_c);
 #endif
 
 #ifdef _NAN_CHECK_
@@ -361,7 +436,11 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
     redCount[plane_c] = 0;
     if(num_redn_complete == myGrid_length[MY_C]) {
       num_redn_complete = 0;
-      handleDensityReduction();
+      if(mySpinIndex==0){
+        handleDensityReduction();
+      }else{
+	handleDensityReductionDn();
+      }
     }
   }//endif
   //--------------------------------------------------------------------------
@@ -372,10 +451,24 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 //============================================================================
 /**
  * Density has arrived. Set flags, scale, and trigger work.
- **/
+ */
 //============================================================================
 void CP_Rho_RealSpacePlane::handleDensityReduction() {
   //============================================================================
+  //RAZ:  added dummy protection:
+  if (cp_lsda==1 && mySpinIndex==1){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("In spin Up specific handleDensityReduction with spin Dn flags.\n");
+    CkPrintf("Nice trick.  Good-bye.\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }
+
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  CkPrintf("{%d} RhoReal handle density reduction %d %d doneRhoDn %d \n",
+	   thisInstance.proxyOffset, thisIndex.x, thisIndex.y, doneRhoDn);
+#endif
+
 
 #ifdef _CP_SUBSTEP_TIMING_
   if(rhoKeeperId > 0){
@@ -388,7 +481,8 @@ void CP_Rho_RealSpacePlane::handleDensityReduction() {
   //============================================================================
   // Set the flags : you are not done unless certain conditions apply.
 
-  myTime++;
+  if(!doneRhoDn || cp_lsda==0) // the first one to arrive will increment the iteration
+    myTime++;
   doneHartVks   = false;
   doneWhiteByrd = false;
   doneRHart     = false;
@@ -422,17 +516,116 @@ void CP_Rho_RealSpacePlane::handleDensityReduction() {
 
   //============================================================================
   // Compute the exchange correlation energy (density no-grad part)
+  doneRhoUp=true;
+  if(doneRhoDn)
+   energyComputation();
 
-  energyComputation();
+  launchNlG();
 
   //============================================================================
   // 2nd Launch real-space external-hartree and the G-space non-local
   // The energy comp through RhoG is the more expensive critical path.
-  launchEextRNlG();
+  if(doneRhoDn)
+    launchEextR();
+
+  fftRhoRtoRhoG();
 
   //============================================================================
 }//end routine
 //============================================================================
+
+//============================================================================
+/** 
+ * LSDA: Density has arrived in Down. Send it to Up. Trigger non-local.  FFT
+ */
+//============================================================================
+void CP_Rho_RealSpacePlane::handleDensityReductionDn() {
+  //============================================================================
+
+  //RAZ:  added dummy protection:
+  if (cp_lsda==0 || (cp_lsda==1 && mySpinIndex==0)){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("In spin Down specific handleDensityReductionDn with spin Up flags.\n");
+    CkPrintf("Nice trick.  Good-bye.\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }
+
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  CkPrintf("{%d} RhoReal handle density reduction dn %d %d doneRhoUp %d\n",
+	   thisInstance.proxyOffset, thisIndex.x, thisIndex.y, doneRhoUp);
+#endif
+
+
+#ifdef _CP_SUBSTEP_TIMING_
+  if(rhoKeeperId > 0){
+    double rhostart = CmiWallTimer();
+    CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL), 0, TimeKeeperProxy);
+    contribute(sizeof(double), &rhostart, CkReduction::min_double, cb, rhoKeeperId);
+  }//endif
+#endif
+
+  //============================================================================
+  // Set the flags : you are not done unless certain conditions apply.
+
+  myTime++;
+
+  doneHartVks   = false;
+  doneWhiteByrd = false;
+  doneRHart     = false;
+  if(simReadOnly.cp_grad_corr_on == 0) { doneWhiteByrd = true; }
+  if(simReadOnly.ees_eext_on == 0)     { doneRHart     = true; }
+
+#ifdef _CP_DEBUG_HARTEEXT_OFF_
+  doneHartVks    = true;
+  doneRHart      = true;
+#endif
+
+  //============================================================================
+  // Unpack into spread out form and delete the message
+
+  double *scale_density = density;
+  scaleData(scale_density, probScale);
+
+  //============================================================================
+  // If debugging, generate output!
+
+#ifdef _CP_DEBUG_RHOR_RHO_
+  char myFileName[MAX_CHAR_ARRAY_LENGTH];
+  sprintf(myFileName, "Rho_Real_%d_%d_%d.out", thisIndex.x, thisIndex.y, mySpinIndex);
+  FILE *fp = fopen(myFileName,"w");
+  scale_density = density;
+  for (int i = 0; i < myGrid_size; i++){
+    fprintf(fp, "%g\n", scale_density[i]);
+  }//endfor
+  fclose(fp);
+#endif
+
+  // the down instance vks will come from up, in various packets that
+  // we will sum on vks
+  //  CkPrintf("{%d} In RhoRealSpacePlane[%d,%d] memset Vks Memory %.2lf MB\n", thisInstance.proxyOffset,
+  //      thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
+  memset(Vks, 0, myGrid_size*sizeof(double));
+
+  // RAZ: We are the down instance:  Send our Down density to Up Instance:
+  sendRhoDnToRhoUp();
+
+  //============================================================================
+
+  //============================================================================
+  // 2nd Launch real-space external-hartree and the G-space non-local
+  // The energy comp through RhoG is the more expensive critical path.
+  launchNlG();
+ 
+ //============================================================================
+ // Invoke FFT to take rho(r) to rho(g) : do not over-write the density!!
+  // We are the spin down instance!
+  fftRhoRtoRhoG();
+
+  //============================================================================
+}//end routine
+//============================================================================
+
 
 void CP_Rho_RealSpacePlane::scaleData(double *scaledData, double scaleFac) {
   //read comment in inner loop for this end value
@@ -456,36 +649,7 @@ void CP_Rho_RealSpacePlane::scaleData(double *scaledData, double scaleFac) {
   }
 }
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-//
-/** Launch ees NL and ees Ext routines
- *  Do this once an algorithm step
- */
-//============================================================================
-void CP_Rho_RealSpacePlane::launchEextRNlG() {
-  //============================================================================
-  // Launch the external energy computation in r-space :
-#ifndef _CP_DEBUG_HARTEEXT_OFF_
-  if(simReadOnly.ees_eext_on == 1){
-    if(thisIndex.x + thisIndex.y == 0) {
-      UrhoRHartExtProxy[thisInstance.proxyOffset].startEextIter();
-    }
-#if 0 //old code
-    int div    = (ngridcEext / ngridc);
-    int rem    = (ngridcEext % ngridc);
-    int ind    = thisIndex.x+ngridc;
-    for(int j=0;j<config.nchareHartAtmT;j++){
-      UrhoRHartExtProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y,j).startEextIter();
-      if(thisIndex.x<rem){
-        UrhoRHartExtProxy[thisInstance.proxyOffset](ind,thisIndex.y,j).startEextIter();
-      }//endif : the launch
-    }//endfor : atmTyp parallism
-#endif
-  }//endif : Launch is needed
-#endif
-
+void CP_Rho_RealSpacePlane::launchNlG(){
   //============================================================================
   // Launch nonlocal g space if it wasn't done in RS
   //  Spread the launch over all the rhoRchares you can.
@@ -500,6 +664,42 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
         UgSpaceDriverProxy[proxyOffset].startNonLocalEes(myTime);
       }
     }
+  }
+}
+
+
+void CP_Rho_RealSpacePlane::launchEextR() {
+
+#ifndef _CP_DEBUG_HARTEEXT_OFF_
+  if(simReadOnly.ees_eext_on == 1){
+    if(thisIndex.x + thisIndex.y == 0) {
+      UrhoRHartExtProxy[thisInstance.proxyOffset].startEextIter();
+    }
+  }
+#endif
+}
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** Launch ees NL and ees Ext routines
+ *  Do this once an algorithm step
+ */
+//============================================================================
+void CP_Rho_RealSpacePlane::launchEextRNlG() {
+  //============================================================================
+  // Launch the external energy computation in r-space :
+#ifndef _CP_DEBUG_HARTEEXT_OFF_
+  launchEextR();
+#endif
+  //============================================================================
+  // Launch nonlocal g space if it wasn't done in RS
+  //  Spread the launch over all the rhoRchares you can.
+
+  
+  if(simReadOnly.ees_nloc_on == 1 && config.launchNLeesFromRho == 1 && simReadOnly.natm_nl > 0) 
+    {
+      launchNlG();
 #if 0 //old code
     CkAssert(sizeZ>=config.nchareG);
     if(thisIndex.x<config.nchareG){
@@ -540,7 +740,7 @@ void CP_Rho_RealSpacePlane::energyComputation(){
   //============================================================================
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("[%d] In RhoRealSpacePlane[%d,%d] energyComp, Memory %.2lf MB\n", CkMyPe(),
+  CkPrintf("{%d} In RhoRealSpacePlane[%d,%d] energyComp, Memory %.2lf MB\n", thisInstance.proxyOffset,
       thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
 #endif
 
@@ -553,11 +753,44 @@ void CP_Rho_RealSpacePlane::energyComputation(){
 
   //============================================================================
   // Perform exchange correlation computation (no grad corr here).
-
-  CPXCFNCTS::CP_exc_calc(npts, nf1, nf2, nf3, density, Vks, &exc_ret, &muxc_ret,
+   if(cp_lsda==0){
+       CPXCFNCTS::CP_exc_calc(npts, nf1, nf2, nf3, density, Vks, &exc_ret, &muxc_ret,
                          config.nfreq_xcfnctl);
+   }else{
+     //#define DEBUG_SPIN_DENSITY_COPY 1
+#ifdef DEBUG_SPIN_DENSITY_COPY
+     CkPrintf("DEBUG_SPIN_DENSITY_COPY I am sending Density to LDA routine:\n");
+     CPXCFNCTS::CP_exc_calc(npts, nf1, nf2, nf3, density, Vks, &exc_ret, &muxc_ret,
+                         config.nfreq_xcfnctl);
+     for (int i=0; i< myGrid_size; i++){
+       VksDn[i]==Vks[i];
+     }//endfor
+#else
+     //#define DEBUG_SPIN_DENSITY_LDA_ON
+#ifdef DEBUG_SPIN_DENSITY_LDA_ON
+     CkPrintf("DEBUG_SPIN_DENSITY_LDA_ON I am sending Density to LDA routine:\n");
+     for (int i=0; i< myGrid_size; i++){
+       density[i]+=densityDn[i];
+     }//endfor
+     //  iteration ++;
+       CPXCFNCTS::CP_exc_calc(npts, nf1, nf2, nf3, density, Vks, &exc_ret, &muxc_ret,
+                         config.nfreq_xcfnctl);
+     for (int i=0; i< myGrid_size; i++){
+       density[i]-=densityDn[i];
+     }//endfor
+     memcpy(VksDn,Vks,myGrid_size*sizeof(complex));
+#else
+     // Vks and VksDn are computed and returned by reference within this function
+     // so their allocator based values are overwritten
+     CPXCFNCTS::CP_exc_lsda_calc(npts,nf1,nf2,nf3,density,densityDn,Vks,VksDn,
+                                 &exc_ret,&muxc_ret,config.nfreq_xcfnctl);
+#endif
+#endif
+   }//endif
 
-#ifdef _CP_DEBUG_RHOR_VERBOSE_
+
+
+#ifdef _CP_DEBUG_RHOR_VERBOSE_DUMP
   double sum = 0.0;
   for (int i = 0; i < myGrid_size; i++) {
     sum += Vks[i];
@@ -576,12 +809,33 @@ void CP_Rho_RealSpacePlane::energyComputation(){
     contribute(2 * sizeof(double), exc, CkReduction::sum_double);
   }//endif
 
+
+
+  //============================================================================
+}//end routine
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * 1) Perform FFT of density: Single Transpose method rho(x,y,z) ---> rho(gx,gy,z)
+ *                            Double Transpose method rho(x,y,z) ---> rho(gx,y,z)
+ *
+ * 2) launch the real space part of the non-local 
+ *
+ *    Routine invoked once an algorithm step.
+ */
+//============================================================================
+void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
+//============================================================================
   //============================================================================
   // Invoke FFT to take rho(r) to rho(g) : do not over-write the density!!
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("[%d] About to call FFT RhoRealSpacePlane[%d %d] FFT_RSpacetoGSpace, Memory %.2lf MB\n",
-      CkMyPe(), thisIndex.x, thisIndex.y, CkMyPe(), CmiMemoryUsage()/(1024.0 * 1024));
+  CkPrintf("{%d} About to call FFT RhoRealSpacePlane[%d %d] FFT_RSpacetoGSpace, Memory %.2lf MB\n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, CkMyPe(), CmiMemoryUsage()/(1024.0 * 1024));
 #endif
 
   double  *dataR     = rhoIRX;   // rhoirx is around doing nothing now
@@ -609,6 +863,7 @@ void CP_Rho_RealSpacePlane::energyComputation(){
   //============================================================================
 }//end routine
 //============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -660,6 +915,132 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
   }//endif
   //----------------------------------------------------------------------------
 }//end routine
+
+// ============================================================================
+/**
+ * LSDA: Send the down density to the up instance.
+ *      Called only from Down instance via handleDensityReductionDn
+ */
+//============================================================================ 
+void CP_Rho_RealSpacePlane::sendRhoDnToRhoUp(){
+//============================================================================
+//Malloc a message
+
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  CkPrintf("{%d} RhoReal sendRhoDnToRhoUp %d %d %d\n",
+	   thisInstance.proxyOffset,thisIndex.x,thisIndex.y,CkMyPe());
+#endif
+
+
+  int dataSize    = myGrid_size;
+
+  RhoRDnMsg *msg  = new (dataSize, 0) RhoRDnMsg;
+
+  // ADD new index here for Y
+  msg->idx        = thisIndex.x;
+  msg->datalen    = dataSize;
+  msg->time       = myTime;
+  double *dataR   = msg->data;
+
+  //============================================================================
+  //Pack the message it's a bit too big but we don't care.
+
+
+  for(int i=0; i<dataSize; i++){dataR[i]=density[i];}
+
+  //============================================================================
+  //send the message across spin uber by FLIPPING the spin:
+  //Remember, this routine only gets called from the down spin
+  //instance.
+
+  UberCollection upinstance=thisInstance;
+  // flip the spin
+  upinstance.idxU.s= !upinstance.idxU.s;
+  // get new offset
+  int Offset2RhoUp=upinstance.setPO();
+
+  UrhoRealProxy[Offset2RhoUp](thisIndex.x,thisIndex.y).acceptDensityDn(msg);
+
+//============================================================================
+  }//end routine
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**  LSDA: accept the down density in the up instance.
+ *  Data comes from handleDensityReductionDn via sendRhoDnToRhoUp
+ *  No need to grow the data... it's already grown in the
+ *  acceptDensity of the down instance.
+ */
+//============================================================================
+void CP_Rho_RealSpacePlane::acceptDensityDn(RhoRDnMsg *msg) {
+//============================================================================
+
+  if(mySpinIndex!=0){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("Only the Up density can receive Rho_Dn.  Bye.\n");
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+  }
+
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  CkPrintf("{%d} RhoReal accepting Down Density %d %d %d\n",
+	   thisInstance.proxyOffset,thisIndex.x,thisIndex.y,CkMyPe());
+#endif
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->datalen/sizeof(double) ;i++){
+    CkAssert(isnan(msg->data[i])==0);
+  }//endif
+#endif
+
+//============================================================================
+// Retrieve the data and put in dn specific density
+
+   int dataSize  = msg->datalen;
+   int testSize  = myGrid_size;
+
+   if(!doneRhoUp) // first one increments iteration
+     myTime++;
+   // TODO, figure out a clean way to do this test   
+   if(myTime!=msg->time || thisIndex.x!=msg->idx || 
+      dataSize!=testSize){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("Inconsistent Send/Receive across Spin Ubers in acceptDensityDn.\n");
+     CkPrintf("Time    : %d %d \n",myTime,msg->time);
+     CkPrintf("Plane   : %d %d \n",thisIndex.x,msg->idx);
+     CkPrintf("Msg Size: %d %d \n",dataSize,testSize);
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+          CkExit();
+   }
+
+   double *dataRhoDn  = (double *) msg->data; 
+
+   for(int i=0; i<dataSize; i++){
+     densityDn[i] = dataRhoDn[i];
+   }
+
+   delete msg;
+
+
+//============================================================================
+//We now have the down density in the up instance:
+   doneRhoDn = true;
+
+//============================================================================
+// If not done already:  Compute the exchange correlation energy (density no-grad part)
+
+   if(doneRhoUp)  energyComputation();
+
+  //============================================================================
+  // 2nd Launch real-space external-hartree and the G-space non-local
+  // The energy comp through RhoG is the more expensive critical path.
+   if(doneRhoUp)  launchEextR();
+
+//--------------------------------------------------------------------------
+   }//end routine
 //============================================================================
 
 //============================================================================
@@ -681,10 +1062,22 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks() {
   //============================================================================
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("[%d] In RhoRealSpacePlane[%d,%d] acceptGradRhoVks_%d, Memory %.2lf MB\n",
-      CkMyPe(), thisIndex.x, thisIndex.y, doneGradRhoVks, CmiMemoryUsage()/(1024.0 * 1024));
+  CkPrintf("{%d} In RhoRealSpacePlane[%d,%d] acceptGradRhoVks_%d, Memory %.2lf MB\n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, doneGradRhoVks, CmiMemoryUsage()/(1024.0 * 1024));
 #endif
   doneGradRhoVks++;
+
+  // LSDA: when the down has all three, send them to the up instance
+  //  when up receives them, it flips doneGradRhoVksDn flag to true
+  //  doneGradRhoVksDn is always true for LDA. The subsequent if
+  //  statment will be modified to use that flag. 
+  // if(doneGradRhoVks==3 && mySpinIndex==1) sendToUp
+  // if(doneGradRhoVks==3 && mySpinIndex==0 && doneGradRhoVksDn ) computeGGAexc
+  // receiveFromDn might be last, so it needs a 
+  // if(doneGradRhoVks==3) computeGGAexc
+  // and doneGradRhoVksDn=true. 
+  // inside computeGGAexc - if LSDA is on, we set the doneGradRhoVksDn=false
+  // in the constructor we set doneGradRhoVksDn=true for LDA and false for LSDA
 
   //============================================================================
   // When you have rhoiRX,rhoiRY,rhoiRZ and Vks invoke gradient correction
@@ -717,7 +1110,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks() {
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
   double sumVks = 0, sumX = 0, sumY = 0, sumZ = 0;
-  for(int i = 0; i < ngridb*(ngrida+2); i++) {
+  for(int i = 0; i < myGrid_size; i++) {
     sumX += rhoIRX[i];
     sumY += rhoIRY[i];
     sumZ += rhoIRZ[i];
@@ -749,8 +1142,34 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks() {
 #if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
-    CPXCFNCTS::CP_getGGAFunctional(npts, nf1, nf2, nf3, density, rhoIRX, rhoIRY,
-        rhoIRZ, Vks, thisIndex.x, &exc_gga_ret, config.nfreq_xcfnctl);
+
+
+    if(cp_lsda==0)
+      {
+	// for LDA only! 
+	CPXCFNCTS::CP_getGGAFunctional(npts, nf1, nf2, nf3, density, rhoIRX, rhoIRY,
+				       rhoIRZ, Vks, thisIndex.x, &exc_gga_ret, 
+				       config.nfreq_xcfnctl);
+      }
+    else
+      {
+	// for LSDA we will wait for the down instance to send us rhoIR[XYZ]Dn 
+	// then we can compute the spin GGA functional which will overwrite
+	// the rhoIR[XYZ]Dn and rhoIR[XYZ] so they will be ready for whitebyrd
+
+	// CP_getSpinGGAfunctional() <-- has to be adapted from PINY
+    
+	// next every instance will do its own whitebyrd.  so you
+	// invoke the whitebyrd on this instance (below) and you send
+	// rhoIR[XYZ]Dn to the down instance (not implemented yet) so
+	// gradient corrections will work if the logic to receive the
+	// 3 gradients from the down instance is written and the logic
+	// to hold the up instance until all six gradients arrive is
+	// implemented the send of the 3 gradients from the down
+	// instance to the up is written and the send of the three
+	// whitebyrds from the up instance back to the down instance
+	// is written.
+      }
 #if CMK_TRACE_ENABLED
     traceUserBracketEvent(GradCorrGGA_, StartTime, CmiWallTimer());
 #endif
@@ -803,12 +1222,17 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
-  Send to RhoGspacePlane. RhoGspacePlane sends you back back another term.
-  After this routine, rhoIRX, rhoIRY and rhoIRZ are `free'.
-
-  Invoked once per algorithm step
-
- **/
+ * Send to RhoGspacePlane. RhoGspacePlane sends you back back another term.
+ * After this routine, rhoIRX, rhoIRY and rhoIRZ are `free'.
+ *
+ *  Invoked once per algorithm step
+ *
+ * LSDA: the receive of rhoIR[XYZ] from the up instance by the down
+ *  will trigger the call of this routine for the down instance. no dn
+ * suffix necessary for those in down.  all the trigger logic for the
+ * back multicast should be the same in down as up.
+ *
+ */
 //============================================================================
 void CP_Rho_RealSpacePlane::whiteByrdFFT(){
   //============================================================================
@@ -818,8 +1242,8 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
   // I) scale, real to complex FFT, perform FFT
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("[%d] In RhoRealSpacePlane[%d,%d] whiteByrdFFT, Memory %.2lf MB\n",
-      CkMyPe(), thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
+  CkPrintf("{%d} In RhoRealSpacePlane[%d,%d] whiteByrdFFT, Memory %.2lf MB\n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
 #endif
 #if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
@@ -831,7 +1255,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
     rhoIRZ[i] *= FFTscale;
   }
 
-#ifdef  _CP_DEBUG_RHOG_VERBOSE_
+#ifdef  _CP_DEBUG_RHOG_VERBOSE_DUMP
     double sumVks2 = 0.0, sumX2 = 0, sumY2 = 0, sumZ2 = 0;
     for(int i = 0; i < myGrid_size; i++) {
       sumX2 += rhoIRX[i];
@@ -858,8 +1282,8 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 
 #ifdef  _CP_DEBUG_RHOR_VERBOSE_
   double sumVks2 = 0, sumX2 = 0, sumY2 = 0, sumZ2 = 0;
-  double *Vks                = rho_rs.Vks;
-  for(int i = 0; i < ngridb*(ngrida+2); i++) {
+#ifdef  _CP_DEBUG_RHOR_VERBOSE_DUMP
+  for(int i = 0; i < myGrid_size; i++) {
     sumX2 += rhoIRX[i];
     sumY2 += rhoIRY[i];
     sumZ2 += rhoIRZ[i];
@@ -868,7 +1292,8 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
       CkPrintf("%lf\n", Vks[i]);
     }
   }
-  CkPrintf("[%d] RhoR[%d,%d] %d before white_fft %lf %lf %lf %lf\n", CkMyPe(), thisIndex.x,
+#endif
+  CkPrintf("{%d} RhoR[%d,%d] %d before white_fft %lf %lf %lf %lf\n", thisInstance.proxyOffset, thisIndex.x,
       thisIndex.y, doneHartVks, sumX2, sumY2, sumZ2, sumVks2);
 #endif
 
@@ -882,9 +1307,9 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
-  The white bird vks correction has returned from RhoG
-  Invoked once per algorithm step
- **/
+ * The white bird vks correction has returned from RhoG
+ * Invoked once per algorithm step
+ */
 //============================================================================
 void CP_Rho_RealSpacePlane::acceptWhiteByrd() {
 
@@ -892,12 +1317,12 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd() {
   // Add the whitebyrd contrib to vks
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("[%d] In RhoRealSpacePlane[%d,%d] acceptWhiteByrd, Memory %.2lf MB\n",
-      CkMyPe(), thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
+  CkPrintf("{%d} In RhoRealSpacePlane[%d,%d] acceptWhiteByrd, Memory %.2lf MB\n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
 #endif
   double *dataR  = rhoIRX;  // whitebyrd correction stored here
 
-#ifdef  _CP_DEBUG_RHOR_VERBOSE_
+#ifdef  _CP_DEBUG_RHOR_VERBOSE_DUMP
   double sum = 0.0;
   for (int i = 0; i < myGrid_size; i++) {
     sum += dataR[i];
@@ -911,6 +1336,13 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd() {
   for(int i = 0; i < myGrid_size;i++) {
     Vks[i] -= dataR[i];
   }
+
+  //============================================================================
+  // RAZfix:  Send vksHart to down instance and add to vks_dn:
+    if (cp_lsda==1 && mySpinIndex==0){
+      sendVksHartToVksDn();
+    }//endif
+
 
   //============================================================================
   // Are we done yet?
@@ -933,10 +1365,10 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd() {
 void CP_Rho_RealSpacePlane::acceptHartVks(){
   //============================================================================
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("[%d] In RhoRealSpacePlane[%d,%d] acceptHartVks, Memory %.2lf MB\n",
-      CkMyPe(), thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
+  CkPrintf("{%d} In RhoRealSpacePlane[%d,%d] acceptHartVks, Memory %.2lf MB\n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
 #endif
-#ifdef  _CP_DEBUG_RHOR_VERBOSE_
+#ifdef  _CP_DEBUG_RHOR_VERBOSE_DUMP
     double sum = 0.0;
     for (int i = 0; i < myGrid_size; i++) {
       sum += VksHart[i];
@@ -949,8 +1381,30 @@ void CP_Rho_RealSpacePlane::acceptHartVks(){
 #endif
   for(int i = 0; i < myGrid_size; i++)
   {
+#ifdef _NAN_CHECK_
+    CkAssert(isnan(Vks[i])==0);
+    CkAssert(isnan(VksHart[i])==0);
+#endif
+
     Vks[i] += VksHart[i];
   }
+
+//============================================================================
+// RAZfix:  add vksHart to vks_dn send VksDn to down instance
+    if (cp_lsda==1 && mySpinIndex==0){
+      for(int i = 0; i < myGrid_size; i++)
+	{   
+#ifdef _NAN_CHECK_
+	  CkAssert(isnan(VksDn[i])==0);
+#endif
+
+	  VksDn[i] += VksHart[i];
+#ifdef _NAN_CHECK_
+	  CkAssert(isnan(VksDn[i])==0);
+#endif
+	}
+      sendVksHartToVksDn();
+    }//endif
 
   //============================================================================
   // Are we done yet?
@@ -961,6 +1415,137 @@ void CP_Rho_RealSpacePlane::acceptHartVks(){
 }//end routine
 //============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * 
+ *  LSDA: Routine to send VksHart across spins and add to Vks_dn instance: 
+ */
+//============================================================================
+void CP_Rho_RealSpacePlane::sendVksHartToVksDn(){
+//Malloc a message
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  CkPrintf("{%d} In RhoRealSpacePlane[%d,%d] sendVksHartToVksDn, Memory %.2lf MB\n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
+#endif
+
+  int dataSize    = myGrid_size;
+
+  VksHartMsg *msg  = new (dataSize, 0) VksHartMsg;
+
+  // ADD new index here for Y
+  msg->idx        = thisIndex.x;
+  msg->datalen    = dataSize;
+  msg->time       = myTime;
+  double *dataR   = msg->data;
+
+  //============================================================================
+  //Pack the message it's a bit too big but we don't care.
+
+  for(int i=0; i<dataSize; i++){dataR[i]=VksDn[i];}
+#ifdef _NAN_CHECK_
+  for(int i=0; i<dataSize; i++){
+    CkAssert(isnan(dataR[i])==0);
+   }
+#endif
+
+  //============================================================================
+  //send the message across spin uber by FLIPPING the spin:
+  //Remember, this routine only gets called from the Up spin
+  //instance.
+
+  UberCollection upinstance=thisInstance;
+  // flip the spin
+  upinstance.idxU.s= !upinstance.idxU.s;
+  // get new offset
+  int Offset2RhoDn=upinstance.setPO();
+
+  UrhoRealProxy[Offset2RhoDn](thisIndex.x,thisIndex.y).acceptVksHartDn(msg);
+
+//============================================================================
+   }//end routine
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ *  LSDA:  Routine to accept VksHart from the Up Instance and add to Vks_dn
+ */
+//============================================================================
+void CP_Rho_RealSpacePlane::acceptVksHartDn(VksHartMsg *msg) {
+//============================================================================
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  CkPrintf("{%d} In RhoRealSpacePlane[%d,%d] acceptHartVksDn, Memory %.2lf MB\n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
+#endif
+
+  if(mySpinIndex!=1){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("Only the Dn Instance can receive VksHart.      \n");
+     CkPrintf("Think about how you got here.                  \n");
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+  }//endif
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->datalen ;i++){
+    CkAssert(isnan(msg->data[i])==0);
+  }//endif
+#endif
+
+//============================================================================
+// Retrieve the data and add to vks_dn total:
+
+   int dataSize  = msg->datalen;
+   int testSize  = myGrid_size;
+   
+   if(myTime!=msg->time || thisIndex.x!=msg->idx || 
+     dataSize!=testSize){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("Inconsistent Send/Receive across Spin Ubers in acceptVksHartDn.\n");
+     CkPrintf("Time    : %d %d \n",myTime,msg->time);
+     CkPrintf("Plane   : %d %d \n",thisIndex.x,msg->idx);
+     CkPrintf("Msg Size: %d %d \n",dataSize,testSize);
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+   }
+
+   double *VksHart  = (double *) msg->data; 
+
+   //Add to Vks (DOWN Instance!!):
+   for(int i=0; i<dataSize; i++){
+#ifdef _NAN_CHECK_
+
+  //    CkAssert(isnan(Vks[i])==0);
+
+    CkAssert(isnan(VksHart[i])==0);
+    CkAssert(isnan(Vks[i])==0);
+#endif
+    // NOTE: in the non-grad corr flow there is nothing in down's Vks
+    // to add this to, for debugging simplicity we're just doing an
+    // assignment.  
+    //Vks[i] += VksHart[i];
+     Vks[i] = VksHart[i];
+   }
+
+   delete msg;
+
+//============================================================================
+// Now do the Dn multicast:
+
+   doneHartVks = true;
+   doneRHart   = true;
+   doMulticastCheck();
+
+//--------------------------------------------------------------------------
+   }//end routine
+//============================================================================
+
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -969,6 +1554,11 @@ void CP_Rho_RealSpacePlane::acceptHartVks(){
  **/
 //============================================================================
 void CP_Rho_RealSpacePlane::RHartReport(){
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  CkPrintf("{%d} In RhoRealSpacePlane[%d,%d] RHartReport, Memory %.2lf MB\n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
+#endif
+
   doneRHart = true;
   doMulticastCheck();
   countRHart = 0;
@@ -979,14 +1569,18 @@ void CP_Rho_RealSpacePlane::RHartReport(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
-  If all the parts of exc-eext-hart are done, invoke blast of vks to states
- **/
+ * If all the parts of exc-eext-hart are done, invoke blast of vks to states
+ */
 //============================================================================
 void CP_Rho_RealSpacePlane::doMulticastCheck(){
   //============================================================================
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  CkPrintf("{%d} In RhoRealSpacePlane[%d,%d] doMulticastCheck, Memory %.2lf MB\n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
+#endif
 
   if(doneWhiteByrd && doneRHart && doneHartVks){
-#ifdef  _CP_DEBUG_RHOR_VERBOSE_
+#ifdef  _CP_DEBUG_RHOR_VERBOSE_DUMP
     char myFileName[MAX_CHAR_ARRAY_LENGTH];
     sprintf(myFileName, "vks_final_%d_%d.out", thisIndex.x, thisIndex.y);
     FILE *fp = fopen(myFileName,"w");
@@ -1010,8 +1604,8 @@ void CP_Rho_RealSpacePlane::doMulticastCheck(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
-  Send vks back to the states
- **/
+ * Send vks back to the states
+ */
 //============================================================================
 void CP_Rho_RealSpacePlane::doMulticast(){
   //============================================================================
@@ -1030,7 +1624,8 @@ void CP_Rho_RealSpacePlane::doMulticast(){
   doneWhiteByrd    = false;
   doneHartVks      = false;
   doneRHart        = false;
-
+  doneRhoDn        = (cp_lsda==1) ? false : true;
+  doneRhoUp        = false;
   //============================================================================
   // Send vks back to the states in real space
 
@@ -1042,6 +1637,7 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 
       VksMsg *msg = new (dataSize, 0) VksMsg;
       msg->pencil_offset_y       = thisIndex.y;
+      msg->myspin     = mySpinIndex;
       double *dataR   = msg->data;
 
       int offset = c_plane * (myGrid_length[MY_B] * 2 * (myGrid_length[MY_A]/2 + 1));
@@ -1050,6 +1646,11 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 
       for(int b = 0; b < myGrid_length[MY_B]; b++) {
         for(int a = 0; a < myGrid_length[MY_A]; a++) {
+
+#ifdef _NAN_CHECK_
+	  CkAssert(isnan(Vks[offset])==0);
+#endif
+
           dataR[dest_off] = Vks[offset];
           offset++;
           dest_off++;
@@ -1094,6 +1695,11 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 #endif
 #endif //else of _CP_DEBUG_RHOR_VKSE_
   }//endif
+  if (cp_lsda==1 && mySpinIndex==0){ //up will get the down spin
+    memset(VksDn, 0, myGrid_size*sizeof(double));
+  }
+  memset(Vks, 0, myGrid_size*sizeof(double));
+
   //============================================================================
 }//end routine
 //============================================================================
@@ -1103,8 +1709,8 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
-  RhoReal exit for debugging
- **/
+ * RhoReal exit for debugging
+ */
 //============================================================================
 void CP_Rho_RealSpacePlane::exitForDebugging(){
   CkPrintf("I am in the exitfordebuging rhoreal. Bye-bye\n");

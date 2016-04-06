@@ -58,13 +58,25 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(UberCollection _instance) :
     thisInstance(_instance)
 {
 #ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("[%d] Rho GS [%d] constructor\n", CkMyPe(), thisIndex);
+  CkPrintf("{%d} Rho GS [%d] constructor\n", thisInstance.proxyOffset, thisIndex);
 #endif
 
   myTime        = 1;
   divRhoX  = NULL;
   divRhoY  = NULL;
   divRhoZ  = NULL;
+
+  //RAZ:  Added spin flags;
+  cp_lsda              = simReadOnly.cp_lsda;
+  mySpinIndex          = thisInstance.idxU.s;
+
+  if(mySpinIndex==1 && cp_lsda!=1){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Error in spin index and LSDA flag in Hartree call.\n");
+    CkPrintf("Good-bye.\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
   doneWhiteByrd = 0;
   usesAtSync = true;
@@ -104,8 +116,8 @@ void CP_Rho_GSpacePlane::init()
   numPoints = (*myPoints).size();
 
 #ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("[%d] Rho GS [%d] init: grid size %d %d %d, numPoints %d\n",
-      CkMyPe(), thisIndex, myGrid_length[0], myGrid_length[1], myGrid_length[2],
+  CkPrintf("{%d} Rho GS [%d] init: grid size %d %d %d, numPoints %d\n",
+      thisInstance.proxyOffset, thisIndex, myGrid_length[0], myGrid_length[1], myGrid_length[2],
       numPoints);
 #endif
 
@@ -145,7 +157,7 @@ CP_Rho_GSpacePlane::~CP_Rho_GSpacePlane(){
 //============================================================================
 void CP_Rho_GSpacePlane::acceptRhoData() {
 #ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("[%d] Rho GS [%d] acceptRhoData\n", CkMyPe(), thisIndex);
+  CkPrintf("{%d} Rho GS [%d] acceptRhoData\n", thisInstance.proxyOffset, thisIndex);
 #endif
 #ifdef _CP_DEBUG_RHOG_RHOG_
   char myFileName[100];
@@ -183,8 +195,24 @@ void CP_Rho_GSpacePlane::acceptRhoData() {
       msg = base_msg;
     }
     msg->size        = numPoints;
+    //------------------------------------------------
+    //RAZ: This is important:  
+    // This is spin modified logic to send to up 
+    // instance GHartExt Calc.
+    // No way spin down should go there.
+    // We are sending Grho from data_out
+    //------------------------------------------------
+    if (mySpinIndex==0){
+      UrhoGHartExtProxy[thisInstance.proxyOffset](thisIndex,j).acceptData(msg);
+    }else if(mySpinIndex==1){
+      UberCollection upinstance=thisInstance;
+      // flip the spin
+      upinstance.idxU.s= !upinstance.idxU.s;
+      // get new offset
+      int Offset2RhoUp=upinstance.setPO();
+      UrhoGHartExtProxy[Offset2RhoUp](thisIndex,j).acceptData(msg);
+    }//endif spin logic
 
-    UrhoGHartExtProxy[thisInstance.proxyOffset](thisIndex,j).acceptData(msg);
   }//endfor : atmType parallelization
 #else // Hartree is off, chill
   if(thisIndex == 0) {
@@ -279,7 +307,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
   }//endfor
 
 #if _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("[%d] Rho GS [%d] divSums %lf %lf %lf\n", CkMyPe(), thisIndex,
+  CkPrintf("{%d} Rho GS [%d] divSums %lf %lf %lf\n", thisInstance.proxyOffset, thisIndex,
     sumX, sumY, sumZ);
 #endif
 
@@ -317,7 +345,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
   //============================================================================
 
 #ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("[%d] Rho GS [%d] acceptWhiteByrd_%d\n", CkMyPe(), thisIndex,
+  CkPrintf("{%d} Rho GS [%d] acceptWhiteByrd_%d\n", thisInstance.proxyOffset, thisIndex,
       doneWhiteByrd);
 #endif
 

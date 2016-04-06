@@ -123,7 +123,7 @@ class Ortho : public CBase_Ortho
         CLA_Matrix_interface matA3, CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
         orthoConfig &_cfg,
         CkArrayID step2Helper,
-        int timeKeep, CkGroupID _oMCastGID, CkGroupID _oRedGID);
+	  int timeKeep, CkGroupID _oMCastGID, CkGroupID _oRedGID, bool lsda);
 
     /// Trigger the creation of appropriate sections of paircalcs to talk to. Also setup internal comm sections
     void makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, CkArrayID symAID, CkArrayID asymAID);
@@ -207,6 +207,7 @@ class Ortho : public CBase_Ortho
     bool step3done;
 
   private:
+    bool lsda;
     orthoConfig cfg;
     int timeKeep;
     internalType *orthoT; // only used on [0,0]
@@ -288,14 +289,15 @@ inline double Ortho::array_diag_max(int sizem, int sizen, internalType *array)
   }
   else
   { //on diagonal 
-    max_ret = myabs(array[0]-2.0);
+    double diag= (lsda) ? 1.0d : 2.0d;
+    max_ret = myabs(array[0]-diag);
     for(int i=0;i<sizem;i++)
     {
       for(int j=0;j<sizen;j++)
       {
         absval = myabs(array[i*sizen+j]);
         if(i == j)
-          absval = myabs(absval - 2.0);
+          absval = myabs(absval - diag);
         max_ret = (max_ret>absval) ? max_ret : absval;
       }
     }//endfor

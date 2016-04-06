@@ -985,7 +985,7 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
 
   CPNONLOCAL::eesProjGchare(ncoef,psi,k_x,k_y,k_z,ihave_g0,ind_g0,iterNL,
       d_re,d_im,dyp_re,dyp_im,projPsiGTmp,ind_gspl,h_gspl,
-      thisIndex.x,thisIndex.y,kpoint_ind,config.nfreq_cpnonlocal_eesfwd);
+			    thisIndex.x,thisIndex.y,kpoint_ind,config.nfreq_cpnonlocal_eesfwd, thisInstance.proxyOffset);
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(eesProjG_, StartTime, CmiWallTimer());    
 #endif
@@ -1313,7 +1313,7 @@ void CP_State_ParticlePlane::computeNLEesForces(){
 #endif    
 
   CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,nkx0,projPsiGTmp,fPsiG,dyp_re,dyp_im,
-      k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL,config.nfreq_cpnonlocal_eesbk);
+			       k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL,config.nfreq_cpnonlocal_eesbk, thisInstance.proxyOffset);
   fftcache->freeCacheMem("CP_State_ParticlePlane::computeNLEesForces");
 
 #if CMK_TRACE_ENABLED

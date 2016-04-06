@@ -73,12 +73,15 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
   }//endif
 
+  //RAZ: I got rid of this roadblock
+  /****
   if(nspin>1){
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
     PRINTF("    Danger, Danger, nspin > 1 = %d\n",nspin);
     PRINTF("    This is only experimentally supported\n");
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
   }//endif
+  ****/
 
   if(ntemper>1){
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");

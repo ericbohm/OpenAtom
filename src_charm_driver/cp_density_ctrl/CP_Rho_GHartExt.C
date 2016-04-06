@@ -27,6 +27,10 @@
  *   ffted and shipped back to rhoReal. The ewald is partly ffted and shipped back
  *   to CP_Rho_RHartExt to get the forces on the atoms. Done!
  *
+ *  LSDA there are two contributions to the density rho=rhoUp+rhoDn
+ *   Both have to arrive before you can proceed. 
+ *   you also need vks to have been computed and sent back to down
+ *   
  */
 //============================================================================
 
@@ -98,6 +102,12 @@ CP_Rho_GHartExt::CP_Rho_GHartExt( UberCollection _instance) :
   eext_ret        = 0.0;
   ewd_ret         = 0.0;
   countAtmSFtot   = 0;
+  CountDebug      = 0;
+
+  //RAZ: added spin variables:
+  numAcceptDensity = 0;
+  mySpinIndex      = thisInstance.idxU.s;
+  cp_lsda          = simReadOnly.cp_lsda;
 
   //==================================================================================
   // AtmTyp parallelization
@@ -316,22 +326,21 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
   // Check the flow of control to see if we can use the data.
 
 #ifdef _CP_GHART_VERBOSE_
-  CkPrintf("[%d] Ghart %d Here in acceptData \n", CkMyPe(), thisIndex.x);
+  CkPrintf("[%d] Ghart %d Here in acceptData numaccept density %d\n", thisInstance.proxyOffset, thisIndex.x, numAcceptDensity);
 #endif
 
   int cp_min_opt = simReadOnly.cp_min_opt;
-  iteration++;
 
-  // the atoms haven't moved yet
-  if(cp_min_opt == 0){
-    if(UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != iteration-1){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Flow of Control Error in GHartExtVks : atoms slow %d %d\n",
-          UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration,iteration);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
+
+  //RAZ: this is only for spin up instance:
+  if(mySpinIndex!=0){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("No Ubers for CP_Rho_GHartExt!!  Good-bye.\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
   }//endif
+
+ 
 
 #ifdef _NAN_CHECK_
   for(int i = 0; i < msg->size; i++){
@@ -344,16 +353,46 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
   // Copy out the data and flip arrival flag
 
   CkAssert(numPoints == msg->size);
-
-  if(simReadOnly.ees_eext_on == 1) {
-    for(int p = 0; p < numPoints; p++) {
-      Rho[p] = msg->data[p];
-    }
-  } else {
-    for(int p = 0; p < numPoints; p++) {
-      Rho[(*myPoints)[p].offset] = msg->data[p];
+  numAcceptDensity++;
+  if(numAcceptDensity==1){ // do normal stuff
+    iteration++;
+    if(cp_min_opt == 0){
+      if(UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != iteration-1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Flow of Control Error in GHartExtVks : atoms slow %d %d\n",
+          UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration,iteration);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+      }//endif
+    }//endif
+    if(simReadOnly.ees_eext_on == 1) {
+      for(int p = 0; p < numPoints; p++) {
+	Rho[p] = msg->data[p];
+      }
+    } else {
+      for(int p = 0; p < numPoints; p++) {
+	Rho[(*myPoints)[p].offset] = msg->data[p];
+      }
     }
   }
+  else // add it to the one from the other spin
+    {
+      if(simReadOnly.ees_eext_on == 1) {
+	for(int p = 0; p < numPoints; p++) {
+	  Rho[p] += msg->data[p];
+	}
+      } else {
+	for(int p = 0; p < numPoints; p++) {
+	  Rho[(*myPoints)[p].offset] += msg->data[p];
+	}
+      }
+    }
+
+  // spin case needs both up and dn before it computes
+  if( (cp_lsda==1 && numAcceptDensity==2) || (cp_lsda==0) ){ 
+    operateOnData();
+    numAcceptDensity=0;
+  }//endif
 
 #ifdef _CP_DEBUG_RHOHART
   char myFileName[100];
@@ -368,6 +407,31 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 #endif
 
   delete msg;
+//============================================================================
+  }//end routine
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * LSDA: The density arrives from acceptData ONCE a time step 
+ */
+//============================================================================
+void CP_Rho_GHartExt::operateOnData(){
+//============================================================================
+// Check the flow of control to see if we can use the data.
+#ifdef _CP_GHART_VERBOSE_
+  CkPrintf("{%d} In CP_Rho_GHartExt[%d,%d] operateOnData, Memory %.2lf MB\n",
+      thisInstance.proxyOffset, thisIndex.x, thisIndex.y, CmiMemoryUsage()/(1024.0 * 1024));
+#endif
+
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int cp_min_opt = sim->cp_min_opt;
+
+//============================================================================
+// Flip arrival flag
 
   densityHere = 1;
 
@@ -531,7 +595,7 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(){
   //============================================================================
   launchFlag   = 1;
 
-#ifdef _CP_RHART_VERBOSE_
+#ifdef _CP_RHART_VERBOSE_DUMP
   if(iterAtmTyp == 0) {
     std::vector< gridPoint > & r_myPoints_ext = (*myPoints_ext);
     for(int i = 0; i < numPoints; i++) {
@@ -565,7 +629,7 @@ void CP_Rho_GHartExt::FFTEesBck(){
 
   if(iterAtmTyp > 1 && densityHere == 0) {
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Yo dawg, the density has not arrived. You can't keep going. GhartEext\n");
+    CkPrintf("{%d} Yo dawg, the density has not arrived. You can't keep going. GhartEext\n", thisInstance.proxyOffset);
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif

@@ -31,6 +31,27 @@ void getSplitDecomp(int *,int *,int *,int , int ,int );
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+//RAZ:  Added message for sending Dn Density to Up Instance
+//      Used in sendRhoDnToRhoUp();
+//      See also addition to cpaim.ci file
+class RhoRDnMsg : public CMessage_RhoRDnMsg{
+  public:
+  int datalen;
+  int time;
+  double *data;
+  int idx;
+  };
+
+class VksHartMsg : public CMessage_VksHartMsg{
+ public:
+  int datalen;
+  int time;
+  double *data;
+  int idx;
+};
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class InitDensity : public CkMcastBaseMsg, public CMessage_InitDensity {
   public:
     int grid_offset_b, grid_num_b;
@@ -40,6 +61,7 @@ class InitDensity : public CkMcastBaseMsg, public CMessage_InitDensity {
 class VksMsg : public CkMcastBaseMsg, public CMessage_VksMsg {
   public:
     int pencil_offset_y;
+    int myspin;
     double *data;
 };
 
@@ -76,6 +98,7 @@ class FFT_Done_Msg: public CkMcastBaseMsg, public CMessage_FFT_Done_Msg {
 class RhoGHartMsg: public CMessage_RhoGHartMsg {
   public:
     int size;
+    int mySpinIndex;
     complex *data;
 };
 //============================================================================
@@ -138,6 +161,9 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
     int countProduct;
     int numCookies;
     int istate;
+    //RAZ: Added spin index:
+    int mySpinIndex;
+
     int *grid_offset_b, *grid_num_b;
     double* hartree1;
     int rho_rpencil_offset_x, rho_rpencil_num_y;
@@ -171,6 +197,14 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
     void init();
     void acceptDensity(CkReductionMsg *);
     void handleDensityReduction();
+
+
+    //RAZ: Added Spin dn declarations:
+    void handleDensityReductionDn();  
+    void sendRhoDnToRhoUp();          
+    void acceptDensityDn(RhoRDnMsg *);
+
+    
     void launchEextRNlG();
     void energyComputation();
     void launchNLRealFFT();
@@ -188,8 +222,20 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
     void RHartReport();
     void acceptGradRhoVks();
 
+    //RAZ:  Added vks to vks_dn routine:
+    void sendVksHartToVksDn();
+    void acceptVksHartDn(VksHartMsg *);
+    void fftRhoRtoRhoG();
+    void launchNlG();
+    void launchEextR();
+
   private:
     const UberCollection thisInstance;
+    //RAZ:  added spin vars here:
+    int mySpinIndex;
+    int cp_lsda;
+    bool doneRhoUp;
+    bool doneRhoDn;
     int rhoKeeperId;
     int doneGradRhoVks; // count 1,2,3 = x,y,z all done
     bool doneWhiteByrd;
@@ -208,13 +254,19 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 
     //data
     double *Vks;
+    double *VksDn;
     double *density;
+    double *densityDn;
     double *rhoIRX,*rhoIRY,*rhoIRZ;
+    double *rhoIRXDn,*rhoIRYDn,*rhoIRZDn;
     double *VksHart;
     // complex pointers to the same memory as the corresponding double array
     complex *VksC;
+    complex *VksDnC;
     complex *densityC;
+    complex *densityDnC;
     complex *rhoIRXC,*rhoIRYC,*rhoIRZC;
+    complex *rhoIRXDnC,*rhoIRYDnC,*rhoIRZDnC;
     complex *VksHartC;
 
 };
@@ -246,6 +298,9 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
     void exitForDebugging();
     void launchNlG();
 
+    //RAZ: added spin dn send to Vks routine 
+    void sendRhoGDntoHartVks();
+
     std::vector< gridPoint > * myPoints;
     int myGrid_length[3];
     int myGrid_start[3], myGrid_end[3];
@@ -261,6 +316,11 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
     complex *divRhoX;
     complex *divRhoY;
     complex *divRhoZ;
+
+    //RAZ:  added spin vars here:
+    int mySpinIndex;
+    int cp_lsda;
+
 
     /* return values from rhoGSubroutine in subroutine.C */
     double ehart_ret, eext_ret, ewd_ret;
@@ -355,7 +415,15 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
     void doneAtmSF_FFT();
     void doneAtmSF_Multicast(FFT_Done_Msg*);
 
+    
+    void operateOnData();
+
     std::vector< gridPoint > * myPoints;
+    //RAZ:  added spin vars here:
+    int numAcceptDensity;
+    int mySpinIndex;
+    int cp_lsda;
+
     int myGrid_length[3];
     int myGrid_start[3], myGrid_end[3];
     int myGrid_size, numPoints;

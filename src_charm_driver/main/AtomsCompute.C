@@ -821,24 +821,24 @@ void AtomsCompute::outputAtmEnergy() {
   if(myid==0 && do_output){
     fprintf(temperScreenFile,"AtomsCompute printing energies computed in iteration %d\n",iteration);
     if(iperd!=0){
-      fprintf(temperScreenFile,"Iter [%d] EWALD_REAL  = %5.8lf\n",iteration, pot_ewd_rs_now);
-      fprintf(temperScreenFile,"Iter [%d] EWALD_SELF  = %5.8lf\n",iteration, vself);
-      fprintf(temperScreenFile,"Iter [%d] EWALD_BGR   = %5.8lf\n",iteration, vbgr);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_REAL         = %5.8lf\n",thisInstance.idxU.x, iteration, pot_ewd_rs_now);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_SELF         = %5.8lf\n",thisInstance.idxU.x, iteration, vself);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_BGR          = %5.8lf\n",thisInstance.idxU.x, iteration, vbgr);
       if(iperd!=3){
-        fprintf(temperScreenFile,"Iter [%d] EWALD_Perd  = %5.8lf\n",iteration, potPerdCorr);
+        fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_Perd         = %5.8lf\n",thisInstance.idxU.x, iteration, potPerdCorr);
       }//endif
     }else{
-      fprintf(temperScreenFile,"Iter [%d] ATM_COUL    = %5.8lf\n",iteration, pot_ewd_rs_now);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] ATM_COUL           = %5.8lf\n",thisInstance.idxU.x, iteration, pot_ewd_rs_now);
     }//endif
     if(cp_grimme==1){
-      fprintf(temperScreenFile,"Iter [%d] Grimme VdW  = %5.8lf\n",iteration,potGrimmeVdw_now);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] Grimme VdW         = %5.8lf\n",iteration,thisInstance.idxU.x, potGrimmeVdw_now);
     }//endif
     if(move_atoms==1){
-      fprintf(temperScreenFile,"Iter [%d] atm eKin    = %5.8lf\n",iteration, eKinetic);
-      fprintf(temperScreenFile,"Iter [%d] atm Temp    = %5.8lf\n",iteration, (2.0*eKinetic*BOLTZ/free_atm));
-      fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",iteration, fmag);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] atm eKin           = %5.8lf\n",thisInstance.idxU.x, iteration, eKinetic);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] atm Temp           = %5.8lf\n",thisInstance.idxU.x, iteration, (2.0*eKinetic*BOLTZ/free_atm));
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] atm fmag           = %5.8lf\n",thisInstance.idxU.x, iteration, fmag);
       if(numPIMDBeads>1){
-        fprintf(temperScreenFile,"Iter [%d] Bead Chain  = %5.8lf\n",iteration, potPIMDChain);
+        fprintf(temperScreenFile,"[b=%d] Iter [%d] Bead Chain         = %5.8lf\n",thisInstance.idxU.x, iteration, potPIMDChain);
       }//endif
       if(iextended_on==1){
         double free_Nhc;
@@ -847,12 +847,12 @@ void AtomsCompute::outputAtmEnergy() {
         }else{
           free_Nhc    = free_atm*((double)(len_nhc-1));
         }//endif
-        fprintf(temperScreenFile,"Iter [%d] atm eKinNhc = %5.8lf\n",iteration, eKineticNhc);
-        fprintf(temperScreenFile,"Iter [%d] atm TempNHC = %5.8lf\n",iteration, (2.0*eKineticNhc*BOLTZ/free_Nhc));
-        fprintf(temperScreenFile,"Iter [%d] atm potNHC  = %5.8lf\n",iteration, potNhc);
+        fprintf(temperScreenFile,"[b=%d] Iter [%d] atm eKinNhc        = %5.8lf\n",thisInstance.idxU.x, iteration, eKineticNhc);
+        fprintf(temperScreenFile,"[b=%d] Iter [%d] atm TempNHC        = %5.8lf\n",thisInstance.idxU.x, iteration, (2.0*eKineticNhc*BOLTZ/free_Nhc));
+        fprintf(temperScreenFile,"[b=%d] Iter [%d] atm potNHC         = %5.8lf\n",thisInstance.idxU.x, iteration, potNhc);
       }//endif
     }else{
-      fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",iteration, fmag);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] atm fmag           = %5.8lf\n",thisInstance.idxU.x, iteration, fmag);
     }//endif
   }//endif
 

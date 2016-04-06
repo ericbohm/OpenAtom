@@ -332,6 +332,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   // Used to stay synchronized with the atoms cache, instance controller, etc.
   iteration     = 0;
 
+  //RAZ: Added spin index if needed:
+  mySpinIndex          = thisInstance.idxU.s;
+
   istate_ind           = thisIndex.x;
   iplane_ind           = thisIndex.y;
   ibead_ind            = thisInstance.idxU.x;
@@ -575,6 +578,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     ArrayElement2D::pup(p);
     UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).pup(p);
     //control flags and functions reference by thread are public
+    //RAZ: Spin:
+    p|mySpinIndex;
     p|istate_ind;
     p|iplane_ind;
     p|ibead_ind; p|kpoint_ind; p|itemper_ind; p|ispin_ind;
@@ -813,7 +818,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
       }//endif
+      //#define START_WITH_LDA_STATES
+#ifdef START_WITH_LDA_STATES
 
+      for(int i=0; i<numPoints; i++)
+	{dataToBeSent[i].re=dataToBeSent[i].re/sqrt(2);dataToBeSent[i].im=dataToBeSent[i].im/sqrt(2);}
+#endif       
       UgSpacePlaneProxy[thisInstance.proxyOffset](ind_state, x).initGSpace(
           numPoints,dataToBeSent,numPointsV,vdataToBeSent,
           nx,ny,nz,ngridaNL,ngridbNL,ngridcNL,istart_typ_cp);
@@ -1653,11 +1663,11 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     bzero(ppForces,ncoef*sizeof(complex));
 #endif
 
-
+    //#define _CP_GS_DUMP_VKS_
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrix("vksBf",(double *)ppForces, 1,
+    dumpMatrixUber(thisInstance.proxyOffset,"vksBf",(double *)ppForces, 1,
         gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
-    dumpMatrix("forceBf",(double *)forces, 1,
+    dumpMatrixUber(thisInstance.proxyOffset,"forceBf",(double *)forces, 1,
         gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 #endif
 
@@ -1706,6 +1716,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     CPNONLOCAL::CP_eke_calc(ncoef,istate,forces,psi_g,k_x,k_y,k_z,g2,eke_ret,config.doublePack,nkx0,
         kpoint_ind,config.nfreq_cpnonlocal_eke);
 
+    //    CkPrintf("{%d} combineForcesGetEke: %d %d eke %.10lf\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y, gs.eke_ret);    
     contribute(sizeof(double), &gs.eke_ret, CkReduction::sum_double, 
         CkCallback(CkIndex_InstanceController::printEnergyEke(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
     //isEnergyReductionDone = false; ///@note: This doesnt seem necessary here and commenting out has not affected simple tests. This flag is reset at the start of the iter itself.
@@ -1924,9 +1935,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     char name2[100];
     sprintf(name1, "lambdaBf.iter.%d", iteration);
     sprintf(name2, "psiBf.iter.%d", iteration);
-    dumpMatrix(name1, (double *)force, 1,
+    dumpMatrixUber(thisInstance.proxyOffset,name1, (double *)force, 1,
         gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
-    dumpMatrix(name2,(double *)psi, 1,
+    dumpMatrixUber(thisInstance.proxyOffset, name2,(double *)psi, 1,
         gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 #endif
 
@@ -2229,7 +2240,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     // Debug Schmoo
 
 #ifdef _CP_GS_DUMP_LAMBDA_
-    dumpMatrix("lambdaAf",(double *)force, 1, gs.numPoints*2,
+    dumpMatrixUber(thisInstance.proxyOffset,"lambdaAf",(double *)force, 1, gs.numPoints*2,
         thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 #endif
 
@@ -2685,7 +2696,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       CkAssert(finite(forces[i].im));
     }
 #endif
-
     fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
     CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
         coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
@@ -2988,7 +2998,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 
 #ifdef _CP_GS_DUMP_PSI_
-    dumpMatrix("psiBfp",(double *)psi, 1, gs.numPoints*2,
+    dumpMatrixUber(thisInstance.proxyOffset, "psiBfp",(double *)psi, 1, gs.numPoints*2,
         thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 #endif
 
@@ -3241,7 +3251,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     // (E) Debug psi
 
 #ifdef _CP_GS_DUMP_PSI_
-    dumpMatrix("psiAf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,
+    dumpMatrixUber(thisInstance.proxyOffset, "psiAf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,
         thisIndex.x,0,false);
 #endif
 
@@ -4080,7 +4090,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif
 #endif
 
-    if(thisInstance.idxU.y>0)
+    if(thisInstance.idxU.y>0 || thisInstance.idxU.s>0)
     { // you get no rho
       isub+=5;
     }
@@ -4130,15 +4140,18 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     double rnatm    = ((double)(ag->natm))/96.0;  // relative to 32 waters
 
     fprintf(temperScreenFile,"GSpacePlane printing energies computed in iteration %d\n",iteration);
-    fprintf(temperScreenFile,"Iter [%d] EHART       = %5.8lf\n", iteration, ehart_total);
-    fprintf(temperScreenFile,"Iter [%d] EExt        = %5.8lf\n", iteration, eext_total);
-    fprintf(temperScreenFile,"Iter [%d] EWALD_recip = %5.8lf\n", iteration, ewd_total);
-    fprintf(temperScreenFile,"Iter [%d] EEXC        = %5.8lf\n", iteration, eexc_total);
-    fprintf(temperScreenFile,"Iter [%d] EGGA        = %5.8lf\n", iteration, egga_total);
-    fprintf(temperScreenFile,"Iter [%d] EEXC+EGGA   = %5.8lf\n", iteration, eexc_total+egga_total);
-    fprintf(temperScreenFile,"Iter [%d] EKE         = %5.8lf\n", iteration, eke_total);
-    fprintf(temperScreenFile,"Iter [%d] ENL(EES)    = %5.8lf\n", iteration, enl_total);
-    fprintf(temperScreenFile,"Iter [%d] MagForPsi   = %5.8lf | %5.8lf per entity\n", iteration,fmagPsi_total0,fmagPsi_total0/rnatm);
+    if(thisInstance.idxU.y==0 && thisInstance.idxU.s==0)
+      {
+	fprintf(temperScreenFile,"[b=%d] Iter [%d] EHART              = %5.8lf\n", myBeadIndex, iteration, ehart_total);
+	fprintf(temperScreenFile,"[b=%d] Iter [%d] EExt               = %5.8lf\n", myBeadIndex, iteration, eext_total);
+	fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_recip        = %5.8lf\n", myBeadIndex, iteration, ewd_total);
+	fprintf(temperScreenFile,"[b=%d] Iter [%d] EEXC               = %5.8lf\n", myBeadIndex, iteration, eexc_total);
+	fprintf(temperScreenFile,"[b=%d] Iter [%d] EGGA               = %5.8lf\n", myBeadIndex, iteration, egga_total);
+	fprintf(temperScreenFile,"[b=%d] Iter [%d] EEXC+EGGA          = %5.8lf\n", myBeadIndex, iteration, eexc_total+egga_total);
+      }
+    fprintf(temperScreenFile,"[s=%d,k=%d,b=%d] Iter [%d] EKE        = %5.8lf\n", mySpinIndex, myKptIndex, myBeadIndex, iteration, eke_total);
+    fprintf(temperScreenFile,"[s=%d,k=%d,b=%d] Iter [%d] ENL(EES)   = %5.8lf\n", mySpinIndex, myKptIndex, myBeadIndex, iteration, enl_total);
+    fprintf(temperScreenFile,"[s=%d,k=%d,b=%d] Iter [%d] MagForPsi  = %5.8lf | %5.8lf per entity\n", mySpinIndex, myKptIndex, myBeadIndex, iteration, fmagPsi_total0,fmagPsi_total0/rnatm);
   //-----------------------------------------------------------------------------
   }// end routine : outputEnergies
   //==============================================================================

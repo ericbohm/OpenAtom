@@ -25,6 +25,13 @@ class CPXCFNCTS{
         const int , const int , const int , const int ,
         double *,double *,double *,double *,int nfreq_cmi_update = 8);
 
+    //RAZ:  Added lsda call:
+    static void CP_exc_lsda_calc(
+          const int , const int , const int , const int ,
+          double *,double *,double *,double *,double *, double*, 
+	  int nfreq_cmi_update = 8);
+
+
     static void CP_div_rho_gspace_calc( 
         complex* ,const int *, const int *, const int *, 
         int size, complex* , complex* , complex* );

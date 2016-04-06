@@ -143,12 +143,15 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_in
   //=======================================================================
   // Check Sum of cp_valences is equal to the number of states in set file  
 
+  //RAZ: Let's get rid of this roadblock
+  /****
   if(cp_lda!=1 && cp_lsda !=0){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("GenWave does not support lsda\n");
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
   }//endif
+  ****/
 
   if(nab_initio == 0){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

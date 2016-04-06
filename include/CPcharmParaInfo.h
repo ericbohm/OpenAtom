@@ -157,6 +157,7 @@ class CPcharmParaInfo {
    int cp_min_cg;
    int cp_min_std;
    int cp_force_complex_psi;
+   int cp_lsda;             //RAZ: Added cp_lsda
    int sizeX, sizeY, sizeZ;
    int rhoRsubplanes;
    int ees_eext_on;         //Opt: EES option on for external energy
@@ -275,6 +276,7 @@ class CPcharmParaInfo {
      cp_min_cg    = s.cp_min_cg;
      cp_min_std   = s.cp_min_std;
      cp_force_complex_psi = s.cp_force_complex_psi;
+     cp_lsda      = s.cp_lsda;         //RAZ: added cp_lsda
      rhoRsubplanes= s.rhoRsubplanes;
      sizeX        = s.sizeX;
      sizeY        = s.sizeY;
@@ -823,6 +825,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       p|cp_min_opt; p|cp_min_update; p|cp_min_std; p|cp_force_complex_psi;
       p|cp_bomd_opt;
       p|cp_min_cg; p|rhoRsubplanes;
+      p|cp_lsda;    //RAZ:  Added cp_lsda
       p|sizeX;      p|sizeY;      p|sizeZ;  
       p|ees_eext_on;    p|ees_nloc_on;
       p|ngrid_nloc_a;  p|ngrid_nloc_b;   p|ngrid_nloc_c;

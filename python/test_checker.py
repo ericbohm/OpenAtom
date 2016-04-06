@@ -40,8 +40,8 @@ def snip_iteration(num, inputfile, outputfile):
 			if bad_key_flag != 0-(len(bad_key)):
 				continue
 
-			# Strip off the 'Iter [x] ' before each line
-			counter = len(iter_num) + 1
+			# Strip off the 'Bead and Iter prefixes ' before each line
+			counter = line.find(iter_num,0,len(line)-1) + len(iter_num) + 1
 			line_new = ''
 			while counter < len(line) - 1:
 				line_new = line_new + line[counter]

@@ -31,7 +31,7 @@ namespace cp {
     /**
      * Create the map objects and also all the chare arrays needed for an Ortho instance
      */
-    CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, const startup::PCMapConfig mapCfg)
+    CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, const startup::PCMapConfig mapCfg,  bool lsda)
     {
       CkPrintf("Building Ortho Chares\n");
 
@@ -308,7 +308,7 @@ namespace cp {
               cfg,
               helperAID,
               timekeep,
-              orthoMcastGID, orthoRedGID);
+              orthoMcastGID, orthoRedGID, lsda);
 
           if(config.useOrthoHelpers)
           {

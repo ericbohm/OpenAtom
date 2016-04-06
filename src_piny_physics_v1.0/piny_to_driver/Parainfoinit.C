@@ -52,6 +52,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int ntime           = gentimeinfo->ntime;
   int btime           = gentimeinfo->btime;
   int ibinary_opt     = cpopts->iread_coef_binary;
+
+  //RAZ: cp_lsda added to sim:
   int cp_lsda         = cpopts->cp_lsda;
   int cp_lda          = cpopts->cp_lda;
   int cp_norb_rot_kescal = cpopts->cp_norb_rot_kescal;
@@ -224,7 +226,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
       sim->temper_t_ext[0] = kT;
       sim->t_ext_index[0] = 0;
     }
-
+  sim->cp_lsda    = cp_lsda;
   //-----------------------------------------------------------------------
 }//end routine
 //========================================================================

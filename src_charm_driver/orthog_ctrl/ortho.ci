@@ -29,7 +29,8 @@ module ortho
         CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
         cp::ortho::orthoConfig &_cfg,
         CkArrayID step2Helper,
-        int timekeep, CkGroupID oMCastGID, CkGroupID oRedGID
+        int timekeep, CkGroupID oMCastGID, CkGroupID oRedGID,
+	bool lsda
         );
     entry Ortho();
     entry void acceptSectionLambda(CkReductionMsg *msg);

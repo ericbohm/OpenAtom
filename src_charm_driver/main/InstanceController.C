@@ -424,6 +424,7 @@ void InstanceController::printEnergyEke(CkReductionMsg *m){
 #ifdef _CP_DEBUG_SFNL_OFF_
   CkPrintf("EKE         = OFF FOR DEBUGGING\n");
 #endif
+
   UberCollection thisInstance(thisIndex);
   if(config.UberKmax>1) // report to temper master
     ENLEKECollectorProxy[thisInstance.idxU.z].acceptEKE(d);

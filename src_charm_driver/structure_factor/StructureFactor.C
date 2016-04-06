@@ -47,7 +47,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
     if(UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != 
         UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp || 
         UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != (iteration_src-1)){
-      CkPrintf("Flow of Control Warning  in computeSF : atoms slow\n");
+      CkPrintf("Flow of Control Warning  in computeSF : atoms slow at iter [%d] egroup iter [%d] caller [%d]\n", UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration,UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp, iteration_src) ;
       SFDummyMsg *newMsg = new(8*sizeof(int)) SFDummyMsg;
       CkSetQueueing(newMsg, CK_QUEUEING_IFIFO);
       *(int*)CkPriorityPtr(newMsg) = config.sfpriority;

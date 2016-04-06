@@ -136,7 +136,7 @@ module ENL_EKE_Collector
 
   // across all beads and k-points and spin, not across tempers
   array [1D] ENL_EKE_Collector {
-    entry ENL_EKE_Collector(int clients, int outputs, std::string dirname);
+    entry ENL_EKE_Collector(int clients, int outputs, int beads, std::string dirname);
     entry void acceptENL(double enl);
     entry void acceptEKE(double eke);
   };
@@ -378,6 +378,10 @@ mainmodule cpaimd {
   message FFT_Done_Msg;
 
   message RPPPFFTMsg {complex data[];};
+  
+  message RhoRDnMsg  {double data[];};
+
+  message VksHartMsg  {double data[];};
 
   message RhoGHartMsg {complex data[];};
 
@@ -390,8 +394,10 @@ mainmodule cpaimd {
     entry void init();
     entry void exitForDebugging();
     entry void acceptDensity(CkReductionMsg *m);
+    entry void acceptDensityDn(RhoRDnMsg *m);
     entry void acceptHartVks();
     entry void acceptGradRhoVks();
+    entry void acceptVksHartDn(VksHartMsg *msg);
     entry void RHartReport();
     entry void isAtSync(int);
     entry void acceptWhiteByrd();

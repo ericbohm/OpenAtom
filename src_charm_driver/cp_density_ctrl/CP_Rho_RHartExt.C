@@ -301,7 +301,7 @@ void CP_Rho_RHartExt::computeAtmSF(){
       myGrid_end[MY_C], myGrid_start[MY_B], myGrid_end[MY_B], myGrid_size,
       igrid, mn, plane_index, nSub);
 
-#ifdef _CP_RHART_VERBOSE_
+#ifdef _CP_RHART_VERBOSE_DUMP
   int off = 0;
   for(int c = myGrid_start[MY_C]; c < myGrid_end[MY_C]; c++) {
     for(int b = myGrid_start[MY_B]; b < myGrid_end[MY_B]; b++) {
@@ -452,7 +452,7 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
   double  StartTime=CmiWallTimer();
 #endif
 
-#ifdef _CP_RHART_VERBOSE_
+#ifdef _CP_RHART_VERBOSE_DUMP
   char myFileName[MAX_CHAR_ARRAY_LENGTH];
   sprintf(myFileName, "atmsf_%d_%d_%d.out", thisIndex.x, thisIndex.y, nAtmTypRecv);
   FILE *fp = fopen(myFileName,"w");

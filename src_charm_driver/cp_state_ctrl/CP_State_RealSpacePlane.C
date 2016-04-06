@@ -99,6 +99,9 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
   ngridb = _ngridb;
   ngridc = _ngridc;
 
+  //RAZ: Added spin index if needed:
+  mySpinIndex          = thisInstance.idxU.s;
+
   if(config.doublePack){
     csize = (ngrida/2 + 1)*ngridb; 
     rsize = (ngrida   + 2)*ngridb; ;
@@ -161,6 +164,9 @@ void CP_State_RealSpacePlane::pup(PUP::er &p){
   p|gproxy;
   p|numCookies;
   rs.pup(p); // pup your plane, now, honey.
+
+  //RAZ: Pupping mySpinIndex;
+  p|mySpinIndex;
 
 }
 //============================================================================
@@ -529,7 +535,6 @@ void CP_State_RealSpacePlane::unpackVks(VksMsg *msg) {
 
   double wght_rho = occ_now*wght_kpt_now;
 
-
   //============================================================================
   // Do not delete msg. Its a nokeep.
   //============================================================================
@@ -553,9 +558,17 @@ void CP_State_RealSpacePlane::unpackVks(VksMsg *msg) {
 
   double *vks_tmp = msg->data;
   int pencil_offset_y = msg->pencil_offset_y;
+  int myspin     = msg->myspin;   // spin index of source
 
   int myNgridb   = grid_num_b[pencil_offset_y];
   
+  if(myspin != mySpinIndex){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Mismatch in spin index from multicast in RState %d %d\n",myspin,mySpinIndex);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+  }//endif
+
   //============================================================================	
 
   // multiply psi by vks to form psiVks

@@ -483,9 +483,11 @@ main::main(CkArgMsg *msg) {
   // make one collector per uberKmax
   CkArrayOptions enlopts(config.UberKmax);
 
+  CkPrintf("expected energies %d\n",config.UberImax * 
+	   config.UberJmax * config.UberMmax);
   ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax * 
-	config.UberJmax * config.UberMmax, config.UberKmax, 
-        std::string(output_directory), enlopts); 
+	config.UberJmax * config.UberMmax , config.UberKmax, config.UberImax,
+        std::string(output_directory),  enlopts); 
 
   ENLEKECollectorProxy.doneInserting();
 
@@ -2578,7 +2580,7 @@ void orthostartup( cp::ortho::orthoConfig *orthoCfg,  pc::pcConfig *cfgSymmPC, p
 
   // Delegate the actual construction/initialization to a creation manager
   cp::startup::PCCreationManager pcCreator(*cfgSymmPC, *cfgAsymmPC, *orthoCfg);
-  pcCreator.build(pcHandleCB, pcMapCfg);
+  pcCreator.build(pcHandleCB, pcMapCfg, sim->cp_lsda);
 
 }
 
