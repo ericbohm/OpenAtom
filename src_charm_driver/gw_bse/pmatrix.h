@@ -37,6 +37,8 @@ class PMatrix : public CBase_PMatrix {
     int* nfft; // number of fft grids in each direction
     unsigned qindex;
     FFTController* fft_controller;
+    unsigned local_mtx_size_1d_y;
+    int recievecounter = 0;
 
     void kqIndex(unsigned, unsigned&, int*);
     complex* umklapp_factor;

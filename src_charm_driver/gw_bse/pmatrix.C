@@ -28,6 +28,7 @@ PMatrix::PMatrix() {
   num_chares = (matrix_dimension / num_rows) * (matrix_dimension / num_cols);
   start_row = thisIndex.x * num_rows;
   start_col = thisIndex.y * num_cols;
+  local_mtx_size_1d_y = 1;//1728; // TODO: where from?
   
   data = new complex[num_rows * num_cols];
 }

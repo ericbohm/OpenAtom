@@ -24,4 +24,13 @@ class TransposeMessage : public CMessage_TransposeMessage {
     unsigned start_col;
 };
 
+
+class Phase2Message : public CMessage_Phase2Message {
+  public:
+    complex* data;
+    int size;
+    int global_x;
+    int global_y;
+};
+
 #endif

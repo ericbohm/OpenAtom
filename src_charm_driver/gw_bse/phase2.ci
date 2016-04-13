@@ -1,0 +1,112 @@
+module phase2 {
+  include "ckcomplex.h";
+  extern module messages;
+  #define IDXBIG(r,c) ((r)*local_mtx_size_1d_x + (c))
+  #define IDX(r,c) ((r)*num_cols + (c))
+  
+
+  array [1D] Phase2{
+    entry Phase2();
+    entry Phase2(int local_x, int local_y);
+
+    entry void recieve_row(Phase2Message *m)
+    {
+        serial{
+            int local_y = m->global_y - thisIndex * local_mtx_size_1d_y;
+            for(unsigned i=0; i< m->size; ++i){
+                data[IDX(local_y,m->global_x) + i] = m->data[i];
+            }
+            arrivalcounter++;
+        }
+        serial{
+            if(arrivalcounter == local_mtx_size_1d_y){
+                contribute(CkCallback(CkReductionTarget(Controller, dataSendComplete), controller_proxy));
+            }
+        }
+    }
+
+    entry void receiveTransposeData(Phase2Message* msg);
+
+    entry void doTranspose() {
+        serial {
+            Phase2Message* msg;
+            unsigned my_start, their_start;
+            unsigned num_rows, num_cols;
+            num_cols = local_mtx_size_1d_x / number_of_chares_1d;
+            num_rows = local_mtx_size_1d_y;
+            unsigned ndata = num_rows * num_cols;
+
+
+            for (int dest = 0; dest < number_of_chares_1d; dest++) {
+                my_start = dest * num_cols;
+
+
+                msg = new (ndata) Phase2Message();
+                    // Transpose x and y coordinate
+                msg-> global_x = thisIndex * local_mtx_size_1d_y;
+                msg-> global_y = my_start;
+
+                for (int x = 0; x < num_cols; x++) {
+                    for (int y = 0; y < num_rows; y++) {
+                            // The data is transposed on the sender side
+                        msg->data[x*num_rows + y] = data[IDXBIG(y,x+my_start)];
+                    }
+                }
+                    // CkPrintf("Chare %d, my_start = %d. sending the message to processor %d: The message is: (%d,%d,%d,%d) \n",thisIndex, my_start, dest, msg->data[0], msg->data[1], msg->data[2], msg->data[3]);
+
+                for(unsigned i=0;i<num_cols*num_rows;++i){
+                        // CkPrintf("%d\t",msg->data[i]);
+                }
+                thisProxy[dest].receiveTransposeData(msg);
+            }
+        }
+            // Wait to receive the Phase2Message from every other chare
+        for (trans_count = 0; trans_count < number_of_chares_1d; trans_count++) {
+            when receiveTransposeData(Phase2Message* msg) serial {
+                unsigned num_rows, num_cols;
+                num_cols = local_mtx_size_1d_x / number_of_chares_1d;
+                num_rows = local_mtx_size_1d_y;
+                for (int r = 0; r < num_rows; r++) {
+                    int local_y = msg->global_y - thisIndex * local_mtx_size_1d_y + r;
+                    for(unsigned i=0; i< num_cols; ++i){
+                        data[IDXBIG(local_y,msg->global_x) + i] = msg->data[i + r*num_cols];
+                    }
+                }
+            }
+        }
+        serial{
+            contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
+        }
+    }
+
+    entry void fftRows(int direction);
+
+
+    entry void send_to_2d() {
+        serial{
+            int n_col1 = number_of_chares_2d_x;
+            int num_rows=local_mtx_size_1d_y;
+            int chunksize = local_mtx_size_1d_x / n_col1;
+            Phase2Message* msg;
+            for(unsigned rows=0;rows<local_mtx_size_1d_y; ++rows){
+                for(unsigned dest_x=0;dest_x<n_col1;++dest_x){
+                    int global_x = dest_x*chunksize;
+                    int global_y = rows + thisIndex * local_mtx_size_1d_y;
+
+                    int dest_y = (int) ((double)global_y / local_mtx_size_2d_y);
+                    msg = new (chunksize) Phase2Message();
+                    for(unsigned x=0;x<chunksize;++x){
+                        msg->data[x] = data[IDX(rows,x+global_x)];  
+                    }
+                    msg->global_y = global_y;
+                    msg->global_x = global_x;
+                    msg->size = chunksize;
+                    pmatrix_proxy[CkArrayIndex2D(dest_x,dest_y)].recieve_chunk(msg);
+
+                }
+            }
+        }
+    // readonly CProxy_Phase2 phase2_proxy;
+    }
+  };
+};

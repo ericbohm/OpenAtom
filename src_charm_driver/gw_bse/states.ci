@@ -9,10 +9,15 @@ module messages {
   message TransposeMessage {
     complex data[];
   };
+
+  message Phase2Message {
+    complex data[];
+  };
 };
 
 module controller {
   extern module messages;
+  extern module phase2;
   readonly CProxy_Controller controller_proxy;
   readonly CProxy_FFTController fft_controller_proxy;
   readonly CProxy_PsiCache psi_cache_proxy;
@@ -29,6 +34,8 @@ module controller {
     entry [reductiontarget] void fftComplete();
     entry [reductiontarget] void transposeComplete();
     entry [reductiontarget] void printingComplete();
+    entry [reductiontarget] void dataSendComplete();
+    entry [reductiontarget] void phase2_complete();
 
     entry void run() {
       when fftControllerReady() serial {
@@ -76,11 +83,46 @@ module controller {
       serial {
         end = CmiWallTimer();
         CkPrintf("[CONTROLLER] P Formed in real space @%f (%f elapsed).\n", end, end - start);
+        start = CmiWallTimer();
       }
 
       if (do_output) {
-        serial { pmatrix_proxy.printRows(4, "P_Rspace"); }
-        when printingComplete() serial { CkExit(); }
+        // serial { pmatrix_proxy.printRows(4, "P_Rspace"); }
+      }
+      serial { 
+        pmatrix_proxy.send_to_1d();
+      }
+      when dataSendComplete() serial{
+        end = CmiWallTimer();
+        CkPrintf("[PMATRIX] data is sent to 1d decomposition @%f (%f elapsed)\n", end, end - start);
+        start = CmiWallTimer();
+        phase2_proxy.fftRows(1);
+      }
+      when fftComplete() serial{
+        CkPrintf("[PHASE2] fft #1 is done\n");
+        phase2_proxy.doTranspose();
+
+      }
+      when transposeComplete() serial{
+        CkPrintf("[PHASE2] transpose #1 is done\n");
+        phase2_proxy.fftRows(-1);
+      }
+      when fftComplete() serial{
+        CkPrintf("[PHASE2] fft #2 is done\n");
+        phase2_proxy.doTranspose();
+      }
+      when transposeComplete() serial{
+        CkPrintf("[PHASE2] transpose #2 is done\n");
+        phase2_proxy.send_to_2d();
+      }
+      when phase2_complete() serial{
+        CkPrintf("[PMATRIX] data back to original distirbution\n");
+        end = CmiWallTimer();
+        CkPrintf("[CONTROLLER] P formed in G space @%f (%f elapsed)\n", end, end - start);
+      }
+      serial{
+        CkPrintf("[CONTROLLER] Exiting, waiting for phase3 to be implemented\n");
+        CkExit();
       }
 
       // FFT P from RSpace to GSpace
@@ -119,7 +161,7 @@ module controller {
 };
 
 module states {
-readonly CProxy_States states_proxy;
+  readonly CProxy_States states_proxy;
 
   // An array containing all of the states in the system. After reading in the
   // states and performing an initial FFT it waits for the controller to tell it
@@ -191,5 +233,46 @@ module pmatrix {
         contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
       }
     }
+
+    entry void send_to_1d(){
+      serial {
+        int local_mtx_size_x = num_cols;
+        int local_mtx_size_y = num_rows;
+        int global_x = local_mtx_size_x*thisIndex.x;
+        for(unsigned i=0;i<local_mtx_size_y;++i){
+          int global_y = local_mtx_size_y*thisIndex.y + i;
+          int recievechar = (int) ((double)global_y/local_mtx_size_1d_y);
+          Phase2Message* msg;
+          msg = new (local_mtx_size_x) Phase2Message();
+          msg->global_x = global_x;
+          msg->global_y = global_y;
+          msg->size = local_mtx_size_x;
+          for(unsigned c = 0; c < local_mtx_size_x; ++c){
+            msg->data[c] = data[IDX(i,c)];
+          }
+          // CkPrintf("sending works\n")
+          // CkPrintf("message sent (x_glob: %d, y_glob: %d, recieveing_char: %d)\n", global_x, global_y, (int) ((double)global_y/local_mtx_size_1d_y));
+          phase2_proxy[recievechar].recieve_row(msg);
+        }
+      }
+    };
+    entry void recieve_chunk(Phase2Message *msg){
+      serial{
+        int local_mtx_size_x = num_cols;
+        int local_mtx_size_y = num_rows;        
+        int local_y = msg->global_y - thisIndex.y * local_mtx_size_y;
+        int local_x = msg->global_x - thisIndex.x * local_mtx_size_x;
+        for(unsigned i=0; i<msg->size; ++i){
+          data[IDX(local_y, local_x) + i] = msg->data[i];
+        }
+        recievecounter++;
+      }
+      serial{
+        if(recievecounter == num_rows){
+          contribute(CkCallback(CkReductionTarget(Controller, phase2_complete), controller_proxy));
+        }
+      }
+    }
+
   };
 };
