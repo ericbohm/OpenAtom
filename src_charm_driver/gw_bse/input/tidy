@@ -1,4 +1,4 @@
 #!/bin/bash
-rm *.out
-rm row_data/*
-rm check*
+rm -f *.out
+rm -f row_data/*
+rm -f check*
