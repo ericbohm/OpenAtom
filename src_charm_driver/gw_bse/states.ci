@@ -83,7 +83,6 @@ module controller {
       serial {
         end = CmiWallTimer();
         CkPrintf("[CONTROLLER] P Formed in real space @%f (%f elapsed).\n", end, end - start);
-        CkExit(); // Break here for now, until phase 2 is fully functioning
         start = CmiWallTimer();
         pmatrix_proxy.send_to_1d();
       }

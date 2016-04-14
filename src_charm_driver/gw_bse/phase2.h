@@ -34,7 +34,7 @@ private:
     unsigned number_of_chares_2d_x;
     unsigned number_of_chares_2d_y;
 
-    int arrivalcounter = 0;
+    int arrival_counter;
 };
 
 extern /* readonly */ CProxy_Phase2 phase2_proxy;

@@ -47,6 +47,8 @@ Phase2::Phase2(int local_size_x, int local_size_y) : data(local_size_x*local_siz
     number_of_chares_1d = matrix_dimension / local_mtx_size_1d_y;
     number_of_chares_2d_x = matrix_dimension / local_mtx_size_2d_x;
     number_of_chares_2d_y = matrix_dimension / local_mtx_size_2d_y;
+
+    arrival_counter = 0;
 }
 
 Phase2::Phase2(CkMigrateMessage* msg) {}

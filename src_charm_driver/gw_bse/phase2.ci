@@ -1,6 +1,7 @@
 module phase2 {
   include "ckcomplex.h";
   extern module messages;
+  readonly CProxy_Phase2 phase2_proxy;
 
 #define IDXBIG(r,c) ((r)*local_mtx_size_1d_x + (c))
 #define IDX(r,c) ((r)*num_cols + (c))
@@ -17,10 +18,10 @@ module phase2 {
             for(unsigned i=0; i< m->size; ++i){
                 data[IDX(local_y,m->global_x) + i] = m->data[i];
             }
-            arrivalcounter++;
+            arrival_counter++;
         }
         serial{
-            if(arrivalcounter == local_mtx_size_1d_y){
+            if(arrival_counter == local_mtx_size_1d_y){
                 contribute(CkCallback(CkReductionTarget(Controller, dataSendComplete), controller_proxy));
             }
         }
