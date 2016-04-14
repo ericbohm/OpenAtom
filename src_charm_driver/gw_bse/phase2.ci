@@ -1,15 +1,16 @@
 module phase2 {
   include "ckcomplex.h";
   extern module messages;
-  #define IDXBIG(r,c) ((r)*local_mtx_size_1d_x + (c))
-  #define IDX(r,c) ((r)*num_cols + (c))
+
+#define IDXBIG(r,c) ((r)*local_mtx_size_1d_x + (c))
+#define IDX(r,c) ((r)*num_cols + (c))
   
 
   array [1D] Phase2{
     entry Phase2();
     entry Phase2(int local_x, int local_y);
 
-    entry void recieve_row(Phase2Message *m)
+    entry void receive_row(Phase2Message *m)
     {
         serial{
             int local_y = m->global_y - thisIndex * local_mtx_size_1d_y;
@@ -101,7 +102,7 @@ module phase2 {
                     msg->global_y = global_y;
                     msg->global_x = global_x;
                     msg->size = chunksize;
-                    pmatrix_proxy[CkArrayIndex2D(dest_x,dest_y)].recieve_chunk(msg);
+                    pmatrix_proxy[CkArrayIndex2D(dest_x,dest_y)].receive_chunk(msg);
 
                 }
             }

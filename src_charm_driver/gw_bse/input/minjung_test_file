@@ -24,5 +24,6 @@ cccccccccccccccccccccccccccccccccccccccccccccccc
 ]
 
 ~GW_parallel[
-\rows_per_chare{1}
+\rows_per_chare{144}
+\cols_per_chare{144}
 ]

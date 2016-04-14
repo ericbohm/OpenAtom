@@ -29,6 +29,7 @@ PMatrix::PMatrix() {
   start_row = thisIndex.x * num_rows;
   start_col = thisIndex.y * num_cols;
   local_mtx_size_1d_y = 1;//1728; // TODO: where from?
+  receive_counter = 0;
   
   data = new complex[num_rows * num_cols];
 }
@@ -97,7 +98,9 @@ void PMatrix::fftRows(int direction) {
 
 // Print first n rows to file named with prefix
 void PMatrix::printRows(int n, const char* prefix) {
-  for (int r = 0; r + start_row < n && r < num_rows; r++) {
+  CkPrintf("Printing rows not currently implemented!\n");
+  CkExit();
+  /*for (int r = 0; r + start_row < n && r < num_rows; r++) {
     FILE* fp;
     char filename[200];
     sprintf(filename, "row_data/%s_q%d_row%d_chunk%d.dat", prefix, qindex, r+start_row, thisIndex.y);
@@ -107,7 +110,7 @@ void PMatrix::printRows(int n, const char* prefix) {
     }
     fclose(fp);
   }
-  contribute(CkCallback(CkReductionTarget(Controller, printingComplete), controller_proxy));
+  contribute(CkCallback(CkReductionTarget(Controller, printingComplete), controller_proxy));*/
 }
 
 void PMatrix::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
