@@ -1,0 +1,21 @@
+# Define the following paths in order to build gw_bse
+
+# Path to your build of charm
+CHARMDIR = /home/mikida/charm_builds/for_openatom
+
+# Path to the build of the fftw3 library
+FFTW3     = /soft/libraries/alcf/current/xl/FFTW3
+
+# Path to LAPACK if using LAPACK
+LAPACKLIB = -L/soft/libraries/alcf/current/xl/CBLAS/lib -L/soft/libraries/alcf/current/xl/BLAS/lib -L/soft/compilers/ibmcmp-nov2012/xlf/bg/14.1/lib64 -lcblas -lblas -lxlf90_r -lxlopt -lxl -lxlfmath
+LAPACKINC = -I/soft/libraries/alcf/current/xl/CBLAS/include/
+CFLAGS += -DUSE_LAPACK $(LAPACKINC)
+CFLAGS += -DUSE_ZGEMM
+LFLAGS += $(LAPACKLIB)
+
+# Toggle CkLoop
+CFLAGS += -DUSE_CKLOOP
+LFLAGS += -module CkLoop
+
+# Set the q index
+CFLAGS += -DQ_IDX=0
