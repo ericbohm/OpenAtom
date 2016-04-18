@@ -2,13 +2,11 @@ module phase2 {
   include "ckcomplex.h";
   extern module messages;
   readonly CProxy_Phase2 phase2_proxy;
-
 #define IDXBIG(r,c) ((r)*local_mtx_size_1d_x + (c))
 #define IDX(r,c) ((r)*num_cols + (c))
   
 
   array [1D] Phase2{
-    entry Phase2();
     entry Phase2(int local_x, int local_y);
 
     entry void receive_row(Phase2Message *m)

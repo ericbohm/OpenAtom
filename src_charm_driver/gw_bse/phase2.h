@@ -9,7 +9,6 @@
 class Phase2 : public CBase_Phase2 {
     Phase2_SDAG_CODE
 public:
-    Phase2();
     Phase2(CkMigrateMessage *msg);
     Phase2(int local_x, int local_y);
 

@@ -11,13 +11,6 @@
 
 #include "phase2.h"
 
-
-Phase2::Phase2() : Phase2(10,10)
-{
-    CkPrintf("Default constructor of Phase 2 called!\n");
-    CkExit();
-}
-
 Phase2::Phase2(int local_size_x, int local_size_y) : data(local_size_x*local_size_y)
 {
     GWBSE* gwbse = GWBSE::get();
