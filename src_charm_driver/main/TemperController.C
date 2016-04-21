@@ -57,7 +57,7 @@ void TemperController::sumEnergies(EnergyStruct &inEnergy, int temper)
 {
   temperEnergy[temper]= inEnergy.enl + inEnergy.eext + inEnergy.eke 
     + inEnergy.ehart + inEnergy.egga + inEnergy.eexc + inEnergy.fictEke 
-    + inEnergy.fmagPsi + inEnergy.eewald_recip + inEnergy.eewald_real;    
+    + inEnergy.eewald_recip + inEnergy.eewald_real;    
   if(simType==1) temperEnergy[temper] += inEnergy.potPIMDChain; 
 }
 
