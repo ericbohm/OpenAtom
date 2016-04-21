@@ -903,7 +903,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
   //==================================================================================
   //  I) Malloc the dictionary
 
-  num_dict[0] = 19;
+  num_dict[0] = 20;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_state")-1;
 
   //=================================================================================
@@ -1031,6 +1031,13 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
   strcpy((*dict)[ind].keyarg,"./STATES_OUT");
   strcpy((*dict)[ind].error_mes,"a directory tree");
 
+  //-----------------------------------------------------------------------------  // 20)\screenOutputPsi\{}
+  ind++;
+  strcpy((*dict)[ind].keyword,"screenOutputPsi");
+  strcpy((*dict)[ind].keyarg,"off");
+  strcpy((*dict)[ind].error_mes,"off");
+
+
   //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
@@ -1153,6 +1160,14 @@ if(strcasecmp(dataPathOut,dataPath)==0){
   PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
   EXIT(1);
 }//endif
+
+//-----------------------------------------------------------------------------
+// 20)\screenOutputPsiP{}
+ind++;
+parse_on_off(dict[ind].keyarg,&screenOutputPsi,&ierr);
+if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+if(iflag==0 && dict[ind].iuset==0){screenOutputPsi=0;}
+
 
 //----------------------------------------------------------------------------------
 }//end routine
@@ -2382,6 +2397,15 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     DICT_WORD *dict_nl,DICT_WORD *dict_map,
     int nchareRhoRHart, int nplane_x_rho, int natm_typ){
   //=============================================================================
+
+ // if screenOutputPsi not set, use stateOutput as a guide for
+ // whether we are in debug/test scenario vs production case
+  if(dict_state[20].iuset==0 && stateOutput==0)
+    {
+      CkPrintf("  Defaulting to screenOutputPsi because stateOutput is disabled\n");
+      screenOutputPsi=1;
+      sprintf(dict_state[20].keyarg,"%s","on");
+    }
   // numIntegrals * numKpoints * numTempers * numSpin;
   numInstances = UberImax * UberJmax * UberKmax * UberMmax;
   numPesPerInstance = numPes / numInstances;
@@ -2931,6 +2955,7 @@ void Config::simpleRangeCheck(){
   //  rangeExit(launchNLeesFromRho,"launchNLeesFromRho",0);
   rangeExit(prioFFTMsg,"prioFFTMsg",1);
   rangeExit(stateOutput,"stateOutput",1);
+  rangeExit(screenOutputPsi,"screenOutputPsi",1);
   rangeExit(atmOutput,"atmOutput",1);
   rangeExit(lbpaircalc,"lbpaircalc",1);
   rangeExit(lbgspace,"lbgspace",1);

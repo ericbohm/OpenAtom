@@ -409,8 +409,6 @@ void Ortho::maxCheck(CkReductionMsg *msg){
 
   double tolMax=fabs(((double *) msg->getData())[0]);
   delete msg;
-  CkPrintf("S matrix tolerance = %f while maxTolerance = %f\n",tolMax, cfg.maxTolerance);
-
   //  CkPrintf("SMAT tol    = %g\n", tolMax);
   if(tolMax < cfg.maxTolerance){
     toleranceCheckOrthoT=false;
@@ -419,6 +417,7 @@ void Ortho::maxCheck(CkReductionMsg *msg){
     // smat is outside of the tolerance range  need new PsiV
     toleranceCheckOrthoT=true;
     CkPrintf("recalculating PsiV due to tolerance failure \n");
+    CkPrintf("S matrix tolerance = %f while maxTolerance = %f\n",tolMax, cfg.maxTolerance);
     // Use the callback to trigger tolerance failure events.
     cfg.uponToleranceFailure.send();
     // Simply suspend all work. We'll be resumed (by GSpaceDriver) when tolerance updates are done.

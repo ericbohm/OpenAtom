@@ -815,7 +815,8 @@ void AtomsCompute::outputAtmEnergy() {
   int do_output = 0;
   if (cp_min_opt==0 && cp_wave_opt==0) { move_atoms = 1; }
   if (cp_bomd_opt==1 && tol_reached==1) { move_atoms = 1; }
-  if (cp_bomd_opt==0 || tol_reached==1) { do_output = 1; }
+  if ((cp_bomd_opt==0 && ( iteration % sim->nscreen_frq==0 ))
+      || tol_reached==1) { do_output = 1; }
 
   int myid = CkMyPe();  
   if(myid==0 && do_output){

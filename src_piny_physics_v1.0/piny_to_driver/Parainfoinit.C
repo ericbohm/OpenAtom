@@ -30,6 +30,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 #include "../class_defs/allclass_strip_cp.h"
 
   int ndump_frq       = genfilenames->iwrite_dump;
+  int nscreen_frq     = genfilenames->iwrite_screen;
 
   int ntemper         = gensimopts->ntemper;
   int pi_beads        = gensimopts->pi_beads;
@@ -184,6 +185,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   sim->tol_cp_dyn     = tol_cp_dyn;
 
   sim->ndump_frq      = ndump_frq;
+  sim->nscreen_frq    = nscreen_frq;
   sim->istart_typ_cp  = istart_typ_cp;
   sim->ibinary_opt    = ibinary_opt;
   sim->ibinary_write_opt= ibinary_write_opt;

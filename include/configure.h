@@ -110,6 +110,7 @@ class Config {
    int useGssInsRealP;
    int useMssInsGP;
    char dataPathOut[1024];
+   int screenOutputPsi;
   //==================================
 
   //==================================

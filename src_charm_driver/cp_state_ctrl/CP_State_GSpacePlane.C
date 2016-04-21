@@ -208,7 +208,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 #endif
     double cpuTimeOld = cpuTimeNow;
     cpuTimeNow        = CkWallTimer();
-    if(iteration>0){
+    if(iteration % sim->nscreen_frq==0){
       if(cp_min_opt==0){
         int heavyside = 1-(iteration-iterRotation >= 1 ? 1 : 0);
         fprintf(temperScreenFile, "Iter [%d] Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d : %d\n",iteration,
@@ -1214,15 +1214,18 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     int cp_bomd_opt = sim->cp_bomd_opt;
 
     // If we are doing BOMD, we only want output once for each BOMD step
-    bool doOutput = (!cp_bomd_opt || min_step == 0);
-
+    bool doOutput = (cp_bomd_opt && bomd_step % sim->nscreen_frq ==0 
+		     && min_step==0) 
+      ||
+      (!cp_bomd_opt && (iteration+1) % sim->nscreen_frq ==0);
+    
     // Output psi at start of minimization for debugging
-    if(iteration==0 && cp_min_opt==1){screenOutputPsi();}
+    if(iteration==0 && cp_min_opt==1 && config.screenOutputPsi){screenOutputPsi();}
 
     // Incremenet iteration counter
     doneNewIter = true;
     iteration++;
-
+    
     if(thisIndex.x==0 && thisIndex.y==0 && doOutput){
       fprintf(temperScreenFile,"===============================================================================\n");
       fprintf(temperScreenFile,"===============================================================================\n");
@@ -1329,7 +1332,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         CkPrintf("Total Wall Time: %g\n", wallTimeArr[time_array_idx] - wallTimeArr[0]);
         CkPrintf("-------------------------------------------------------------------------------\n");
       } else if(iteration>0) {
-        if (!cp_bomd_opt) {
+        if (!cp_bomd_opt && iteration % sim->nscreen_frq ==0) {
           CkPrintf("Iteration time (GSP) : %g\n", 
               wallTimeArr[time_array_idx] - wallTimeArr[time_array_idx-1]);
         } else if (exitFlag) {
@@ -3245,7 +3248,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     //=============================================================================
     // (B) Generate some screen output of orthogonal psi
 
-    if(iteration>0){screenOutputPsi();}
+    if(iteration>0 && ((iteration % sim->nscreen_frq)==0) && config.screenOutputPsi){screenOutputPsi();}
 
     //=============================================================================
     // (E) Debug psi
@@ -3920,7 +3923,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 
     //==============================================================================
     /// Screen Output
-#ifdef _CP_DEBUG_COEF_SCREEN_
     if (thisIndex.x == 0 && thisIndex.y == 0 && doOutput) {
       fprintf(temperScreenFile,"GSpacePlane printing Psi values computed in iteration %d\n",iteration);
     }
@@ -3958,7 +3960,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         }//endfor
       }//endif
     }//endif
-#endif
 
     //==============================================================================
     /// II) Tell the world you are done with the output
@@ -4100,7 +4101,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     CkPrintf("ecount %d %d %d\n",ecount,NUM_ENERGIES-isub,myid);
 #endif
     if(ecount == NUM_ENERGIES-isub){
-      if (!sim->cp_bomd_opt || exitFlag) {
+      if ((!sim->cp_bomd_opt || exitFlag) && iteration % sim->nscreen_frq == 0) {
         outputEnergies();
       }
       EnergyStruct estruct;

@@ -447,10 +447,11 @@ void InstanceController::printFictEke(CkReductionMsg *m){
   double d3   = ((double *)m->getData())[3];
   double d4   = ((double *)m->getData())[4];
   delete m;
-
-  if(CPcharmParaInfo::get()->cp_min_opt==0 && printToScreen){
+  int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
+  bool outputStep= iteration % CPcharmParaInfo::get()->nscreen_frq ==0;
+  if(CPcharmParaInfo::get()->cp_min_opt==0 && printToScreen && outputStep){
     FILE *temperScreenFile = UatomsCacheProxy[thisIndex].ckLocalBranch()->temperScreenFile;
-    int iteration= UatomsCacheProxy[thisIndex].ckLocalBranch()->iteration;
+
 
     fprintf(temperScreenFile,"InstanceController printing Fict stats computed in iteration %d\n",iteration);
     fprintf(temperScreenFile,"Iter [%d] Fict Temp   =  %.10g K\n", iteration, d0); // per g-chare temp
@@ -510,7 +511,7 @@ void InstanceController::allDoneCPForces(int tol_reached){
     // The atoms cache iteration gets incremented at the end of iterations, but
     // the GSpace iteration is incremented at the beginning. Add 1 to make
     // output from the two consistent.
-    if (printToScreen) {
+    if (printToScreen && (iteration+1)%sim->nscreen_frq==0) {
       fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration+1,thisInstance.idxU.x);  
     }
     UatomsComputeProxy[thisIndex].startRealSpaceForces(tol_reached);

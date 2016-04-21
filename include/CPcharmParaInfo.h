@@ -146,6 +146,7 @@ class CPcharmParaInfo {
    int norb_fin_diff_order;
    int cp_min_diagonalize;
    int ndump_frq;
+   int nscreen_frq;
    int istart_typ_cp;
    int cp_grad_corr_on;
    int cp_opt; 
@@ -265,6 +266,7 @@ class CPcharmParaInfo {
      norb_fin_diff_order = s.norb_fin_diff_order;
      cp_min_diagonalize  = s.cp_min_diagonalize;
      ndump_frq    = s.ndump_frq;
+     nscreen_frq  = s.nscreen_frq;
      istart_typ_cp= s.istart_typ_cp;
      cp_grad_corr_on = s.cp_grad_corr_on;
      cp_opt       = s.cp_opt; 
@@ -507,6 +509,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
      norb_fin_diff_order = s.norb_fin_diff_order;
      cp_min_diagonalize  = s.cp_min_diagonalize;
      ndump_frq    = s.ndump_frq;
+     nscreen_frq  = s.nscreen_frq;
      istart_typ_cp= s.istart_typ_cp;
      cp_grad_corr_on = s.cp_grad_corr_on;
      cp_opt       = s.cp_opt; 
@@ -820,7 +823,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       p|fftopt;     p|kx_max;  p|ky_max;  p|kz_max; 
       p|cp_norb_rot_kescal; p|norb_fin_diff_order;
       p|cp_min_diagonalize;
-      p|ndump_frq;  p|istart_typ_cp; p|cp_grad_corr_on;
+      p|ndump_frq;  p| nscreen_frq; p|istart_typ_cp; p|cp_grad_corr_on;
       p|cp_opt;     p|cp_std;     p|cp_wave;
       p|cp_min_opt; p|cp_min_update; p|cp_min_std; p|cp_force_complex_psi;
       p|cp_bomd_opt;
