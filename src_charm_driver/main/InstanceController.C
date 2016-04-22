@@ -426,8 +426,12 @@ void InstanceController::printEnergyEke(CkReductionMsg *m){
 #endif
 
   UberCollection thisInstance(thisIndex);
-  if(config.UberKmax>1) // report to temper master
-    ENLEKECollectorProxy[thisInstance.idxU.z].acceptEKE(d);
+  if(config.UberKmax>1) // report to temper master if tempering
+    {
+      ENLEKECollectorProxy[thisInstance.idxU.z].acceptEKE(d);
+    }
+  
+  // chare 0 0 gets the reduced value, not summed over k-points or spin
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_EKE, d);
 }
 

@@ -1720,6 +1720,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         kpoint_ind,config.nfreq_cpnonlocal_eke);
 
     //    CkPrintf("{%d} combineForcesGetEke: %d %d eke %.10lf\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y, gs.eke_ret);    
+    /* The reduced EKE is combined within each Uber Instance, 
+     * not over uber indices, like k-points or spin
+     * which will have to be handled elsewhere if desired
+     */
     contribute(sizeof(double), &gs.eke_ret, CkReduction::sum_double, 
         CkCallback(CkIndex_InstanceController::printEnergyEke(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
     //isEnergyReductionDone = false; ///@note: This doesnt seem necessary here and commenting out has not affected simple tests. This flag is reset at the start of the iter itself.
@@ -2331,6 +2335,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     double redforc[2];
     redforc[0] = fovlap_loc;
     redforc[1] = force_sq_sum_loc;
+    // reduction and broadcast of redforc to all member of PsiG (GSP)
     contribute(2*sizeof(double),redforc,CkReduction::sum_double,
         CkCallback(CkIndex_CP_State_GSpacePlane::acceptCgOverlap(NULL),thisProxy));
 
@@ -3980,6 +3985,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
   // invokes this guy on chare (0,0). The routine then bcasts its results to the
   // energy group (one per processor) thereby making information available on all
   // procs for tolerence testing via a cklocal type deal.
+
+  // these uber local quantities will be summed over spin and/or
+  // k-points within the energygroup,
+
   //==============================================================================
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   //==============================================================================
@@ -4119,8 +4128,13 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
       CkPrintf("Bcasting to energygrp %d\n",myid);
 #endif
-      UegroupProxy[thisInstance.proxyOffset].updateEnergiesFromGS(estruct,thisInstance); // broadcast the electronic energies
-      //  so that all procs have them
+      // broadcast the electronic energies so all elements in this uber have them
+      // in the energygroup that spans all the processors
+      // in the future this will be constrained to the processors used by that uber
+      // spin and kpoints instances share an energy group, so they sum the necessary
+      // quantities
+      UegroupProxy[thisInstance.proxyOffset].updateEnergiesFromGS(estruct,thisInstance); 
+
       total_energy        = 0.0;
       ecount              = 0;
 

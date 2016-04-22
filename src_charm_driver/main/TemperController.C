@@ -20,7 +20,7 @@ TemperController::TemperController(int _simtype, double *_temperatures, int numt
   numBeads=config.UberImax;
   CkPrintf("TemperController for Tempers %d and beads %d\n",numTempers,numBeads);
   if(numTempers != numtemperatures)  CkAbort("numTempers must be equal to number of temperatures for the TemperController");
-  if(numTempers%2 != 0)  CkAbort("numTempers must be even");
+  if(numTempers%2 != 0 && numTempers>1)  CkAbort("numTempers must be even");
   temperEnergy=new double[numTempers];
   temperatures=new double[numTempers];
   index = new int[numTempers];
@@ -29,6 +29,17 @@ TemperController::TemperController(int _simtype, double *_temperatures, int numt
   memcpy(temperatures, _temperatures, sizeof(double) * numtemperatures);
   switchdir=0;
 
+}
+
+
+void TemperController::totalEnergy(int temper, int iteration, EnergyStruct &energies)
+{
+  sumEnergies(energies, temper);
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+  if((iteration % sim->nscreen_frq)==0)
+    {
+      CkPrintf("[t=%d] Iter [%d] TOTAL_ENERGY          = %5.8lf\n",temper, iteration, temperEnergy[temper]);
+    }
 }
 
 void TemperController::acceptData(int temper, int iteration, EnergyStruct &energies)

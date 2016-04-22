@@ -475,11 +475,8 @@ main::main(CkArgMsg *msg) {
   diagonalizerBridgeProxy = CProxy_DiagonalizerBridge::ckNew();
 
   // make one controller temper
-  if(sim->ntemper>1) {
-
-    temperControllerProxy= CProxy_TemperController::ckNew(1,sim->temper_t_ext,sim->ntemper, sim->seed, std::string(historyfile), std::string(output_directory),1);
-    temperControllerProxy.doneInserting();
-  }
+  temperControllerProxy= CProxy_TemperController::ckNew(1,sim->temper_t_ext,sim->ntemper, sim->seed, std::string(historyfile), std::string(output_directory),1);
+  temperControllerProxy.doneInserting();
   // make one collector per uberKmax
   CkArrayOptions enlopts(config.UberKmax);
 
@@ -2060,7 +2057,7 @@ void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim
       AtomNHC *atomsNHC = new AtomNHC[natm];
       CkPrintf("[%d] Temperature is %g\n",thisInstance.proxyOffset, kT*BOLTZ);
 
-      // every instance with its own atoms needs its own
+      // every instance with its own atoms (such as beads and tempers) needs its own
       // physcratchcache, because it is a horrible shared memory thing
       // that needs to be walled off
       UpScratchProxy.push_back(CProxy_PhysScratchCache::ckNew());

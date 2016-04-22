@@ -28,6 +28,7 @@ class EnergyGroup : public Group {
     inline EnergyStruct getEnergyStruct(){return estruct;}
   private:
     int ktemps;
+    int countOfEnergies;
 };
 /*EnergyStruct GetEnergyStruct();*/
 //============================================================================

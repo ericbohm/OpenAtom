@@ -102,6 +102,10 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
   atomsCMrecv=atomsPIMDXrecv=false;
   temperScreenFile = (UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch())->temperScreenFile;
 
+  atomsOutputReady=false;
+  energyGroupReady=(thisIndex>0) ? true: false;
+
+  
   //==============================================================================
   // Initial positions, forces, velocities 
   numPIMDBeads    = config.UberImax;
@@ -675,11 +679,16 @@ void AtomsCompute::integrateAtoms(){
     eg->estruct.potPIMDChain    = 0.0;
 
     copySlowToFast();
-    outputAtmEnergy();
+    atomsOutputReady=true;
+    if(energyGroupReady) {
+      outputAtmEnergy();
+      int i=0;
+      CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
+      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+      atomsOutputReady=false;
+      energyGroupReady=(thisIndex>0) ? true: false;
+    }
 
-    int i=0;
-    CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
-    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
   //-------------------------------------------------------------------------
@@ -784,6 +793,22 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
 }//end routine
 //==========================================================================
 
+void AtomsCompute::energyReady() {
+
+  if(atomsOutputReady)
+    {
+      outputAtmEnergy();
+      int i=0;
+      CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
+      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+      atomsOutputReady=false;
+      energyGroupReady=(thisIndex>0) ? true: false;
+    }
+  else{
+    energyGroupReady=true;
+  }
+}
+
 
 //==========================================================================
 // Atom energy output
@@ -821,6 +846,7 @@ void AtomsCompute::outputAtmEnergy() {
   int myid = CkMyPe();  
   if(myid==0 && do_output){
     fprintf(temperScreenFile,"AtomsCompute printing energies computed in iteration %d\n",iteration);
+    CkPrintf("[b=%d] Iter [%d] TOTAL_ENERGY       = %5.8lf\n", thisInstance.idxU.x, iteration, eg->estruct.totalElecEnergy + vself + vbgr + eg->estruct.eewald_real + eg->estruct.eewald_recip);
     if(iperd!=0){
       fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_REAL         = %5.8lf\n",thisInstance.idxU.x, iteration, pot_ewd_rs_now);
       fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_SELF         = %5.8lf\n",thisInstance.idxU.x, iteration, vself);
@@ -1139,7 +1165,7 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
 
     //---------------------------------------------------------------------------------
     copySlowToFast();  // not complete for PIMD as you have xu not x but that's OK
-    outputAtmEnergy();
+    atomsOutputReady=true;
 
     //---------------------------------------------------------------------------------
     // Output : Iteration is time of atoms[i].xold
@@ -1178,9 +1204,14 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
       }//endif : I am King of the Beads
     }else{
       //non PIMD case we're done
-      int i=0;
-      CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
-      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+      if(energyGroupReady) {
+	outputAtmEnergy();
+	int i=0;
+	CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
+	contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+	atomsOutputReady=false;
+	energyGroupReady=(thisIndex>0) ? true: false;
+      }
     }//endif : 
 
   }//endif : I have received all my messages 
@@ -1224,9 +1255,14 @@ void AtomsCompute::accept_PIMD_CM(AtomXYZMsg *msg){
 #ifdef _CP_DEBUG_ATMS_
     CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_CM contributing to atomsDone atomsPIMDXrecv is %d iteration %d\n ", thisInstance.proxyOffset, thisIndex, atomsPIMDXrecv, *iteration);     
 #endif
-    int i=0;
-    CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
-    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+    if(energyGroupReady) {
+      outputAtmEnergy();
+      int i=0;
+      CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
+      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+      atomsOutputReady=false;
+      energyGroupReady=(thisIndex>0) ? true: false;
+    }
     atomsCMrecv=atomsPIMDXrecv=false;
   }else{
 #ifdef _CP_DEBUG_ATMS_

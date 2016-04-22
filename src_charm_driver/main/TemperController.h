@@ -32,6 +32,7 @@ class TemperController : public CBase_TemperController
     std::string output_directory;
     void sumEnergies(EnergyStruct &inEnergy, int temper);
     void acceptData(int temper, int iteration, EnergyStruct &energies);
+    void totalEnergy(int temper, int iteration, EnergyStruct &energies);
     void acceptData();
     void output();
     void barrier();

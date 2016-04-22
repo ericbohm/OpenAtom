@@ -16,8 +16,6 @@
 #include "../proto_defs/proto_friend_lib_entry.h"
 #include "../class_defs/CP_OPERATIONS/class_cprspaceion.h"
 
-
-
 //==========================================================================
 /** \brief Compute the real space part of the ewald sum by an N^2 method.
  */

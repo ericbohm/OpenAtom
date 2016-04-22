@@ -71,6 +71,7 @@ module Atoms
         int cp_min_opt, int cp_wave_opt, int cp_bomd_opt, int isokin_opt, int cp_grimme, double kT,
         Atom atoms[natm],AtomNHC atomsNHC[natm], int nChareAtoms, UberCollection);
     entry void init();
+    entry void energyReady();
     entry void acceptAtoms(AtomMsg *);
     entry void startRealSpaceForces(int);  	
     entry void acceptNewTemperature(double temp);
@@ -256,6 +257,7 @@ module temperController
   array [1D] TemperController {
     entry void TemperController(int, double temperatures[numtemps], int numtemps, long seed, std::string historyfile, std::string output_directory);
     entry void acceptData(int temper, int iteration, EnergyStruct);
+    entry void totalEnergy(int temper, int iteration, EnergyStruct);
     entry [reductiontarget] void barrier();
   };
 };

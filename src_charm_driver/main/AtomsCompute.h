@@ -91,6 +91,10 @@ class AtomsCompute: public CBase_AtomsCompute {
 
     int ktemps;
     FILE *temperScreenFile;
+    bool atomsOutputReady;
+    bool energyGroupReady;
+
+
 
     AtomsCompute(CkMigrateMessage *m) {}
     AtomsCompute(int, int, int, int, int, int, int ,int, int, double, Atom *, AtomNHC *, int nChareAtoms, UberCollection thisInstance);
@@ -111,6 +115,7 @@ class AtomsCompute: public CBase_AtomsCompute {
     void send_PIMD_Fx_and_x();
     void send_PIMD_x();
     void sendAtoms(double,double ,double,double,int,int,int);
+    void energyReady();
     void acceptAtoms(AtomMsg *);
     void outputAtmEnergy();
     void bcastAtomsToAtomCache();
