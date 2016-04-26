@@ -576,6 +576,7 @@ void set_vps_params(DICT_WORD vps_dict[],char *filename,char *fun_key,
 
   (*ivps_label) = -1;
   if(strcasecmp(vps_dict[2].keyarg,"loc") == 0)            {(*ivps_label) = 0;}
+  if(strcasecmp(vps_dict[2].keyarg,"local") == 0)          {(*ivps_label) = 0;}
   if(strcasecmp(vps_dict[2].keyarg,"kb")  == 0)            {(*ivps_label) = 1;}
   if(strcasecmp(vps_dict[2].keyarg,"gauss_hermite")  == 0) {(*ivps_label) = 2;}
   if(strcasecmp(vps_dict[2].keyarg,"vdb") == 0)            {(*ivps_label) = 3;}
