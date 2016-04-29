@@ -1676,6 +1676,7 @@ void CP_Rho_RealSpacePlane::doMulticast(){
         if(kp+1 < config.UberJmax) {
           // copying a message is perilous
           loopm = new (dataSize, 0) VksMsg;
+	  loopm->myspin     = mySpinIndex;
           loopm->pencil_offset_y       = thisIndex.y;
           memcpy(loopm->data, msg->data, dataSize * sizeof(double));
         } else {
