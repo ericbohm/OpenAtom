@@ -1972,7 +1972,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
       ncoef_true=ncoef;
       istrt=-1;
     }
-  CkPrintf("ncoef %d, istrt %d ncoef_true %d dpack %d\n",ncoef, istrt, ncoef_true, doublepack);
+
   if(istate==1){
     char fname[1000];
     sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/TimeStamp",config.dataPathOut,ispin,ikpt,ibead,itemper);
