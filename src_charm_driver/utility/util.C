@@ -1956,7 +1956,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
     int *k_x,int *k_y,int *k_z,int cp_min_opt,
     int sizeX,int sizeY,int sizeZ,char *psiName,char *vpsiName,
     int ibinary_write_opt,int iteration, int istate,
-    int ispin, int ikpt, int ibead, int itemper)
+		    int ispin, int ikpt, int ibead, int itemper, int doublepack)
   //=============================================================================
 { //begin rotunie
   //=============================================================================
@@ -1965,8 +1965,14 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
   int *ktemp = new int [ncoef];
   int istrt=0;
   sort_psi_output(ncoef,k_x,k_y,k_z,index,ktemp,&istrt);
-  int ncoef_true=ncoef-istrt;
 
+  int ncoef_true= ncoef-istrt;
+  if(doublepack==0)
+    {
+      ncoef_true=ncoef;
+      istrt=-1;
+    }
+  CkPrintf("ncoef %d, istrt %d ncoef_true %d dpack %d\n",ncoef, istrt, ncoef_true, doublepack);
   if(istate==1){
     char fname[1000];
     sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/TimeStamp",config.dataPathOut,ispin,ikpt,ibead,itemper);
@@ -1979,13 +1985,17 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
     FILE *fp  = fopen(psiName,"w");
     assert(fp!=NULL);
     fprintf(fp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
+    
     for(int i=istrt+1;i<ncoef;i++){
       fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
           k_x[index[i]],k_y[index[i]],k_z[index[i]]);
     }//endfor
-    int i = istrt;
-    fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
-        k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+    if(doublepack==1)
+      {
+	int i = istrt;
+	fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
+		k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+      }
     fclose(fp);
   }
 #if CMK_PROJECTIONS_USE_ZLIB
@@ -1998,9 +2008,12 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
       gzprintf(zfp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
           k_x[index[i]],k_y[index[i]],k_z[index[i]]);
     }//endfor
-    int i = istrt;
-    gzprintf(zfp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
-        k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+    if(doublepack==1)
+      {
+	int i = istrt;
+	gzprintf(zfp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
+		 k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+      }
     gzclose(zfp);
   }
   else if(ibinary_write_opt==3){
@@ -2019,12 +2032,15 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
       gzwrite(zfp,&k_y[index[i]],sizeof(int));
       gzwrite(zfp,&k_z[index[i]],sizeof(int));
     }//endfor
-    int i = istrt;
-    gzwrite(zfp,&psi[index[i]].re,sizeof(double));
-    gzwrite(zfp,&psi[index[i]].im,sizeof(double));
-    gzwrite(zfp,&k_x[index[i]],sizeof(int));
-    gzwrite(zfp,&k_y[index[i]],sizeof(int));
-    gzwrite(zfp,&k_z[index[i]],sizeof(int));
+    if(doublepack==1)
+      {
+	int i = istrt;
+	gzwrite(zfp,&psi[index[i]].re,sizeof(double));
+	gzwrite(zfp,&psi[index[i]].im,sizeof(double));
+	gzwrite(zfp,&k_x[index[i]],sizeof(int));
+	gzwrite(zfp,&k_y[index[i]],sizeof(int));
+	gzwrite(zfp,&k_z[index[i]],sizeof(int));
+      }
     gzclose(zfp);
   }
 #endif
@@ -2043,12 +2059,16 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
       fwrite(&k_y[index[i]],sizeof(int),n,fp);
       fwrite(&k_z[index[i]],sizeof(int),n,fp);
     }//endfor
-    int i = istrt;
-    fwrite(&psi[index[i]].re,sizeof(double),n,fp);
-    fwrite(&psi[index[i]].im,sizeof(double),n,fp);
-    fwrite(&k_x[index[i]],sizeof(int),n,fp);
-    fwrite(&k_y[index[i]],sizeof(int),n,fp);
-    fwrite(&k_z[index[i]],sizeof(int),n,fp);
+
+    if(doublepack==1)
+      {
+	int i = istrt;
+	fwrite(&psi[index[i]].re,sizeof(double),n,fp);
+	fwrite(&psi[index[i]].im,sizeof(double),n,fp);
+	fwrite(&k_x[index[i]],sizeof(int),n,fp);
+	fwrite(&k_y[index[i]],sizeof(int),n,fp);
+	fwrite(&k_z[index[i]],sizeof(int),n,fp);
+      }
     fclose(fp);
   }//endif
 
@@ -2063,9 +2083,12 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
         fprintf(fp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
             k_x[index[i]],k_y[index[i]],k_z[index[i]]);
       }//endfor
-      int i = istrt;
-      fprintf(fp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
-          k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+      if(doublepack==1)
+      {
+	int i = istrt;
+	fprintf(fp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
+		k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+      }
       fclose(fp);
     }
 #if CMK_PROJECTIONS_USE_ZLIB
@@ -2078,9 +2101,12 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
         gzprintf(zfp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
             k_x[index[i]],k_y[index[i]],k_z[index[i]]);
       }//endfor
-      int i = istrt;
-      gzprintf(zfp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
-          k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+      if(doublepack==1)
+      {
+	int i = istrt;
+	gzprintf(zfp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
+		 k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+      }
       gzclose(zfp);
 
     }
@@ -2100,12 +2126,15 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
         gzwrite(zfp,&k_y[index[i]],sizeof(int));
         gzwrite(zfp,&k_z[index[i]],sizeof(int));
       }//endfor
-      int i = istrt;
-      gzwrite(zfp,&vpsi[index[i]].re,sizeof(double));
-      gzwrite(zfp,&vpsi[index[i]].im,sizeof(double));
-      gzwrite(zfp,&k_x[index[i]],sizeof(int));
-      gzwrite(zfp,&k_y[index[i]],sizeof(int));
-      gzwrite(zfp,&k_z[index[i]],sizeof(int));
+      if(doublepack==1)
+      {
+	int i = istrt;
+	gzwrite(zfp,&vpsi[index[i]].re,sizeof(double));
+	gzwrite(zfp,&vpsi[index[i]].im,sizeof(double));
+	gzwrite(zfp,&k_x[index[i]],sizeof(int));
+	gzwrite(zfp,&k_y[index[i]],sizeof(int));
+	gzwrite(zfp,&k_z[index[i]],sizeof(int));
+      }
       gzclose(zfp);
     }//endif
 #endif
@@ -2124,12 +2153,15 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
         fwrite(&k_y[index[i]],sizeof(int),n,fp);
         fwrite(&k_z[index[i]],sizeof(int),n,fp);
       }//endfor
-      int i = istrt;
-      fwrite(&vpsi[index[i]].re,sizeof(double),n,fp);
-      fwrite(&vpsi[index[i]].im,sizeof(double),n,fp);
-      fwrite(&k_x[index[i]],sizeof(int),n,fp);
-      fwrite(&k_y[index[i]],sizeof(int),n,fp);
-      fwrite(&k_z[index[i]],sizeof(int),n,fp);
+      if(doublepack==1)
+      {
+	int i = istrt;
+	fwrite(&vpsi[index[i]].re,sizeof(double),n,fp);
+	fwrite(&vpsi[index[i]].im,sizeof(double),n,fp);
+	fwrite(&k_x[index[i]],sizeof(int),n,fp);
+	fwrite(&k_y[index[i]],sizeof(int),n,fp);
+	fwrite(&k_z[index[i]],sizeof(int),n,fp);
+      }
       fclose(fp);
     }//endif
   }//endif

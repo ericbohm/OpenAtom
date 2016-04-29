@@ -2528,7 +2528,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
     writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
         sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
-        myiteration,ind_state,ispin,ikpt,ibead,itemper);
+		   myiteration,ind_state,ispin,ikpt,ibead,itemper, config.doublePack);
     fftw_free(tpsi); tpsi  = NULL;
     fftw_free(tvpsi);tvpsi = NULL;
     fftw_free(tk_x); tk_x  = NULL;
