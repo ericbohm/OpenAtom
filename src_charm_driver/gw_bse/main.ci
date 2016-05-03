@@ -6,7 +6,6 @@ mainmodule main {
   extern module messages;
   extern module controller;
   extern module pmatrix;
-  extern module phase2;
 
   mainchare Main {
     entry Main(CkArgMsg* msg);

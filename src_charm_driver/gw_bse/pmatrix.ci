@@ -1,0 +1,73 @@
+module pmatrix {
+  include "ckcomplex.h";
+  extern module messages;
+  readonly CProxy_PMatrix2D pmatrix2D_proxy;
+  readonly CProxy_PMatrix1D pmatrix1D_proxy;
+
+#define IDXBIG(r,c) ((r)*local_mtx_size_1d_x + (c))
+#define IDX(r,c) ((r)*num_cols + (c))
+
+  array [2D] PMatrix2D {
+    entry PMatrix2D();
+    entry [reductiontarget] void applyFs();
+    entry void sendTo1D();
+    entry void receiveChunk(Phase2Message*);
+  };
+
+  array [1D] PMatrix1D {
+    entry PMatrix1D(int, int);
+
+    entry void fftRows(int);
+    entry void sendTo2D();
+    entry void receiveRow(Phase2Message*);
+
+    // SDAG code for doing the transpose
+    entry void receiveTransposeData(Phase2Message* msg);
+    entry void doTranspose() {
+      serial {
+        Phase2Message* msg;
+        unsigned my_start, their_start;
+        unsigned num_rows, num_cols;
+        num_cols = local_mtx_size_1d_x / number_of_chares_1d;
+        num_rows = local_mtx_size_1d_y;
+        unsigned ndata = num_rows * num_cols;
+
+        for (int dest = 0; dest < number_of_chares_1d; dest++) {
+          my_start = dest * num_cols;
+          msg = new (ndata) Phase2Message();
+
+          // Transpose x and y coordinate
+          msg-> global_x = thisIndex * local_mtx_size_1d_y;
+          msg-> global_y = my_start;
+
+          for (int x = 0; x < num_cols; x++) {
+            for (int y = 0; y < num_rows; y++) {
+              // The data is transposed on the sender side
+              msg->data[x*num_rows + y] = data[IDXBIG(y,x+my_start)];
+            }
+          }
+
+          thisProxy[dest].receiveTransposeData(msg);
+        }
+      }
+
+      // Wait to receive the Phase2Message from every other chare
+      for (trans_count = 0; trans_count < number_of_chares_1d; trans_count++) {
+        when receiveTransposeData(Phase2Message* msg) serial {
+          unsigned num_rows, num_cols;
+          num_cols = local_mtx_size_1d_x / number_of_chares_1d;
+          num_rows = local_mtx_size_1d_y;
+          for (int r = 0; r < num_rows; r++) {
+            int local_y = msg->global_y - thisIndex * local_mtx_size_1d_y + r;
+            for(unsigned i=0; i< num_cols; ++i){
+              data[IDXBIG(local_y,msg->global_x) + i] = msg->data[i + r*num_cols];
+            }
+          }
+        }
+      }
+      serial{
+        contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
+      }
+    }
+  };
+};

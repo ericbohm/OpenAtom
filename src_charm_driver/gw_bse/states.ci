@@ -17,7 +17,6 @@ module messages {
 
 module controller {
   extern module messages;
-  extern module phase2;
   readonly CProxy_Controller controller_proxy;
   readonly CProxy_FFTController fft_controller_proxy;
   readonly CProxy_PsiCache psi_cache_proxy;
@@ -84,30 +83,30 @@ module controller {
         end = CmiWallTimer();
         CkPrintf("[CONTROLLER] P Formed in real space @%f (%f elapsed).\n", end, end - start);
         start = CmiWallTimer();
-        pmatrix_proxy.send_to_1d();
+        pmatrix2D_proxy.sendTo1D();
       }
       when dataSendComplete() serial{
         end = CmiWallTimer();
         CkPrintf("[PMATRIX] data is sent to 1d decomposition @%f (%f elapsed)\n", end, end - start);
         start = CmiWallTimer();
-        phase2_proxy.fftRows(1);
+        pmatrix1D_proxy.fftRows(1);
       }
       when fftComplete() serial{
         CkPrintf("[PHASE2] fft #1 is done\n");
-        phase2_proxy.doTranspose();
+        pmatrix1D_proxy.doTranspose();
 
       }
       when transposeComplete() serial{
         CkPrintf("[PHASE2] transpose #1 is done\n");
-        phase2_proxy.fftRows(-1);
+        pmatrix1D_proxy.fftRows(-1);
       }
       when fftComplete() serial{
         CkPrintf("[PHASE2] fft #2 is done\n");
-        phase2_proxy.doTranspose();
+        pmatrix1D_proxy.doTranspose();
       }
       when transposeComplete() serial{
         CkPrintf("[PHASE2] transpose #2 is done\n");
-        phase2_proxy.send_to_2d();
+        pmatrix1D_proxy.sendTo2D();
       }
       when phase2_complete() serial{
         CkPrintf("[PMATRIX] data back to original distirbution\n");
@@ -146,107 +145,4 @@ module states {
     entry [reductiontarget] void sendToCache();
     entry [reductiontarget] void sendToComputeF();
   };  
-};
-
-module pmatrix {
-  include "ckcomplex.h";
-  extern module messages;
-  readonly CProxy_PMatrix pmatrix_proxy;
-
-#define IDX(r,c) ((r)*num_cols + (c))
-
-  // An array containing a distributed representation of P. Each time it
-  // receives a psi, it multiplies that psi against cached psis to incrementally
-  // compute its values.
-  array [2D] PMatrix {
-    entry PMatrix();
-    entry [reductiontarget] void applyFs();
-    entry void fftRows(int);
-    entry [nokeep] void receiveTransposeData(TransposeMessage*);
-    entry void printRows(int n, char prefix[16]);
-
-    entry void doTranspose() {
-      serial {
-        // TODO: this only works when every chare has same amount of rows
-        // TODO: this only works with 1D decomp right now
-        TransposeMessage* msg;
-        unsigned my_start, their_start;
-        unsigned ndata = num_rows * num_rows;
-
-        // Create, fill, and send a transpose message for each chare
-        for (int dest = 0; dest < num_chares; dest++) {
-          my_start = num_rows * dest;
-          their_start = start_row;
-
-          msg = new (ndata) TransposeMessage();
-          msg->start_col = their_start;
-          for (int c = 0; c < num_rows; c++) {
-            for (int r = 0; r < num_rows; r++) {
-              // The data is transposed on the sender side
-              msg->data[c*num_rows + r] = data[IDX(r,c+my_start)];
-            }
-          }
-          thisProxy(dest,0).receiveTransposeData(msg);
-        }
-      }
-
-      // Wait to receive the TransposeMessage from every other chare
-      for (trans_count = 0; trans_count < num_chares; trans_count++) {
-        when receiveTransposeData(TransposeMessage* msg) serial {
-          for (int r = 0; r < num_rows; r++) {
-            for (int c = 0; c < num_rows; c++) {
-              // The data being sent was already transposed on the sender side
-              data[IDX(r,c + msg->start_col)] = msg->data[r*num_rows + c];
-            }
-          }
-        }
-      }
-
-      // Tell the controller that the transpose is complete
-      serial {
-        contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
-      }
-    }
-
-    entry void send_to_1d(){
-      serial {
-        int local_mtx_size_x = num_cols;
-        int local_mtx_size_y = num_rows;
-        int global_x = local_mtx_size_x*thisIndex.x;
-        for(unsigned i=0;i<local_mtx_size_y;++i){
-          int global_y = local_mtx_size_y*thisIndex.y + i;
-          int receivechar = (int) ((double)global_y/local_mtx_size_1d_y);
-          Phase2Message* msg;
-          msg = new (local_mtx_size_x) Phase2Message();
-          msg->global_x = global_x;
-          msg->global_y = global_y;
-          msg->size = local_mtx_size_x;
-          for(unsigned c = 0; c < local_mtx_size_x; ++c){
-            msg->data[c] = data[IDX(i,c)];
-          }
-          // CkPrintf("sending works\n")
-          // CkPrintf("message sent (x_glob: %d, y_glob: %d, receiveing_char: %d)\n", global_x, global_y, (int) ((double)global_y/local_mtx_size_1d_y));
-          phase2_proxy[receivechar].receive_row(msg);
-        }
-      }
-    };
-    entry void receive_chunk(Phase2Message *msg){
-      serial{
-        int local_mtx_size_x = num_cols;
-        int local_mtx_size_y = num_rows;        
-        int local_y = msg->global_y - thisIndex.y * local_mtx_size_y;
-        int local_x = msg->global_x - thisIndex.x * local_mtx_size_x;
-        for(unsigned i=0; i<msg->size; ++i){
-          data[IDX(local_y, local_x) + i] = msg->data[i];
-        }
-        receive_counter++;
-      }
-      serial{
-        if(receive_counter == num_rows){
-          contribute(CkCallback(CkReductionTarget(Controller, phase2_complete), controller_proxy));
-        }
-      }
-    }
-
-  };
 };

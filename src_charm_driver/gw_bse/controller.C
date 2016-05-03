@@ -136,7 +136,7 @@ void PsiCache::computeFs(PsiMessage* msg) {
 #endif
 
   // Let the matrix chares know that the f vectors are ready
-  CkCallback cb(CkReductionTarget(PMatrix, applyFs), pmatrix_proxy);
+  CkCallback cb(CkReductionTarget(PMatrix2D, applyFs), pmatrix2D_proxy);
   contribute(cb);
 
   // Cleanup
