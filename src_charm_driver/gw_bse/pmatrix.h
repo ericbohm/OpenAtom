@@ -27,6 +27,7 @@ class PMatrix : public CBase_PMatrix {
     void applyFs();
     void fftRows(int);
     void printRows(int, const char*);
+    void reportPTime();
 
   private:
     unsigned L; // Number of occupied psis
@@ -43,6 +44,8 @@ class PMatrix : public CBase_PMatrix {
     void kqIndex(unsigned, unsigned&, int*);
     complex* umklapp_factor;
     void getUmklappFactor(complex*, int[3]);
+
+    double total_time;
 };
 
 extern /* readonly */ CProxy_PMatrix pmatrix_proxy;

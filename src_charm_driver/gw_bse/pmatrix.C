@@ -32,10 +32,26 @@ PMatrix::PMatrix() {
   receive_counter = 0;
   
   data = new complex[num_rows * num_cols];
+
+  total_time = 0.0;
+}
+
+void PMatrix::reportPTime() {
+  CkReduction::statisticsElement stats(total_time);
+  int tuple_size = 4;
+  CkReduction::tupleElement tuple_reduction[] = {
+    CkReduction::tupleElement(sizeof(double), &total_time, CkReduction::min_double),
+    CkReduction::tupleElement(sizeof(double), &total_time, CkReduction::max_double),
+    CkReduction::tupleElement(sizeof(double), &total_time, CkReduction::sum_double),
+    CkReduction::tupleElement(sizeof(CkReduction::statisticsElement), &stats, CkReduction::statistics) };
+
+  CkReductionMsg* msg = CkReductionMsg::buildFromTuple(tuple_reduction, tuple_size);
+  msg->setCallback(CkCallback(CkIndex_Controller::reportPTime(NULL), controller_proxy));
+  contribute(msg);
 }
 
 void PMatrix::applyFs() {
-  double end, start = CmiWallTimer();
+  double start = CmiWallTimer();
 
   PsiCache* psi_cache = psi_cache_proxy.ckLocalBranch();
 
@@ -72,10 +88,7 @@ void PMatrix::applyFs() {
 #endif // endif for ifdef USE_LAPACK
 
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
-  end = CmiWallTimer();
-  if (thisIndex.x == 0 && thisIndex.y == 0) {
-    CkPrintf("[PMATRIX] Applied fs in %fs\n", end - start);
-  }
+  total_time += CmiWallTimer() - start;
 }
 
 void PMatrix::fftRows(int direction) {

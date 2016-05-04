@@ -5,7 +5,7 @@
 #include "ckcomplex.h"
 #include "fftw3.h"
 
-#include "controller.decl.h"
+#include "fft_controller.decl.h"
 
 class FFTController : public CBase_FFTController {
   public:

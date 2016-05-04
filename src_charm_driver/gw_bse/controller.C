@@ -23,6 +23,7 @@ Controller::Controller() {
 
   do_output = true;
   debug_stages = M*K;
+  CkPrintf("[CONTROLLER]: Created!\n");
 }
 
 PsiCache::PsiCache() {
@@ -43,6 +44,22 @@ PsiCache::PsiCache() {
   fs = new complex[L*psi_size];
 
   umklapp_factor = new complex[psi_size];
+
+  total_time = 0.0;
+}
+
+void PsiCache::reportFTime() {
+  CkReduction::statisticsElement stats(total_time);
+  int tuple_size = 4;
+  CkReduction::tupleElement tuple_reduction[] = {
+    CkReduction::tupleElement(sizeof(double), &total_time, CkReduction::min_double),
+    CkReduction::tupleElement(sizeof(double), &total_time, CkReduction::max_double),
+    CkReduction::tupleElement(sizeof(double), &total_time, CkReduction::sum_double),
+    CkReduction::tupleElement(sizeof(CkReduction::statisticsElement), &stats, CkReduction::statistics) };
+
+  CkReductionMsg* msg = CkReductionMsg::buildFromTuple(tuple_reduction, tuple_size);
+  msg->setCallback(CkCallback(CkIndex_Controller::reportFTime(NULL), controller_proxy));
+  contribute(msg);
 }
 
 void PsiCache::receivePsi(PsiMessage* msg) {
@@ -95,13 +112,15 @@ void computeF(int first, int last, void* result, int count, void* params) {
 // Receive an unoccupied psi, and split off the computation of all associated f
 // vectors across the node using CkLoop.
 void PsiCache::computeFs(PsiMessage* msg) {
-  double end, start = CmiWallTimer();
+  double start = CmiWallTimer();
+
   if (msg->spin_index != 0) {
     CkAbort("Error: We don't support multiple spins yet!\n");
   }
   CkAssert(msg->size == psi_size);
 
   // Compute ikq index and the associated umklapp factor
+  // TODO: This should just be a table lookup
   unsigned ikq;
   int umklapp[3];
   kqIndex(msg->k_index, ikq, umklapp);
@@ -142,10 +161,7 @@ void PsiCache::computeFs(PsiMessage* msg) {
   // Cleanup
   delete msg;
 
-  end = CmiWallTimer();
-  if (CkMyNode() == 0) {
-    CkPrintf("[PSICACHE] Computed fs in %fs\n", end - start);
-  }
+  total_time += CmiWallTimer() - start;
 }
 
 complex* PsiCache::getPsi(unsigned ispin, unsigned ikpt, unsigned istate) const {
@@ -250,4 +266,6 @@ void PsiCache::computeUmklappFactor(int uklpp[3]){
 
 }//end function
 
+#include "psi_cache.def.h"
+#include "fft_controller.def.h"
 #include "controller.def.h"

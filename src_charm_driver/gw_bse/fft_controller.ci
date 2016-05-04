@@ -1,0 +1,8 @@
+module fft_controller {
+  readonly CProxy_FFTController fft_controller_proxy;
+  initnode void init_plan_lock();
+
+  group FFTController {
+    entry FFTController();
+  };
+};

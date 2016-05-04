@@ -1,0 +1,11 @@
+module psi_cache {
+  extern module messages;
+  readonly CProxy_PsiCache psi_cache_proxy;
+
+  nodegroup PsiCache {
+    entry PsiCache();
+    entry [exclusive] void receivePsi(PsiMessage*);
+    entry [exclusive] void computeFs(PsiMessage*);
+    entry void reportFTime();
+  };
+};

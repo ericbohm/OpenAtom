@@ -7,6 +7,8 @@ mainmodule main {
   extern module controller;
   extern module pmatrix;
   extern module phase2;
+  extern module fft_controller;
+  extern module psi_cache;
 
   mainchare Main {
     entry Main(CkArgMsg* msg);

@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include "ckcomplex.h"
 
+#include "fft_controller.decl.h"
+#include "psi_cache.decl.h"
 #include "controller.decl.h"
 
 class Controller : public CBase_Controller {
@@ -42,6 +44,7 @@ class PsiCache : public CBase_PsiCache {
 
     void receivePsi(PsiMessage*);
     void computeFs(PsiMessage*);
+    void reportFTime();
     complex* getPsi(unsigned, unsigned, unsigned) const;
     complex* getF(unsigned) const;
   private:
@@ -55,10 +58,13 @@ class PsiCache : public CBase_PsiCache {
     complex*** psis;
     complex* fs;
     complex* umklapp_factor;
+
+    double total_time;
 };
 
 extern /* readonly */ CProxy_Controller controller_proxy;
 extern /* readonly */ CProxy_PsiCache psi_cache_proxy;
+extern /* readonly */ CProxy_FFTController fft_controller_proxy;
 extern /* readonly */ CProxy_Phase2 phase2_proxy;
 
 #endif
