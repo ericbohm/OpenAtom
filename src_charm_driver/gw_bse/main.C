@@ -25,8 +25,6 @@
 #include "states.h"
 #include "CkLoopAPI.h"
 
-#include "phase2.h"
-
 // =========================================================================
 // states_occ_proxy is declared readonly in states.ci file that makes them parallel global.
 // This declaration in main where we instantiated makes them c++ global.
@@ -36,10 +34,10 @@
 /* readonly */ GWBSE readonly_gwbse;
 /* readonly */ CProxy_States states_proxy;
 /* readonly */ CProxy_PsiCache psi_cache_proxy;
-/* readonly */ CProxy_PMatrix pmatrix_proxy;
+/* readonly */ CProxy_PMatrix2D pmatrix2D_proxy;
+/* readonly */ CProxy_PMatrix1D pmatrix1D_proxy;
 /* readonly */ CProxy_Controller controller_proxy;
 /* readonly */ CProxy_FFTController fft_controller_proxy;
-/* readonly */ CProxy_Phase2 phase2_proxy;
 
 
 //==========================================================================
@@ -95,7 +93,7 @@ Main::Main(CkArgMsg* msg) {
   CkPrintf("[MAIN] Creating %ix%i matrix chares with %i rows and %i cols each\n",
       dimension/nrows, dimension/ncols, nrows, ncols);
 
-  pmatrix_proxy = CProxy_PMatrix::ckNew(dimension/nrows, dimension/ncols);
+  pmatrix2D_proxy = CProxy_PMatrix2D::ckNew(dimension/nrows, dimension/ncols);
 
   // TODO: Where to read from? 
   int local_mtx_size_1d_x = dimension;
@@ -104,7 +102,7 @@ Main::Main(CkArgMsg* msg) {
   CkPrintf("[MAIN] Creating %i array chares with %i rows and %i cols each\n",
       number_of_chares_1d, local_mtx_size_1d_y, local_mtx_size_1d_x);
 
-  phase2_proxy = CProxy_Phase2::ckNew(local_mtx_size_1d_x, local_mtx_size_1d_y, number_of_chares_1d);
+  pmatrix1D_proxy = CProxy_PMatrix1D::ckNew(local_mtx_size_1d_x, local_mtx_size_1d_y, number_of_chares_1d);
 
   // -------------------------------------------------------------------
   // Create the array of state chare objects.

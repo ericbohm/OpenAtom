@@ -9,7 +9,7 @@
 
 #define IDX(r,c) ((r)*num_cols + (c))
 
-PMatrix::PMatrix() {
+PMatrix2D::PMatrix2D() {
   GWBSE* gwbse = GWBSE::get();
 
   // Set some constants
@@ -30,13 +30,13 @@ PMatrix::PMatrix() {
   start_col = thisIndex.y * num_cols;
   local_mtx_size_1d_y = 1;//1728; // TODO: where from?
   receive_counter = 0;
-  
+
   data = new complex[num_rows * num_cols];
 
   total_time = 0.0;
 }
 
-void PMatrix::reportPTime() {
+void PMatrix2D::reportPTime() {
   CkReduction::statisticsElement stats(total_time);
   int tuple_size = 4;
   CkReduction::tupleElement tuple_reduction[] = {
@@ -50,7 +50,7 @@ void PMatrix::reportPTime() {
   contribute(msg);
 }
 
-void PMatrix::applyFs() {
+void PMatrix2D::applyFs() {
   double start = CmiWallTimer();
 
   PsiCache* psi_cache = psi_cache_proxy.ckLocalBranch();
@@ -91,9 +91,77 @@ void PMatrix::applyFs() {
   total_time += CmiWallTimer() - start;
 }
 
-void PMatrix::fftRows(int direction) {
+void PMatrix2D::sendTo1D() {
+  int local_mtx_size_x = num_cols;
+  int local_mtx_size_y = num_rows;
+  int global_x = local_mtx_size_x*thisIndex.x;
+  for (unsigned i=0;i<local_mtx_size_y;++i) {
+    int global_y = local_mtx_size_y*thisIndex.y + i;
+    int dest_chare = (int) ((double)global_y/local_mtx_size_1d_y);
+    Phase2Message* msg;
+    msg = new (local_mtx_size_x) Phase2Message();
+    msg->global_x = global_x;
+    msg->global_y = global_y;
+    msg->size = local_mtx_size_x;
+    for(unsigned c = 0; c < local_mtx_size_x; ++c){
+      msg->data[c] = data[IDX(i,c)];
+    }
+    pmatrix1D_proxy[dest_chare].receiveRow(msg);
+  }
+}
+
+void PMatrix2D::receiveChunk(Phase2Message* msg) {
+  int local_mtx_size_x = num_cols;
+  int local_mtx_size_y = num_rows;
+  int local_y = msg->global_y - thisIndex.y * local_mtx_size_y;
+  int local_x = msg->global_x - thisIndex.x * local_mtx_size_x;
+  for(unsigned i=0; i<msg->size; ++i){
+    data[IDX(local_y, local_x) + i] = msg->data[i];
+  }
+
+  if(++receive_counter == num_rows){
+    contribute(CkCallback(CkReductionTarget(Controller, phase2_complete), controller_proxy));
+  }
+  delete msg;
+}
+
+PMatrix1D::PMatrix1D(int local_size_x, int local_size_y) {
+  GWBSE* gwbse = GWBSE::get();
+
+  // Set some constants
+  L = gwbse->gw_parallel.L;
+  nfft = gwbse->gw_parallel.fft_nelems;
+  qindex = Q_IDX; // Eventually the controller will set this
+
+  // Grab a local pointer to the fft controller for fft-ing our rows
+  // TODO: Is this guaranteed to be safe (is the local branch created for sure)?
+  fft_controller = fft_controller_proxy.ckLocalBranch();
+
+  // Figure out what part of the matrix we have and allocate space
+  matrix_dimension = gwbse->gw_parallel.n_elems;
+  num_rows = gwbse->gw_parallel.rows_per_chare;
+  num_cols = gwbse->gw_parallel.cols_per_chare;
+  num_chares = (matrix_dimension / num_rows) * (matrix_dimension / num_cols);
+
+  // Do the same for 1D:
+  local_mtx_size_1d_x = local_size_x;
+  local_mtx_size_1d_y = local_size_y;
+
+  local_mtx_size_2d_x = num_cols;
+  local_mtx_size_2d_y = num_rows;
+
+  number_of_chares_1d = matrix_dimension / local_mtx_size_1d_y;
+  number_of_chares_2d_x = matrix_dimension / local_mtx_size_2d_x;
+  number_of_chares_2d_y = matrix_dimension / local_mtx_size_2d_y;
+
+  arrival_counter = 0;
+
+  data = new complex[local_mtx_size_1d_x * local_mtx_size_1d_y];
+}
+
+void PMatrix1D::fftRows(int direction) {
   // FFT each row stored in this chare
-  for (int i=0; i < num_rows; i++){
+  for (int i=0; i < local_mtx_size_1d_y; i++){
     // First set up the data structures in the FFTController
     fft_controller->setup_fftw_3d(nfft, direction);
     fftw_complex* in_pointer = fft_controller->get_in_pointer();
@@ -109,38 +177,57 @@ void PMatrix::fftRows(int direction) {
   contribute(CkCallback(CkReductionTarget(Controller, fftComplete), controller_proxy));
 }
 
-// Print first n rows to file named with prefix
-void PMatrix::printRows(int n, const char* prefix) {
-  CkPrintf("Printing rows not currently implemented!\n");
-  CkExit();
-  /*for (int r = 0; r + start_row < n && r < num_rows; r++) {
-    FILE* fp;
-    char filename[200];
-    sprintf(filename, "row_data/%s_q%d_row%d_chunk%d.dat", prefix, qindex, r+start_row, thisIndex.y);
-    fp = fopen(filename, "w");
-    for (int c = 0; c < num_cols; c++) {
-      fprintf(fp, "row %d col %d %lg %lg\n", r+start_row, c+start_col, data[IDX(r,c)].re, data[IDX(r,c)].im);
+void PMatrix1D::sendTo2D() {
+  int n_col1 = number_of_chares_2d_x;
+  int num_rows=local_mtx_size_1d_y;
+  int chunksize = local_mtx_size_1d_x / n_col1;
+  Phase2Message* msg;
+  for(unsigned rows=0;rows<local_mtx_size_1d_y; ++rows){
+    for(unsigned dest_x=0;dest_x<n_col1;++dest_x){
+      int global_x = dest_x*chunksize;
+      int global_y = rows + thisIndex * local_mtx_size_1d_y;
+      int dest_y = (int) ((double)global_y / local_mtx_size_2d_y);
+
+      msg = new (chunksize) Phase2Message();
+      for(unsigned x=0;x<chunksize;++x){
+        msg->data[x] = data[IDX(rows,x+global_x)];
+      }
+      msg->global_y = global_y;
+      msg->global_x = global_x;
+      msg->size = chunksize;
+      pmatrix2D_proxy(dest_x,dest_y).receiveChunk(msg);
     }
-    fclose(fp);
   }
-  contribute(CkCallback(CkReductionTarget(Controller, printingComplete), controller_proxy));*/
 }
 
-void PMatrix::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
+void PMatrix1D::receiveRow(Phase2Message* msg) {
+  int local_y = msg->global_y - thisIndex * local_mtx_size_1d_y;
+  for(unsigned i=0; i< msg->size; ++i){
+    data[IDX(local_y,msg->global_x + i)] = msg->data[i];
+  }
+  if(++arrival_counter == local_mtx_size_1d_y) {
+    contribute(CkCallback(CkReductionTarget(Controller, dataSendComplete), controller_proxy));
+  }
+  //delete msg;
+}
+
+// TODO: These methods shouldn't be part of PMatrix, and should also just be
+// computed once at startup.
+void PMatrix2D::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   GWBSE* gwbse = GWBSE::get();
 
   // temporary space to save k/q/k+q vectors
   double *this_k, *this_q;
   double k_plus_q[3], k_plus_q_orig[3];
-  
+
   this_k = gwbse->gwbseopts.kvec[ikpt];
   this_q = gwbse->gwbseopts.qvec[qindex];
 
   for (int i=0; i<3; i++) {
-    // calculate k+q vector 
+    // calculate k+q vector
     k_plus_q[i] = this_k[i] + this_q[i]; // k+q vector
     k_plus_q_orig[i] = k_plus_q[i]; // save it for Umklapp process
-    // if not 0 =< k+q [i] <1, adjust k+q so that k+q[i] is in the Brillouine zone 
+    // if not 0 =< k+q [i] <1, adjust k+q so that k+q[i] is in the Brillouine zone
     if ( k_plus_q[i] >= 1 ) {
       k_plus_q[i] -= 1;
     }
@@ -148,7 +235,7 @@ void PMatrix::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
       k_plus_q[i] += 1;
     }
   }
-    
+
   // find k+q vector index
   for (int kk=0; kk < gwbse->gwbseopts.nkpt; kk++) {
     bool match = true;
@@ -172,8 +259,7 @@ void PMatrix::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
 
 }
 
-
-void PMatrix::getUmklappFactor(complex* umklapp_factor, int uklpp[3]){
+void PMatrix2D::getUmklappFactor(complex* umklapp_factor, int uklpp[3]){
 
   if (uklpp[0]==0 && uklpp[1]==0 && uklpp[2]==0){
     // do nothing

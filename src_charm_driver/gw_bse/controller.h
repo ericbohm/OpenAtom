@@ -64,7 +64,5 @@ class PsiCache : public CBase_PsiCache {
 
 extern /* readonly */ CProxy_Controller controller_proxy;
 extern /* readonly */ CProxy_PsiCache psi_cache_proxy;
-extern /* readonly */ CProxy_FFTController fft_controller_proxy;
-extern /* readonly */ CProxy_Phase2 phase2_proxy;
 
 #endif

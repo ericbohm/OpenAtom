@@ -1,6 +1,6 @@
 // MAIN CONTROL FLOW
 module controller {
-  extern module phase2;
+  extern module pmatrix;
   readonly CProxy_Controller controller_proxy;
 
   // Describes and controls the main control flow of the entire computation, by
@@ -86,7 +86,7 @@ module controller {
         end = CmiWallTimer();
         CkPrintf("[CONTROLLER] P Formed in real space @%f (%f elapsed).\n", end, end - start);
         start = CmiWallTimer();
-        pmatrix_proxy.send_to_1d();
+        pmatrix2D_proxy.sendTo1D();
       }
 
       // When we receive this message, we know that P has switched to a 1D
@@ -95,32 +95,32 @@ module controller {
         end = CmiWallTimer();
         CkPrintf("[PMATRIX] data is sent to 1d decomposition @%f (%f elapsed)\n", end, end - start);
         start = CmiWallTimer();
-        phase2_proxy.fftRows(1);
+        pmatrix1D_proxy.fftRows(1);
       }
 
       // The FFT of the rows is complete, so now transpose the matrix.
       when fftComplete() serial{
         CkPrintf("[PHASE2] fft #1 is done\n");
-        phase2_proxy.doTranspose();
+        pmatrix1D_proxy.doTranspose();
 
       }
 
       // Transpose is complete, so FFT the rows again in the opposite direction.
       when transposeComplete() serial{
         CkPrintf("[PHASE2] transpose #1 is done\n");
-        phase2_proxy.fftRows(-1);
+        pmatrix1D_proxy.fftRows(-1);
       }
 
       // The second FFT is complete, so transpose back.
       when fftComplete() serial{
         CkPrintf("[PHASE2] fft #2 is done\n");
-        phase2_proxy.doTranspose();
+        pmatrix1D_proxy.doTranspose();
       }
 
       // The final transpose is complete so now switch back to the 2D decomp.
       when transposeComplete() serial{
         CkPrintf("[PHASE2] transpose #2 is done\n");
-        phase2_proxy.send_to_2d();
+        pmatrix1D_proxy.sendTo2D();
       }
 
       // Back in the 2D decomposition. This is as far as we have implemented,
@@ -131,7 +131,7 @@ module controller {
         CkPrintf("[CONTROLLER] P formed in G space @%f (%f elapsed)\n", end, end - start);
 
         psi_cache_proxy.reportFTime();
-        pmatrix_proxy.reportPTime();
+        pmatrix2D_proxy.reportPTime();
       }
       when reportFTime(CkReductionMsg* msg) serial {
         CkReduction::tupleElement* results = NULL;
