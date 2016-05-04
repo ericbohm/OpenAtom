@@ -8,6 +8,20 @@
 #include "psi_cache.decl.h"
 #include "controller.decl.h"
 
+// Structure keeping track of all timers we report
+struct Timers {
+  // Setup timers
+  double total_setup, chare_creation, fft_states, caches_filled;
+  // Phase 1 timers
+  double total_phase1, form_p, get_times;
+  int fcomp_count, pcomp_count;
+  double max_fcomp, avg_fcomp, total_pcomp, avg_pcomp;
+  // Phase 2 timers
+  double total_phase2, to1D, to2D, fft1, fft2, trans1, trans2;
+  // Phase 3 timers
+  double total_phase3;
+};
+
 class Controller : public CBase_Controller {
   Controller_SDAG_CODE
   public:
@@ -16,9 +30,9 @@ class Controller : public CBase_Controller {
   private:
     bool do_output;
     unsigned debug_stages;
-    double start, end;
     unsigned K, L, M, pipeline_stages;
     unsigned next_K, next_state, total_sent, total_complete;
+    Timers timers;
 };
 
 // A struct containing the required info for computing a set of f vectors for a

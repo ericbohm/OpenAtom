@@ -1,7 +1,30 @@
 // MAIN CONTROL FLOW
 module controller {
+  extern module psi_cache;
   extern module pmatrix;
   readonly CProxy_Controller controller_proxy;
+
+#define STEP_START(x)\
+  timers.x = CmiWallTimer();
+
+#define STEP_END(x,s)\
+  double step_now = CmiWallTimer();\
+  timers.x = step_now - timers.x;\
+  CkPrintf("[CONTROLLER] %-40s @%.2fs (%.2fs elapsed)\n", s, step_now, timers.x);
+
+#define STEP_BOUNDARY(x,y,s)\
+  double step_now = CmiWallTimer();\
+  timers.x = step_now - timers.x;\
+  timers.y = step_now;\
+  CkPrintf("[CONTROLLER] %-40s @%.2fs (%.2fs elapsed)\n", s, step_now, timers.x);
+
+#define PHASE_BOUNDARY(x,y,s)\
+  double phase_now = CmiWallTimer();\
+  timers.x = phase_now - timers.x;\
+  timers.y = phase_now;\
+  CkPrintf("[CONTROLLER] ====================================================================\n");\
+  CkPrintf("[CONTROLLER] ==== %-35s @%.2fs (%.2fs elapsed)\n", s, phase_now, timers.x);\
+  CkPrintf("[CONTROLLER] ====================================================================\n");
 
   // Describes and controls the main control flow of the entire computation, by
   // by coordinating communication between all other chares in the system.
@@ -24,18 +47,14 @@ module controller {
     entry void run() {
       // TODO: Clean this up
       when fftControllerReady() serial {
-        start = CmiWallTimer();
-        CkPrintf("[CONTROLLER] Starting the controller @%f\n", start);
+        STEP_BOUNDARY(chare_creation, fft_states, "Chares created");
         states_proxy.fftGtoR();
       }
 
       // When we receive this message, all states have been read in and FFTd, so
       // so we duplicate the occupied states across all nodes.
       when stateFFTComplete() serial {
-        end = CmiWallTimer();
-        CkPrintf("[CONTROLLER] States FFTd @%f (elapsed %f)\n", end, end - start);
-        start = CmiWallTimer();
-
+        STEP_BOUNDARY(fft_states, caches_filled, "States FFTd");
         // Send a message to each occupied state (the first L states of each K
         // point), telling them to broadcast to all PsiCaches.
         for (next_K = 0; next_K < K; next_K++) {
@@ -48,9 +67,8 @@ module controller {
       // When we receive this message, the PsiCache on every node has received
       // the data for all occupied states so we are ready to start computing P.
       when cachesFilled() serial {
-        end = CmiWallTimer();
-        CkPrintf("[CONTROLLER] Caches filled @%f (%f elapsed)\n", end, end - start);
-        start = CmiWallTimer();
+        STEP_BOUNDARY(caches_filled, form_p, "Caches filled");
+        PHASE_BOUNDARY(total_setup, total_phase1, "SETUP COMPLETE");
       }
 
       // Send a message to each unoccupied state, telling them to broadcast to
@@ -78,85 +96,100 @@ module controller {
         when psiComplete() serial { total_complete++; }
       }
 
+      // Phase 1 is complete, so get more detailed timing info from the P Matrix
+      // chares and the PsiCache chares.
+      serial {
+        STEP_BOUNDARY(form_p, get_times, "P formed in R Space");
+        pmatrix2D_proxy.reportPTime();
+        psi_cache_proxy.reportFTime();
+      }
+
+      overlap {
+        when reportPTime(CkReductionMsg* msg) serial {
+          CkReduction::tupleElement* results = NULL;
+          int num_reductions = 0;
+          msg->toTuple(&results, &num_reductions);
+
+          timers.total_pcomp = *(double*)results[0].data;
+          CkReduction::statisticsElement& stats_result = *(CkReduction::statisticsElement*)results[1].data;
+          timers.pcomp_count = stats_result.count;
+          timers.avg_pcomp = stats_result.mean;
+          delete msg;
+        }
+        when reportFTime(CkReductionMsg* msg) serial {
+          CkReduction::tupleElement* results = NULL;
+          int num_reductions = 0;
+          msg->toTuple(&results, &num_reductions);
+
+          timers.max_fcomp = *(double*)results[0].data;
+          CkReduction::statisticsElement& stats_result = *(CkReduction::statisticsElement*)results[1].data;
+          timers.fcomp_count = stats_result.count;
+          timers.avg_fcomp = stats_result.mean;
+          delete msg;
+        }
+      }
+
       // At this point, all unoccupied states have been sent and processed, so
       // P is completely formed in R space. Now we can FFT it to G space. First
       // we switch from a 2D decomposition to a 1D decomposition, so that FFT
       // calls can be done with fftw calls.
       serial {
-        end = CmiWallTimer();
-        CkPrintf("[CONTROLLER] P Formed in real space @%f (%f elapsed).\n", end, end - start);
-        start = CmiWallTimer();
+        STEP_BOUNDARY(get_times, to1D, "Detailed times received");
+
+        CkPrintf("[CONTROLLER] Compute fs (max across %i nodes):                     \t%.2fs\n",
+            timers.fcomp_count, timers.max_fcomp);
+        CkPrintf("[CONTROLLER] Compute fs (avg across %i nodes):                     \t%.2fs\n",
+            timers.fcomp_count, timers.avg_fcomp);
+
+        CkPrintf("[CONTROLLER] Aggregate P (total across %i chares):                 \t%.2fs\n",
+            timers.pcomp_count, timers.total_pcomp);
+        CkPrintf("[CONTROLLER] Aggregate P (avg across %i chares):                   \t%.2fs\n",
+            timers.pcomp_count, timers.avg_pcomp);
+        CkPrintf("[CONTROLLER] Aggregate P (avg per PE assuming %0.2f chares per PE):\t%.2fs\n",
+            ((double)timers.pcomp_count/CkNumPes()),
+            timers.avg_pcomp * ((double)timers.pcomp_count/CkNumPes()));
+
+        PHASE_BOUNDARY(total_phase1, total_phase2, "PHASE 1 (P in R Space) COMPLETE");
         pmatrix2D_proxy.sendTo1D();
       }
 
       // When we receive this message, we know that P has switched to a 1D
       // decomposition, so tell it to FFT all of it's rows.
       when dataSendComplete() serial{
-        end = CmiWallTimer();
-        CkPrintf("[PMATRIX] data is sent to 1d decomposition @%f (%f elapsed)\n", end, end - start);
-        start = CmiWallTimer();
+        STEP_BOUNDARY(to1D, fft1, "Matrix decomposition changed to 1D");
         pmatrix1D_proxy.fftRows(1);
       }
 
       // The FFT of the rows is complete, so now transpose the matrix.
       when fftComplete() serial{
-        CkPrintf("[PHASE2] fft #1 is done\n");
+        STEP_BOUNDARY(fft1, trans1, "First FFT complete");
         pmatrix1D_proxy.doTranspose();
-
       }
 
       // Transpose is complete, so FFT the rows again in the opposite direction.
       when transposeComplete() serial{
-        CkPrintf("[PHASE2] transpose #1 is done\n");
+        STEP_BOUNDARY(trans1, fft2, "First transpose complete");
         pmatrix1D_proxy.fftRows(-1);
       }
 
       // The second FFT is complete, so transpose back.
       when fftComplete() serial{
-        CkPrintf("[PHASE2] fft #2 is done\n");
+        STEP_BOUNDARY(fft2, trans2, "Second fft complete");
         pmatrix1D_proxy.doTranspose();
       }
 
       // The final transpose is complete so now switch back to the 2D decomp.
       when transposeComplete() serial{
-        CkPrintf("[PHASE2] transpose #2 is done\n");
+        STEP_BOUNDARY(trans2, to2D, "Second transpose complete");
         pmatrix1D_proxy.sendTo2D();
       }
 
       // Back in the 2D decomposition. This is as far as we have implemented,
       // so output timers and exit.
       when phase2_complete() serial{
-        CkPrintf("[PMATRIX] data back to original distirbution\n");
-        end = CmiWallTimer();
-        CkPrintf("[CONTROLLER] P formed in G space @%f (%f elapsed)\n", end, end - start);
-
-        psi_cache_proxy.reportFTime();
-        pmatrix2D_proxy.reportPTime();
-      }
-      when reportFTime(CkReductionMsg* msg) serial {
-        CkReduction::tupleElement* results = NULL;
-        int num_reductions = 0;
-        msg->toTuple(&results, &num_reductions);
-        CkReduction::statisticsElement& stats_result = *(CkReduction::statisticsElement*)results[3].data;
-
-        CkPrintf("[CONTROLLER]: Min F: %g Max F: %g Total F: %g\n",
-            *(double*)results[0].data,
-            *(double*)results[1].data,
-            *(double*)results[2].data);
-        CkPrintf("[CONTROLLER]: Total contributors: %d Avg F: %g\n", stats_result.count, stats_result.mean);
-      }
-      when reportPTime(CkReductionMsg* msg) serial {
-        CkReduction::tupleElement* results = NULL;
-        int num_reductions = 0;
-        msg->toTuple(&results, &num_reductions);
-        CkReduction::statisticsElement& stats_result = *(CkReduction::statisticsElement*)results[3].data;
-
-        CkPrintf("[CONTROLLER]: Min P: %g Max P: %g Total P: %g\n",
-            *(double*)results[0].data,
-            *(double*)results[1].data,
-            *(double*)results[2].data);
-        CkPrintf("[CONTROLLER]: Total contributors: %d Avg P: %g\n", stats_result.count, stats_result.mean);
-        CkPrintf("[CONTROLLER] Exiting, waiting for phase3 to be implemented\n");
+        STEP_BOUNDARY(to2D, total_phase3, "Matrix decomposition changed to 2D");
+        PHASE_BOUNDARY(total_phase2, total_phase3, "PHASE 2 (FFT P) COMPLETE");
+        CkPrintf("Phase 3 not implemented yet. Exiting.\n");
         CkExit();
       }
     }

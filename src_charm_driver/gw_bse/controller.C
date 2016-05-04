@@ -23,7 +23,6 @@ Controller::Controller() {
 
   do_output = true;
   debug_stages = M*K;
-  CkPrintf("[CONTROLLER]: Created!\n");
 }
 
 PsiCache::PsiCache() {
@@ -50,11 +49,9 @@ PsiCache::PsiCache() {
 
 void PsiCache::reportFTime() {
   CkReduction::statisticsElement stats(total_time);
-  int tuple_size = 4;
+  int tuple_size = 2;
   CkReduction::tupleElement tuple_reduction[] = {
-    CkReduction::tupleElement(sizeof(double), &total_time, CkReduction::min_double),
     CkReduction::tupleElement(sizeof(double), &total_time, CkReduction::max_double),
-    CkReduction::tupleElement(sizeof(double), &total_time, CkReduction::sum_double),
     CkReduction::tupleElement(sizeof(CkReduction::statisticsElement), &stats, CkReduction::statistics) };
 
   CkReductionMsg* msg = CkReductionMsg::buildFromTuple(tuple_reduction, tuple_size);
