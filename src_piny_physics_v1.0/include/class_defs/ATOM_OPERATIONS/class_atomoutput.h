@@ -27,7 +27,7 @@ class ATOMOUTPUT{
 
     static void ctrl_piny_output(int ,int ,int ,int, int , Atom *, AtomNHC *,int*,int,int,int);
     static void write_atom_output_dump(int , int ,int , int,Atom *,AtomNHC *, char *);
-    static void write_atom_output_conf(int , int , int , Atom *,char *);
+    static void write_atom_output_conf(int , int , int , Atom *,char *,int);
 
     //---------------------------------------------------------------------------
 }; //ATOMINTEGRATE

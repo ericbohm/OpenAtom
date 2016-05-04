@@ -39,11 +39,13 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads_in
 #include "../class_defs/allclass_strip_gen.h"
   int low_lim_par      = genfilenames->low_lim_par-1;
   int high_lim_par     = genfilenames->high_lim_par;
+  int iwrite_confv     = genfilenames->iwrite_confv;
   int iwrite_confp     = genfilenames->iwrite_confp;
   int iwrite_par_confp = genfilenames->iwrite_par_confp;
   int iwrite_dump      = genfilenames->iwrite_dump;
 
   char *dump_dir       = genfilenames->atm_crd_dir_out;
+  char *cvname         = genfilenames->cvname;
   char *cpname         = genfilenames->cpname;
   char *cpparname      = genfilenames->cpparname;
   char *dname          = genfilenames->dname;
@@ -70,7 +72,16 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads_in
       if(myid==0){
         int low = 0; int high = natm;
         sprintf (temp_ext,"%s/Bead.%d_Temper.%d/%s",dump_dir,ibead,itemper,cpname);
-        write_atom_output_conf(low,high,pi_beads,atoms,temp_ext);
+        write_atom_output_conf(low,high,pi_beads,atoms,temp_ext,0);
+      }//endif
+    }//endif
+
+    if( (itime % iwrite_confv)==0 ){
+      iwrite_atm++;
+      if(myid==0){
+        int low = 0; int high = natm;
+        sprintf (temp_ext,"%s/Bead.%d_Temper.%d/%s",dump_dir,ibead,itemper,cvname);
+        write_atom_output_conf(low,high,pi_beads,atoms,temp_ext,1);
       }//endif
     }//endif
 
@@ -78,7 +89,7 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads_in
       iwrite_atm++;
       if(myid==0){
         sprintf (temp_ext,"%s/Bead.%d_Temper.%d/%s",dump_dir,ibead,itemper,cpparname);
-        write_atom_output_conf(low_lim_par,high_lim_par,pi_beads,atoms,temp_ext);
+        write_atom_output_conf(low_lim_par,high_lim_par,pi_beads,atoms,temp_ext,0);
       }//endif
     }//endif
 
@@ -103,8 +114,7 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads_in
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void ATOMOUTPUT::write_atom_output_dump(int natm, int len_nhc,int pi_beads,
-    int itime,Atom *atoms,AtomNHC *atomsNHC,
-    char *dname)
+		int itime,Atom *atoms,AtomNHC *atomsNHC,char *dname)
   //==========================================================================
 {//begin routine
   //=======================================================================
@@ -145,7 +155,7 @@ void ATOMOUTPUT::write_atom_output_dump(int natm, int len_nhc,int pi_beads,
   fprintf(fp,"atm pos, atm_typ, mol_typ mol_num\n");
   for(ip=1;ip<=pi_beads;ip++){
     for(i=1,i1=0;i<=natm;i++,i1++){
-      fprintf(fp,"%.13g %.13g %.13g %s %s %s %d %d\n",
+       fprintf(fp,"%.13g %.13g %.13g %s %s %s %d %d\n",
           atoms[i1].xold,atoms[i1].yold,atoms[i1].zold,
           atm_typ[iatm_atm_typ[i]],res_typ[iatm_res_typ[i]],
           mol_typ[iatm_mol_typ[i]],iatm_mol_num[i],iatm_res_num[i]);
@@ -221,7 +231,7 @@ void ATOMOUTPUT::write_atom_output_dump(int natm, int len_nhc,int pi_beads,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void ATOMOUTPUT::write_atom_output_conf(int low, int high, int pi_beads, 
-    Atom *atoms,char *fname)
+				Atom *atoms,char *fname, int vel_flag)
   //==========================================================================
 {//begin routine
   //==========================================================================
@@ -242,7 +252,11 @@ void ATOMOUTPUT::write_atom_output_conf(int low, int high, int pi_beads,
   if(iwrite_conf_binary==0){
     for(ip=1;ip<=pi_beads;ip++){
       for(i=low;i<high;i++){
-        fprintf(fp,"%.12g  %.12g  %.12g\n",atoms[i].xold,atoms[i].yold,atoms[i].zold);
+        if(vel_flag==0){
+          fprintf(fp,"%.12g  %.12g  %.12g\n",atoms[i].xold,atoms[i].yold,atoms[i].zold);
+	}else{
+          fprintf(fp,"%.12g  %.12g  %.12g\n",atoms[i].vxold,atoms[i].vyold,atoms[i].vzold);
+	}
       }//endfor
     }//endfor
     for(i=1;i<=9;i+=3){
@@ -258,9 +272,16 @@ void ATOMOUTPUT::write_atom_output_conf(int low, int high, int pi_beads,
     n=1;
     for(ip=1;ip<=pi_beads;ip++){
       for(i=low;i<high;i++){ 
-        double x=atoms[i].xold;
-        double y=atoms[i].yold;
-        double z=atoms[i].zold;
+        double x,y,z;
+        if(vel_flag==0){
+         x=atoms[i].xold;
+         y=atoms[i].yold;
+         z=atoms[i].zold;
+	}else{
+         x=atoms[i].vxold;
+         y=atoms[i].vyold;
+         z=atoms[i].vzold;
+	}
         fwrite(&x,sizeof(double),n,fp);
         fwrite(&y,sizeof(double),n,fp);
         fwrite(&z,sizeof(double),n,fp);
