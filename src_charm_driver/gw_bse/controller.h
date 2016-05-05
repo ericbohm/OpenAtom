@@ -29,9 +29,9 @@ class Controller : public CBase_Controller {
 
   private:
     bool do_output;
-    unsigned debug_stages;
     unsigned K, L, M, pipeline_stages;
     unsigned next_K, next_state, total_sent, total_complete;
+    unsigned max_sends, next_report_threshold;
     Timers timers;
 };
 

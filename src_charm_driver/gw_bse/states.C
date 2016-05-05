@@ -51,8 +51,7 @@ States::States(CkMigrateMessage *msg) { }
 // Pack up our realspace coefficients and broadcast them to the cache for longer
 // term storage on each node.
 void States::sendToCache() {
-
-  CkPrintf("[%i,%i,%i]: Sending psi to node cache...\n", ispin, ikpt, istate);
+  //CkPrintf("[%i,%i,%i]: Sending psi to node cache...\n", ispin, ikpt, istate);
   int ndata = nfft[0]*nfft[1]*nfft[2];
   PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
   msg->spin_index = ispin;
@@ -66,7 +65,7 @@ void States::sendToCache() {
 // Pack up our realspace coefficients and broadcast them to the cache to be
 // multiplied with each occupied psi to create a set of f vectors.
 void States::sendToComputeF() {
-  CkPrintf("[%i,%i,%i]: Sending psi for f-comp...\n", ispin, ikpt, istate);
+  //CkPrintf("[%i,%i,%i]: Sending psi for f-comp...\n", ispin, ikpt, istate);
   int ndata = nfft[0]*nfft[1]*nfft[2];
   PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
   msg->spin_index = ispin;

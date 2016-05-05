@@ -76,8 +76,8 @@ module controller {
       // uses its local copies of the occupied states to compute all the f
       // vectors for the unoccupied state it just received, which will then be
       // used to update the P matrix by adding the outer-product of each f.
-      for (next_K = 0; next_K < K && total_sent < debug_stages; next_K++) {
-        for (next_state = L; next_state < L + M && total_sent < debug_stages; next_state++) {
+      for (next_K = 0; next_K < K && total_sent < max_sends; next_K++) {
+        for (next_state = L; next_state < L + M && total_sent < max_sends; next_state++) {
           serial {
             states_proxy(0, next_K, next_state).sendToComputeF();
             total_sent++;
@@ -86,14 +86,26 @@ module controller {
           // states at a time. As the PsiCaches complete work on the states, we
           // can send more.
           if (total_sent >= pipeline_stages) {
-            when psiComplete() serial { total_complete++; }
+            when psiComplete() serial {
+              if (++total_complete >= next_report_threshold) {
+                CkPrintf("[CONTROLLER] P formation %3i%% complete @%.2f\n",
+                    total_complete*100 / max_sends, CmiWallTimer());
+                next_report_threshold = total_complete + max_sends/10;
+              }
+            }
           }
         }
       }
       // Wait for the PsiCaches to finish up with the remaining unoccupied
       // states.
-      while (total_complete < K * M && total_complete < debug_stages) {
-        when psiComplete() serial { total_complete++; }
+      while (total_complete < max_sends) {
+        when psiComplete() serial {
+          if (++total_complete >= next_report_threshold) {
+            CkPrintf("[CONTROLLER] P formation %3i%% complete @%.2f\n",
+                total_complete*100 / max_sends, CmiWallTimer());
+            next_report_threshold = total_complete + max_sends/10;
+          }
+        }
       }
 
       // Phase 1 is complete, so get more detailed timing info from the P Matrix

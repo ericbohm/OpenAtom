@@ -19,10 +19,11 @@ Controller::Controller() {
   M = gwbse->gw_parallel.M;
   pipeline_stages = gwbse->gw_parallel.pipeline_stages;
 
-  next_K = next_state = total_sent = total_complete = 0;
+  next_K = next_state = total_sent = total_complete = next_report_threshold = 0;
 
+  // TODO: Make these config options
   do_output = true;
-  debug_stages = M*K;
+  max_sends = M*K;  // For debugging this can be changed to a smaller number
 }
 
 PsiCache::PsiCache() {
@@ -72,7 +73,7 @@ void PsiCache::receivePsi(PsiMessage* msg) {
   // Once the cache has received all of it's data start the sliding pipeline
   // sending of psis to P to start the accumulation of fxf'.
   if (++received_psis == K*L) {
-    CkPrintf("[%d]: Cache filled\n", CkMyPe());
+    //CkPrintf("[%d]: Cache filled\n", CkMyPe());
     contribute(CkCallback(CkReductionTarget(Controller,cachesFilled), controller_proxy));
   }
 }
