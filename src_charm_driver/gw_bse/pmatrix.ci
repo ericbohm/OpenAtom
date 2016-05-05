@@ -64,6 +64,7 @@ module pmatrix {
               data[IDXBIG(local_y,msg->global_x) + i] = msg->data[i + r*num_cols];
             }
           }
+          delete msg;
         }
       }
       serial{

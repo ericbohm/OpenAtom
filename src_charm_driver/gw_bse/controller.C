@@ -157,7 +157,6 @@ void PsiCache::computeFs(PsiMessage* msg) {
 
   // Cleanup
   delete msg;
-
   total_time += CmiWallTimer() - start;
 }
 

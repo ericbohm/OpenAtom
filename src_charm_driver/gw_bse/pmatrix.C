@@ -206,7 +206,7 @@ void PMatrix1D::receiveRow(Phase2Message* msg) {
   if(++arrival_counter == local_mtx_size_1d_y) {
     contribute(CkCallback(CkReductionTarget(Controller, dataSendComplete), controller_proxy));
   }
-  //delete msg;
+  delete msg;
 }
 
 // TODO: These methods shouldn't be part of PMatrix, and should also just be
