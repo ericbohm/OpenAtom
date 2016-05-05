@@ -4,7 +4,7 @@ CHARMC = $(CHARMDIR)/bin/charmc
 INCLUDES=-I$(FFTW3)/include
 LIBS=-L$(FFTW3)/lib -lfftw3 -lm -lz
 
-CFLAGS+=-g $(INCLUDES)
+CFLAGS+=-O3 $(INCLUDES)
 LFLAGS+=$(LIBS)
 
 C_FILES=$(wildcard *.C)
