@@ -1,10 +1,63 @@
-To build:
+TO BUILD:
 ============
-> cp config.mk.template config.mk (Edit paths in config.mk to match your system)
-> make
+Checkout and build Charm++ for the architecture you plan to run on:
+> git clone https://charm.cs.illinois.edu/gerrit/charm
+> cd <charm directory>
+> ./build charm++ <arch> --with-production -j8
 
-To run:
-============
-> cp gw_bse input
-> cd input
-> ./gw_bse minjung_test_file
+Common values for <arch> are:
+  - pamilrts-bluegeneq-smp    when running on a BG/Q machine
+  - netlrts-linux-x86_64-smp  when running on a linux workstation
+  - multicore-darwin-x86_64   when running on a Mac workstation
+
+Set up the build configuration file:
+- Copy config.mk.template to config.mk
+(Use config.mk.anl_template instead when running on ANL machines)
+- Edit config.mk to set up your configuration
+
+Important PATHS in config.mk:
+- SRCDIR:   The full path to your gw_bse directory
+- CHARMDIR: The full path to your charm build from above
+- BUILDDIR: The full path to where you want the build files to go
+- CHARMC:   Do NOT change. The path to the charm compiler
+
+To use LAPACK, the following options must be set in config.mk:
+LAPACKLIB:  Linker commands needed to link to LAPACK
+LAPACKINC:  Add -I include paths needed for LAPACK
+CFLAGS:     "-DUSE_LAPACK $(LAPACKINC)" must be set
+LFLAGS:     "$(LAPACKLIB)" must be set
+
+To use CkLoop, the following options must be set in config.mk:
+CFLAGS: "-DUSE_CKLOOP" must be set
+LFLAGS: "-module CkLoop" must be set
+
+Other flags:
+CFLAGS: "-DQ_IDX=X" is used to set the Q point at compile time to X
+DIRS:   The list of subdirectories used in compilation. Do NOT change.
+
+TO RUN GW/BSE:
+==============
+On your local workstation:
+- Copy charmrun and gw_bse from the build directory you set in config.mk to the
+  top level directory of the dataset you wish to run on. A test dataset is
+  included in the 'input' directory of the repository
+- Switch to your data set directory and run the following, where X is the number
+  of processors you want to run on:
+  > ./charmrun +pX ./gw_bse <config file>
+
+The config file defines certain runtime variables used by the gw_bse. An example
+configuration file can be found in 'input/minjung_test_file'
+
+If the run does not start because of ssh being unable to connect, add the
+++local option to your run command right after the +pX option.
+
+If there you get the "<config file>.out already exists" error, you must run a
+tidy script to clean out data from previous runs. An example tidy script can be
+found in 'input/tidy'.
+
+On an ANL machine: (WIP)
+- Copy gw_bse from the build directory to your dataset directory. We will be
+  using 'runjob' to start the job instead of charmrun.
+- When you have an allocation run the following command to run on X nodes, with
+  Y threads per node:
+  > runjob 

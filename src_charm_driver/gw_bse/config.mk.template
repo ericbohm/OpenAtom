@@ -1,20 +1,32 @@
 # Define the following paths in order to build gw_bse
+SRCDIR = /Users/<username>/openatom/src_charm_driver/gw_bse
+BUILDDIR = $(SRCDIR)/build
+CHARMDIR = /Users/<username>/charm
+CHARMC = $(CHARMDIR)/bin/charmc
 
-# Path to your build of charm
-CHARMDIR = /Users/Eric/Programming/ppl/charm
+# Compile and link flags
+CFLAGS=-O3
+LFLAGS=
 
 # Path to the build of the fftw3 library
-FFTW3 = /Users/Eric/Programming/ppl/fftw3
+FFTW3 = <PATH TO FFTW3 DIRECTORY>
+CFLAGS+=-I$(FFTW3)/include
+LFLAGS=-L$(FFTW3)/lib -lfftw3 -lm -lz
 
-# Path to LAPACK if using LAPACK
+# Path to LAPACK if using LAPACK (the following should work for Mac OS X)
 LAPACKLIB = -framework Accelerate
 LAPACKINC = -I/System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Headers/
 CFLAGS += -DUSE_LAPACK $(LAPACKINC)
 LFLAGS += $(LAPACKLIB)
 
-# Toggle CkLoop
+# Flags for enabling CkLoop
 CFLAGS += -DUSE_CKLOOP
 LFLAGS += -module CkLoop
 
 # Set the q index
 CFLAGS += -DQ_IDX=0
+
+# The sub directories used for compilation
+DIRS=configuration main fft matrix states
+INCLUDES=$(addprefix -I$(SRCDIR)/, $(DIRS))
+CFLAGS+=$(INCLUDES)
