@@ -3,10 +3,16 @@
 #include "standard_include.h"
 #include "allclass_gwbse.h"
 #include "messages.h"
+#include "eps_matrix.h"
 #include "pmatrix.h"
+#include "mat_mul.h"
+#include "main.h"
 #include "states.h"
 #include "fft_controller.h"
 #include "CkLoopAPI.h"
+
+#define eps_rows 20
+#define eps_cols 20
 
 void init_plan_lock();
 
@@ -21,9 +27,100 @@ Controller::Controller() {
 
   next_K = next_state = total_sent = total_complete = next_report_threshold = 0;
 
+  dimension = gwbse->gw_parallel.n_elems;
+  rows = gwbse->gw_parallel.rows_per_chare;
+
+  epsCut = 5;
+  alat = 10.261200; 
+  vol = 10;//how to read this?
+  shift[0] = 0;
+  shift[1] = 0;
+  shift[2] = 0.001;
   // TODO: Make these config options
   do_output = true;
   max_sends = M*K;  // For debugging this can be changed to a smaller number
+  maxiter = 1;
+  msg_received = 0;
+  global_inew = 0;
+  max_local_inew = global_inew;
+  global_jnew = 0;
+  for(int i=0;i<140;i++)
+    jnew_arr[i] = 0;
+}
+
+
+void Controller::prep(){
+
+  GWBSE *gwbse = GWBSE::get();
+
+  double *this_q, *b1, *b2, *b3;
+  b1 = gwbse->gwbseopts.b1;
+  b2 = gwbse->gwbseopts.b2;
+  b3 = gwbse->gwbseopts.b3;
+
+  int qindex = Q_IDX;
+
+  this_q = gwbse->gwbseopts.qvec[qindex];
+
+
+  int* nfft;
+  nfft = gwbse->gw_parallel.fft_nelems;
+
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
+
+//output geps, accept
+  fft_controller->get_geps(epsCut, this_q, b1, b2, b3,
+                            alat, nfft);
+
+
+
+  }
+
+
+  void Controller::got_geps(std::vector<int> accept, int epsilon_size){
+        //CkPrintf("\nGot geps");fflush(stdout);
+        accept_result = accept;
+        thisProxy.done_geps(epsilon_size);
+  }
+  
+  void Controller::calc_Geps(){
+
+  
+  GWBSE *gwbse = GWBSE::get();
+
+  double *this_q, *b1, *b2, *b3;
+  b1 = gwbse->gwbseopts.b1;
+  b2 = gwbse->gwbseopts.b2;
+  b3 = gwbse->gwbseopts.b3;
+
+  int qindex = Q_IDX;
+
+  this_q = gwbse->gwbseopts.qvec[qindex];
+
+
+  int* nfft;
+  nfft = gwbse->gw_parallel.fft_nelems;
+
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
+
+
+//output - vcoulb
+  fft_controller->calc_vcoulb(this_q, b1, b2, b3, shift, alat, vol, gwbse->gwbseopts.nkpt, qindex);
+}
+
+void Controller::got_vcoulb(std::vector<double> vcoulb_in){
+
+  vcoulb = vcoulb_in;
+  thisProxy.prepare_epsilon();
+}
+
+
+
+void Controller::createEpsilon(){
+ 
+  pmatrix2D_proxy(0,0).generateEpsilon(vcoulb, accept_result, 0, 0, 0, 0, vcoulb.size());
 }
 
 PsiCache::PsiCache() {
@@ -88,6 +185,7 @@ void computeF(int first, int last, void* result, int count, void* params) {
   double e_unocc = f_packet->e_unocc;
   complex* fs = f_packet->fs;
 
+  complex total = 0;
   for (int l = first; l <= last; l++) {
     complex* f = &(fs[l*psi_size]);
     complex* psi_occ = f_packet->occ_psis[l];
@@ -98,6 +196,7 @@ void computeF(int first, int last, void* result, int count, void* params) {
       if (umklapp_factor) {
         f[i] *= umklapp_factor[i];
       }
+      total += psi_occ[i];
 #ifdef USE_LAPACK
       // BLAS calls compute the complex conjugate of P, which is hermitian. This
       // change to f corrects that so we get the correct P.
@@ -110,6 +209,7 @@ void computeF(int first, int last, void* result, int count, void* params) {
 // Receive an unoccupied psi, and split off the computation of all associated f
 // vectors across the node using CkLoop.
 void PsiCache::computeFs(PsiMessage* msg) {
+//  CkPrintf("\nIn corresponding computeFs\n");
   double start = CmiWallTimer();
 
   if (msg->spin_index != 0) {
@@ -151,11 +251,13 @@ void PsiCache::computeFs(PsiMessage* msg) {
     computeF(l,l,NULL,1,&f_packet);
   }
 #endif
-
+  fs = f_packet.fs;
+  wrote = 4;
   // Let the matrix chares know that the f vectors are ready
+//  CkPrintf("\nAbout to call pmatrix2D_proxy\n");
   CkCallback cb(CkReductionTarget(PMatrix2D, applyFs), pmatrix2D_proxy);
   contribute(cb);
-
+//  CkPrintf("\nAfter calling pmatrix2D_proxy\n");
   // Cleanup
   delete msg;
   total_time += CmiWallTimer() - start;
@@ -175,6 +277,10 @@ complex* PsiCache::getF(unsigned idx) const {
   return &(fs[idx*psi_size]);
 }
 
+int PsiCache::getWrote(){
+    return wrote;
+}
+
 
 void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   GWBSE* gwbse = GWBSE::get();
@@ -184,6 +290,7 @@ void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   double k_plus_q[3], k_plus_q_orig[3];
   
   this_k = gwbse->gwbseopts.kvec[ikpt];
+  
   this_q = gwbse->gwbseopts.qvec[qindex];
 
   for (int i=0; i<3; i++) {

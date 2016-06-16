@@ -14,9 +14,11 @@
 
 #define CHARM_ON
 #define PUP_ON
+#include "standard_include.h"
 #include "main.h"
 #include "states.h"
 #include "pmatrix.h"
+#include "eps_matrix.h"
 #include "controller.h"
 #include "fft_controller.h"
 #include "standard_include.h"
@@ -31,12 +33,23 @@
 // module states is declared external in main.ci inside module main.
 // module states is defined in states.ci file, no external.
 /* readonly */ CProxy_Main mainProxy;
+/* readonly */ CProxy_MatMul mat_mul_proxy;
 /* readonly */ GWBSE readonly_gwbse;
 /* readonly */ CProxy_States states_proxy;
 /* readonly */ CProxy_PsiCache psi_cache_proxy;
+
+/* readonly */ CProxy_EpsMatrix2D eps_matrix2D_proxy;
+
 /* readonly */ CProxy_PMatrix2D pmatrix2D_proxy;
+/* readonly */ CProxy_EpsMatrix2D pmatrix2D_bproxy;
+/* readonly */ CProxy_EpsMatrix2D pmatrix2D_cproxy;
+
+/* readonly */ CProxy_EpsMatrix2D pmatrix2D_aaproxy;
+/* readonly */ CProxy_EpsMatrix2D pmatrix2D_bbproxy;
+/* readonly */ CProxy_EpsMatrix2D pmatrix2D_ccproxy;
+
 /* readonly */ CProxy_PMatrix1D pmatrix1D_proxy;
-/* readonly */ CProxy_Controller controller_proxy;
+///* readonly */ CProxy_Controller controller_proxy;
 /* readonly */ CProxy_FFTController fft_controller_proxy;
 
 
@@ -58,7 +71,8 @@ Main::Main(CkArgMsg* msg) {
   //sprintf (input_name,"minjung_test_file");
   delete msg;
   gw_configure.readConfig (input_name, gwbse);
-    
+
+//  gw_configure.read_usrinput();    
   // -------------------------------------------------------------------
   // Dump the contents of the readonlies on PE 0
   gwbse->state_class_out();
@@ -81,9 +95,15 @@ Main::Main(CkArgMsg* msg) {
 
   // -------------------------------------------------------------------
   // Create the controller chares
+
+
+  mat_mul_proxy = CProxy_MatMul::ckNew();
+
+
   controller_proxy = CProxy_Controller::ckNew();
   fft_controller_proxy = CProxy_FFTController::ckNew();
   psi_cache_proxy = CProxy_PsiCache::ckNew();
+   
 
   // -------------------------------------------------------------------
   // Create the array of P matrix chare objects.
@@ -93,9 +113,20 @@ Main::Main(CkArgMsg* msg) {
   CkPrintf("[MAIN] Creating %ix%i matrix chares with %i rows and %i cols each\n",
       dimension/nrows, dimension/ncols, nrows, ncols);
 
-  pmatrix2D_proxy = CProxy_PMatrix2D::ckNew(dimension/nrows, dimension/ncols);
 
-  // TODO: Where to read from? 
+  eps_matrix2D_proxy = CProxy_EpsMatrix2D::ckNew();
+
+  pmatrix2D_proxy = CProxy_PMatrix2D::ckNew(dimension/nrows, dimension/ncols);
+  pmatrix2D_bproxy = CProxy_PMatrix2D::ckNew();
+  pmatrix2D_cproxy = CProxy_PMatrix2D::ckNew();
+ 
+  pmatrix2D_ccproxy = CProxy_PMatrix2D::ckNew();
+  pmatrix2D_aaproxy = CProxy_PMatrix2D::ckNew();
+  pmatrix2D_bbproxy = CProxy_PMatrix2D::ckNew();
+
+
+  //eps_matrix2D_proxy = CProxy_EpsMatrix2D::ckNew();
+
   int local_mtx_size_1d_x = dimension;
   int local_mtx_size_1d_y = 1;//1728; 
   int number_of_chares_1d = dimension / local_mtx_size_1d_y;
@@ -104,18 +135,18 @@ Main::Main(CkArgMsg* msg) {
 
   pmatrix1D_proxy = CProxy_PMatrix1D::ckNew(local_mtx_size_1d_x, local_mtx_size_1d_y, number_of_chares_1d);
 
-  // -------------------------------------------------------------------
-  // Create the array of state chare objects.
+
+
   int nspin = gwbse->gwbseopts.nspin;
   int nkpt = gwbse->gwbseopts.nkpt;
-  int nocc = gwbse->gwbseopts.nocc;  
-  int nunocc = gwbse->gwbseopts.nunocc;  
+  int nocc = gwbse->gwbseopts.nocc;
+  int nunocc = gwbse->gwbseopts.nunocc;
   states_proxy = CProxy_States::ckNew(nspin, nkpt, nocc + nunocc);
   CkPrintf("[MAIN] Creating %i occupied states and %i unoccupied states\n",
       nspin*nkpt*nocc, nspin*nkpt*nunocc);
-
   // -------------------------------------------------------------------
-  // Tell the controller to start the computation
+  // Create the array of state chare objects.
+  
   controller_proxy.run();
 
 }// end routine
@@ -129,7 +160,6 @@ Main::Main(CkArgMsg* msg) {
 // Constructor needed for chare object migration (ignore for now)
 // NOTE: This constructor does not need to appear in the ".ci" file
 Main::Main(CkMigrateMessage* msg) { }
-
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

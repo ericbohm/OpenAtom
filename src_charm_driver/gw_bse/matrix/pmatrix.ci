@@ -1,6 +1,9 @@
 module pmatrix {
   include "ckcomplex.h";
+  include "CLA_Matrix.h";
   extern module messages;
+  extern module eps_matrix;
+
   readonly CProxy_PMatrix2D pmatrix2D_proxy;
   readonly CProxy_PMatrix1D pmatrix1D_proxy;
 
@@ -11,8 +14,10 @@ module pmatrix {
     entry PMatrix2D();
     entry [reductiontarget] void applyFs();
     entry void sendTo1D();
+    entry void checkReady();
     entry void receiveChunk(Phase2Message*);
     entry void reportPTime();
+    entry void generateEpsilon(std::vector<double> vcoulb, std::vector<int> accept, int inew, int jnew, int size, int max_inew, int max_jnew);
   };
 
   array [1D] PMatrix1D {
@@ -21,11 +26,10 @@ module pmatrix {
     entry void fftRows(int);
     entry void sendTo2D();
     entry void receiveRow(Phase2Message*);
-
     // SDAG code for doing the transpose
     entry void receiveTransposeData(Phase2Message* msg);
     entry void doTranspose() {
-      serial {
+         serial {
         Phase2Message* msg;
         unsigned my_start, their_start;
         unsigned num_rows, num_cols;
@@ -67,7 +71,8 @@ module pmatrix {
           delete msg;
         }
       }
-      serial{
+
+    serial{
         contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
       }
     }

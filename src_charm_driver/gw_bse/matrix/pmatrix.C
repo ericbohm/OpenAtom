@@ -2,14 +2,21 @@
 #include "allclass_gwbse.h"
 #include "pmatrix.h"
 #include "messages.h"
+#include "eps_matrix.h"
 #include "controller.h"
 #include "states.h"
 #include "fft_routines.h"
 #include "fft_controller.h"
 
+#define CHARE_NUM 10
 #define IDX(r,c) ((r)*num_cols + (c))
+#define IDX_eps(r,c) ((r)*eps_cols + (c))
+#define eps_chares_x 10
+#define eps_chares_y 10
 
-PMatrix2D::PMatrix2D() {
+
+PMatrix2D::PMatrix2D(){
+//CkPrintf("\nCalling default construction for PMatrix2D(%d, %d)\n", thisIndex.x, thisIndex.y);
   GWBSE* gwbse = GWBSE::get();
 
   // Set some constants
@@ -36,6 +43,32 @@ PMatrix2D::PMatrix2D() {
   total_time = 0.0;
 }
 
+void PMatrix2D::generateEpsilon(std::vector<double> vcoulb, std::vector<int> accept, int inew, int jnew, int size, int max_inew, int max_jnew){
+#if 1
+  int n = 0; 
+//  std::vector<complex> eps_data_tmp(num_rows*num_cols);
+  complex *eps_data_tmp;
+  eps_data_tmp = new complex[num_rows*num_cols];
+  for(int i=0;i<num_rows;i++)
+    for(int j=0;j<num_cols;j++)
+      eps_data_tmp[n++] = data[IDX(i,j)];
+
+  int *accept_arr;
+  double *vcoulb_arr;
+  accept_arr = new int[accept.size()];  
+  vcoulb_arr = new double[vcoulb.size()];
+  for(int i=0;i<accept.size();i++){
+    accept_arr[i] = accept[i];
+    vcoulb_arr[i] = vcoulb[i];
+  }
+ 
+  controller_proxy.inputData(thisIndex.x*12+thisIndex.y, eps_data_tmp, vcoulb_arr, accept_arr, num_rows, num_cols, accept.size());             
+ // eps_matrix2D_proxy(thisIndex.x, thisIndex.y).receiveFs(eps_data_tmp, 0, 0, num_rows, num_cols,0);
+#endif
+  
+}
+
+ 
 void PMatrix2D::reportPTime() {
   CkReduction::statisticsElement stats(total_time);
   int tuple_size = 2;
@@ -50,9 +83,9 @@ void PMatrix2D::reportPTime() {
 
 void PMatrix2D::applyFs() {
   double start = CmiWallTimer();
-
+//  print_res();
   PsiCache* psi_cache = psi_cache_proxy.ckLocalBranch();
-
+//CkPrintf("\napplyFs entered\n");
 #ifdef USE_LAPACK
   // Common variables for both ZGERC and ZGEMM
   int M = num_rows, N = num_cols;
@@ -73,23 +106,30 @@ void PMatrix2D::applyFs() {
     complex* f = psi_cache->getF(l);
     ZGERC(&N, &M, &alpha, &(f[start_col]), &K, &(f[start_row]), &K, data, &N);
   }
-#endif // endif for ifdef USE_ZGEMM
+#endif
 #else
   for (int l = 0; l < L; l++) {
     complex* f = psi_cache->getF(l);
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
         data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj() * -1.0;
+//        CkPrintf("\nMultiplying %lf\n", f[r+start_row].re);        
       }
     }
   }
+//  CkPrintf("\nApply Fs got fs that were %d", psi_cache->getWrote());
 #endif // endif for ifdef USE_LAPACK
-
+//CkPrintf("\napplyFs exited\n");
+  //print_res();
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
   total_time += CmiWallTimer() - start;
 }
 
+void PMatrix2D::checkReady(){
+    //contribute(CkCallback(CkReductionTarget(Controller, allReady), controller_proxy));
+}
 void PMatrix2D::sendTo1D() {
+//  CkPrintf("\nIn sendTo1D\n");
   int local_mtx_size_x = num_cols;
   int local_mtx_size_y = num_rows;
   int global_x = local_mtx_size_x*thisIndex.x;
@@ -122,6 +162,7 @@ void PMatrix2D::receiveChunk(Phase2Message* msg) {
   }
   delete msg;
 }
+
 
 PMatrix1D::PMatrix1D(int local_size_x, int local_size_y) {
   GWBSE* gwbse = GWBSE::get();
@@ -175,6 +216,8 @@ void PMatrix1D::fftRows(int direction) {
   contribute(CkCallback(CkReductionTarget(Controller, fftComplete), controller_proxy));
 }
 
+
+
 void PMatrix1D::sendTo2D() {
   int n_col1 = number_of_chares_2d_x;
   int num_rows=local_mtx_size_1d_y;
@@ -197,6 +240,7 @@ void PMatrix1D::sendTo2D() {
     }
   }
 }
+
 
 void PMatrix1D::receiveRow(Phase2Message* msg) {
   int local_y = msg->global_y - thisIndex * local_mtx_size_1d_y;
