@@ -1,6 +1,5 @@
 module pmatrix {
   include "ckcomplex.h";
-  include "CLA_Matrix.h";
   extern module messages;
   extern module eps_matrix;
 
@@ -14,7 +13,6 @@ module pmatrix {
     entry PMatrix2D();
     entry [reductiontarget] void applyFs();
     entry void sendTo1D();
-    entry void checkReady();
     entry void receiveChunk(Phase2Message*);
     entry void reportPTime();
     entry void generateEpsilon(std::vector<double> vcoulb, std::vector<int> accept, int inew, int jnew, int size, int max_inew, int max_jnew);
@@ -24,56 +22,114 @@ module pmatrix {
     entry PMatrix1D(int, int);
 
     entry void fftRows(int);
+    entry [reductiontarget] void start_iteration();
     entry void sendTo2D();
     entry void receiveRow(Phase2Message*);
+
     // SDAG code for doing the transpose
     entry void receiveTransposeData(Phase2Message* msg);
     entry void doTranspose() {
-         serial {
+    while(iteration<max_iterations){
+      when start_iteration() serial{
+        chare_chunk = number_of_chares_1d/max_iterations;
+        starting_chare = iteration*chare_chunk;
+        n = starting_chare + chare_chunk;
+      }
+      serial {
         Phase2Message* msg;
         unsigned my_start, their_start;
         unsigned num_rows, num_cols;
         num_cols = local_mtx_size_1d_x / number_of_chares_1d;
         num_rows = local_mtx_size_1d_y;
         unsigned ndata = num_rows * num_cols;
+        if(thisIndex>=n-chare_chunk){
+        if(thisIndex<n){ // chares that send all data
+          for (int dest = starting_chare; dest < number_of_chares_1d; dest++) {
+            my_start = dest * num_cols;
+            msg = new (ndata) Phase2Message();
 
-        for (int dest = 0; dest < number_of_chares_1d; dest++) {
-          my_start = dest * num_cols;
-          msg = new (ndata) Phase2Message();
+            // Transpose x and y coordinate
+            msg-> global_x = thisIndex * local_mtx_size_1d_y;
+            msg-> global_y = my_start;
 
-          // Transpose x and y coordinate
-          msg-> global_x = thisIndex * local_mtx_size_1d_y;
-          msg-> global_y = my_start;
+            for (int x = 0; x < num_cols; x++) {
+              for (int y = 0; y < num_rows; y++) {
+                // The data is transposed on the sender side
+                msg->data[x*num_rows + y] = data[IDXBIG(y,x+my_start)];
+              }
+            }
+            thisProxy[dest].receiveTransposeData(msg);
+            }
+          }else if(thisIndex>=n){
+            for (int dest = starting_chare; dest < n; dest++) {
+            my_start = dest * num_cols;
+            msg = new (ndata) Phase2Message();
 
-          for (int x = 0; x < num_cols; x++) {
-            for (int y = 0; y < num_rows; y++) {
-              // The data is transposed on the sender side
-              msg->data[x*num_rows + y] = data[IDXBIG(y,x+my_start)];
+            // Transpose x and y coordinate
+            msg-> global_x = thisIndex * local_mtx_size_1d_y;
+            msg-> global_y = my_start;
+
+            for (int x = 0; x < num_cols; x++) {
+              for (int y = 0; y < num_rows; y++) {
+                // The data is transposed on the sender side
+                msg->data[x*num_rows + y] = data[IDXBIG(y,x+my_start)];
+              }
+            }
+            thisProxy[dest].receiveTransposeData(msg);
             }
           }
-
-          thisProxy[dest].receiveTransposeData(msg);
         }
-      }
-
+     } 
+      
       // Wait to receive the Phase2Message from every other chare
-      for (trans_count = 0; trans_count < number_of_chares_1d; trans_count++) {
-        when receiveTransposeData(Phase2Message* msg) serial {
-          unsigned num_rows, num_cols;
-          num_cols = local_mtx_size_1d_x / number_of_chares_1d;
-          num_rows = local_mtx_size_1d_y;
-          for (int r = 0; r < num_rows; r++) {
-            int local_y = msg->global_y - thisIndex * local_mtx_size_1d_y + r;
-            for(unsigned i=0; i< num_cols; ++i){
-              data[IDXBIG(local_y,msg->global_x) + i] = msg->data[i + r*num_cols];
+      if(thisIndex>=n-chare_chunk){ if(thisIndex<n){
+        for (trans_count = starting_chare; trans_count < number_of_chares_1d; trans_count++) {
+          when receiveTransposeData(Phase2Message* msg) serial {
+            unsigned num_rows, num_cols;
+            num_cols = local_mtx_size_1d_x / number_of_chares_1d;
+            num_rows = local_mtx_size_1d_y;
+            for (int r = 0; r < num_rows; r++) {
+              int local_y = msg->global_y - thisIndex * local_mtx_size_1d_y + r;
+              for(unsigned i=0; i< num_cols; ++i){
+                data[IDXBIG(local_y,msg->global_x) + i] = msg->data[i + r*num_cols];
+              }
             }
+            delete msg;
           }
-          delete msg;
         }
+      } else if(thisIndex>=n){
+        for (trans_count = starting_chare; trans_count < n; trans_count++) {
+          when receiveTransposeData(Phase2Message* msg) serial {
+            unsigned num_rows, num_cols;
+            num_cols = local_mtx_size_1d_x / number_of_chares_1d;
+            num_rows = local_mtx_size_1d_y;
+            for (int r = 0; r < num_rows; r++) {
+              int local_y = msg->global_y - thisIndex * local_mtx_size_1d_y + r;
+              for(unsigned i=0; i< num_cols; ++i){
+                data[IDXBIG(local_y,msg->global_x) + i] = msg->data[i + r*num_cols];
+              }
+            }
+            delete msg;
+          }
+        }
+      }}
+      serial{
+        iteration++;
+        if(iteration < max_iterations)
+          contribute(CkCallback(CkReductionTarget(Controller, iterationComplete), controller_proxy));
+#if 0
+        if(thisIndex<n && thisIndex == n-1){
+          CkPrintf("\nTotal # of msgs created this iteration(%d) = %d*%d",iteration, (n-(n-chare_chunk)), (number_of_chares_1d-starting_chare));fflush(stdout);}
+        if(thisIndex>=n && thisIndex == n){
+          CkPrintf("\nTotal # of smaller msgs created this iteration(%d) = %d*%d",iteration, (number_of_chares_1d-n), (n-starting_chare));fflush(stdout);}
+#endif
       }
-
-    serial{
-        contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
+   }
+      serial{
+        if(iteration == max_iterations){
+          iteration = 0;//re-initializing for later re-use
+          contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
+        }
       }
     }
   };

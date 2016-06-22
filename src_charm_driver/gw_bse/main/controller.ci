@@ -68,6 +68,13 @@ module controller {
     entry void reportFTime(CkReductionMsg*);
     entry void reportPTime(CkReductionMsg*);
 
+
+    entry [reductiontarget] void iterationComplete(){
+      serial{
+        pmatrix1D_proxy.start_iteration();
+      }
+    }
+    
     // Main control flow
     entry void run() {
       // TODO: Clean this up
@@ -118,8 +125,8 @@ module controller {
           if (total_sent >= pipeline_stages) {
             when psiComplete() serial {
               if (++total_complete >= next_report_threshold) {
-                CkPrintf("[CONTROLLER] P formation %3i%% complete @%.2f with pipeline stages = %d\n",
-                    total_complete*100 / max_sends, CmiWallTimer(), pipeline_stages);
+                CkPrintf("[CONTROLLER] P formation %3i%% complete @%.2f\n",
+                    total_complete*100 / max_sends, CmiWallTimer());
                 next_report_threshold = total_complete + max_sends/10;
               }
             }
@@ -206,6 +213,7 @@ module controller {
       // The FFT of the rows is complete, so now transpose the matrix.
       when fftComplete() serial{
         STEP_BOUNDARY(fft1, trans1, "First FFT complete");
+        pmatrix1D_proxy.start_iteration();
         pmatrix1D_proxy.doTranspose();
       }
 
@@ -218,6 +226,7 @@ module controller {
       // The second FFT is complete, so transpose back.
       when fftComplete() serial{
         STEP_BOUNDARY(fft2, trans2, "Second fft complete");
+        pmatrix1D_proxy.start_iteration();
         pmatrix1D_proxy.doTranspose();
       }
 

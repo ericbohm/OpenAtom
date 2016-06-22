@@ -196,6 +196,9 @@ PMatrix1D::PMatrix1D(int local_size_x, int local_size_y) {
   arrival_counter = 0;
 
   data = new complex[local_mtx_size_1d_x * local_mtx_size_1d_y];
+
+  iteration = 0;
+  max_iterations = gwbse->gw_parallel.transpose_stages;
 }
 
 void PMatrix1D::fftRows(int direction) {

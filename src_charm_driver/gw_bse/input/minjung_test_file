@@ -26,4 +26,5 @@ cccccccccccccccccccccccccccccccccccccccccccccccc
 ~GW_parallel[
 \rows_per_chare{144}
 \cols_per_chare{144}
+\transpose_stages{1}
 ]
