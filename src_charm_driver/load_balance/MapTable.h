@@ -207,6 +207,7 @@ class AtomMapTable : public MapTable1
     AtomMapTable() { }
 };
 
+
 class GSMapTable : public MapTable2
 {
   public:

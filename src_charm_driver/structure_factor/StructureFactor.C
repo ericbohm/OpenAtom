@@ -6,6 +6,7 @@
 #include "utility/util.h"
 #include "main/AtomsCache.h"
 #include "main/energyGroup.h"
+#include "uber/Uber.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "StructureFactor.h"
 #include "StructFactorCache.h"

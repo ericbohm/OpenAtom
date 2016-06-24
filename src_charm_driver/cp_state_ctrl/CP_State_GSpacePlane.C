@@ -4133,7 +4133,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       // in the future this will be constrained to the processors used by that uber
       // spin and kpoints instances share an energy group, so they sum the necessary
       // quantities
-      UegroupProxy[thisInstance.proxyOffset].updateEnergiesFromGS(estruct,thisInstance); 
+      EnergyStructMsg *emsg= new EnergyStructMsg;
+      emsg->es=estruct;
+      emsg->sender=thisInstance;
+      UegroupProxy[thisInstance.proxyOffset][UberPes[thisInstance.proxyOffset][0]].updateEnergiesFromGSSectBcast(emsg); 
 
       total_energy        = 0.0;
       ecount              = 0;

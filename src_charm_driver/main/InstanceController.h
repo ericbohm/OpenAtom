@@ -43,7 +43,7 @@ class InstanceController: public CBase_InstanceController {
     void doneIteration();
     void allInstancesDoneIteration();
   private:
-
+    CProxySection_EnergyCommMgr   eCommMgrSectProxy;
     int done_init, fft_expected;
     bool done_fft_creation;
     int numKpointforces;

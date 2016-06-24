@@ -55,15 +55,24 @@ module Atoms
     double z[];
   };
 
+  message AtomsDoneMsg;
+
+  message ContribForcesMsg;
+  
   group AtomsCache {
     entry AtomsCache(int natm, int natm_nl, Atom atoms[natm], 
         UberCollection, std::string dirname);
     entry void acceptAtoms(AtomMsg *);
-    entry void contributeforces();
-    entry void atomsDone();
-    entry void atomsDone(CkReductionMsg *);
+    entry void acceptAtomsSectBCast(AtomMsg *);
+    entry [nokeep] void contributeforces(ContribForcesMsg *);
+    entry void contributeforcesSectBcast();
+    entry [nokeep] void atomsDone(AtomsDoneMsg *);
+    entry void atomsDoneSectBcast(CkReductionMsg *);
+    entry void secDone(CkReductionMsg *);
+    entry void atomsDoneSectBcast();
     entry void acceptChainContribution(double);
-
+    entry void createSpanningSection();
+    entry void initForceCookie(ContribForcesMsg *);
   };
 
   array [1D] AtomsCompute {
@@ -88,19 +97,41 @@ module Atoms
 
 };
 
+module energyMessages {
+   include "main/energy.h";
+   include "uber/Uber.h";
+   message ECookieMsg;
+   message EnergyStructMsg;
+};
+
 module EnergyGroup
 {
   include "main/energy.h";
+  extern module energyMessages;
   // The global energies are stored here.
   group EnergyGroup {
     entry EnergyGroup(UberCollection);
-    entry void updateEnergiesFromGS(EnergyStruct es, UberCollection);
+    entry void updateEnergiesFromGSSectBcast(EnergyStructMsg *esm);
+    entry void updateEnergiesFromGS(EnergyStructMsg *esm);
     entry void energyDone(CkReductionMsg *);
-    entry void resumeFromTemper();
+    entry void resumeFromTemper(ECookieMsg *m);
+    entry void resumeFromTemperSectBcast(); 
     entry void sendToTemper(CkReductionMsg *m);
+    entry void createSpanningSection();
+    entry void sectionDone(CkReductionMsg *m);
+    entry void initTemperCookie(ECookieMsg *msg);
 
   };
+
+  array [1D] EnergyCommMgr {
+    entry void EnergyCommMgr(UberCollection);
+    entry void initTemperCookie(ECookieMsg *msg);
+    entry [nokeep] void resumeFromTemper(ECookieMsg *msg);
+  };
+
 };
+
+
 
 module PIBeadAtoms
 {
@@ -149,6 +180,8 @@ module instanceController
 {
   message ICCookieMsg;
   include "fft_charm.h";
+  include "energyMessages.h";
+  extern module energyMessages;
   array [1D] InstanceController {
     entry InstanceController(int);
     entry void acceptNewTemperature(double t);
@@ -324,7 +357,8 @@ mainmodule cpaimd {
   readonly CkVec < CkVec <MapType2> > RhoYPencilImaptable;
   readonly CkVec < MapType2 > RhoHartYPencilImaptable;
   readonly CkVec < CkVec<MapType2> > AtmSFYPencilImaptable;
-
+  readonly CkVec <MapType1> EnergyCommMgrImaptable;
+  readonly CkVec < CkVec <int> > UberPes;
   readonly Config config;
 
   readonly CProxy_PhysScratchCache pScratchProxy;
@@ -357,6 +391,7 @@ mainmodule cpaimd {
   readonly CkVec <CProxy_AtomsCache> UatomsCacheProxy;
   readonly CkVec <CProxy_AtomsCompute> UatomsComputeProxy;
   readonly CkVec <CProxy_EnergyGroup> UegroupProxy;
+  readonly CkVec <CProxy_EnergyCommMgr> UeCommProxy;
   readonly CkVec <CProxy_FFTcache> UfftCacheProxy;
   readonly CkVec <CProxy_StructFactCache> UsfCacheProxy;
   readonly CkVec <CProxy_StructureFactor> UsfCompProxy;
@@ -460,6 +495,11 @@ mainmodule cpaimd {
   group AtomComputeMap : CkArrayMap {
     entry AtomComputeMap(UberCollection);
   };
+
+  group EnergyCommMgrMap : CkArrayMap {
+    entry EnergyCommMgrMap(UberCollection);
+  };
+
 
   group RhoGSMap : CkArrayMap {
     entry RhoGSMap(UberCollection, int);

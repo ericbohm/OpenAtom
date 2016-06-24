@@ -587,7 +587,8 @@ module gStatePlane
     entry void rdoneVks(CkReductionMsg *m);
 #endif
   };
-
+  include "energyMessages.h";
+  extern module energyMessages;
   array [2D]  CP_State_GSpacePlane
   {
     entry CP_State_GSpacePlane(int sizeX, int numG, int numR, int s_grain, int timekeepf, int timekeepb, UberCollection);

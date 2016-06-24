@@ -30,7 +30,7 @@
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cprspaceion.h"
 
 //----------------------------------------------------------------------------
-
+extern CkVec < CkVec <int> > UberPes;
 extern CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
 extern CkVec <IntMap2on2> GSImaptable;
 extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
@@ -764,7 +764,7 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
 #endif
   // get the atomCache working to collect the other force contribution for us
   if(thisIndex==0)
-    UatomsCacheProxy[thisInstance.proxyOffset].contributeforces();
+    UatomsCacheProxy[thisInstance.proxyOffset][UberPes[thisInstance.proxyOffset][0]].contributeforcesSectBcast();
 #ifdef _NAN_CHECK_
   for(int i=0;i<natm;i++)
     {
@@ -1005,7 +1005,7 @@ void AtomsCompute::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double p
   // FIX THIS: should use delegated section to minimize stupid anytime
   // migration overhead.  Also, this is really an all-gather.
 
-  UatomsComputeProxy[thisInstance.proxyOffset].acceptAtoms(msg);
+  UatomsComputeProxy[thisInstance.proxyOffset][UberPes[thisInstance.proxyOffset][0]].acceptAtoms(msg);
 
   //-------------------------------------------------------------------------
 }//end routine
@@ -1231,7 +1231,7 @@ void AtomsCompute::atomsDone(CkReductionMsg *msg)
   if(move_atoms==1)
     bcastAtomsToAtomCache();
   else
-    UatomsCacheProxy[thisInstance.proxyOffset].atomsDone();
+    UatomsCacheProxy[thisInstance.proxyOffset][UberPes[thisInstance.proxyOffset][0]].atomsDoneSectBcast();
 }
 //==============================================================================
 

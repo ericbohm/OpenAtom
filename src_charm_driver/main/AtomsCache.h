@@ -100,15 +100,21 @@ struct EnergyStruct;
         AtomsCache(int,int,Atom *,UberCollection thisInstance, std::string output_directory);
         AtomsCache(CkMigrateMessage *m) {}
         ~AtomsCache();
-        void contributeforces();
-        void atomsDone();
-        void atomsDone(CkReductionMsg *);
+        void contributeforces(ContribForcesMsg *);
+        void contributeforcesSectBcast();
+        void atomsDone(AtomsDoneMsg *);
+        void atomsDoneSectBcast(CkReductionMsg *);
+        void atomsDoneSectBcast();
         void acceptAtoms(AtomMsg *);  // entry method
+        void acceptAtomsSectBCast(AtomMsg *);  // entry method
         void releaseGSP();
 	void acceptChainContribution(double PIMDChain);
+	void secDone(CkReductionMsg *m){CkPrintf("secdone\n");}
+        CProxySection_AtomsCache secProxy;
+	CkSectionInfo forcecookie;
+	void initForceCookie(ContribForcesMsg *);
+	void createSpanningSection();
         void zeroforces() {
-
-
           double *fx = fastAtoms.fx;
           double *fy = fastAtoms.fy;
           double *fz = fastAtoms.fz;

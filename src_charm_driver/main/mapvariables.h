@@ -22,6 +22,7 @@ int numInst=0;
 // these are being changed to CkVec's for beads
 CkVec <int> PIBImaptable;
 CkVec <MapType1> AtomImaptable;
+CkVec <MapType1> EnergyCommMgrImaptable;
 CkVec <MapType2> GSImaptable;
 CkVec <MapType2> RSImaptable;
 CkVec <MapType2> RPPImaptable;
@@ -34,6 +35,8 @@ CkVec <MapType2> LSPRhoRSImaptable;
 CkVec < CkVec <MapType2> > RhoYPencilImaptable;
 CkVec < MapType2> RhoHartYPencilImaptable;
 CkVec < CkVec <MapType2> > AtmSFYPencilImaptable;
+
+CkVec < CkVec <int>> UberPes;
 
 CProxy_main                       mainProxy;
 CProxy_PhysScratchCache           pScratchProxy;
@@ -86,12 +89,14 @@ CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
 CkVec <CProxy_AtomsCompute>               UatomsComputeProxy;
 CkVec <CProxy_AtomsCache>                 UatomsCacheProxy;
 CkVec <CProxy_EnergyGroup>                UegroupProxy;
+CkVec <CProxy_EnergyCommMgr>              UeCommProxy;
 CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 CkVec <CProxy_StructureFactor>            UsfCompProxy;
 CkVec <CProxy_eesCache>                   UeesCacheProxy;
 CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
 CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
+
 
 CkVec <UberCollection>			  UberAlles;
 CkVec < PeList * >                        UavailProcs;

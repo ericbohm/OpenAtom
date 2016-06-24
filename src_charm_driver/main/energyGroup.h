@@ -7,8 +7,6 @@
 #include "EnergyGroup.decl.h"
 #include "CPcharmParaInfo.decl.h"
 
-
-
 /** EnergyGroup class.
  */
 class EnergyGroup : public Group {
@@ -20,15 +18,23 @@ class EnergyGroup : public Group {
     int iteration_gsp;
     int iteration_atm;
     int kpointEnergyDoneCount;
-    void updateEnergiesFromGS(EnergyStruct &, UberCollection);
-    void energyDone(CkReductionMsg *);
+    void updateEnergiesFromGS(EnergyStructMsg *);
+    void updateEnergiesFromGSSectBcast(EnergyStructMsg *);
+    void energyDone(CkReductionMsg *m);
     void energyDone();
-    void sendToTemper(CkReductionMsg *);
-    void resumeFromTemper();
+    void sendToTemper(CkReductionMsg *m);
+    void sectionDone(CkReductionMsg *m);
+    void resumeFromTemperSectBcast();
+    void createSpanningSection();
     inline EnergyStruct getEnergyStruct(){return estruct;}
+    void initTemperCookie(ECookieMsg *msg);
+    void resumeFromTemper(ECookieMsg *msg);
+
   private:
+    CProxySection_EnergyGroup secProxy;
     int ktemps;
     int countOfEnergies;
+    CkSectionInfo temperCookie;
 };
 /*EnergyStruct GetEnergyStruct();*/
 //============================================================================

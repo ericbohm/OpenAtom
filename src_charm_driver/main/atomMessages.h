@@ -4,7 +4,7 @@
 #define ATOMMESSAGES_H
 
 
-class AtomMsg: public CMessage_AtomMsg 
+class AtomMsg: public CkMcastBaseMsg, public CMessage_AtomMsg
 {
   public:
     int nsize;
@@ -12,6 +12,13 @@ class AtomMsg: public CMessage_AtomMsg
     double *data;  
 };
 
+class AtomsDoneMsg: public CkMcastBaseMsg, public CMessage_AtomsDoneMsg
+{
+};
+
+class ContribForcesMsg: public CkMcastBaseMsg, public CMessage_ContribForcesMsg 
+{
+};
 
 //class AtomXYZMsg: public CkMcastBaseMsg, public CMessage_AtomXYZMsg
 class AtomXYZMsg: public CMessage_AtomXYZMsg

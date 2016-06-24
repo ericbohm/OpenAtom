@@ -130,6 +130,7 @@ int numPes;
 #include "AtomsCache.h"
 #include "AtomsCompute.h"
 #include "energyGroup.h"
+#include "EnergyCommMgr.h"
 
 #include "cp_state_ctrl/CP_State_Plane.h"
 #include "cp_state_ctrl/CP_State_ParticlePlane.h"
@@ -656,6 +657,7 @@ main::main(CkArgMsg *msg) {
 		  build_all_maps(sim, thisInstance);
 		else
 		  build_uber_maps(sim, thisInstance);
+
                 newtime = CmiWallTimer();
                 CkPrintf("All maps initialized in %g s\n", newtime-Timer);
 
@@ -697,7 +699,9 @@ main::main(CkArgMsg *msg) {
                   delete gfoo;
                   delete excludePes;
 		}
-		// now safe to init atom bead commanders
+		// now safe to init atom bead commanders && temper section
+		UegroupProxy[thisInstance.proxyOffset].createSpanningSection();
+		UatomsCacheProxy[thisInstance.proxyOffset].createSpanningSection();
 		UatomsComputeProxy[numInst].init();
 		numInst++;
 	  }
@@ -711,6 +715,12 @@ main::main(CkArgMsg *msg) {
     HFCalculatorProxy = CProxy_HFCalculator::ckNew();
     HFCalculatorProxy.run();
   }
+
+  for(int i=0;i<numInst;i++)
+    {
+      for(int j=0;j<config.numPesPerInstance;j++)
+	CkPrintf("inst %d pe %d\n",i,UberPes[i][j]);
+    }
 
   TimeKeeperProxy.init();
 
@@ -882,11 +892,20 @@ void fillInPeUsedBy(CPcharmParaInfo *sim, UberCollection thisInstance) {
     }
   }
   peUsedByNLZ.quickSort();
+  for(int i=0;i< numPes;i++)
+    {
+      if(usedProc[i])
+	{
+	  UberPes[thisInstance.getPO()].push_back(i);
+	}
+    }
   delete [] usedProc;
   UpeUsedByNLZ.push_back(peUsedByNLZ);
   UplaneUsedByNLZ.push_back(planeUsedByNLZ);
   // CkPrintf("UplaneUsedByNLZ length now %d\n",UplaneUsedByNLZ.length());
 }
+
+
 
 //============================================================================
 //============================================================================
@@ -1321,6 +1340,25 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
     newtime=CmiWallTimer();
     CkPrintf("AtmSFYPencils created in %g\n", newtime-Timer);
   }//end of if ees_eext_on
+
+  EnergyCommMgrImaptable[numInst].buildMap(CkNumPes());
+  CProxy_EnergyCommMgrMap eMap = CProxy_EnergyCommMgrMap::ckNew(thisInstance);
+  // if populateInitial actually worked, we'd be golden
+  CkArrayOptions energyOpts(UberPes[thisInstance.proxyOffset].length());
+  energyOpts.setMap(eMap);
+  energyOpts.setAnytimeMigration(false);
+  energyOpts.setStaticInsertion(true);
+  // since populate initial is never called, we manually insert
+  UeCommProxy.push_back(CProxy_EnergyCommMgr::ckNew(thisInstance,energyOpts));
+   /* UeCommProxy.push_back(CProxy_EnergyCommMgr::ckNew(thisInstance));
+      for(int element=0; element< UberPes[thisInstance.proxyOffset].length(); element++)
+    {
+      CkPrintf("{%d}[%d} insert %d on %d\n", thisInstance.proxyOffset, CkMyPe(), UberPes[thisInstance.proxyOffset][element],UberPes[thisInstance.proxyOffset][element]);
+      UeCommProxy[thisInstance.proxyOffset][UberPes[thisInstance.proxyOffset][element]].insert(UberPes[thisInstance.proxyOffset][element]);
+    }
+   */
+  UeCommProxy[thisInstance.proxyOffset].doneInserting();
+
 }
 
 //============================================================================
@@ -1352,6 +1390,8 @@ void build_uber_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
         AtmSFYPencilImaptable[loop_off][numInst]=AtmSFYPencilImaptable[loop_off][0];
       }
     }
+    fillInPeUsedBy(sim, thisInstance);
+    EnergyCommMgrImaptable[numInst]=EnergyCommMgrImaptable[0];
   } else {
     GSImaptable[numInst].translate(&GSImaptable[0], x,y,z,
         config.torusMap==1);
@@ -1379,8 +1419,28 @@ void build_uber_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
             &AtmSFYPencilImaptable[loop_off][0], x, y, z, config.torusMap==1);
       }
     }
+    fillInPeUsedBy(sim, thisInstance);
+    if(thisInstance.idxU.y>0|| thisInstance.idxU.s>0) 
+      {
+	UeCommProxy.push_back(UeCommProxy[thisInstance.proxyOffset]);
+      }
+    else{
+	EnergyCommMgrImaptable[numInst].buildMap(CkNumPes());
+	CProxy_EnergyCommMgrMap eMap = CProxy_EnergyCommMgrMap::ckNew(thisInstance);
+	CkArrayOptions energyOpts(UberPes[thisInstance.proxyOffset].length());
+	energyOpts.setMap(eMap);
+	energyOpts.setAnytimeMigration(false);
+	energyOpts.setStaticInsertion(true);
+	UeCommProxy.push_back(CProxy_EnergyCommMgr::ckNew(thisInstance,energyOpts));
+	/*UeCommProxy.push_back(CProxy_EnergyCommMgr::ckNew(thisInstance));
+	for(int element=0; element< UberPes[thisInstance.proxyOffset].length(); element++)
+	  {
+	    CkPrintf("{%d}[%d} insert %d on %d\n", thisInstance.proxyOffset, CkMyPe(), UberPes[thisInstance.proxyOffset][element],UberPes[thisInstance.proxyOffset][element]);
+	    UeCommProxy[thisInstance.proxyOffset][UberPes[thisInstance.proxyOffset][element]].insert(UberPes[thisInstance.proxyOffset][element]);
+	  }
+	*/
+    }
   }
-  fillInPeUsedBy(sim, thisInstance);
 }
 
 

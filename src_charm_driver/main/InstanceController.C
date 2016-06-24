@@ -29,6 +29,7 @@ extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
 extern CkVec <CProxy_AtomsCache>                 UatomsCacheProxy;
 extern CkVec <CProxy_AtomsCompute>               UatomsComputeProxy;
 extern CkVec <CProxy_EnergyGroup>                UegroupProxy;
+extern CkVec <CProxy_EnergyCommMgr>              UeCommProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 extern CkVec <CProxy_StructureFactor>            UsfCompProxy;
@@ -91,45 +92,67 @@ InstanceController::InstanceController(int _fft_expected) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void InstanceController::init(){
-  UberCollection instance=UberCollection(thisIndex);
-  // 0th bead, 0th k, 0th temper makes this to sync all instances
-  if((config.UberImax >1 || config.UberJmax>1 || config.UberKmax>1) 
-     && instance.idxU.x==0 && instance.idxU.y==0 && instance.idxU.z==0)
-  {
-    // make section for beads and tempers and k-points
-    int numDestinations=config.UberImax*config.UberKmax*config.UberJmax;
-    CkArrayID *beadArrayIds= new CkArrayID[numDestinations];
-    CkArrayIndex **elems  = new CkArrayIndex*[numDestinations];
-    int *naelems = new int[numDestinations];
-    for(int temper =0; temper<config.UberKmax; temper++){
-      instance.idxU.z=temper;
-      for(int kpt =0; kpt<config.UberJmax; kpt++)
-	{
-	  instance.idxU.y=kpt;
-	  for(int bead =0; bead<config.UberImax; bead++)
-	    {
-	      instance.idxU.x=bead;
 
-	      instance.setPO();
-	      int index=instance.proxyOffset;
-	      naelems[index]=1;
-	      elems[index]= new CkArrayIndex2D[1];
-	      CkPrintf("fmag sync section adding bead %d kpt %d temper %d index %d proxyOffset %d\n",bead, kpt, temper, index, instance.proxyOffset);
-	      beadArrayIds[index]=UgSpacePlaneProxy[instance.proxyOffset].ckGetArrayID();
-	      elems[index][0]=CkArrayIndex2D(0,0);
-	    }
+  UberCollection instance=UberCollection(thisIndex);
+  CkPrintf("{%d}[%d] InstanceController::init \n",thisIndex,CkMyPe());
+  // 0th bead, 0th k, 0th temper makes this to sync all instances
+  if(thisIndex==0)
+    {
+      if((config.UberImax >1 || config.UberJmax>1 || config.UberKmax>1) 
+	 && instance.idxU.x==0 && instance.idxU.y==0 && instance.idxU.z==0)
+	{
+	  // make section for beads and tempers and k-points
+	  int numDestinations=config.UberImax*config.UberKmax*config.UberJmax;
+	  CkArrayID *beadArrayIds= new CkArrayID[numDestinations];
+	  CkArrayIndex **elems  = new CkArrayIndex*[numDestinations];
+	  int *naelems = new int[numDestinations];
+	  for(int temper =0; temper<config.UberKmax; temper++){
+	    instance.idxU.z=temper;
+	    for(int kpt =0; kpt<config.UberJmax; kpt++)
+	      {
+		instance.idxU.y=kpt;
+		for(int bead =0; bead<config.UberImax; bead++)
+		  {
+		    instance.idxU.x=bead;
+
+		    instance.setPO();
+		    int index=instance.proxyOffset;
+		    naelems[index]=1;
+		    elems[index]= new CkArrayIndex2D[1];
+		    CkPrintf("fmag sync section adding bead %d kpt %d temper %d index %d proxyOffset %d\n",bead, kpt, temper, index, instance.proxyOffset);
+		    beadArrayIds[index]=UgSpacePlaneProxy[instance.proxyOffset].ckGetArrayID();
+		    elems[index][0]=CkArrayIndex2D(0,0);
+		  }
+	      }
+	  }
+	  //finish setting this up      
+	  gTemperBeadProxy=CProxySection_CP_State_GSpacePlane(numDestinations, beadArrayIds, elems, naelems);
+	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+	  gTemperBeadProxy.ckSectionDelegate(mcastGrp);
+	  ICCookieMsg *cookieme=new ICCookieMsg;
+	  CkCallback *cb = new CkCallback(CkIndex_InstanceController::fmagMinTest(NULL),CkArrayIndex1D(0),thisProxy);
+	  mcastGrp->setReductionClient(gTemperBeadProxy,cb);
+	  gTemperBeadProxy.initBeadCookie(cookieme);
+
 	}
     }
-  //finish setting this up      
-    gTemperBeadProxy=CProxySection_CP_State_GSpacePlane(numDestinations, beadArrayIds, elems, naelems);
-    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-    gTemperBeadProxy.ckSectionDelegate(mcastGrp);
-    ICCookieMsg *cookieme=new ICCookieMsg;
-    CkCallback *cb = new CkCallback(CkIndex_InstanceController::fmagMinTest(NULL),CkArrayIndex1D(0),thisProxy);
-    mcastGrp->setReductionClient(gTemperBeadProxy,cb);
-    gTemperBeadProxy.initBeadCookie(cookieme);
+  /* make section for energy group*/
+  
+  /*
+  CkArrayIndex1D sectionArr[UberPes[instance.proxyOffset].length()];
+  for(int i=0;i< UberPes[instance.proxyOffset].length();i++)
+    {
+      CkPrintf("{%d}[%d] InstanceController emgr section %d has element %d\n",instance.proxyOffset, CkMyPe(), i, UberPes[instance.proxyOffset][i]);
+      sectionArr[i]=CkArrayIndex1D(UberPes[instance.proxyOffset][i]);
+    }
 
-  }
+  eCommMgrSectProxy =CProxySection_EnergyCommMgr::ckNew(UeCommProxy[instance.proxyOffset].ckGetArrayID(), sectionArr, UberPes[instance.proxyOffset].length());
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+  eCommMgrSectProxy.ckSectionDelegate(mcastGrp);
+  ECookieMsg *cookieme=new ECookieMsg;
+  eCommMgrSectProxy.initTemperCookie(cookieme);
+  */
+
 }
 //============================================================================
 
@@ -265,7 +288,7 @@ void InstanceController::doneInit(){
   }
   if (done_init==3)
   { // kick off post constructor inits
-    if(thisIndex==0) init();
+    init();
     UberCollection thisInstance(thisIndex);
     if(thisInstance.idxU.y==0 && done_fft_creation) {
       initDensity();
@@ -636,8 +659,10 @@ void InstanceController::gspDoneNewTemp(CkReductionMsg *m)
 //in a nicer world this would be inlined
 void InstanceController::resumeFromTemper()
 { 
-  //  CkPrintf("Instance Controller %d resumeFromTemper\n", thisIndex);
-  UegroupProxy[thisIndex].resumeFromTemper(); 
+  CkPrintf("Instance Controller %d resumeFromTemper\n", thisIndex);
+  //  ECookieMsg *wakeme=new ECookieMsg;
+  //  eCommMgrSectProxy.resumeFromTemper(wakeme);
+  UegroupProxy[thisIndex][UberPes[thisIndex][0]].resumeFromTemperSectBcast(); 
 }
 
 // When the simulation is done, make a clean exit  
