@@ -159,7 +159,7 @@ void AtomsCache::contributeforcesSectBcast(){
 //==========================================================================
 void AtomsCache::contributeforces(ContribForcesMsg *m){
   //==========================================================================
-  
+  CkPrintf("{%d}[%d] AtomsCache::contributforces\n", thisInstance.proxyOffset, CkMyPe());  
   CkGetSectionInfo(forcecookie,m);  
   int i,j;
   // collate all the forces that RS RHO NL deposited on the atoms
@@ -184,7 +184,7 @@ void AtomsCache::contributeforces(ContribForcesMsg *m){
 
 void AtomsCache::acceptAtomsSectBCast(AtomMsg *imsg)
 {
-  CkPrintf("{%d}[%d] acceptAtomsSectBcast\n",thisInstance.proxyOffset, CkMyPe());
+  CkPrintf("{%d}[%d] AtomsCache::acceptAtomsSectBcast\n",thisInstance.proxyOffset, CkMyPe());
  
   // make a copy of the message to avoid message resend issues
   AtomMsg *msg = new (imsg->nsize,8*sizeof(int)) AtomMsg;
@@ -213,6 +213,7 @@ void AtomsCache::acceptAtomsSectBCast(AtomMsg *imsg)
 //==========================================================================
 void AtomsCache::acceptAtoms(AtomMsg *msg)
 {
+  CkPrintf("{%d}[%d] AtomsCache::acceptAtoms\n", thisInstance.proxyOffset, CkMyPe());
   CkGetSectionInfo(forcecookie, msg);
   for(int atomI = msg->natmStr, j=0; atomI < msg->natmEnd ; atomI++ ,j+=9){
 #ifdef _CP_DEBUG_ATMS_
@@ -257,10 +258,12 @@ void AtomsCache::initForceCookie(ContribForcesMsg *m)
 
 void AtomsCache::atomsDoneSectBcast()
 {
+  CkPrintf("{%d}[%d] AtomsCache::atomsDoneSectBcast()\n",thisInstance.proxyOffset, CkMyPe());
  secProxy.atomsDone(new AtomsDoneMsg);
 }
 void AtomsCache::atomsDoneSectBcast(CkReductionMsg *msg)
 {
+  CkPrintf("{%d}[%d] AtomsCache::atomsDoneSectBcast(CkReductionMsg *m)\n",thisInstance.proxyOffset, CkMyPe());
   secProxy.atomsDone(new AtomsDoneMsg);
 }
 
@@ -275,7 +278,7 @@ void AtomsCache::atomsDoneSectBcast(CkReductionMsg *msg)
 void AtomsCache::atomsDone(AtomsDoneMsg *m) {
   //==========================================================================
   // Increment iteration counters
-  //  CkPrintf("{%d}[%d] AtomsCache::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
+  CkPrintf("{%d}[%d] AtomsCache::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
   int myid = CkMyPe();
   CkGetSectionInfo(forcecookie, m);
   EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();

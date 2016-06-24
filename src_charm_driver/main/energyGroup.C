@@ -248,7 +248,7 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStructMsg *emsg)
 	estruct.totalElecEnergy  = estruct.enl + estruct.eke + estruct.eext + estruct.ehart
 	  +  estruct.egga+    estruct.eexc;
 	CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
-	if(CkMyPe()==0)
+	if(UberPes[thisInstance.proxyOffset][0]==CkMyPe())
 	  {
 	    if(iteration_gsp % sim->nscreen_frq==0 )
 	      {
@@ -371,7 +371,7 @@ void EnergyGroup::energyDone(){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
       }//endif
-      //CkPrintf("{%d,%d,%d}[%d] energyGroup::energyDone calling gsp(%d,%d).doneComputingEnergy iteration %d thisPoint.idU.y %d thisPoint.idxU.s %d offset %d \n ", thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, CkMyPe(), state,plane, iteration_atm, thisPoint.idxU.y, thisPoint.idxU.s, thisPoint.proxyOffset);     
+      //      CkPrintf("{%d,%d,%d}[%d] energyGroup::energyDone calling gsp(%d,%d).doneComputingEnergy iteration %d thisPoint.idU.y %d thisPoint.idxU.s %d offset %d \n ", thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, CkMyPe(), state,plane, iteration_atm, thisPoint.idxU.y, thisPoint.idxU.s, thisPoint.proxyOffset);     
       UgSpaceDriverProxy[thisPoint.proxyOffset](state,plane).doneComputingEnergy(iteration_atm); 
     }//endfor
 }//end routine

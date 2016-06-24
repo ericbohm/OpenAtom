@@ -64,9 +64,9 @@ module Atoms
         UberCollection, std::string dirname);
     entry void acceptAtoms(AtomMsg *);
     entry void acceptAtomsSectBCast(AtomMsg *);
-    entry [nokeep] void contributeforces(ContribForcesMsg *);
+    entry void contributeforces(ContribForcesMsg *);
     entry void contributeforcesSectBcast();
-    entry [nokeep] void atomsDone(AtomsDoneMsg *);
+    entry void atomsDone(AtomsDoneMsg *);
     entry void atomsDoneSectBcast(CkReductionMsg *);
     entry void secDone(CkReductionMsg *);
     entry void atomsDoneSectBcast();

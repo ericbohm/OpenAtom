@@ -169,7 +169,7 @@ UberCollection thisInstance;
  * torus map logic on non torus architectures.
  */
 /**@{*/
-
+int numFFTinstances;
 bool fakeTorus;
 extern void initFFTLock(void);
 
@@ -462,16 +462,14 @@ main::main(CkArgMsg *msg) {
 
 
 
-  int numFFTinstances = 0;
+  numFFTinstances = 0;
   numFFTinstances += 3; //3 ffts for divRhos
   numFFTinstances += 1; //one for hartExt
   if(sim->ees_eext_on) {
     numFFTinstances += config.nchareHartAtmT + 1; //these for atmSF
   }
 
-  instControllerProxy= CProxy_InstanceController::ckNew(numFFTinstances,
-      config.numInstances);
-  instControllerProxy.doneInserting();
+  instControllerProxy= CProxy_InstanceController::ckNew(numFFTinstances);
 
   diagonalizerBridgeProxy = CProxy_DiagonalizerBridge::ckNew();
 
@@ -709,7 +707,7 @@ main::main(CkArgMsg *msg) {
     }
   } // end of per instance init
   //============================================================================
-
+  instControllerProxy.doneInserting();
 
   if (HartreeFockOn) {
     HFCalculatorProxy = CProxy_HFCalculator::ckNew();
@@ -1358,7 +1356,7 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
     }
    */
   UeCommProxy[thisInstance.proxyOffset].doneInserting();
-
+  instControllerProxy[thisInstance.proxyOffset].insert(numFFTinstances,UberPes[thisInstance.proxyOffset][0]);
 }
 
 //============================================================================
@@ -1392,6 +1390,7 @@ void build_uber_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
     }
     fillInPeUsedBy(sim, thisInstance);
     EnergyCommMgrImaptable[numInst]=EnergyCommMgrImaptable[0];
+    instControllerProxy[thisInstance.proxyOffset].insert(numFFTinstances,UberPes[thisInstance.proxyOffset][0]);
   } else {
     GSImaptable[numInst].translate(&GSImaptable[0], x,y,z,
         config.torusMap==1);
@@ -1439,6 +1438,7 @@ void build_uber_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 	    UeCommProxy[thisInstance.proxyOffset][UberPes[thisInstance.proxyOffset][element]].insert(UberPes[thisInstance.proxyOffset][element]);
 	  }
 	*/
+	instControllerProxy[thisInstance.proxyOffset].insert(numFFTinstances,UberPes[thisInstance.proxyOffset][0]);
     }
   }
 }

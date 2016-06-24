@@ -109,7 +109,7 @@ struct EnergyStruct;
         void acceptAtomsSectBCast(AtomMsg *);  // entry method
         void releaseGSP();
 	void acceptChainContribution(double PIMDChain);
-	void secDone(CkReductionMsg *m){CkPrintf("secdone\n");}
+	void secDone(CkReductionMsg *m){CkPrintf("{%d}[%d]secdone\n",thisInstance.proxyOffset, CkMyPe());}
         CProxySection_AtomsCache secProxy;
 	CkSectionInfo forcecookie;
 	void initForceCookie(ContribForcesMsg *);
