@@ -119,17 +119,17 @@ void AtomsCache::createSpanningSection() {
     for (int i=0; i<numchild; i++)
       {
 	children[i] = UberPes[thisInstance.proxyOffset][BRANCHING_FACTOR*me+i+1];
-	CkPrintf("{%d} %d th child is index %d pe %d \n",thisInstance.proxyOffset, i, BRANCHING_FACTOR*me+i+1, UberPes[thisInstance.proxyOffset][BRANCHING_FACTOR*me+i+1]);
+	//	CkPrintf("{%d} %d th child is index %d pe %d \n",thisInstance.proxyOffset, i, BRANCHING_FACTOR*me+i+1, UberPes[thisInstance.proxyOffset][BRANCHING_FACTOR*me+i+1]);
       }
     /* parent of root should be root itself */
     int parent = std::max(0, UberPes[thisInstance.proxyOffset][(me-1)/BRANCHING_FACTOR]);	
-    CkPrintf("{%d}[%d] me: %d, parent: %d, numchild: %d, numPes in section %d \n", thisInstance.proxyOffset, CkMyPe(), me, parent, numchild, numpes);
+    //    CkPrintf("{%d}[%d] me: %d, parent: %d, numchild: %d, numPes in section %d \n", thisInstance.proxyOffset, CkMyPe(), me, parent, numchild, numpes);
     CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
     forcecookie = mCastGrp->addToGrpSection(thisgroup, 1, parent, children, numchild); 
 
     /* Should be done at the root only, broadcast only supported from root */
     if(CkMyPe() == UberPes[thisInstance.proxyOffset][0]){   //root
-      CkPrintf("{%d}[%d] section proxy init\n",thisInstance.proxyOffset,CkMyPe());
+      //      CkPrintf("{%d}[%d] section proxy init\n",thisInstance.proxyOffset,CkMyPe());
       secProxy = CProxySection_AtomsCache(forcecookie, children, numchild); 
       secProxy.ckDelegate(mCastGrp);
       ContribForcesMsg *msg = new (8*sizeof(int)) ContribForcesMsg();
@@ -143,7 +143,7 @@ void AtomsCache::createSpanningSection() {
 }
 
 void AtomsCache::contributeforcesSectBcast(){
-  CkPrintf("{%d}[%d] contributeforcesSectBcast\n",thisInstance.proxyOffset, CkMyPe());
+  //  CkPrintf("{%d}[%d] contributeforcesSectBcast\n",thisInstance.proxyOffset, CkMyPe());
   secProxy.contributeforces(new ContribForcesMsg);
 }
 
@@ -159,7 +159,7 @@ void AtomsCache::contributeforcesSectBcast(){
 //==========================================================================
 void AtomsCache::contributeforces(ContribForcesMsg *m){
   //==========================================================================
-  CkPrintf("{%d}[%d] AtomsCache::contributforces\n", thisInstance.proxyOffset, CkMyPe());  
+  //  CkPrintf("{%d}[%d] AtomsCache::contributforces\n", thisInstance.proxyOffset, CkMyPe());  
   CkGetSectionInfo(forcecookie,m);  
   int i,j;
   // collate all the forces that RS RHO NL deposited on the atoms
@@ -178,13 +178,14 @@ void AtomsCache::contributeforces(ContribForcesMsg *m){
   mCastGrp->contribute((3*natm)*sizeof(double),ftot,CkReduction::sum_double,forcecookie,cb);
   delete [] ftot;
   zeroforces();
+  delete m;
   //==========================================================================
 }//end routine
 //==========================================================================
 
 void AtomsCache::acceptAtomsSectBCast(AtomMsg *imsg)
 {
-  CkPrintf("{%d}[%d] AtomsCache::acceptAtomsSectBcast\n",thisInstance.proxyOffset, CkMyPe());
+  //  CkPrintf("{%d}[%d] AtomsCache::acceptAtomsSectBcast\n",thisInstance.proxyOffset, CkMyPe());
  
   // make a copy of the message to avoid message resend issues
   AtomMsg *msg = new (imsg->nsize,8*sizeof(int)) AtomMsg;
@@ -202,6 +203,7 @@ void AtomsCache::acceptAtomsSectBCast(AtomMsg *imsg)
   // Send the message to everyone in the group
 
   secProxy.acceptAtoms(msg);
+  delete imsg;
 }
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -213,7 +215,7 @@ void AtomsCache::acceptAtomsSectBCast(AtomMsg *imsg)
 //==========================================================================
 void AtomsCache::acceptAtoms(AtomMsg *msg)
 {
-  CkPrintf("{%d}[%d] AtomsCache::acceptAtoms\n", thisInstance.proxyOffset, CkMyPe());
+  //  CkPrintf("{%d}[%d] AtomsCache::acceptAtoms\n", thisInstance.proxyOffset, CkMyPe());
   CkGetSectionInfo(forcecookie, msg);
   for(int atomI = msg->natmStr, j=0; atomI < msg->natmEnd ; atomI++ ,j+=9){
 #ifdef _CP_DEBUG_ATMS_
@@ -243,7 +245,7 @@ void AtomsCache::acceptAtoms(AtomMsg *msg)
   eg->estruct.eKineticNhc_atm = msg->data[(msg->nsize-2)];
   eg->estruct.potNhc_atm      = msg->data[(msg->nsize-2)];
 
-  //  delete msg; nope its [nokeep]
+  delete msg; 
 }
 void AtomsCache::initForceCookie(ContribForcesMsg *m)
 {
@@ -258,13 +260,14 @@ void AtomsCache::initForceCookie(ContribForcesMsg *m)
 
 void AtomsCache::atomsDoneSectBcast()
 {
-  CkPrintf("{%d}[%d] AtomsCache::atomsDoneSectBcast()\n",thisInstance.proxyOffset, CkMyPe());
+  //  CkPrintf("{%d}[%d] AtomsCache::atomsDoneSectBcast()\n",thisInstance.proxyOffset, CkMyPe());
  secProxy.atomsDone(new AtomsDoneMsg);
 }
 void AtomsCache::atomsDoneSectBcast(CkReductionMsg *msg)
 {
-  CkPrintf("{%d}[%d] AtomsCache::atomsDoneSectBcast(CkReductionMsg *m)\n",thisInstance.proxyOffset, CkMyPe());
+  //  CkPrintf("{%d}[%d] AtomsCache::atomsDoneSectBcast(CkReductionMsg *m)\n",thisInstance.proxyOffset, CkMyPe());
   secProxy.atomsDone(new AtomsDoneMsg);
+  delete msg;
 }
 
 //==========================================================================
@@ -278,7 +281,7 @@ void AtomsCache::atomsDoneSectBcast(CkReductionMsg *msg)
 void AtomsCache::atomsDone(AtomsDoneMsg *m) {
   //==========================================================================
   // Increment iteration counters
-  CkPrintf("{%d}[%d] AtomsCache::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
+  //  CkPrintf("{%d}[%d] AtomsCache::atomsDone() ending iter %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
   int myid = CkMyPe();
   CkGetSectionInfo(forcecookie, m);
   EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
@@ -297,7 +300,7 @@ void AtomsCache::atomsDone(AtomsDoneMsg *m) {
   fclose(fp);
 #endif
   releaseGSP();
-
+  delete m;
 }
 
 
@@ -308,7 +311,7 @@ void AtomsCache::atomsDone(AtomsDoneMsg *m) {
 //==========================================================================
 void AtomsCache::releaseGSP() {
   int myid = CkMyPe();
-  // CkPrintf("{%d}[%d] running release GSP\n",thisInstance.proxyOffset, myid);
+  //  CkPrintf("{%d}[%d] running release GSP for iteration %d\n",thisInstance.proxyOffset, myid, iteration);
   //==========================================================================
   // Use the cool new data caching system to say we're done.
 

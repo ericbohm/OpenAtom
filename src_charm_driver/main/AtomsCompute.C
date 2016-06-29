@@ -50,7 +50,7 @@ extern CkVec <CProxy_PhysScratchCache> UpScratchProxy;
 
 //#define _CP_DEBUG_PSI_OFF_
 //#define _CP_ENERGY_GRP_VERBOSE_
-#define _CP_DEBUG_ATMS_
+//#define _CP_DEBUG_ATMS_
 //#define _CP_DEBUG_ATMS_EXIT_
 
 //==============================================================================
@@ -71,7 +71,7 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 {// begin routine
   //==============================================================================
   // parameters, options and energies
-  CkPrintf("{%d}[%d] AtomsCompute::AtomsCompute on %d\n",thisInstance.proxyOffset, thisIndex, CkMyPe());
+  //  CkPrintf("{%d}[%d] AtomsCompute::AtomsCompute on %d\n",thisInstance.proxyOffset, thisIndex, CkMyPe());
 #ifdef _NAN_CHECK_
   for(int i=0;i<natm;i++)
     {
@@ -686,7 +686,7 @@ void AtomsCompute::integrateAtoms(){
     if(energyGroupReady) {
       outputAtmEnergy();
       int i=0;
-      CkPrintf("{%d}[%d] AtomsCompute::integrateAtoms contribute atomsDone\n ", thisInstance.proxyOffset, thisIndex);     
+      //      CkPrintf("{%d}[%d] AtomsCompute::integrateAtoms contribute atomsDone\n ", thisInstance.proxyOffset, thisIndex);     
       CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
       atomsOutputReady=false;
@@ -694,7 +694,7 @@ void AtomsCompute::integrateAtoms(){
     }
     else
       {
-	CkPrintf("{%d}[%d] AtomsCompute::integrateAtoms chilling for energyready\n ", thisInstance.proxyOffset, thisIndex);     
+	//	CkPrintf("{%d}[%d] AtomsCompute::integrateAtoms chilling for energyready\n ", thisInstance.proxyOffset, thisIndex);     
       }
 
   }//endif
@@ -802,12 +802,12 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
 //==========================================================================
 
 void AtomsCompute::energyReady() {
-  CkPrintf("{%d}[%d] AtomsCompute::energyReady\n ", thisInstance.proxyOffset, thisIndex);     
+  //  CkPrintf("{%d}[%d] AtomsCompute::energyReady\n ", thisInstance.proxyOffset, thisIndex);     
   if(atomsOutputReady)
     {
       outputAtmEnergy();
       int i=0;
-      CkPrintf("{%d}[%d] AtomsCompute::energyReady contributing to atomsDone\n ", thisInstance.proxyOffset, thisIndex);     
+      //      CkPrintf("{%d}[%d] AtomsCompute::energyReady contributing to atomsDone\n ", thisInstance.proxyOffset, thisIndex);     
       CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
       atomsOutputReady=false;
@@ -973,7 +973,7 @@ void AtomsCompute::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double p
     double potPIMDChain_loc,int natmNow,int natmStr,int natmEnd){
   //==========================================================================
   // Malloc the message
-  CkPrintf("{%d}[%d] AtomsCompute::sendAtoms.\n ", thisInstance.proxyOffset, thisIndex);     
+  //  CkPrintf("{%d}[%d] AtomsCompute::sendAtoms.\n ", thisInstance.proxyOffset, thisIndex);     
 
   int nsize    = 9*natmNow+4;
   AtomMsg *msg = new (nsize,8*sizeof(int)) AtomMsg;
@@ -1031,7 +1031,7 @@ void AtomsCompute::bcastAtomsToAtomCache()
 {
   //==========================================================================
   // Malloc the message
-  CkPrintf("{%d}[%d] AtomsCompute::bcastAtomsToAtomCache.\n ", thisInstance.proxyOffset, thisIndex);     
+  //  CkPrintf("{%d}[%d] AtomsCompute::bcastAtomsToAtomCache.\n ", thisInstance.proxyOffset, thisIndex);     
 
   int nsize    = 9*natm+4;
   AtomMsg *msg = new (nsize,8*sizeof(int)) AtomMsg;
@@ -1090,7 +1090,7 @@ void AtomsCompute::bcastAtomsToAtomCache()
 //==========================================================================
 void AtomsCompute::acceptAtoms(AtomMsg *msg) {
   //==========================================================================
-  CkPrintf("{%d}[%d] AtomsCompute::acceptAtoms\n ", thisInstance.proxyOffset, thisIndex);     
+  // CkPrintf("{%d}[%d] AtomsCompute::acceptAtoms\n ", thisInstance.proxyOffset, thisIndex);     
   double *atmData = msg->data;
   int    nsize    = msg->nsize;
   int    natmStr  = msg->natmStr;
@@ -1214,7 +1214,7 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
       if(energyGroupReady) {
 	outputAtmEnergy();
 	int i=0;
-	CkPrintf("{%d}[%d] AtomsCompute::acceptAtoms contribute atomsDone\n ", thisInstance.proxyOffset, thisIndex);     
+	//	CkPrintf("{%d}[%d] AtomsCompute::acceptAtoms contribute atomsDone\n ", thisInstance.proxyOffset, thisIndex);     
 	CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
 	contribute(sizeof(int),&i,CkReduction::sum_int,cb);
 	atomsOutputReady=false;
@@ -1230,7 +1230,7 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
 
 void AtomsCompute::atomsDone(CkReductionMsg *msg)
 {
-  CkPrintf("{%d}[%d] AtomsCompute::atomsDone\n",thisInstance.proxyOffset, thisIndex);
+  //  CkPrintf("{%d}[%d] AtomsCompute::atomsDone\n",thisInstance.proxyOffset, thisIndex);
   int move_atoms = 0;
   if(cp_min_opt==0 && cp_wave_opt==0) { move_atoms = 1; }
   if(cp_bomd_opt==1 && tol_reached==1) { move_atoms = 1; }
@@ -1267,7 +1267,7 @@ void AtomsCompute::accept_PIMD_CM(AtomXYZMsg *msg){
     if(energyGroupReady) {
       outputAtmEnergy();
       int i=0;
-      CkPrintf("{%d}[%d] AtomsCompute::acceptAtoms contribute atomsDone\n ", thisInstance.proxyOffset, thisIndex);           
+      //      CkPrintf("{%d}[%d] AtomsCompute::acceptAtoms contribute atomsDone\n ", thisInstance.proxyOffset, thisIndex);           
       CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
       atomsOutputReady=false;
@@ -1413,7 +1413,7 @@ void AtomsCompute::accept_PIMD_x(AtomXYZMsg* msg) {
 #ifdef _CP_DEBUG_ATMS_
       CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_x contributing to atomsDone atomsCMrecv is %d iteration %d\n ", thisInstance.proxyOffset, thisIndex, atomsCMrecv, *iteration);
 #endif
-      CkPrintf("{%d}[%d] AtomsCompute::accet_PIMD_X contribute atomsDone\n ", thisInstance.proxyOffset, thisIndex);     
+      //      CkPrintf("{%d}[%d] AtomsCompute::accet_PIMD_X contribute atomsDone\n ", thisInstance.proxyOffset, thisIndex);     
       CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);     
 
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
@@ -1466,7 +1466,7 @@ void AtomsCompute::acceptNewTemperature(double temp)
   //     to reflect the new temperature 
 
   switchMoveNow=true;
-  CkPrintf("old_t_ext %g, new_t_ext %g, temp %g\n",old_t_ext, new_t_ext, temp);
+  //  CkPrintf("old_t_ext %g, new_t_ext %g, temp %g\n",old_t_ext, new_t_ext, temp);
   old_t_ext=new_t_ext;  // soon to be old
   new_t_ext=temp;  // soon to be old
 

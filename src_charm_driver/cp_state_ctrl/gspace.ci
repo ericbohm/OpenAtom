@@ -172,13 +172,13 @@ module gSpaceDriver
           if (!_SDAG_DEBUG_PSI_OFF_) {
             when doneComputingEnergy(const int AtomGrpIter) {
 	    serial {
-	    CkPrintf("{%d}[%d][%d] GSP doneComputingEnergy\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
+//	    CkPrintf("{%d}[%d][%d] GSP doneComputingEnergy\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
 	    }
           }
          }
           when doneMovingAtoms(const int AtomsGrpIter) {
 	    serial {
-	    CkPrintf("{%d}[%d][%d] GSP doneMovingAtoms",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
+//	    CkPrintf("{%d}[%d][%d] GSP doneMovingAtoms",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
 	    }
 	  }
         }
@@ -304,13 +304,17 @@ module gSpaceDriver
 
         //! Wait for both the energy computation, and the atoms to be moved
         //! before going to the next iteration.
-//        overlap {
+        overlap {
 
-          when doneMovingAtoms(const int AtomsGrpIter) {}
+          when doneMovingAtoms(const int AtomsGrpIter) {
+//	    serial {CkPrintf("{%d}[%d][%d] GSP doneMovingAtoms iter [%d]\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, AtomsGrpIter); }
+	  }
           if (!_SDAG_DEBUG_PSI_OFF_) {
-            when doneComputingEnergy(const int AtomGrpIter) {}
+            when doneComputingEnergy(const int AtomGrpIter) {
+//	     serial { 	    CkPrintf("{%d}[%d][%d] GSP doneComputingEnergy iter [%d]\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, AtomGrpIter); }
+	    }
           }
-//        }
+        }
 
         //! Print out the iteration times.
         serial "SDAG_dynScreenPrintWallTimes" {

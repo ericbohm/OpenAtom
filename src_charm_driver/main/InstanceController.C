@@ -613,7 +613,7 @@ void InstanceController::acceptNewTemperature(double temperature){
 //============================================================================
 void InstanceController::useNewTemperature(double temperature){
   // broadcast the temp to your atoms and GSPs
-  CkPrintf("[%d] useNewTemperature\n",thisIndex);
+  //  CkPrintf("[%d] useNewTemperature\n",thisIndex);
   atomsTempDone=false;
   gspTempDone=false;
   UatomsComputeProxy[thisIndex].acceptNewTemperature(temperature);
@@ -659,9 +659,11 @@ void InstanceController::gspDoneNewTemp(CkReductionMsg *m)
 //in a nicer world this would be inlined
 void InstanceController::resumeFromTemper()
 { 
-  CkPrintf("Instance Controller %d resumeFromTemper\n", thisIndex);
+  //  CkPrintf("Instance Controller %d resumeFromTemper\n", thisIndex);
   //  ECookieMsg *wakeme=new ECookieMsg;
   //  eCommMgrSectProxy.resumeFromTemper(wakeme);
+  atomsTempDone=false;
+  gspTempDone=false;
   UegroupProxy[thisIndex][UberPes[thisIndex][0]].resumeFromTemperSectBcast(); 
 }
 

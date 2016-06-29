@@ -20,13 +20,13 @@ ENL_EKE_Collector::ENL_EKE_Collector(int _numEnergyInputs, int _numInstance, int
 }
 void ENL_EKE_Collector::printENL()
 {   
-
   fprintf(temperScreenFile,"[%d] ENL         = %5.8lf\n", enlIteration++, ENL/(double) energyExpected);   // tell the world
   ENL=0;
   countENL=0;
 }
 void ENL_EKE_Collector::printEKE()
 {
+
   fprintf(temperScreenFile,"Iter [%d] EKE         = %5.8lf\n", ekeIteration++, EKE/(double) beads);
   countEKE=0;
   EKE=0;
@@ -34,6 +34,7 @@ void ENL_EKE_Collector::printEKE()
 
 void ENL_EKE_Collector::acceptENL(double _enl)
 {
+  //  CkPrintf("[%d] ENL_EKE_Collector::acceptENL\n",thisIndex);
   countENL++; 
   ENL+=_enl;
 
@@ -41,9 +42,10 @@ void ENL_EKE_Collector::acceptENL(double _enl)
 }
 void ENL_EKE_Collector::acceptEKE(double _eke)
 {
+  //  CkPrintf("[%d] ENL_EKE_Collector::acceptEKE\n",thisIndex);
   countEKE++; 
   EKE+=_eke;
-  fprintf(temperScreenFile,"Iter [%d] this EKE         = %5.8lf contribution %d\n", ekeIteration++, _eke, countEKE);
+  //  fprintf(temperScreenFile,"Iter [%d] this EKE         = %5.8lf contribution %d\n", ekeIteration, _eke, countEKE);
   if(countEKE==energyExpected) printEKE();
 }
 
