@@ -261,18 +261,18 @@ void EnergyGroup::energyDone(CkReductionMsg *msg) {
   //==========================================================================
   delete msg;
   // we will receive one of these per bead and temper
-  //  CkPrintf("{%d}[%d] arrived in energyDone\n",thisInstance.proxyOffset, CkMyPe());
+  // CkPrintf("{%d}[%d] arrived in energyDone\n",thisInstance.proxyOffset, CkMyPe());
   if(config.UberKmax>1 && config.temperCycle >0 ) // its temper time, 
     { 
-      //  CkPrintf("{%d}[%d] energyDone(CkReduction *m) sending to temperControllerProxy[0].acceptData\n",thisInstance.proxyOffset, CkMyPe());
+      // CkPrintf("{%d}[%d] energyDone(CkReduction *m) sending to temperControllerProxy[0].acceptData\n",thisInstance.proxyOffset, CkMyPe());
       temperControllerProxy[0].acceptData(thisInstance.idxU.z, iteration_atm, estruct);
         // resumeFromTemper will reactivate us later
 
     }
   else
     {
-      // CkPrintf("{%d}[%d] energyDone(CkReduction *m) called energyDone()\n",thisInstance.proxyOffset, CkMyPe());
-      energyDone();
+      //CkPrintf("{%d}[%d] energyDone(CkReduction *m) called energyDone()\n",thisInstance.proxyOffset, CkMyPe());
+      resumeFromTemperSectBcast();
     }
 }
 //==========================================================================
@@ -283,7 +283,7 @@ void EnergyGroup::sendToTemper(CkReductionMsg *m)
 {
   delete m;
   temperControllerProxy[0].acceptData(thisInstance.idxU.z, iteration_atm, estruct);
-  //  CkPrintf("{%d,%d,%d} energyGroup %d sendToTemper iter %d at freq %d\n",thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, CkMyPe(), iteration_atm, config.temperCycle);
+  //CkPrintf("{%d,%d,%d} energyGroup %d sendToTemper iter %d at freq %d\n",thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, CkMyPe(), iteration_atm, config.temperCycle);
  
 }
 

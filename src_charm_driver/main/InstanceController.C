@@ -364,6 +364,7 @@ void InstanceController::doneInit(){
 /**@}*/
 
 void InstanceController::doneIteration() {
+  //  CkPrintf("{%d} InstanceController::doneIteration\n",thisIndex);
   if(config.numInstances == 1) {
     allInstancesDoneIteration();
   } else {
@@ -374,6 +375,7 @@ void InstanceController::doneIteration() {
 }
 
 void InstanceController::allInstancesDoneIteration() {
+  //  CkPrintf("{%d} InstanceController::allInstancesDoneIteration\n",thisIndex);
   for(int i=0;i<config.numInstances; i++)  
     UgSpaceDriverProxy[i].startNextStep();  
 }

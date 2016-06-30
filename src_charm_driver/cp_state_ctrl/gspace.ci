@@ -172,13 +172,13 @@ module gSpaceDriver
           if (!_SDAG_DEBUG_PSI_OFF_) {
             when doneComputingEnergy(const int AtomGrpIter) {
 	    serial {
-//	    CkPrintf("{%d}[%d][%d] GSP doneComputingEnergy\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
+//	    	    CkPrintf("{%d}[%d][%d] GSP doneComputingEnergy\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
 	    }
           }
          }
           when doneMovingAtoms(const int AtomsGrpIter) {
 	    serial {
-//	    CkPrintf("{%d}[%d][%d] GSP doneMovingAtoms",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
+//	    	    CkPrintf("{%d}[%d][%d] GSP doneMovingAtoms\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y);
 	    }
 	  }
         }
