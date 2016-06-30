@@ -716,7 +716,7 @@ main::main(CkArgMsg *msg) {
 
   for(int i=0;i<numInst;i++)
     {
-      for(int j=0;j<config.numPesPerInstance;j++)
+      for(int j=0;j<UberPes[i].length();j++)
 	CkPrintf("inst %d pe %d\n",i,UberPes[i][j]);
     }
 
@@ -890,11 +890,13 @@ void fillInPeUsedBy(CPcharmParaInfo *sim, UberCollection thisInstance) {
     }
   }
   peUsedByNLZ.quickSort();
-  for(int i=0;i< numPes;i++)
+
+  for(int i=0;i< config.numPes;i++)
     {
       if(usedProc[i])
 	{
 	  UberPes[thisInstance.getPO()].push_back(i);
+	  CkPrintf("UberPe %d %d = %d\n",thisInstance.getPO(),UberPes[thisInstance.getPO()].length(),i);
 	}
     }
   delete [] usedProc;
