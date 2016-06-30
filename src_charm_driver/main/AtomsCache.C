@@ -110,7 +110,8 @@ void AtomsCache::createSpanningSection() {
 	}
       }
     //  int BRANCHING_FACTOR= (numPes>3) ? 3: 1;
-    int BRANCHING_FACTOR= (numPes>1024) ? 5: 3;
+    //int BRANCHING_FACTOR= (numPes>1024) ? 5: 3;
+    int BRANCHING_FACTOR= 3;
 
     int numchild = std::min(std::max(0, numpes - BRANCHING_FACTOR * me - 1), BRANCHING_FACTOR);
     int *children=NULL;
