@@ -239,7 +239,7 @@ class EnergyCommMgrMap : public CkArrayMap {
     int proc;
     proc = maptable->get(index[0]);
     proc = (proc >=0) ? proc : 0;
-    CkPrintf("{%d}[%d] procNum index %d on pe=%d\n",thisInstance.proxyOffset, CkMyPe(), index[0],proc);
+    //    CkPrintf("{%d}[%d] procNum index %d on pe=%d\n",thisInstance.proxyOffset, CkMyPe(), index[0],proc);
     CkAssert(proc >= 0);
     return(proc);
   }
