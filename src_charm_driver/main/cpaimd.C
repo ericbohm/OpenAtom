@@ -890,15 +890,6 @@ void fillInPeUsedBy(CPcharmParaInfo *sim, UberCollection thisInstance) {
     }
   }
   peUsedByNLZ.quickSort();
-
-  for(int i=0;i< config.numPes;i++)
-    {
-      if(usedProc[i])
-	{
-	  UberPes[thisInstance.getPO()].push_back(i);
-	  CkPrintf("UberPe %d %d = %d\n",thisInstance.getPO(),UberPes[thisInstance.getPO()].length(),i);
-	}
-    }
   delete [] usedProc;
   UpeUsedByNLZ.push_back(peUsedByNLZ);
   UplaneUsedByNLZ.push_back(planeUsedByNLZ);
@@ -1340,6 +1331,33 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
     newtime=CmiWallTimer();
     CkPrintf("AtmSFYPencils created in %g\n", newtime-Timer);
   }//end of if ees_eext_on
+  int *usedProc= new int[config.numPes];
+  memset(usedProc, 0, sizeof(int)*config.numPes);
+  if(sim->ees_eext_on) {
+    for(int state=0; state<sim->nstates; state++) {
+      for(int plane = 0; plane <sim->ngrid_nloc_c; plane++)
+	{
+	  int thisstateplaneproc = RPPImaptable[thisInstance.getPO()].get(state,plane);
+	  usedProc[thisstateplaneproc]++;
+	}				      
+    }
+  }
+  for(int state=0; state<sim->nstates; state++) {
+    for(int plane = 0; plane <config.nchareG; plane++)
+      {
+	int thisstateplaneproc = GSImaptable[thisInstance.getPO()].get(state,plane);
+	usedProc[thisstateplaneproc]++;
+      }				      
+  }
+
+  for(int i=0;i< config.numPes;i++)
+    {
+      if(usedProc[i])
+	{
+	  UberPes[thisInstance.getPO()].push_back(i);
+	  CkPrintf("UberPe %d %d = %d\n",thisInstance.getPO(),UberPes[thisInstance.getPO()].length(),i);
+	}
+    }
 
   EnergyCommMgrImaptable[numInst].buildMap(CkNumPes());
   CProxy_EnergyCommMgrMap eMap = CProxy_EnergyCommMgrMap::ckNew(thisInstance);
@@ -1419,6 +1437,33 @@ void build_uber_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
         AtmSFYPencilImaptable[loop_off][numInst].translate(
             &AtmSFYPencilImaptable[loop_off][0], x, y, z, config.torusMap==1);
       }
+    }
+  int *usedProc= new int[config.numPes];
+  memset(usedProc, 0, sizeof(int)*config.numPes);
+  if(sim->ees_eext_on) {
+    for(int state=0; state<sim->nstates; state++) {
+      for(int plane = 0; plane <sim->ngrid_nloc_c; plane++)
+	{
+	  int thisstateplaneproc = RPPImaptable[thisInstance.getPO()].get(state,plane);
+	  usedProc[thisstateplaneproc]++;
+	}				      
+    }
+  }
+  for(int state=0; state<sim->nstates; state++) {
+    for(int plane = 0; plane <config.nchareG; plane++)
+      {
+	int thisstateplaneproc = GSImaptable[thisInstance.getPO()].get(state,plane);
+	usedProc[thisstateplaneproc]++;
+      }				      
+  }
+
+  for(int i=0;i< config.numPes;i++)
+    {
+      if(usedProc[i])
+	{
+	  UberPes[thisInstance.getPO()].push_back(i);
+	  CkPrintf("UberPe %d %d = %d\n",thisInstance.getPO(),UberPes[thisInstance.getPO()].length(),i);
+	}
     }
     fillInPeUsedBy(sim, thisInstance);
     if(thisInstance.idxU.y>0|| thisInstance.idxU.s>0) 
