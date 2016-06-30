@@ -231,7 +231,7 @@ class EnergyCommMgrMap : public CkArrayMap {
     for(int element=0; element< UberPes[thisInstance.proxyOffset].length(); element++)
       {
 	maptable->set(UberPes[thisInstance.proxyOffset][element],UberPes[thisInstance.proxyOffset][element]);
-	CkPrintf("{%d}[%d] EnergyCommMgrMap set ith %d key %d to pe=%d\n",thisInstance.proxyOffset, CkMyPe(), element,  UberPes[thisInstance.proxyOffset][element], UberPes[thisInstance.proxyOffset][element]);
+	//	CkPrintf("{%d}[%d] EnergyCommMgrMap set ith %d key %d to pe=%d\n",thisInstance.proxyOffset, CkMyPe(), element,  UberPes[thisInstance.proxyOffset][element], UberPes[thisInstance.proxyOffset][element]);
       }  
   }
   inline int procNum(int, const CkArrayIndex &iIndex){

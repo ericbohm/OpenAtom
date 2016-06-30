@@ -19,7 +19,9 @@ extern CkVec <CProxy_EnergyGroup>                UegroupProxy;
 
 class EnergyCommMgr : public CBase_EnergyCommMgr {
   public:
- EnergyCommMgr(UberCollection inst):thisInstance(inst){CkPrintf("{%d}[%d] EnergyCommMgr::EnergyCommMgr on pe %d\n",thisInstance.proxyOffset, thisIndex, CkMyPe());}
+ EnergyCommMgr(UberCollection inst):thisInstance(inst){
+    //    CkPrintf("{%d}[%d] EnergyCommMgr::EnergyCommMgr on pe %d\n",thisInstance.proxyOffset, thisIndex, CkMyPe());
+}
   EnergyCommMgr(CkMigrateMessage *m){}
   ~EnergyCommMgr(){}
   void initTemperCookie(ECookieMsg *msg){
