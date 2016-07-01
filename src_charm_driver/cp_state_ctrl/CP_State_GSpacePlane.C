@@ -1335,7 +1335,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
         if (!cp_bomd_opt && iteration % sim->nscreen_frq ==0) {
           CkPrintf("Iteration time (GSP) : %g\n", 
               wallTimeArr[time_array_idx] - wallTimeArr[time_array_idx-1]);
-        } else if (exitFlag) {
+        } else if (exitFlag && cp_bomd_opt) {
           CkPrintf("BOMD step time (GSP) : %g\n", 
               wallTimeArr[time_array_idx] - wallTimeArr[time_array_idx-1]);
         }
@@ -4110,7 +4110,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     CkPrintf("ecount %d %d %d\n",ecount,NUM_ENERGIES-isub,myid);
 #endif
     if(ecount == NUM_ENERGIES-isub){
-      if ((!sim->cp_bomd_opt || exitFlag) && iteration % sim->nscreen_frq == 0) {
+      if ((!sim->cp_bomd_opt || exitFlag) && (exitFlag || iteration % sim->nscreen_frq == 0)) {
         outputEnergies();
       }
       EnergyStruct estruct;

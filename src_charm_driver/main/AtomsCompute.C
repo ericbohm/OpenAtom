@@ -846,7 +846,7 @@ void AtomsCompute::outputAtmEnergy() {
   int myid = CkMyPe();  
   if(myid==0 && do_output){
     fprintf(temperScreenFile,"AtomsCompute printing energies computed in iteration %d\n",iteration);
-    CkPrintf("[b=%d] Iter [%d] TOTAL_ENERGY       = %5.8lf\n", thisInstance.idxU.x, iteration, eg->estruct.totalElecEnergy + vself + vbgr + eg->estruct.eewald_real + eg->estruct.eewald_recip);
+    CkPrintf("[b=%d] Iter [%d] TOTAL_ENERGY       = %5.8lf\n", thisInstance.idxU.x, iteration, eg->estruct.totalElecEnergy + vself + vbgr + eg->estruct.eewald_real + eg->estruct.eewald_recip + eg->estruct.grimmeVdw);
     if(iperd!=0){
       fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_REAL         = %5.8lf\n",thisInstance.idxU.x, iteration, pot_ewd_rs_now);
       fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_SELF         = %5.8lf\n",thisInstance.idxU.x, iteration, vself);
