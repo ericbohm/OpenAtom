@@ -1,0 +1,10 @@
+How to run this program:
+
+executable : epsilon
+
+input file : epsilon.in
+
+At this moment, reading input file is not smart. 
+OpenAtom provides a nice input tool, so we did not want to invent anything special for this serial code.
+
+The description of the input file is in the epsilon.in file

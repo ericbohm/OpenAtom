@@ -1,0 +1,27 @@
+8 
+4 
+4 
+8
+1
+25
+5
+0 0 0.001 
+100   
+0.00000000001 
+3 
+
+
+
+
+
+#line1: numstates
+#line2: numocc
+#line3: numunocc
+#line4: nkpt
+#line5: nspin
+#line6: EcutFFT (Rydberg unit)
+#line7: EpsCut (Hartree unit)  -> let's change it soon
+#line8: shift vector
+#line9: maximum iteration number of iterative method
+#line10: convergence for iterative method
+#line11: number of spacing for Polarizability Interpolation (if -DUSE_P_INTERPOLATION is on )
