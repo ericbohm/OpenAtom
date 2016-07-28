@@ -289,7 +289,7 @@ inline double Ortho::array_diag_max(int sizem, int sizen, internalType *array)
   }
   else
   { //on diagonal 
-    double diag= (lsda) ? 1.0d : 2.0d;
+    double diag= (lsda) ? 1.0 : 2.0;
     max_ret = myabs(array[0]-diag);
     for(int i=0;i<sizem;i++)
     {

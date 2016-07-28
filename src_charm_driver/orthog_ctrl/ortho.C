@@ -509,7 +509,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
       {
 	// scale lambda by 2
 	for(int i=0; i<m*n; i++)
-	  lambda[i]=lambda[i]* 2.0d;
+	  lambda[i]=lambda[i]* 2.0;
       }
     matA1.multiply(1, 0, orthoT, Ortho::gamma_done_cb, (void*) this,
         thisIndex.x, thisIndex.y);
@@ -533,7 +533,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
       {
 	// scale lambda by 2
 	for(int i=0; i<m*n; i++)
-	  lambda[i]=lambda[i]* 2.0d;
+	  lambda[i]=lambda[i]* 2.0;
       }
 
     if (diagonalization == 0) {
