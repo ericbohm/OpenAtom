@@ -86,7 +86,7 @@ struct EnergyStruct;
 * @{ 
   */
 
-    class AtomsCache: public Group {
+    class AtomsCache: public CBase_AtomsCache {
       public:
         const UberCollection thisInstance;
         int natm;

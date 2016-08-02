@@ -4,17 +4,19 @@
 #define ENERGYGROUP_H
 #include "uber/Uber.h"
 #include "energy.h"
-#include "EnergyGroup.decl.h"
+#include "EnergyGroupM.decl.h"
 #include "CPcharmParaInfo.decl.h"
 
 /** EnergyGroup class.
  */
-class EnergyGroup : public Group {
+class EnergyGroup : public CBase_EnergyGroup {
 
   public:
     const UberCollection thisInstance;
     EnergyStruct estruct;
+    EnergyGroup(){};
     EnergyGroup(UberCollection thisInstance);
+    EnergyGroup(CkMigrateMessage* msg) {}		
     int iteration_gsp;
     int iteration_atm;
     int kpointEnergyDoneCount;

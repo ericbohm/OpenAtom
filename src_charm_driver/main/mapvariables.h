@@ -22,7 +22,7 @@ int numInst=0;
 // these are being changed to CkVec's for beads
 CkVec <int> PIBImaptable;
 CkVec <MapType1> AtomImaptable;
-CkVec <MapType1> EnergyCommMgrImaptable;
+//CkVec <MapType1> EnergyCommMgrImaptable;
 CkVec <MapType2> GSImaptable;
 CkVec <MapType2> RSImaptable;
 CkVec <MapType2> RPPImaptable;
@@ -89,7 +89,7 @@ CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
 CkVec <CProxy_AtomsCompute>               UatomsComputeProxy;
 CkVec <CProxy_AtomsCache>                 UatomsCacheProxy;
 CkVec <CProxy_EnergyGroup>                UegroupProxy;
-CkVec <CProxy_EnergyCommMgr>              UeCommProxy;
+//CkVec <CProxy_EnergyCommMgr>              UeCommProxy;
 CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 CkVec <CProxy_StructureFactor>            UsfCompProxy;

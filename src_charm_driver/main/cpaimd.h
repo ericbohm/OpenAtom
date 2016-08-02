@@ -58,7 +58,6 @@ class PlatformSpecific : public CBase_PlatformSpecific
 
 extern bool fakeTorus;
 extern CkVec <int> PIBImaptable;
-extern CkVec <MapType1> EnergyCommMgrImaptable;
 extern CkVec <MapType1> AtomImaptable;
 extern CkVec <MapType2> GSImaptable;
 extern CkVec <MapType2> RSImaptable;
@@ -212,57 +211,6 @@ class CkArrayMapTable4 : public CkArrayMap
       p|thisInstance;
     }
     ~CkArrayMapTable4(){}
-
-};
-
-class EnergyCommMgrMap : public CkArrayMap {
-
- public:
-  MapType1 *maptable;
-  UberCollection thisInstance;
-
- EnergyCommMgrMap(UberCollection _instance ) : thisInstance(_instance)
-  {
-    maptable= &EnergyCommMgrImaptable[thisInstance.getPO()];
-    for(int element=0; element< maptable->getmax(); element++)
-      {
-	maptable->set(element,-1);
-      }
-    for(int element=0; element< UberPes[thisInstance.proxyOffset].length(); element++)
-      {
-	maptable->set(UberPes[thisInstance.proxyOffset][element],UberPes[thisInstance.proxyOffset][element]);
-	//	CkPrintf("{%d}[%d] EnergyCommMgrMap set ith %d key %d to pe=%d\n",thisInstance.proxyOffset, CkMyPe(), element,  UberPes[thisInstance.proxyOffset][element], UberPes[thisInstance.proxyOffset][element]);
-      }  
-  }
-  inline int procNum(int, const CkArrayIndex &iIndex){
-    int *index=(int *) iIndex.data();
-    int proc;
-    proc = maptable->get(index[0]);
-    proc = (proc >=0) ? proc : 0;
-    //    CkPrintf("{%d}[%d] procNum index %d on pe=%d\n",thisInstance.proxyOffset, CkMyPe(), index[0],proc);
-    CkAssert(proc >= 0);
-    return(proc);
-  }
-
-  void pup(PUP::er &p)
-  {
-    CkArrayMap::pup(p);
-    p|thisInstance;
-  }
-
-
-  void populateInitial(int arrayHdl,int numInitial, void *msg,CkArrMgr *mgr)
-  {
-    CkAbort("hail hail, populateInitial was actually used!\n");
-    CkPrintf("pop init pe=%d\n",CkMyPe());
-    if (numInitial==0) return; //No initial elements requested
-    if(maptable->get(CkMyPe())>=0)
-      {
-	CkPrintf("pop init pe=%d\n",CkMyPe());
-	mgr->insertInitial(CkArrayIndex1D(CkMyPe()),CkCopyMsg(&msg));
-      }
-    CkPrintf("pop init pe=%d\n",CkMyPe());
-  }
 
 };
 

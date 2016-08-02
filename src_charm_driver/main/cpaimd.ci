@@ -104,7 +104,7 @@ module energyMessages {
    message EnergyStructMsg;
 };
 
-module EnergyGroup
+module EnergyGroupM
 {
   include "main/energy.h";
   extern module energyMessages;
@@ -121,12 +121,6 @@ module EnergyGroup
     entry void sectionDone(CkReductionMsg *m);
     entry void initTemperCookie(ECookieMsg *msg);
 
-  };
-
-  array [1D] EnergyCommMgr {
-    entry void EnergyCommMgr(UberCollection);
-    entry void initTemperCookie(ECookieMsg *msg);
-    entry [nokeep] void resumeFromTemper(ECookieMsg *msg);
   };
 
 };
@@ -330,7 +324,7 @@ mainmodule cpaimd {
   extern module structureFactor;
   extern module structureFactorCache;
   extern module Atoms;
-  extern module EnergyGroup;
+  extern module EnergyGroupM;
   extern module PIBeadAtoms;		
   extern module timeKeeper;
   extern module startupMessages;
@@ -357,7 +351,6 @@ mainmodule cpaimd {
   readonly CkVec < CkVec <MapType2> > RhoYPencilImaptable;
   readonly CkVec < MapType2 > RhoHartYPencilImaptable;
   readonly CkVec < CkVec<MapType2> > AtmSFYPencilImaptable;
-  readonly CkVec <MapType1> EnergyCommMgrImaptable;
   readonly CkVec < CkVec <int> > UberPes;
   readonly Config config;
 
@@ -391,7 +384,6 @@ mainmodule cpaimd {
   readonly CkVec <CProxy_AtomsCache> UatomsCacheProxy;
   readonly CkVec <CProxy_AtomsCompute> UatomsComputeProxy;
   readonly CkVec <CProxy_EnergyGroup> UegroupProxy;
-  readonly CkVec <CProxy_EnergyCommMgr> UeCommProxy;
   readonly CkVec <CProxy_FFTcache> UfftCacheProxy;
   readonly CkVec <CProxy_StructFactCache> UsfCacheProxy;
   readonly CkVec <CProxy_StructureFactor> UsfCompProxy;
@@ -495,11 +487,6 @@ mainmodule cpaimd {
   group AtomComputeMap : CkArrayMap {
     entry AtomComputeMap(UberCollection);
   };
-
-  group EnergyCommMgrMap : CkArrayMap {
-    entry EnergyCommMgrMap(UberCollection);
-  };
-
 
   group RhoGSMap : CkArrayMap {
     entry RhoGSMap(UberCollection, int);

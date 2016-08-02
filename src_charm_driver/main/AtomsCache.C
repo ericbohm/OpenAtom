@@ -39,7 +39,6 @@ extern CkVec <CProxy_eesCache>             UeesCacheProxy;
 extern CProxy_TemperController temperControllerProxy;
 extern CProxy_InstanceController instControllerProxy;
 extern CProxy_CPcharmParaInfoGrp   scProxy;
-extern CkVec <MapType1> EnergyCommMgrImaptable;
 extern CkGroupID mCastGrpId;
 //#define _CP_DEBUG_ATMS_
 
@@ -98,6 +97,26 @@ AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstan
 }
 
 void AtomsCache::createSpanningSection() {
+    if(CkMyPe() == UberPes[thisInstance.proxyOffset][0]){   //root
+      CkPrintf("{%d}[%d] AC section proxy init\n",thisInstance.proxyOffset,CkMyPe());
+     size_t asize=UberPes[thisInstance.proxyOffset].size();
+      int arr[asize];
+      for(int i=0;i<asize;i++) {arr[i]=UberPes[thisInstance.proxyOffset][i]; CkPrintf("i %d=%d\n",i, arr[i]);}
+      
+      secProxy = CProxySection_AtomsCache(thisProxy.ckGetGroupID(), arr, asize);
+
+      CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+      secProxy.ckSectionDelegate(mCastGrp);
+      ContribForcesMsg *msg = new (8*sizeof(int)) ContribForcesMsg();
+      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+      *(int*)CkPriorityPtr(msg) = -1;
+      secProxy.initForceCookie(msg);
+
+    }
+
+}
+
+/*void AtomsCache::createSpanningSection() {
   int numpes = UberPes[thisInstance.proxyOffset].length();
 
   if(EnergyCommMgrImaptable[thisInstance.proxyOffset].get(CkMyPe())>=0){
@@ -122,13 +141,13 @@ void AtomsCache::createSpanningSection() {
 	children[i] = UberPes[thisInstance.proxyOffset][BRANCHING_FACTOR*me+i+1];
 	//	CkPrintf("{%d} %d th child is index %d pe %d \n",thisInstance.proxyOffset, i, BRANCHING_FACTOR*me+i+1, UberPes[thisInstance.proxyOffset][BRANCHING_FACTOR*me+i+1]);
       }
-    /* parent of root should be root itself */
+    // parent of root should be root itself 
     int parent = std::max(0, UberPes[thisInstance.proxyOffset][(me-1)/BRANCHING_FACTOR]);	
     //    CkPrintf("{%d}[%d] me: %d, parent: %d, numchild: %d, numPes in section %d \n", thisInstance.proxyOffset, CkMyPe(), me, parent, numchild, numpes);
     CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
     forcecookie = mCastGrp->addToGrpSection(thisgroup, 1, parent, children, numchild); 
 
-    /* Should be done at the root only, broadcast only supported from root */
+// Should be done at the root only, broadcast only supported from root
     if(CkMyPe() == UberPes[thisInstance.proxyOffset][0]){   //root
       //      CkPrintf("{%d}[%d] section proxy init\n",thisInstance.proxyOffset,CkMyPe());
       secProxy = CProxySection_AtomsCache(forcecookie, children, numchild); 
@@ -143,6 +162,7 @@ void AtomsCache::createSpanningSection() {
 
 }
 
+*/
 void AtomsCache::contributeforcesSectBcast(){
   //  CkPrintf("{%d}[%d] contributeforcesSectBcast\n",thisInstance.proxyOffset, CkMyPe());
   secProxy.contributeforces(new ContribForcesMsg);

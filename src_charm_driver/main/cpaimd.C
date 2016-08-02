@@ -130,7 +130,7 @@ int numPes;
 #include "AtomsCache.h"
 #include "AtomsCompute.h"
 #include "energyGroup.h"
-#include "EnergyCommMgr.h"
+
 
 #include "cp_state_ctrl/CP_State_Plane.h"
 #include "cp_state_ctrl/CP_State_ParticlePlane.h"
@@ -698,8 +698,8 @@ main::main(CkArgMsg *msg) {
                   delete excludePes;
 		}
 		// now safe to init atom bead commanders && temper section
-		UegroupProxy[thisInstance.proxyOffset].createSpanningSection();
-		UatomsCacheProxy[thisInstance.proxyOffset].createSpanningSection();
+		UegroupProxy[thisInstance.proxyOffset][UberPes[thisInstance.proxyOffset][0]].createSpanningSection();
+		UatomsCacheProxy[thisInstance.proxyOffset][UberPes[thisInstance.proxyOffset][0]].createSpanningSection();
 		UatomsComputeProxy[numInst].init();
 		numInst++;
 	  }
@@ -1359,7 +1359,7 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 	}
     }
 
-  EnergyCommMgrImaptable[numInst].buildMap(CkNumPes());
+  /*  EnergyCommMgrImaptable[numInst].buildMap(CkNumPes());
   CProxy_EnergyCommMgrMap eMap = CProxy_EnergyCommMgrMap::ckNew(thisInstance);
   // if populateInitial actually worked, we'd be golden
   CkArrayOptions energyOpts(UberPes[thisInstance.proxyOffset].length());
@@ -1368,14 +1368,15 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
   energyOpts.setStaticInsertion(true);
   // since populate initial is never called, we manually insert
   UeCommProxy.push_back(CProxy_EnergyCommMgr::ckNew(thisInstance,energyOpts));
-   /* UeCommProxy.push_back(CProxy_EnergyCommMgr::ckNew(thisInstance));
+    UeCommProxy.push_back(CProxy_EnergyCommMgr::ckNew(thisInstance));
       for(int element=0; element< UberPes[thisInstance.proxyOffset].length(); element++)
     {
       CkPrintf("{%d}[%d} insert %d on %d\n", thisInstance.proxyOffset, CkMyPe(), UberPes[thisInstance.proxyOffset][element],UberPes[thisInstance.proxyOffset][element]);
       UeCommProxy[thisInstance.proxyOffset][UberPes[thisInstance.proxyOffset][element]].insert(UberPes[thisInstance.proxyOffset][element]);
     }
-   */
+
   UeCommProxy[thisInstance.proxyOffset].doneInserting();
+   */
   instControllerProxy[thisInstance.proxyOffset].insert(numFFTinstances,UberPes[thisInstance.proxyOffset][0]);
 }
 
@@ -1409,7 +1410,6 @@ void build_uber_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
       }
     }
     fillInPeUsedBy(sim, thisInstance);
-    EnergyCommMgrImaptable[numInst]=EnergyCommMgrImaptable[0];
     instControllerProxy[thisInstance.proxyOffset].insert(numFFTinstances,UberPes[thisInstance.proxyOffset][0]);
   } else {
     GSImaptable[numInst].translate(&GSImaptable[0], x,y,z,
@@ -1466,6 +1466,7 @@ void build_uber_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 	}
     }
     fillInPeUsedBy(sim, thisInstance);
+    /*
     if(thisInstance.idxU.y>0|| thisInstance.idxU.s>0) 
       {
 	UeCommProxy.push_back(UeCommProxy[thisInstance.proxyOffset]);
@@ -1486,8 +1487,8 @@ void build_uber_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 	  }
 	*/
 	instControllerProxy[thisInstance.proxyOffset].insert(numFFTinstances,UberPes[thisInstance.proxyOffset][0]);
-    }
   }
+
 }
 
 

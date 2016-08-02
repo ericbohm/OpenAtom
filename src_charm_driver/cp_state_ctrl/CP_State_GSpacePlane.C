@@ -1107,6 +1107,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     // This reduction is done to signal the end of initialization to main
 
     int i=1;
+    //    CkPrintf("GSP [%d,%d] on PE %d contributing to doneInit\n",
+    //	     thisIndex.x, thisIndex.y, CkMyPe());
     contribute(CkCallback(CkIndex_InstanceController::doneInit(),
         CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 

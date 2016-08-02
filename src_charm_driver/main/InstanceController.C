@@ -29,7 +29,6 @@ extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
 extern CkVec <CProxy_AtomsCache>                 UatomsCacheProxy;
 extern CkVec <CProxy_AtomsCompute>               UatomsComputeProxy;
 extern CkVec <CProxy_EnergyGroup>                UegroupProxy;
-extern CkVec <CProxy_EnergyCommMgr>              UeCommProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 extern CkVec <CProxy_StructureFactor>            UsfCompProxy;
@@ -375,7 +374,7 @@ void InstanceController::doneIteration() {
 }
 
 void InstanceController::allInstancesDoneIteration() {
-  //  CkPrintf("{%d} InstanceController::allInstancesDoneIteration\n",thisIndex);
+  CkPrintf("{%d} InstanceController::allInstancesDoneIteration\n",thisIndex);
   for(int i=0;i<config.numInstances; i++)  
     UgSpaceDriverProxy[i].startNextStep();  
 }
@@ -384,6 +383,7 @@ void InstanceController::allInstancesDoneIteration() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void InstanceController::initCookie(ICCookieMsg *msg){
+  CkPrintf("{%d} InstanceController::initcookien\n");
   CkGetSectionInfo(allKPcookie, msg);
   //    delete msg; nokeep
 }

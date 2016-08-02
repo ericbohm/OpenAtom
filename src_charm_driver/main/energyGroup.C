@@ -6,7 +6,6 @@
 #include "CPcharmParaInfoGrp.h"
 #include "load_balance/IntMap.h"
 #include "charm++.h"
-#include "EnergyCommMgr.h"
 #include "ckmulticast.h"
 extern CkVec < CkVec <int> > UberPes;
 
@@ -16,7 +15,6 @@ extern CkVec <CProxy_eesCache>             UeesCacheProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>         UgSpaceDriverProxy;
 extern CkVec <CProxy_AtomsCompute>         UatomsComputeProxy;
-extern CkVec <MapType1> EnergyCommMgrImaptable;
 extern CkGroupID mCastGrpId;
 //==========================================================================
 //Energy group for each Uber to hold the energies
@@ -82,6 +80,32 @@ EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInst
  */
 
 void EnergyGroup::createSpanningSection() {
+    if(CkMyPe() == UberPes[thisInstance.proxyOffset][0]){   //root
+      CkPrintf("{%d}[%d] EG createSpanningSection\n",thisInstance.proxyOffset,CkMyPe());
+      int asize=UberPes[thisInstance.proxyOffset].size();
+      int* arr= new int[asize];
+      for(int i=0;i<asize;i++) {arr[i]=UberPes[thisInstance.proxyOffset][i]; CkPrintf("i %d=%d\n",i, arr[i]);}
+      //      secProxy = CProxySection_EnergyGroup(thisProxy.ckGetGroupID(), &(UberPes[thisInstance.proxyOffset][0]), UberPes[thisInstance.proxyOffset].size()); 
+      secProxy = CProxySection_EnergyGroup(UegroupProxy[thisInstance.proxyOffset].ckGetGroupID(), arr, asize);
+      CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+      CkPrintf("{%d}[%d] EG section proxy delegating section of size %d to gid %d == %d\n",thisInstance.proxyOffset,CkMyPe(), asize, mCastGrp->ckGetGroupID(), mCastGrpId);
+      secProxy.ckSectionDelegate(mCastGrp);
+      //      mCastGrp->setReductionClient(secProxy, new CkCallback(CkReductionTarget(EnergyGroup, sectionDone), UberPes[thisInstance.proxyOffset][0], thisProxy));
+      //      ECookieMsg *msg = new (8*sizeof(int)) ECookieMsg();
+      ECookieMsg *msg = new ECookieMsg();
+      //      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+      //      *(int*)CkPriorityPtr(msg) = -1;
+      secProxy.initTemperCookie(msg);
+    }
+    else
+      {
+	CkAbort("only call this on the root of the section\n");
+      }
+
+}
+
+/*
+void EnergyGroup::createSpanningSection() {
   int numpes = UberPes[thisInstance.proxyOffset].length();
 
   if(EnergyCommMgrImaptable[thisInstance.proxyOffset].get(CkMyPe())>=0){
@@ -106,13 +130,13 @@ void EnergyGroup::createSpanningSection() {
 	children[i] = UberPes[thisInstance.proxyOffset][BRANCHING_FACTOR*me+i+1];
 	//	CkPrintf("{%d} %d th child is index %d pe %d \n",thisInstance.proxyOffset, i, BRANCHING_FACTOR*me+i+1, UberPes[thisInstance.proxyOffset][BRANCHING_FACTOR*me+i+1]);
       }
-    /* parent of root should be root itself */
+    // parent of root should be root itself 
     int parent = std::max(0, UberPes[thisInstance.proxyOffset][(me-1)/BRANCHING_FACTOR]);	
     //    CkPrintf("{%d}[%d] me: %d, parent: %d, numchild: %d, numPes in section %d \n", thisInstance.proxyOffset, CkMyPe(), me, parent, numchild, numpes);
     CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
     temperCookie = mCastGrp->addToGrpSection(thisgroup, 1, parent, children, numchild); 
     mCastGrp->setReductionClient(temperCookie, new CkCallback(CkIndex_EnergyGroup::sendToTemper(NULL),UberPes[thisInstance.proxyOffset][0],  UegroupProxy[thisInstance.proxyOffset]));
-    /* Should be done at the root only, broadcast only supported from root */
+    // Should be done at the root only, broadcast only supported from root 
     if(CkMyPe() == UberPes[thisInstance.proxyOffset][0]){   //root
       //      CkPrintf("{%d}[%d] section proxy init\n",thisInstance.proxyOffset,CkMyPe());
       secProxy = CProxySection_EnergyGroup(temperCookie, children, numchild); 
@@ -126,7 +150,7 @@ void EnergyGroup::createSpanningSection() {
   }
 
 }
-
+*/
 void EnergyGroup::initTemperCookie(ECookieMsg *msg){
   //  CkPrintf("{%d}[%d] initTemperCookie\n",thisInstance.proxyOffset, CkMyPe());
   CkGetSectionInfo(temperCookie, msg);
@@ -134,6 +158,7 @@ void EnergyGroup::initTemperCookie(ECookieMsg *msg){
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
   int i=1;
   mCastGrp->contribute(sizeof(int),&i,CkReduction::sum_int,temperCookie,cb);
+  //mCastGrp->contribute(sizeof(int),&i,CkReduction::sum_int,temperCookie);
   delete msg;
 }
 
@@ -289,8 +314,7 @@ void EnergyGroup::sendToTemper(CkReductionMsg *m)
 
 void EnergyGroup::sectionDone(CkReductionMsg *m)
 {
-  //  CkPrintf("{%d,%d,%d} energyGroup %d sectionDone count %d\n",thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, CkMyPe(), ((int *) m->getData())[0]);
-  delete m;
+  CkPrintf("{%d,%d,%d} energyGroup %d sectionDone count %d\n",thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, CkMyPe(), ((int*) m->getData())[0]);
 }
 
 void EnergyGroup::resumeFromTemperSectBcast()
@@ -363,5 +387,5 @@ return UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->getEnergyStruct()
  */
 
 #include "energyMessages.def.h"
-#include "EnergyGroup.def.h"
+#include "EnergyGroupM.def.h"
 

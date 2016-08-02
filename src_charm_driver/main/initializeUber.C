@@ -4,7 +4,7 @@
 /**@{*/
 // bump all the INT_MAPs to the right size
 AtomImaptable.resize(config.numInstances);
-EnergyCommMgrImaptable.resize(config.numInstances);
+//EnergyCommMgrImaptable.resize(config.numInstances);
 PIBImaptable.resize(config.numInstances);
 GSImaptable.resize(config.numInstances);
 RSImaptable.resize(config.numInstances);
@@ -50,7 +50,7 @@ UrhoGHartExtProxy.reserve(config.numInstances);
 UatomsComputeProxy.reserve(config.numInstances);
 UatomsCacheProxy.reserve(config.numInstances);
 UegroupProxy.reserve(config.numInstances);
-UeCommProxy.reserve(config.numInstances);
+//UeCommProxy.reserve(config.numInstances);
 UfftCacheProxy.reserve(config.numInstances);
 UsfCacheProxy.reserve(config.numInstances);
 UsfCompProxy.reserve(config.numInstances);

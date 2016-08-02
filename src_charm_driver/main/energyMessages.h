@@ -4,9 +4,14 @@
 #include "energyMessages.decl.h"
 
 
-class ECookieMsg : public CkMcastBaseMsg, public CMessage_ECookieMsg {
+struct ECookieMsg : public CkMcastBaseMsg, public CMessage_ECookieMsg {
   public:
     int junk;
+   void pup(PUP::er &p){
+	  CMessage_ECookieMsg::pup(p);
+	  p|junk;
+   }
+
 };
 
 class EnergyStructMsg : public CkMcastBaseMsg, public CMessage_EnergyStructMsg {
