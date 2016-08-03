@@ -128,7 +128,9 @@ PsiCache::PsiCache() {
   K = gwbse->gw_parallel.K;
   L = gwbse->gw_parallel.L;
   qindex = Q_IDX;
-  psi_size = gwbse->gw_parallel.n_elems;
+  int* nfft;
+  nfft = gwbse->gw_parallel.fft_nelems;
+  psi_size = nfft[0]*nfft[1]*nfft[2];//gwbse->gw_parallel.n_elems;
   received_psis = 0;
   psis = new complex**[K];
   for (int k = 0; k < K; k++) {

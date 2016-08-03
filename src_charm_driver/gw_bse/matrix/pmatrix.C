@@ -89,6 +89,12 @@ void PMatrix2D::applyFs() {
 #ifdef USE_LAPACK
   // Common variables for both ZGERC and ZGEMM
   int M = num_rows, N = num_cols;
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  if(thisIndex.x == (matrix_dimension / num_rows)-1)
+    M -= ndata%num_rows;
+  if(thisIndex.y == (matrix_dimension / num_cols)-1)
+    N -= ndata%num_cols;
+
   complex alpha = -1.0;
 #ifdef USE_ZGEMM
   int K = L; // If using ZGEMM, we compute all outer products with one call
