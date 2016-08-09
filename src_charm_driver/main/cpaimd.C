@@ -1344,6 +1344,7 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 	}				      
     }
   }
+
   for(int state=0; state<sim->nstates; state++) {
     for(int plane = 0; plane <config.nchareG; plane++)
       {
@@ -1364,8 +1365,19 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
     for(int j = 0; j <config.nchareHartAtmT; j++){
       int thisstateplaneproc = RhoGHartImaptable[thisInstance.getPO()].get(i,j);
       usedProc[thisstateplaneproc]++;
-    }				      
+    }	
+  int ibead         = thisInstance.idxU.x;
+  int itemper       = thisInstance.idxU.z;
 
+  PhysicsAtomPosInit *PhysicsAtom  = new PhysicsAtomPosInit(ibead,itemper);
+  int natm          = PhysicsAtom->natm_tot;
+  int nChareAtoms=(config.numPesPerInstance<natm) ? config.numPesPerInstance : natm;
+	      
+  for(int i=0; i< nChareAtoms; i++)
+    {
+      int thisstateplaneproc = AtomImaptable[thisInstance.getPO()].get(i);
+      usedProc[thisstateplaneproc]++;
+    }
   for(int i=0;i< config.numPes;i++)
     {
       if(usedProc[i])
