@@ -1331,6 +1331,8 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
     newtime=CmiWallTimer();
     CkPrintf("AtmSFYPencils created in %g\n", newtime-Timer);
   }//end of if ees_eext_on
+
+  // create usedProc from the chare arrays that have atom or energies access
   int *usedProc= new int[config.numPes];
   memset(usedProc, 0, sizeof(int)*config.numPes);
   if(sim->ees_eext_on) {
@@ -1349,6 +1351,20 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
 	usedProc[thisstateplaneproc]++;
       }				      
   }
+
+  for(int i=0; i< config.nchareRhoRHart_x; i++)
+    for(int j = 0; j <config.nchareRhoRHart_y; j++)
+      for(int k = 0; k <config.nchareHartAtmT; k++)
+	{
+	  int thisstateplaneproc = RhoRHartImaptable[thisInstance.getPO()].get(i,j,k);
+	  usedProc[thisstateplaneproc]++;
+	}
+
+  for(int i=0; i< config.nchareRhoG; i++) 
+    for(int j = 0; j <config.nchareHartAtmT; j++){
+      int thisstateplaneproc = RhoGHartImaptable[thisInstance.getPO()].get(i,j);
+      usedProc[thisstateplaneproc]++;
+    }				      
 
   for(int i=0;i< config.numPes;i++)
     {
