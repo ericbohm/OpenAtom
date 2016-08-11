@@ -29,7 +29,7 @@ if(simReadOnly.ees_eext_on) {
 UberPes.resize(config.numInstances);
 
 
-for(int inst; inst < config.numInstances; inst++)
+for(int inst=0; inst < config.numInstances; inst++)
   {
     UberPes[inst].reserve(config.numPesPerInstance);
   }
