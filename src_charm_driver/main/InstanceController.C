@@ -276,7 +276,7 @@ void InstanceController::doneInit(){
   CkPrintf("{%d} Done_init \n",thisIndex);
   // Also, when paircalc becomes completely instance unaware, it will fail. This single assert is not enough motivation
   // to provide instance info to the pc/ortho bubble. @todo: remove this assert
-  int numPhases=5;
+  int numPhases=7;
   if(CPcharmParaInfo::get()->ees_nloc_on==1)
     numPhases++;
   double newtime=CmiWallTimer();
@@ -285,7 +285,7 @@ void InstanceController::doneInit(){
   if(done_init<numPhases){
     CkPrintf("{%d} Completed chare instantiation phase %d in %g\n",thisIndex,done_init+1,newtime-Timer);
   }
-  if (done_init==3)
+  if (done_init==5)
   { // kick off post constructor inits
     init();
     UberCollection thisInstance(thisIndex);
@@ -293,7 +293,7 @@ void InstanceController::doneInit(){
       initDensity();
     }
   }
-  if (done_init == 4){
+  if (done_init == 6){
     // We do this after we know gsp, pp, rp, rpp exist
     //if(CPcharmParaInfo::get()->ees_nloc_on==1)
     //{UrealParticlePlaneProxy[thisIndex].init();}
@@ -305,7 +305,7 @@ void InstanceController::doneInit(){
     } //endfor
 
   }//endif
-  if (done_init == 5 && CPcharmParaInfo::get()->ees_nloc_on==1){
+  if (done_init == 7 && CPcharmParaInfo::get()->ees_nloc_on==1){
     CkPrintf("{%d} Completed chare data acquisition phase %d in %g\n",thisIndex, done_init+1,newtime-Timer);
     UrealParticlePlaneProxy[thisIndex].init();
   }

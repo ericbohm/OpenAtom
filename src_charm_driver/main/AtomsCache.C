@@ -107,9 +107,11 @@ void AtomsCache::createSpanningSection() {
 
       CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
       secProxy.ckSectionDelegate(mCastGrp);
-      ContribForcesMsg *msg = new (8*sizeof(int)) ContribForcesMsg();
-      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-      *(int*)CkPriorityPtr(msg) = -1;
+      mCastGrp->setReductionClient(secProxy, new CkCallback(CkIndex_InstanceController::doneInit(),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+      //      ContribForcesMsg *msg = new (8*sizeof(int)) ContribForcesMsg();
+      ContribForcesMsg *msg = new ContribForcesMsg();
+      //      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+      //      *(int*)CkPriorityPtr(msg) = -1;
       secProxy.initForceCookie(msg);
 
     }
@@ -271,11 +273,11 @@ void AtomsCache::acceptAtoms(AtomMsg *msg)
 void AtomsCache::initForceCookie(ContribForcesMsg *m)
 {
   CkGetSectionInfo(forcecookie, m);
-  CkCallback cb(CkIndex_AtomsCache::secDone(NULL), UberPes[thisInstance.proxyOffset][0], UatomsCacheProxy[thisInstance.proxyOffset]);
+  //  CkCallback cb(CkIndex_AtomsCache::secDone(NULL), UberPes[thisInstance.proxyOffset][0], UatomsCacheProxy[thisInstance.proxyOffset]);
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
   
   int i=1;
-  mCastGrp->contribute(sizeof(int), &i, CkReduction::sum_int, forcecookie, cb);
+  mCastGrp->contribute(sizeof(int), &i, CkReduction::sum_int, forcecookie);
   delete m;
 }
 

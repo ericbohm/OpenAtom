@@ -15,6 +15,7 @@ extern CkVec <CProxy_eesCache>             UeesCacheProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>         UgSpaceDriverProxy;
 extern CkVec <CProxy_AtomsCompute>         UatomsComputeProxy;
+extern CProxy_InstanceController instControllerProxy;
 extern CkGroupID mCastGrpId;
 //==========================================================================
 //Energy group for each Uber to hold the energies
@@ -90,7 +91,7 @@ void EnergyGroup::createSpanningSection() {
       CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
       CkPrintf("{%d}[%d] EG section proxy delegating section of size %d to gid %d == %d\n",thisInstance.proxyOffset,CkMyPe(), asize, mCastGrp->ckGetGroupID(), mCastGrpId);
       secProxy.ckSectionDelegate(mCastGrp);
-      //      mCastGrp->setReductionClient(secProxy, new CkCallback(CkReductionTarget(EnergyGroup, sectionDone), UberPes[thisInstance.proxyOffset][0], thisProxy));
+      mCastGrp->setReductionClient(secProxy, new CkCallback(CkIndex_InstanceController::doneInit(),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
       //      ECookieMsg *msg = new (8*sizeof(int)) ECookieMsg();
       ECookieMsg *msg = new ECookieMsg();
       //      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
@@ -154,10 +155,10 @@ void EnergyGroup::createSpanningSection() {
 void EnergyGroup::initTemperCookie(ECookieMsg *msg){
   //  CkPrintf("{%d}[%d] initTemperCookie\n",thisInstance.proxyOffset, CkMyPe());
   CkGetSectionInfo(temperCookie, msg);
-  CkCallback cb(CkIndex_EnergyGroup::sectionDone(NULL),UberPes[thisInstance.proxyOffset][0], UegroupProxy[thisInstance.proxyOffset]);
+  //  CkCallback cb(CkIndex_EnergyGroup::sectionDone(NULL),UberPes[thisInstance.proxyOffset][0], UegroupProxy[thisInstance.proxyOffset]);
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
   int i=1;
-  mCastGrp->contribute(sizeof(int),&i,CkReduction::sum_int,temperCookie,cb);
+  mCastGrp->contribute(sizeof(int),&i,CkReduction::sum_int,temperCookie);
   //mCastGrp->contribute(sizeof(int),&i,CkReduction::sum_int,temperCookie);
   delete msg;
 }

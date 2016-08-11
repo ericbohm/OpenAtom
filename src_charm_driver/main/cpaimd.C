@@ -1382,8 +1382,9 @@ void build_all_maps(CPcharmParaInfo *sim, UberCollection thisInstance)
     {
       if(usedProc[i])
 	{
-	  UberPes[thisInstance.getPO()].push_back(i);
 	  CkPrintf("UberPe %d %d = %d\n",thisInstance.getPO(),UberPes[thisInstance.getPO()].length(),i);
+	  UberPes[thisInstance.getPO()].push_back(i);
+
 	}
     }
 
