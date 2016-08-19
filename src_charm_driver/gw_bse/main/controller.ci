@@ -274,7 +274,7 @@ module controller {
         controller_proxy.createEpsilon();
       }
 
-      forall [block] (0:143,1) {
+      forall [block] (0:rows-1,1) {
           when
           inputData[block](int blockId, complex p[num_rows*num_cols], double vcoulb[size], int accept[size], unsigned int num_rows, unsigned int num_cols, int size)
           serial {
@@ -292,18 +292,18 @@ module controller {
             local_inew = global_inew; 
  
             for(i=0;i<num_rows;i++){
-              int i_global = ((blockId/12)*num_rows)+i;
+              int i_global = ((blockId/(dimension/rows))*num_rows)+i;
               if(accept[i_global]==1){
                   
                   local_inew++;
 
-                  if(block%12 == 0) //first chare in the row
+                  if(block%(dimension/rows) == 0) //first chare in the row
                       local_jnew = 0;
                   else local_jnew = jnew_arr[local_inew];
 
       
                 for(j=0;j<num_cols;j++){
-                  int j_global = ((blockId%12))*num_cols+j;
+                  int j_global = ((blockId%(dimension/rows)))*num_cols+j;
                   if(accept[j_global]==1){   
                     local_jnew++;
                     tmp_arr[local_inew*padded_epsilon_size+local_jnew] = p[i*num_cols+j];
@@ -322,7 +322,7 @@ module controller {
               max_local_inew = local_inew;
  
       
-            if((block+1)%12==0){//last chare in this row of chares
+            if((block+1)%(dimension/rows)==0){//last chare in this row of chares
                 global_inew = max_local_inew;
               if(global_jnew <local_jnew)
                 global_jnew = local_jnew; //more like max
@@ -331,12 +331,11 @@ module controller {
 
 
 
-            if(block+1 == 144){
-//              CkPrintf("\n inew = %d, jnew = %d", global_inew, local_jnew); fflush(stdout);
+            if(block+1 == rows){
               eps_matrix2D_proxy.receiveFs(tmp_arr); 
             }else{
               blockId++;
-              pmatrix2D_proxy(blockId/12,blockId%12).generateEpsilon(vcoulb_v, accept_v, 0, 0, 0, 0, size);
+              pmatrix2D_proxy(blockId/(dimension/rows),blockId%(dimension/rows)).generateEpsilon(vcoulb_v, accept_v, 0, 0, 0, 0, size);
             }
           }
       }
@@ -404,7 +403,7 @@ module controller {
       when m_multiplied() serial{
         if(iteration%percent==0)
         CkPrintf("\n[CONTROLLER] M1 = 2I-M1");
-        pmatrix2D_ccproxy.complement_two();
+        pmatrix2D_ccproxy.add_compl_two();
       }
 
       // Step 2: X1 = X * M1

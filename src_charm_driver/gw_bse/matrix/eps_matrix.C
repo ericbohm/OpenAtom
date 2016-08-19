@@ -109,13 +109,13 @@ void EpsMatrix2D::multiply(double alpha, double beta){
  }
 
 
-void EpsMatrix2D::complement_two(){
+void EpsMatrix2D::add_compl_two(){
 //     for(int i=0; i<N; i++)
     //      M1[i*N+i] += compl_two;
 
     int i = 0;
     complex compl_two(2.0, 0.0);
-    for(int i=0;i<17;i++)//num_rows;i++)
+    for(int i=0;i<eps_rows;i++)//num_rows;i++)
       data[IDX_eps(i,i)] += compl_two;
 
   CkCallback *cb = new CkCallback(CkReductionTarget(Controller, complement_multiplied), controller_proxy);

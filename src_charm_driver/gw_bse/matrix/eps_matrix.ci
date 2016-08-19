@@ -31,7 +31,7 @@ module eps_matrix {
     entry void round_done(void);
     entry void findAlpha(void);
     entry void scalar_multiply(double alpha);
-    entry void complement_two();
+    entry void add_compl_two();
     entry void convergence_check(CProxy_EpsMatrix2D cmp_proxy);
     entry void receiveConvCheck(std::vector<complex> incoming);
     entry void setI(CLA_Matrix_interface mat, bool clean);

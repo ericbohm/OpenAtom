@@ -48,6 +48,7 @@ class Controller : public CBase_Controller {
     unsigned K, L, M, pipeline_stages;
     unsigned next_K, next_state, total_sent, total_complete;
     unsigned max_sends, next_report_threshold;
+    unsigned p_matrix_dimension, num_p_rows;
     int global_inew, global_jnew;
     int max_local_inew;
     int jnew_arr[140];

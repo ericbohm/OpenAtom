@@ -39,7 +39,7 @@ class EpsMatrix2D : public CBase_EpsMatrix2D {
     long double max_fn(int size);
     void scalar_multiply(double alpha);
     void convergence_check(CProxy_EpsMatrix2D cmp_proxy);
-    void complement_two();
+    void add_compl_two();
     void setI(CLA_Matrix_interface mat, bool clean);
     void receiveConvCheck(std::vector<complex> incoming);
     static void done_cb(void *obj){
