@@ -59,24 +59,23 @@ void FFTController:: calc_vcoulb(double* qvec, double* b1, double* b2, double * 
 
 
     std::vector<double> vcoulb_v;
-    vcoulb_v.resize(1728);
-    for(int i=0;i<1728;i++)
+    vcoulb_v.resize(geps->ng);
+    for(int i=0;i<geps->ng;i++)
       vcoulb_v[i] = vcoulb[i];
 //CkPrintf("\nCalculated vcoulb\n");fflush(stdout);
     controller_proxy.got_vcoulb(vcoulb_v);
 }
+
 void FFTController::get_geps(double epsCut, double* qvec, double* b1, double* b2, double * b3, 
                               double alat, int nfft[3]){
 
-
-   int ndata = nfft[0]*nfft[1]*nfft[2];
-  
-    bool accept[ndata];
-    int *gx, *gy, *gz;
-      
-    gx = new int [ndata];
-    gy = new int [ndata];
-    gz = new int [ndata];
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  bool accept[ndata];
+  int *gx, *gy, *gz;
+    
+  gx = new int [ndata];
+  gy = new int [ndata];
+  gz = new int [ndata];
 
   fftidx_to_gidx(gx, gy, gz, nfft);
 
@@ -109,13 +108,7 @@ void FFTController::get_geps(double epsCut, double* qvec, double* b1, double* b2
 
     }
 
-  int tmp_count = 0;
-    for(int i=0;i<1728;i++)
-        if(accept[i])
-          tmp_count++;
-
-    //CkPrintf("\norig -  tmp_count = %d", tmp_count);
-    //CkPrintf("\nnData = %d, geps->ng =%d\n", ndata,count);  
+    CkPrintf("[FFT CONTROLLER] Dimension of epsilon matrix =%d ", count);
     // set values
     geps->ng = count;
     geps->ig = new int [count];
@@ -133,7 +126,6 @@ void FFTController::get_geps(double epsCut, double* qvec, double* b1, double* b2
         }
     }
    
-    //CkPrintf(" number of g vectors in epsilon matrix    \n");
     if ( j!= count ) {
         CkPrintf(" Oops. Error when reducing gspace!!!");
     }
@@ -143,8 +135,8 @@ void FFTController::get_geps(double epsCut, double* qvec, double* b1, double* b2
     delete[] gz;
 
     std::vector<int> accept_v;
-    accept_v.resize(1728);
-    for(int i=0;i<1728;i++)
+    accept_v.resize(ndata);
+    for(int i=0;i<ndata;i++)
       if(accept[i])
         accept_v[i] = 1;
       else

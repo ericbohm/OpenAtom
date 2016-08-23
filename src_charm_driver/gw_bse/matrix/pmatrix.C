@@ -13,10 +13,10 @@
 #define IDX_eps(r,c) ((r)*eps_cols + (c))
 #define eps_chares_x 10
 #define eps_chares_y 10
-
+#define eps_rows 20
+#define eps_cols 20
 
 PMatrix2D::PMatrix2D(){
-//CkPrintf("\nCalling default construction for PMatrix2D(%d, %d)\n", thisIndex.x, thisIndex.y);
   GWBSE* gwbse = GWBSE::get();
 
   // Set some constants
@@ -43,31 +43,97 @@ PMatrix2D::PMatrix2D(){
   total_time = 0.0;
 }
 
-void PMatrix2D::generateEpsilon(std::vector<double> vcoulb, std::vector<int> accept, int inew, int jnew, int size, int max_inew, int max_jnew){
-#if 1
-  int n = 0; 
-//  std::vector<complex> eps_data_tmp(num_rows*num_cols);
-  complex *eps_data_tmp;
-  eps_data_tmp = new complex[num_rows*num_cols];
-  for(int i=0;i<num_rows;i++)
-    for(int j=0;j<num_cols;j++)
-      eps_data_tmp[n++] = data[IDX(i,j)];
+void PMatrix1D::generateEpsilon(std::vector<int> accept){
 
-  int *accept_arr;
-  double *vcoulb_arr;
-  accept_arr = new int[accept.size()];  
-  vcoulb_arr = new double[vcoulb.size()];
-  for(int i=0;i<accept.size();i++){
-    accept_arr[i] = accept[i];
-    vcoulb_arr[i] = vcoulb[i];
+  int inew = 0;
+  for(int i=0;i<thisIndex;i++)
+    if(accept[i])
+      inew++;
+
+//  if(accept[thisIndex])
+//    CkPrintf("\nSending by [%d] for inew %d to [%d,x]\n", thisIndex, inew, inew/eps_rows);
+
+  if(accept[thisIndex]){// && thisIndex==0){
+    int jnew_local = 0;
+    int jnew = 0;
+    Phase3Message *msg;
+    msg = new(eps_cols)Phase3Message();  
+    for(int j=0;j<local_mtx_size_1d_x;j++){
+
+  //    CkPrintf("\nValue of jnew=%d, jnew_local=%d\n", jnew, jnew_local); 
+      if(accept[j]){
+//        CkPrintf("\nIndex is %d\n",j);
+        msg->data[jnew_local++] = data[j];
+        if ( inew == jnew )
+          msg->data[jnew_local-1] += double(1);
+        jnew++;
+        if(jnew_local == eps_cols){
+          int dest_chare_x = inew/eps_rows;
+          int dest_chare_y = (jnew/eps_cols)-1;
+          msg->start_i = inew%eps_rows;
+          msg->start_j = 0;
+          msg->end_i = inew%eps_rows;
+          msg->end_j = (jnew-1)%eps_cols;
+//          CkPrintf("\nSending data to (%d,%d)\n", dest_chare_x, dest_chare_y);
+          eps_matrix2D_proxy(dest_chare_x,dest_chare_y).receiveFs(msg);
+          jnew_local = 0;
+          msg = new(eps_cols)Phase3Message();  
+        }
+      }
+    } 
+    if(jnew_local != eps_cols){
+      for(int i=jnew_local; i<eps_cols; i++){
+        msg->data[i] = 0;
+        jnew++;
+      }
+        
+      int dest_chare_x = inew/eps_rows;
+      int dest_chare_y = (jnew/eps_cols)-1;
+ //     CkPrintf("\n jnew_local = %d to chare(%d,%d)\n", jnew_local, dest_chare_x, dest_chare_y);
+          msg->start_i = inew%eps_rows;
+          msg->start_j = 0;
+          msg->end_i = inew%eps_rows;
+          msg->end_j = (jnew-1)%eps_cols;
+//          CkPrintf("\nSending data to (%d,%d)\n", dest_chare_x, dest_chare_y);
+          eps_matrix2D_proxy(dest_chare_x,dest_chare_y).receiveFs(msg);
+    }
   }
  
-  controller_proxy.inputData(thisIndex.x*12+thisIndex.y, eps_data_tmp, vcoulb_arr, accept_arr, num_rows, num_cols, accept.size());             
- // eps_matrix2D_proxy(thisIndex.x, thisIndex.y).receiveFs(eps_data_tmp, 0, 0, num_rows, num_cols,0);
-#endif
-  
-}
+//  CkPrintf("\n local_mtx_size_2d_x = %d, local_mtx_size_1d_x = %d\n", local_mtx_size_2d_x, local_mtx_size_1d_x); 
+//  int num = 1728;
+  int counter = 0;
+  if(thisIndex == local_mtx_size_1d_x-1){
+    
+    int padded_send_size = local_mtx_size_1d_x + (eps_cols - (local_mtx_size_1d_x%eps_cols));
+    int remainder = eps_cols - (inew+1)%eps_cols;
+//    CkPrintf("\nSending to i=%d,j=%d\n", remainder, padded_send_size);
+    for(int i=inew+1;counter<remainder;i++){
+      counter++;
+      Phase3Message *msg;
+      msg = new(eps_cols)Phase3Message();
+      int jnew_local = 0;
+      int jnew = 0;
+      msg->start_i = i%eps_rows;
 
+      for(int j=0;j<padded_send_size;j++){
+        msg->data[jnew_local++] = 0;
+        jnew++;
+        if(jnew_local == eps_cols){
+          int dest_chare_x = i/eps_rows;
+          int dest_chare_y = (jnew/eps_cols)-1;
+          msg->start_i = i%eps_rows;
+          msg->start_j = 0;
+          msg->end_i = i%eps_rows;
+          msg->end_j = (jnew_local-1)%eps_cols;
+ //         CkPrintf("\nSending data to (%d,%d)\n", dest_chare_x, dest_chare_y);
+          eps_matrix2D_proxy(dest_chare_x,dest_chare_y).receiveFs(msg);
+          jnew_local = 0;
+          msg = new(eps_cols)Phase3Message();
+        }
+      }
+    }
+  }
+}
  
 void PMatrix2D::reportPTime() {
   CkReduction::statisticsElement stats(total_time);
@@ -89,12 +155,6 @@ void PMatrix2D::applyFs() {
 #ifdef USE_LAPACK
   // Common variables for both ZGERC and ZGEMM
   int M = num_rows, N = num_cols;
-  int ndata = nfft[0]*nfft[1]*nfft[2];
-  if(thisIndex.x == (matrix_dimension / num_rows)-1)
-    M -= ndata%num_rows;
-  if(thisIndex.y == (matrix_dimension / num_cols)-1)
-    N -= ndata%num_cols;
-
   complex alpha = -1.0;
 #ifdef USE_ZGEMM
   int K = L; // If using ZGEMM, we compute all outer products with one call
@@ -118,7 +178,7 @@ void PMatrix2D::applyFs() {
     complex* f = psi_cache->getF(l);
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
-        data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj() * -1.0;
+        data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj();// * -1.0;
 //        CkPrintf("\nMultiplying %lf\n", f[r+start_row].re);        
       }
     }
@@ -154,6 +214,33 @@ void PMatrix2D::sendTo1D() {
   }
 }
 
+void PMatrix2D::sendTo1D_tmp() {
+  for(int i=0;i<num_rows;i++){
+    Phase2Message* msg;
+    msg = new (1000) Phase2Message();
+    int n = 0;
+    for(int j=0;j<num_cols;j++){
+      msg->data[n++] = data[IDX(i,j)];
+    }
+    msg->global_x = thisIndex.x*num_rows+i;
+    msg->global_y = thisIndex.y*num_cols;
+    msg->size = thisIndex.y*num_cols+num_cols;
+#if 0
+    if(thisIndex.x==0 && i==0){
+      std::stringstream ss;
+      ss << msg->data[0];
+      CkPrintf("\nSending %s to 1D[%d] from %d to %d\n", 
+          ss.str().c_str(),
+          thisIndex.x*num_rows+i,
+          msg->global_y, thisIndex.y*num_cols+num_cols,
+          );
+    }
+#endif
+    pmatrix1D_proxy[thisIndex.x*num_rows+i].receiveRow_tmp(msg);
+  }
+}
+
+
 void PMatrix2D::receiveChunk(Phase2Message* msg) {
   int local_mtx_size_x = num_cols;
   int local_mtx_size_y = num_rows;
@@ -164,7 +251,7 @@ void PMatrix2D::receiveChunk(Phase2Message* msg) {
   }
 
   if(++receive_counter == num_rows){
-    contribute(CkCallback(CkReductionTarget(Controller, phase2_complete), controller_proxy));
+//    contribute(CkCallback(CkReductionTarget(Controller, phase2_complete), controller_proxy));
   }
   delete msg;
 }
@@ -222,7 +309,7 @@ void PMatrix1D::fftRows(int direction) {
   }
 
   // Let the controller know we have completed the fft
-  contribute(CkCallback(CkReductionTarget(Controller, fftComplete), controller_proxy));
+//  contribute(CkCallback(CkReductionTarget(Controller, fftComplete), controller_proxy));
 }
 
 
@@ -257,6 +344,27 @@ void PMatrix1D::receiveRow(Phase2Message* msg) {
     data[IDX(local_y,msg->global_x + i)] = msg->data[i];
   }
   if(++arrival_counter == local_mtx_size_1d_y) {
+    contribute(CkCallback(CkReductionTarget(Controller, dataSendComplete), controller_proxy));
+  }
+  delete msg;
+}
+
+
+void PMatrix1D::receiveRow_tmp(Phase2Message* msg) {
+  int n = 0;
+  for(unsigned i=msg->global_y; i< msg->size; i++){
+    data[i] = msg->data[n++];
+  }
+
+#if 0
+  if(thisIndex == 0){
+    std::stringstream ss;
+    ss << data[msg->global_y];
+    CkPrintf("\nReceived dat = %s\n", ss.str().c_str());
+  }
+#endif
+
+  if(++arrival_counter == number_of_chares_2d_x) {
     contribute(CkCallback(CkReductionTarget(Controller, dataSendComplete), controller_proxy));
   }
   delete msg;

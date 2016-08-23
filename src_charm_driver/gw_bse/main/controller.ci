@@ -8,6 +8,7 @@ module controller {
   readonly CProxy_Controller controller_proxy;
 
 #define percent 49
+#define MAX_ITERATIONS 10
 
 #define STEP_START(x)\
   timers.x = CmiWallTimer();
@@ -41,19 +42,21 @@ module controller {
     entry void prep();
     entry void createEpsilon();
     entry void calc_Geps();
+    entry [reductiontarget] void created1d_complete();
+    entry void donePrinting();
     entry void done_geps(int epsilon_size_in);
     entry void got_geps(std::vector<int> accept, int epsilon_size);
     entry void got_vcoulb(std::vector<double> vcoulb);
-    entry void inputData(int blockId, complex blockA[M*KA], double vcoulb[size], int accept[size], unsigned int M, unsigned int KA, int size);
     entry [reductiontarget] void fftControllerReady();
     entry [reductiontarget] void stateFFTComplete();
     entry [reductiontarget] void cachesFilled();
     entry [reductiontarget] void psiComplete();
-    entry [reductiontarget] void fftComplete();
-    entry [reductiontarget] void transposeComplete();
+//    entry [reductiontarget] void fftComplete();
+//    entry [reductiontarget] void transposeComplete();
     entry [reductiontarget] void dataSendComplete();
-    entry [reductiontarget] void phase2_complete();
+//    entry [reductiontarget] void phase2_complete();
     entry [reductiontarget] void transpose_complete();
+    entry [reductiontarget] void set_size();
     entry [reductiontarget] void m_multiplied();
     entry [reductiontarget] void complement_multiplied();
     entry [reductiontarget] void found_alpha(double alpha);
@@ -199,7 +202,7 @@ module controller {
             timers.avg_pcomp * ((double)timers.pcomp_count/CkNumPes()));
 
         PHASE_BOUNDARY(total_phase1, total_phase2, "PHASE 1 (P in R Space) COMPLETE");
-        
+/*        
         pmatrix2D_proxy.sendTo1D();
       }
 
@@ -241,7 +244,13 @@ module controller {
       when phase2_complete() serial{
         STEP_BOUNDARY(to2D, total_phase3, "Matrix decomposition changed to 2D");  
         PHASE_BOUNDARY(total_phase2, total_phase3, "PHASE 2 (FFT P) COMPLETE"); 
-
+*/
+/*
+      pmatrix2D_proxy(0,0).print_row_by_row();
+    }    
+    when donePrinting() serial{
+        CkExit();
+*/
         controller_proxy.prep();
         //calc vcoulb - inside controller_proxy - done
 
@@ -254,209 +263,166 @@ module controller {
       when done_geps(int epsilon_size_in) serial{
         int pad = 10 - (epsilon_size_in%10);
         padded_epsilon_size = epsilon_size_in+pad;
-//        CkPrintf("\npadded_epsilon_size = %d",padded_epsilon_size);
-
         controller_proxy.calc_Geps();
-
       }
 //Create epsilon matrix - definitely needs to be a copy
 
       when prepare_epsilon() serial {
-        eps_matrix2D_proxy.setSize(padded_epsilon_size);
+/*
+      when set_size() serial {
         pmatrix2D_bproxy.setSize(padded_epsilon_size);
+      }
+      when set_size() serial {
         pmatrix2D_cproxy.setSize(padded_epsilon_size);
-
+      }
+*/
+//      when set_size() serial {
+        
         mat_mul_proxy.setup(matA, matB, matC, eps_matrix2D_proxy, pmatrix2D_bproxy, pmatrix2D_cproxy, padded_epsilon_size, eps_rows, true, true, true);
       }
+    
 
       when matrixReady() serial {
+        eps_matrix2D_proxy.setSize(padded_epsilon_size);
+      }
+      when set_size() serial {
         CkPrintf("\n[CONTROLLER] Prepared for Epsilon matrix");
-        controller_proxy.createEpsilon();
+        pmatrix2D_proxy.sendTo1D_tmp();   
       }
 
-      forall [block] (0:rows-1,1) {
-          when
-          inputData[block](int blockId, complex p[num_rows*num_cols], double vcoulb[size], int accept[size], unsigned int num_rows, unsigned int num_cols, int size)
-          serial {
-            std::vector<int> accept_v(size);
-            for(int i=0;i<size;i++)
-              accept_v[i] = accept[i];
-           
-            std::vector<double> vcoulb_v(size);
-            for(int i=0;i<size;i++)
-               vcoulb_v[i] = vcoulb[i];
- 
-            int i,j, local_inew, local_jnew;
-            complex tmp = 0;
-             
-            local_inew = global_inew; 
- 
-            for(i=0;i<num_rows;i++){
-              int i_global = ((blockId/(dimension/rows))*num_rows)+i;
-              if(accept[i_global]==1){
-                  
-                  local_inew++;
-
-                  if(block%(dimension/rows) == 0) //first chare in the row
-                      local_jnew = 0;
-                  else local_jnew = jnew_arr[local_inew];
-
-      
-                for(j=0;j<num_cols;j++){
-                  int j_global = ((blockId%(dimension/rows)))*num_cols+j;
-                  if(accept[j_global]==1){   
-                    local_jnew++;
-                    tmp_arr[local_inew*padded_epsilon_size+local_jnew] = p[i*num_cols+j];
-        
-                    tmp_arr[local_inew*padded_epsilon_size+local_jnew] *= -1*sqrt( vcoulb[local_inew] )*sqrt( vcoulb[local_jnew] );
-                    if ( local_inew == local_jnew ){
-                       tmp_arr[local_inew*padded_epsilon_size+local_jnew] += double(1);
-                    }
-
-                  }
-                }
-              }
-            }
-   
-            if(max_local_inew < local_inew)
-              max_local_inew = local_inew;
- 
-      
-            if((block+1)%(dimension/rows)==0){//last chare in this row of chares
-                global_inew = max_local_inew;
-              if(global_jnew <local_jnew)
-                global_jnew = local_jnew; //more like max
-            }
-            jnew_arr[local_inew] = local_jnew;
-
-
-
-            if(block+1 == rows){
-              eps_matrix2D_proxy.receiveFs(tmp_arr); 
-            }else{
-              blockId++;
-              pmatrix2D_proxy(blockId/(dimension/rows),blockId%(dimension/rows)).generateEpsilon(vcoulb_v, accept_v, 0, 0, 0, 0, size);
-            }
-          }
+      when dataSendComplete() serial{
+        CkPrintf("\n[CONTROLLER] 1D data received\n");
+        pmatrix1D_proxy.generateEpsilon(accept_result);
       }
+
       when epsilon_created() serial {
-
-         CkPrintf("\n[CONTROLLER] Created Epsilon Matrix"); 
-        eps_matrix2D_proxy.createTranspose();
+        CkPrintf("\n[CONTROLLER] Created Epsilon Matrix"); 
+        eps_matrix2D_proxy.createTranspose(false);
       }
 
      when transpose_complete() serial {
         CkPrintf("\n[CONTROLLER] Created Transpose");
+        eps_proxy1D.setSize(padded_epsilon_size);
          //X = m*m^T   
         mat_mul_proxy.do_multiply(eps_matrix2D_proxy,pmatrix2D_bproxy,pmatrix2D_cproxy);
       }
    
       when m_multiplied() serial{
+        pmatrix2D_cproxy.sendTo1D();
+      }
+
+      when created1d_complete() serial{
         //find alpha
         CkPrintf("\n[CONTROLLER] Multiplied Matrices X = m*m^T\n");
-        for(int i=0;i<8;i++)
-            pmatrix2D_cproxy(i,0).findAlpha();
+        eps_proxy1D.findAlpha();
       } 
 
       when found_alpha(double alpha) serial{
     
-        CkPrintf("\n[CONTROLLER] Found alpha\n");
-        pmatrix2D_cproxy.scalar_multiply(1/alpha);
+        CkPrintf("\n[CONTROLLER] Found alpha=%lf\n",1/alpha);
+        eps_matrix2D_proxy.scalar_multiply(1/alpha);
       }
-// X = pmatrix2D_cproxy
+// X = eps_matrix2D_proxy
 
 // assign A = eps->m (warning!! A is column major)
 
       when scalar_multiplied() serial{
 
         resultInsert = true;
-            pmatrix2D_cproxy.createTranspose();
+        pmatrix2D_bproxy.createTranspose(true);//Dummy call
         //Result A - pmatrix2D_bproxy
+
       } 
 
-
-//LABEL: loop
-
-     for(iteration=0; iteration<ITERATION; iteration++){
+     for(iteration=0; iteration<MAX_ITERATIONS; iteration++){
   //  Step 1: M1 = 2I - A * X
 
-    
      when transpose_complete() serial {
         if(iteration%percent==0)
         CkPrintf("\n[CONTROLLER] Scalar multiplied - M1 = -A * X [%d percent complete]\n",100*iteration/ITERATION);
 //     Step 1-(a) : M1 = -A * X
         pmatrix2D_cproxy.setSize(padded_epsilon_size);
         pmatrix2D_bproxy.setSize(padded_epsilon_size);
+        pmatrix2D_ccproxy = CProxy_EpsMatrix2D::ckNew();
         pmatrix2D_ccproxy.setSize(padded_epsilon_size);
-        mat_mul_proxy.setup(matA2, matB2, matC2, pmatrix2D_cproxy, pmatrix2D_bproxy, pmatrix2D_ccproxy, padded_epsilon_size, eps_rows, false, false, resultInsert);
-        
-            //some more transpose needs to be done before calling the iterative matrix multiplication
+        mat_mul_proxy.setup(matA2, matB2, matC2, eps_matrix2D_proxy, pmatrix2D_bproxy, pmatrix2D_ccproxy, padded_epsilon_size, eps_rows, false, false, resultInsert);
+        //some more transpose needs to be done before calling the iterative matrix multiplication
       }
     
       when matrixReady() serial {
         if(iteration%percent==0)
         CkPrintf("\n[CONTROLLER] Matrix Setup done");
-        mat_mul_proxy.do_multiply(pmatrix2D_cproxy,pmatrix2D_bproxy,pmatrix2D_ccproxy);
+        mat_mul_proxy.do_multiply(eps_matrix2D_proxy,pmatrix2D_bproxy,pmatrix2D_ccproxy);
       }
 
-      //     Step 1-(b) : M1 = 2I-M1 
       when m_multiplied() serial{
+        //     Step 1-(b) : M1 = 2I-M1 
         if(iteration%percent==0)
         CkPrintf("\n[CONTROLLER] M1 = 2I-M1");
         pmatrix2D_ccproxy.add_compl_two();
       }
 
       // Step 2: X1 = X * M1
-      //X = pmatrix2D_cproxy
+      //X = eps_matrix2D_proxy
       //M1 - pmatrix2D_ccproxy
       when complement_multiplied() serial{
         //Result X1 - pmatrix2D_bbproxy
         pmatrix2D_cproxy.setSize(padded_epsilon_size);
         pmatrix2D_ccproxy.setSize(padded_epsilon_size);
+        pmatrix2D_bbproxy = CProxy_EpsMatrix2D::ckNew();
         pmatrix2D_bbproxy.setSize(padded_epsilon_size);
-        mat_mul_proxy.setup(matA3, matB3, matC3, pmatrix2D_cproxy, pmatrix2D_ccproxy, pmatrix2D_bbproxy, padded_epsilon_size, eps_rows, false, false, resultInsert);
+        mat_mul_proxy.setup(matA3, matB3, matC3, pmatrix2D_ccproxy, eps_matrix2D_proxy, pmatrix2D_bbproxy, padded_epsilon_size, eps_rows, false, false, resultInsert);
       }
 
       when matrixReady() serial{ 
         if(iteration%percent==0)
         CkPrintf("\n[CONTROLLER] Matrix Setup done");
         mat_mul_proxy.do_multiply(
-          pmatrix2D_cproxy,pmatrix2D_ccproxy,pmatrix2D_bbproxy);
+          pmatrix2D_ccproxy,
+          eps_matrix2D_proxy,
+          pmatrix2D_bbproxy);
       }
 
      // X = X1
      // pmatrix2D_cproxy  = pmatrix2D_bbproxy
 
       when m_multiplied() serial {
-        if(iteration%percent==0)CkPrintf("\n[CONTROLLER] Multiplied Matrices - Step 2: X1 = X * M1");
-        pmatrix2D_bbproxy.sendTo(pmatrix2D_cproxy);
+        if(iteration%percent==0)
+          CkPrintf("\n[CONTROLLER] Multiplied Matrices - Step 2: X1 = X * M1");
+
+
+        if(iteration%percent==0)CkPrintf("\n[CONTROLLER] Calling convergence\n");
+        pmatrix2D_bbproxy.convergence_check(eps_matrix2D_proxy);
+
+      }
+
+       when converge_results(double max) serial{
+//        CkPrintf("\n convergence test = %lf\n",max);
+        if(int(prev_max*100000) == (int)(max*100000)){
+            CkPrintf("\nConverged at iteration %d\n", iteration);
+            CkExit();
+        }
+        prev_max = max;
+
+        pmatrix2D_bbproxy.sendTo(eps_matrix2D_proxy);
       }
 
       when finished_copy() serial {
-        if(iteration%percent==0)CkPrintf("\n[CONTROLLER] Calling convergence\n");
-//convergence check on X1 & X - pmatrix2D_bbproxy & pmatrix2D_cproxy
-        pmatrix2D_bbproxy.convergence_check(pmatrix2D_cproxy);
-      }
-
-
-      when converge_results(double max) serial{
-        /*if(max<=prev_max)
-          iteration=ITERATION;
-        *///commenting out since max reduction results are incorrect as of now
-        prev_max = max;
       
-        resultInsert = false;
+        //resultInsert = false;
         thisProxy.transpose_complete();
         
      }
       
     }//end of for loop
-//goto loop if not converged
     
     serial{
         CkPrintf("Phase 4 not implemented yet. Exiting.\n");
         CkExit();
     }
+    when donePrinting() serial{}
+    when finished_copy() serial{}
+
     }
     
   };

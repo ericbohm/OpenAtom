@@ -111,7 +111,7 @@ void States::fftGtoR() {
   // state coefficients are copied to in_pointer
   // put_into_fftbox was originally written for doublePack = 0 (false)
   // for gamma point calculation, put_into_fftbox has been modified from the original version
-  //put_into_fftbox(numCoeff, stateCoeff, fftidx, nfft, in_pointer, doublePack);
+  put_into_fftbox(numCoeff, stateCoeff, fftidx, nfft, in_pointer, doublePack);
   
   // tell the FFTController to do the fft
   fft_controller->do_fftw();

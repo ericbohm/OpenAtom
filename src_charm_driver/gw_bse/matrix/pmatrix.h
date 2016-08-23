@@ -30,6 +30,7 @@ class PMatrix2D : public CBase_PMatrix2D {
     void checkReady();
     void applyFs();
     void sendTo1D();
+    void sendTo1D_tmp();
     void receiveChunk(Phase2Message*);
     void calc_vcoulb();
     void calc_Eps(Phase3Message* msg);
@@ -91,6 +92,8 @@ class PMatrix1D : public CBase_PMatrix1D {
     void fftRows(int);
     void sendTo2D();
     void receiveRow(Phase2Message*);
+    void receiveRow_tmp(Phase2Message*);
+    void generateEpsilon(std::vector<int> accept);
 
   private:
     unsigned L; // Number of occupied psis

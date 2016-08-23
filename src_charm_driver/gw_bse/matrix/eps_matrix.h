@@ -21,18 +21,14 @@ class EpsMatrix2D : public CBase_EpsMatrix2D {
 
     void checkReady();
     void setSize(int size);
-    void applyFs();
-    void sendTo1D();
-    void receiveChunk(Phase2Message*);
-    void createTranspose();
+    void createTranspose(bool todo);
     void receiveTranspose(std::vector<complex> incoming);
     void sendTo(CProxy_EpsMatrix2D receiver_proxy);
     void receiveData(std::vector<complex> incoming);
+    void sendTo1D();
     void calc_vcoulb();
     void calc_Eps(Phase3Message* msg);
-    void receiveFs(complex eps_data[140*140]);
-    void reportPTime();
-    void print_res();
+    void receiveFs(Phase3Message* msg);
     void multiply(double alpha, double beta);
     void round_done(void);
     void findAlpha(void);
@@ -70,11 +66,28 @@ class EpsMatrix2D : public CBase_EpsMatrix2D {
     void kqIndex(unsigned, unsigned&, int*);
     complex* umklapp_factor;
     void getUmklappFactor(complex*, int[3]);
+    unsigned data_received;
 
     double total_time;
 };
+
+class EpsMatrix1D : public CBase_EpsMatrix1D {
+  EpsMatrix1D_SDAG_CODE
+  public:
+    EpsMatrix1D();
+    EpsMatrix1D(CkMigrateMessage* msg) {}
+    void setSize(int ncols);
+    void receiveData(Phase3Message* msg);
+    void findAlpha();
+  private:
+    complex* data;
+    int n_1d_cols;
+    int received;
+};
 extern /* readonly */ CProxy_EpsMatrix2D pmatrix2D_bproxy;
 extern /* readonly */ CProxy_EpsMatrix2D pmatrix2D_cproxy;
+
+extern /* readonly */ CProxy_EpsMatrix1D eps_proxy1D;
 
 extern /* readonly */ CProxy_EpsMatrix2D pmatrix2D_aaproxy;
 extern /* readonly */ CProxy_EpsMatrix2D pmatrix2D_bbproxy;

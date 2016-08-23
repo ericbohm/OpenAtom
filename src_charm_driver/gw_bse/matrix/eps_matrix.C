@@ -13,7 +13,6 @@
 #define IDX_eps(r,c) ((r)*eps_cols + (c))
 
 EpsMatrix2D::EpsMatrix2D(){
-//CkPrintf("\nCalling default construction for EpsMatrix2D(%d, %d)\n", thisIndex.x, thisIndex.y);
   GWBSE* gwbse = GWBSE::get();
 
   // Set some constants
@@ -25,25 +24,25 @@ EpsMatrix2D::EpsMatrix2D(){
   // TODO: Is this guaranteed to be safe (is the local branch created for sure)?
 
   // Figure out what part of the matrix we have and allocate space
-  num_rows = eps_rows;//120;//gwbse->gw_parallel.rows_per_chare;
-  num_cols = eps_cols;//120;//gwbse->gw_parallel.cols_per_chare;
+  num_rows = eps_rows;
+  num_cols = eps_cols;
   num_chares = (matrix_dimension / num_rows) * (matrix_dimension / num_cols);
   start_row = thisIndex.x * num_rows;
   start_col = thisIndex.y * num_cols;
-  local_mtx_size_1d_y = 1;//1728; // TODO: where from?
-  receive_counter = 0;
 
   data = new complex[num_rows * num_cols];
-
+  data_received = 0;
   total_time = 0.0;
 }
 
 void EpsMatrix2D::setSize(int matrix_dimension_in){
+//  CkPrintf("\nSetting size as %d\n", matrix_dimension_in);
   matrix_dimension = matrix_dimension_in;
+  CkCallback *cb = new CkCallback(CkReductionTarget(Controller, set_size), controller_proxy);
+  contribute(*cb);
 }
 
 EpsMatrix2D::EpsMatrix2D(CLA_Matrix_interface mat){
-//  CkPrintf("\nCalling CLA_Matrix_interface construction for EpsMatrix2D(%d, %d)\n", thisIndex.x, thisIndex.y);   
   GWBSE* gwbse = GWBSE::get();
 
   // Set some constants
@@ -51,18 +50,11 @@ EpsMatrix2D::EpsMatrix2D(CLA_Matrix_interface mat){
   nfft = gwbse->gw_parallel.fft_nelems;
   qindex = Q_IDX; // Eventually the controller will set this
 
-  // Grab a local pointer to the fft controller for fft-ing our rows
-  // TODO: Is this guaranteed to be safe (is the local branch created for sure)?
-
-  // Figure out what part of the matrix we have and allocate space
-  num_rows = eps_rows;//gwbse->gw_parallel.rows_per_chare;
-  num_cols = eps_cols;//gwbse->gw_parallel.cols_per_chare;
+  num_rows = eps_rows;
+  num_cols = eps_cols;
   num_chares = (matrix_dimension / num_rows) * (matrix_dimension / num_cols);
   start_row = thisIndex.x * num_rows;
   start_col = thisIndex.y * num_cols;
-  local_mtx_size_1d_y = 1;//1728; // TODO: where from?
-  receive_counter = 0;
-
    
   data = new complex[num_rows * num_cols];
 
@@ -71,6 +63,7 @@ EpsMatrix2D::EpsMatrix2D(CLA_Matrix_interface mat){
     data[i].im = 0;
   }
   total_time = 0.0;
+  data_received = 0;
   
   this->matrix = mat;
 }
@@ -81,52 +74,52 @@ void EpsMatrix2D::setI(CLA_Matrix_interface mat, bool clean){
     data = new complex[num_rows * num_cols];
 }
 
+void EpsMatrix2D::receiveFs(Phase3Message* msg){
 
+  int n = 0;
+  for(int i=msg->start_i;i<=msg->end_i;i++)
+    for(int j=msg->start_j;j<=msg->end_j;j++)
+        data[IDX_eps(i,j)] = msg->data[n++];
 
-void EpsMatrix2D::receiveFs(complex eps_data[140*140]){
-
-  int start_i = (matrix_dimension/num_cols)*thisIndex.x;
-  int start_j = (matrix_dimension/num_rows)*thisIndex.y;
-
-  for(int i=0;i<num_rows;i++)
-    for(int j=0;j<num_cols;j++)
-        data[IDX_eps(i,j)] = eps_data[start_row*num_cols+ start_col];
-  //print_res();
-
-    int i = 0;//count;
-    CkCallback *cb = new CkCallback(CkReductionTarget(Controller, epsilon_created), controller_proxy);
-    contribute(sizeof(int), &i, CkReduction::sum_int, *cb);
-  
-}
-
-
- 
-void EpsMatrix2D::multiply(double alpha, double beta){
-//   CkPrintf("\n accessing %d,%d\n",thisIndex.x, thisIndex.y);
-   matrix.multiply(alpha, beta, data, EpsMatrix2D::done_cb, (void*) this,
-       thisIndex.x, thisIndex.y);
-
- }
-
-
-void EpsMatrix2D::add_compl_two(){
-//     for(int i=0; i<N; i++)
-    //      M1[i*N+i] += compl_two;
+  data_received+=n;
 
     int i = 0;
-    complex compl_two(2.0, 0.0);
-    for(int i=0;i<eps_rows;i++)//num_rows;i++)
-      data[IDX_eps(i,i)] += compl_two;
+    if(data_received == eps_cols*eps_rows)
+    {
+      CkCallback *cb = new CkCallback(CkReductionTarget(Controller, epsilon_created), controller_proxy);
+      contribute(sizeof(int), &i, CkReduction::sum_int, *cb);
+    }
+}
+ 
+void EpsMatrix2D::multiply(double alpha, double beta){
+  matrix.multiply(alpha, beta, data, EpsMatrix2D::done_cb, (void*) this,
+       thisIndex.x, thisIndex.y);
+
+}
+
+void EpsMatrix2D::add_compl_two(){
+  int i = 0;
+  complex compl_two(2.0, 0.0);
+  if(thisIndex.x==thisIndex.y)
+  for(int i=0;i<eps_rows;i++)
+    data[IDX_eps(i,i)] += compl_two;
 
   CkCallback *cb = new CkCallback(CkReductionTarget(Controller, complement_multiplied), controller_proxy);
-      contribute(sizeof(int), &i, CkReduction::sum_int,
-        *cb
-      );
+    contribute(sizeof(int), &i, CkReduction::sum_int,
+      *cb
+    );
 }
  void inline EpsMatrix2D::round_done(void){
     int i=0;
-    //print_res();
     CmiMemoryCheck();
+#if 0
+    if(thisIndex.x==0 && thisIndex.y==0){
+      std::stringstream ss;
+      for(int i = 0; i<10;i++)
+        ss << data[i] << "\n";
+      CkPrintf("\nmultiplied data = %s\n", ss.str().c_str());
+    }
+#endif
     CkCallback *cb = new CkCallback(CkReductionTarget(Controller, m_multiplied), controller_proxy);
       contribute(sizeof(int), &i, CkReduction::sum_int,
         *cb
@@ -150,25 +143,61 @@ long double EpsMatrix2D::max_fn(int size){
 }
 
 void EpsMatrix2D::scalar_multiply(double alpha){
-    alpha = 1/alpha;
-#if 0
-     std::ostringstream sout;
-     sout << alpha << "\n";
-     CkPrintf("\nSending alpha = %s",sout.str().c_str());
-#endif
-    for(int i=0;i<num_rows;i++)
-        for(int j=0;j<num_cols;j++)
-            data[IDX_eps(i,j)] = alpha*data[IDX_eps(i,j)]; 
+  for(int i=0;i<num_rows;i++)
+    for(int j=0;j<num_cols;j++)
+      data[IDX_eps(i,j)] = alpha*data[IDX_eps(i,j)]; 
 
- //   print_res();
-    CkCallback *cb = new CkCallback(CkReductionTarget(Controller, scalar_multiplied), controller_proxy);
-    contribute(*cb);
+  CkCallback *cb = new CkCallback(CkReductionTarget(Controller, scalar_multiplied), controller_proxy);
+  contribute(*cb);
+}
+
+void EpsMatrix2D::sendTo1D(){
+  
+  for(int i=0;i<num_rows;i++){
+    Phase3Message *msg; 
+    msg = new(eps_cols)Phase3Message();
+    int n = 0;
+    for(int j=0;j<num_cols;j++){
+      msg->data[n++] =  data[IDX_eps(i,j)];
+    }
+    msg->start_i = thisIndex.y*eps_cols;
+    msg->end_i = (thisIndex.y+1)*eps_cols;
+    eps_proxy1D(thisIndex.x*eps_rows+i).receiveData(msg);
+  }
+  
+}
+
+EpsMatrix1D::EpsMatrix1D(){
+  received = 0;
+}
+
+void EpsMatrix1D::setSize(int ncols){
+  n_1d_cols = ncols;
+  data = new complex[n_1d_cols];
+}
+void EpsMatrix1D::receiveData(Phase3Message *msg){
+  int n = 0;
+  for(int i=msg->start_i;i<msg->end_i;i++)
+    data[i] = msg->data[n++];
+
+  if(++received == n_1d_cols/eps_cols){
+    contribute(CkCallback(
+        CkReductionTarget(Controller, created1d_complete), controller_proxy)); 
+  }
+}
+
+void EpsMatrix1D::findAlpha(){
+  double R = 0;
+  for(int i=0; i<n_1d_cols; i++)
+    R += abs(data[i]);
+
+  contribute(sizeof(long double), &R, CkReduction::max_double,
+        CkCallback(CkReductionTarget(Controller, found_alpha), controller_proxy)
+      );
 }
 
 void EpsMatrix2D::findAlpha(){
 
-
-    //print_res();
     for(int i=0;i<num_rows;i++)
         for(int j=0;j<num_cols;j++)
         total[i] += data[IDX_eps(i,j)];
@@ -177,25 +206,16 @@ void EpsMatrix2D::findAlpha(){
     int chunk_count = matrix_dimension/num_rows;
     if(thisIndex.y==chunk_count-1){
         max = max_fn(num_rows);   //return the result;
-
-#if 0
-        std::ostringstream sout;
-        sout << max << "\n";
-        CkPrintf("\nSending max = %s",sout.str().c_str());
-#endif 
-
     }else
         thisProxy(thisIndex.x, thisIndex.y+1).findAlpha();
  
-    max = 5e+105; 
     contribute(sizeof(long double), &max, CkReduction::max_double,
         CkCallback(CkReductionTarget(Controller, found_alpha), controller_proxy)
       );
 }
 
 
-void EpsMatrix2D::convergence_check(CProxy_EpsMatrix2D cproxy){//complex *M1, complex *M0, int N
-
+void EpsMatrix2D::convergence_check(CProxy_EpsMatrix2D cproxy){
     
     std::vector<complex> data_out(num_rows*num_cols);
     for(int i=0;i<num_rows*num_cols;i++)
@@ -206,143 +226,43 @@ void EpsMatrix2D::convergence_check(CProxy_EpsMatrix2D cproxy){//complex *M1, co
 
 void EpsMatrix2D::receiveConvCheck(std::vector<complex> data_in){
 
-   complex Rmax=0;  // the largest element
-   complex tmp;
+   double Rmax=0;  // the largest element
+   double tmp;
    for(int i=0; i<num_rows*num_cols; i++){
-        tmp = data[i] - data_in[i] ;
-        if( tmp.re > Rmax.re ){ Rmax = tmp; }
+        tmp = abs(data[i] - data_in[i]) ;
+        if( tmp > Rmax ){ Rmax = tmp; }
     }
-
-#if 0
-   std::ostringstream sout;
-   sout << Rmax << "\n";
-   CkPrintf("\nSending max = %s",sout.str().c_str());
-#endif
-
    contribute(sizeof(complex), &Rmax, CkReduction::max_double,
         CkCallback(CkReductionTarget(Controller, converge_results), controller_proxy)
       );
 }
 
-
-void EpsMatrix2D::print_res(){
-      std::ostringstream sout;
-      complex total = 0;
-      for(int i = 0; i < num_rows; i++){
-        for(int j = 0; j < num_cols; j++)
-          total+= data[i*num_rows+j];
-      }
-      sout << total << " \n";
-      if(thisIndex.x==0&&thisIndex.y==4)
-      CkPrintf("(%d, %d) result:\n%s", thisIndex.x, thisIndex.y,
-       sout.str().c_str());
-    }
-
-void EpsMatrix2D::reportPTime() {
-  CkReduction::statisticsElement stats(total_time);
-  int tuple_size = 2;
-  CkReduction::tupleElement tuple_reduction[] = {
-    CkReduction::tupleElement(sizeof(double), &total_time, CkReduction::sum_double),
-    CkReduction::tupleElement(sizeof(CkReduction::statisticsElement), &stats, CkReduction::statistics) };
-
-  CkReductionMsg* msg = CkReductionMsg::buildFromTuple(tuple_reduction, tuple_size);
-  msg->setCallback(CkCallback(CkIndex_Controller::reportPTime(NULL), controller_proxy));
-  contribute(msg);
-}
-
-void EpsMatrix2D::applyFs() {
-  double start = CmiWallTimer();
-//  print_res();
-  PsiCache* psi_cache = psi_cache_proxy.ckLocalBranch();
-//CkPrintf("\napplyFs entered\n");
-#ifdef USE_LAPACK
-  // Common variables for both ZGERC and ZGEMM
-  int M = num_rows, N = num_cols;
-  complex alpha = -1.0;
-#ifdef USE_ZGEMM
-  int K = L; // If using ZGEMM, we compute all outer products with one call
-  int LDF = matrix_dimension; // Leading dimension of fs
-  complex beta = 1.0;
-  char opA = 'N', opB = 'C';
-  complex* fs = psi_cache->getF(0);
-  ZGEMM(&opA, &opB, &N, &M, &K,
-    &alpha, &(fs[start_col]), &LDF,
-    &(fs[start_row]), &LDF,
-    &beta, data, &N);
-#else
-  int K = 1; // If using ZGERC, we compute each outer product one at a time
-  for (int l = 0; l < L; l++) {
-    complex* f = psi_cache->getF(l);
-    ZGERC(&N, &M, &alpha, &(f[start_col]), &K, &(f[start_row]), &K, data, &N);
-  }
-#endif
-#else
-  for (int l = 0; l < L; l++) {
-    complex* f = psi_cache->getF(l);
-    for (int r = 0; r < num_rows; r++) {
-      for (int c = 0; c < num_cols; c++) {
-        data[IDX_eps(r,c)] += f[r+start_row]*f[c+start_col].conj() * -1.0;
-//        CkPrintf("\nMultiplying %lf\n", f[r+start_row].re);        
-      }
-    }
-  }
-//  CkPrintf("\nApply Fs got fs that were %d", psi_cache->getWrote());
-#endif // endif for ifdef USE_LAPACK
-//CkPrintf("\napplyFs exited\n");
-  //print_res();
-  contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
-  total_time += CmiWallTimer() - start;
-}
-
-void EpsMatrix2D::checkReady(){
-//    contribute(CkCallback(CkReductionTarget(Controller, allReady), controller_proxy));
-}
-
-void EpsMatrix2D::receiveChunk(Phase2Message* msg) {
-  int local_mtx_size_x = num_cols;
-  int local_mtx_size_y = num_rows;
-  int local_y = msg->global_y - thisIndex.y * local_mtx_size_y;
-  int local_x = msg->global_x - thisIndex.x * local_mtx_size_x;
-  for(unsigned i=0; i<msg->size; ++i){
-    data[IDX_eps(local_y, local_x) + i] = msg->data[i];
-  }
-
-  if(++receive_counter == num_rows){
-    contribute(CkCallback(CkReductionTarget(Controller, phase2_complete), controller_proxy));
-  }
-  delete msg;
-}
-
-void EpsMatrix2D::createTranspose(){
+void EpsMatrix2D::createTranspose(bool todo){
     std::vector<complex> incoming;
     unsigned n = 0;
     complex* new_data;
     new_data = new complex[num_rows*num_cols];
     for(int i=0;i<num_rows;i++){
         for(int j=0;j<num_cols;j++){
-            new_data[n] =  data[IDX_eps(j,i)];//msg->data[n++] = data[IDX(j,i)];//.conj();    //transposed, need to conjugate as well
+            if(todo)
+              new_data[n] = -1*data[IDX_eps(i,j)];//negative values //data[IDX_eps(j,i)];
+            else  
+              new_data[n] =  data[IDX_eps(i,j)];//data[IDX_eps(j,i)];
             incoming.push_back(new_data[n++]);
         }
     }
-#if 0
-    std::ostringstream sout;
-    sout << msg->data[4] << "\n";
-    CkPrintf("\nSending msg->data[4] = %s",sout.str().c_str());
-#endif
-    pmatrix2D_bproxy(thisIndex.y, thisIndex.x).receiveTranspose(incoming);//new_data);
+    if(todo)
+      pmatrix2D_bproxy(thisIndex.y, thisIndex.x).receiveTranspose(incoming);
+    else
+      pmatrix2D_bproxy(thisIndex.x, thisIndex.y).receiveTranspose(incoming);//new_data);
 }
 
 void EpsMatrix2D::receiveTranspose(std::vector<complex> new_data){
 
-#if 0 
-   std::ostringstream sout;
-    sout << msg->data[4] << "\n";
-    CkPrintf("\nReceiving msg->data[4] = %s",sout.str().c_str());
-#endif
   unsigned n = 0;
   for(int i=0;i<num_rows;i++)
-        for(int j=0;j<num_cols;j++)
-            data[IDX_eps(i,j)] = new_data[n++];//msg->data[n++];
+    for(int j=0;j<num_cols;j++)
+      data[IDX_eps(i,j)] = new_data[n++];
     
   contribute(CkCallback(CkReductionTarget(Controller, transpose_complete), controller_proxy));  
 }
@@ -355,15 +275,15 @@ void EpsMatrix2D::sendTo(CProxy_EpsMatrix2D receiver_proxy){
             incoming.push_back(data[IDX_eps(i,j)]);
         }
     }
-    receiver_proxy(thisIndex.y, thisIndex.x).receiveData(incoming);
+    receiver_proxy(thisIndex.x, thisIndex.y).receiveData(incoming);
 }
 
 void EpsMatrix2D::receiveData(std::vector<complex> new_data){
 
   unsigned n = 0;
   for(int i=0;i<num_rows;i++)
-        for(int j=0;j<num_cols;j++)
-            data[IDX_eps(i,j)] = new_data[n++];//msg->data[n++];
+    for(int j=0;j<num_cols;j++)
+      data[IDX_eps(i,j)] = new_data[n++];
    
   contribute(CkCallback(CkReductionTarget(Controller, finished_copy), controller_proxy));
 }

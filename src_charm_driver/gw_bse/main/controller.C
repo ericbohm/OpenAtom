@@ -44,8 +44,6 @@ Controller::Controller() {
   global_inew = 0;
   max_local_inew = global_inew;
   global_jnew = 0;
-  for(int i=0;i<140;i++)
-    jnew_arr[i] = 0;
 }
 
 
@@ -72,11 +70,7 @@ void Controller::prep(){
 //output geps, accept
   fft_controller->get_geps(epsCut, this_q, b1, b2, b3,
                             alat, nfft);
-
-
-
   }
-
 
   void Controller::got_geps(std::vector<int> accept, int epsilon_size){
         //CkPrintf("\nGot geps");fflush(stdout);
@@ -119,8 +113,19 @@ void Controller::got_vcoulb(std::vector<double> vcoulb_in){
 
 
 void Controller::createEpsilon(){
- 
-  pmatrix2D_proxy(0,0).generateEpsilon(vcoulb, accept_result, 0, 0, 0, 0, vcoulb.size());
+
+  GWBSE *gwbse = GWBSE::get();
+  int* nfft;
+  nfft = gwbse->gw_parallel.fft_nelems;
+
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  int count = 0;
+  for(int i=0;i<ndata;i++){
+    if(accept_result[i]==1)
+      count++;
+  } 
+  CkPrintf("\nTotal count = %d\n", count);
+//  pmatrix2D_proxy(0,0).generateEpsilon(vcoulb, accept_result, 0, 0, 0, 0, vcoulb.size());
 }
 
 PsiCache::PsiCache() {
@@ -194,7 +199,8 @@ void computeF(int first, int last, void* result, int count, void* params) {
     double scaling_factor = 2/sqrt(e_unocc - e_occ[l]);
 
     for (int i = 0; i < psi_size; i++) {
-      f[i] = psi_occ[i] * psi_unocc[i].conj() * scaling_factor;
+      f[i] = psi_occ[i] * psi_unocc[i].conj();// * scaling_factor;
+/*
       if (umklapp_factor) {
         f[i] *= umklapp_factor[i];
       }
@@ -204,6 +210,7 @@ void computeF(int first, int last, void* result, int count, void* params) {
       // change to f corrects that so we get the correct P.
       f[i] = f[i].conj();
 #endif
+*/
     }
   }
 }
@@ -291,9 +298,9 @@ void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   double *this_k, *this_q;
   double k_plus_q[3], k_plus_q_orig[3];
   
-  this_k = gwbse->gwbseopts.kvec[ikpt];
+  this_k = gwbse->gwbseopts.kvec[1];//ikpt];
   
-  this_q = gwbse->gwbseopts.qvec[qindex];
+  this_q = gwbse->gwbseopts.qvec[1];//qindex];
 
   for (int i=0; i<3; i++) {
     // calculate k+q vector 

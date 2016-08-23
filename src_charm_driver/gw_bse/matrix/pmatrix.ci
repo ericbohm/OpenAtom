@@ -13,9 +13,9 @@ module pmatrix {
     entry PMatrix2D();
     entry [reductiontarget] void applyFs();
     entry void sendTo1D();
+    entry void sendTo1D_tmp();
     entry void receiveChunk(Phase2Message*);
     entry void reportPTime();
-    entry void generateEpsilon(std::vector<double> vcoulb, std::vector<int> accept, int inew, int jnew, int size, int max_inew, int max_jnew);
   };
 
   array [1D] PMatrix1D {
@@ -25,7 +25,8 @@ module pmatrix {
     entry [reductiontarget] void start_iteration();
     entry void sendTo2D();
     entry void receiveRow(Phase2Message*);
-
+    entry void receiveRow_tmp(Phase2Message*);
+    entry void generateEpsilon(std::vector<int> accept);
     // SDAG code for doing the transpose
     entry void receiveTransposeData(Phase2Message* msg);
     entry void doTranspose() {
@@ -128,7 +129,7 @@ module pmatrix {
       serial{
         if(iteration == max_iterations){
           iteration = 0;//re-initializing for later re-use
-          contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
+//          contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
         }
       }
     }

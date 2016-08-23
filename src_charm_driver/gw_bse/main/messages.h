@@ -40,6 +40,10 @@ class Phase3Message : public CMessage_Phase3Message {
     int size;
     int global_x;
     int global_y;
+    int start_i;
+    int start_j;
+    int end_i;
+    int end_j;
 };
 
 #endif

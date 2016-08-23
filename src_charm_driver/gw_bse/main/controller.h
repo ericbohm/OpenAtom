@@ -9,7 +9,7 @@
 
 #include "controller.decl.h"
 
-#define ITERATION 100 //needs to be read from epsilon.in
+#define ITERATION 10 //needs to be read from epsilon.in
 // Structure keeping track of all timers we report
 struct Timers {
   // Setup timers
@@ -51,9 +51,7 @@ class Controller : public CBase_Controller {
     unsigned p_matrix_dimension, num_p_rows;
     int global_inew, global_jnew;
     int max_local_inew;
-    int jnew_arr[140];
     int padded_epsilon_size;
-    complex tmp_arr[140*140];
     double prev_max;
     std::vector<int> accept_result;
     CLA_Matrix_interface matA, matB, matC, matA2, matB2, matC2, matA3, matB3, matC3;
