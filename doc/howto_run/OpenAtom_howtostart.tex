@@ -40,7 +40,7 @@ This document explains how to make input files for \verb+cp_wave_min+ with a sys
 
 %%%%%%%%%%%%%%%%% Input files
 
-\subsection{Input files}
+\subsection{Input files - basic}
 
 There are 7 different types of input files to run \openatom. 
 
@@ -238,6 +238,43 @@ In setup file, the topology keywords file is defined in \verb+\mol_parm_file+ ke
 % Pseudopotential files
 \subsubsection{Pseudopotential files}
 The name of the pseudopotential files are indicated in potential parameter file (\verb+water.vps+). Generating pseudopotential for \openatom \ can be found in the \openatom \ website.
+
+
+
+% k points calculation explanation
+\subsection{Run with k-points}
+\openatom\ not only runs with a single k-point, but also runs with multiple k-points. This section explains how to run \openatom\ with multiple k-points. 
+
+%complex executable
+\subsubsection{Complex executable}
+To enable k-points calculation, complex version of \openatom\ is required. 
+There is a file \verb+README.complexpc+ in the top directory of openatom source code. This explains you how to compile the complex version.
+
+\subsubsection{additional keywords and input files}
+In the input file and the set file, add k-point specific keywords. 
+\begin{enumerate}
+
+\item New keyword in the input file (see \verb+Si.input+ in the example): \\
+Add \verb+\cp_force_complex_psi{on}+ keyword in \verb+~sim_cp_def[]+
+
+\item New keywords in the set file (see \verb+Si.set+ in the example): \\
+Add three keywords \verb+\num_kpoint{nk}\num_kpoint_wave{nk}\kpoint_file{kpoints.in}+ in \verb+~WAVEFUNC_DEF[]+
+
+\item k-points file (see \verb+kpoints.in+ in the example):\\
+Syntax: \\
+{\it
+nk \\$k1_x$ $k1_y$ $k1_z$ $wk1$ \\$k2_x$ $k2_y$ $k2_z$ $wk2$ \\.. \\$kn_x$ $kn_y$ $kn_z$ $wkn$ \\
+}nk : number of total k points\\$k1_{x/y/z}$ : special k points\\wk1 : weight of k point k1\\
+
+\item Create directories for state files: \\
+To save/read state files, each k-point requires individual directory in \verb+STATES+ and \verb+STATES_OUT+. For example, if you have 2 k-points in your system, you should create these two directories inside \verb+STATES+ and \verb+STATES_OUT+: \\
+\verb+Spin.0_Kpt.0_Bead.0_Temper.0+\\
+\verb+Spin.0_Kpt.1_Bead.0_Temper.0+
+
+\end{enumerate}
+
+
+Run the code with the complex executable!
 
 
 
