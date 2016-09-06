@@ -5,7 +5,7 @@
 #define STRUCTURE_FACTOR_MESSAGES_H
 
 
-class SFDummyMsg: public CMessage_SFDummyMsg {
+class SFDummyMsg: public CkMcastBaseMsg, public CMessage_SFDummyMsg  {
   public:
     int iteration_src;
 };

@@ -10,7 +10,7 @@ extern CkVec <CProxy_CP_State_GSpacePlane>      UgSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane> 	UparticlePlaneProxy;
 extern CkVec <CProxy_StructureFactor> 			UsfCompProxy;
 extern CProxy_InstanceController      instControllerProxy;
-
+extern CkGroupID mCastGrpId;
 /** @addtogroup GSpaceState
   @{
  */
@@ -93,13 +93,15 @@ void GSpaceDriver::init()
     if(numSfDups > simReadOnly.nstates)
       numSfDups = simReadOnly.nstates;
     /// Create a list of SF chares in this section
-    CkVec <CkArrayIndex3D> sfelems;
+    sfelems.resize(numSfDups*config.numSfGrps);
     for(int dup=0; dup<numSfDups; dup++)
       for(int atm=0;atm<config.numSfGrps; atm++)
         sfelems.push_back(CkArrayIndex3D(atm,thisIndex.y,dup));
     /// Create the SF array section
     sfCompSectionProxy = CProxySection_StructureFactor::ckNew(	UsfCompProxy[thisInstance.proxyOffset].ckGetArrayID(),
         (CkArrayIndexMax*)sfelems.getVec(), sfelems.size());
+    sfCompSectionProxy.ckSectionDelegate(CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch());
+    
   } 
 }
 
