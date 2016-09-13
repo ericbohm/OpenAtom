@@ -89,6 +89,5 @@ extern /* readonly */ CProxy_EpsMatrix2D pmatrix2D_cproxy;
 
 extern /* readonly */ CProxy_EpsMatrix1D eps_proxy1D;
 
-extern /* readonly */ CProxy_EpsMatrix2D pmatrix2D_aaproxy;
 extern /* readonly */ CProxy_EpsMatrix2D pmatrix2D_bbproxy;
 extern /* readonly */ CProxy_EpsMatrix2D pmatrix2D_ccproxy;

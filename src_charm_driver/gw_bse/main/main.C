@@ -46,7 +46,6 @@
 
 /* readonly */ CProxy_EpsMatrix1D eps_proxy1D;
 
-/* readonly */ CProxy_EpsMatrix2D pmatrix2D_aaproxy;
 /* readonly */ CProxy_EpsMatrix2D pmatrix2D_bbproxy;
 /* readonly */ CProxy_EpsMatrix2D pmatrix2D_ccproxy;
 
@@ -122,10 +121,9 @@ Main::Main(CkArgMsg* msg) {
   pmatrix2D_proxy = CProxy_PMatrix2D::ckNew(dimension/nrows, dimension/ncols);
   pmatrix2D_bproxy = CProxy_PMatrix2D::ckNew();
   pmatrix2D_cproxy = CProxy_PMatrix2D::ckNew();
+  pmatrix2D_ccproxy = CProxy_EpsMatrix2D::ckNew();
+  pmatrix2D_bbproxy = CProxy_EpsMatrix2D::ckNew();
  
-  pmatrix2D_ccproxy = CProxy_PMatrix2D::ckNew();
-  pmatrix2D_aaproxy = CProxy_PMatrix2D::ckNew();
-  pmatrix2D_bbproxy = CProxy_PMatrix2D::ckNew();
 
   //eps_matrix2D_proxy = CProxy_EpsMatrix2D::ckNew();
 

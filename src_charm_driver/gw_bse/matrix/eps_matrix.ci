@@ -8,7 +8,6 @@ module eps_matrix {
   readonly CProxy_EpsMatrix2D pmatrix2D_cproxy;
   readonly CProxy_EpsMatrix1D eps_proxy1D;
 
-  readonly CProxy_EpsMatrix2D pmatrix2D_aaproxy;
   readonly CProxy_EpsMatrix2D pmatrix2D_bbproxy;
   readonly CProxy_EpsMatrix2D pmatrix2D_ccproxy;  
 

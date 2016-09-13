@@ -343,7 +343,6 @@ module controller {
 //     Step 1-(a) : M1 = -A * X
         pmatrix2D_cproxy.setSize(padded_epsilon_size);
         pmatrix2D_bproxy.setSize(padded_epsilon_size);
-        pmatrix2D_ccproxy = CProxy_EpsMatrix2D::ckNew();
         pmatrix2D_ccproxy.setSize(padded_epsilon_size);
         mat_mul_proxy.setup(matA2, matB2, matC2, eps_matrix2D_proxy, pmatrix2D_bproxy, pmatrix2D_ccproxy, padded_epsilon_size, eps_rows, false, false, resultInsert);
         //some more transpose needs to be done before calling the iterative matrix multiplication
@@ -369,7 +368,6 @@ module controller {
         //Result X1 - pmatrix2D_bbproxy
         pmatrix2D_cproxy.setSize(padded_epsilon_size);
         pmatrix2D_ccproxy.setSize(padded_epsilon_size);
-        pmatrix2D_bbproxy = CProxy_EpsMatrix2D::ckNew();
         pmatrix2D_bbproxy.setSize(padded_epsilon_size);
         mat_mul_proxy.setup(matA3, matB3, matC3, pmatrix2D_ccproxy, eps_matrix2D_proxy, pmatrix2D_bbproxy, padded_epsilon_size, eps_rows, false, false, resultInsert);
       }
@@ -384,24 +382,25 @@ module controller {
       }
 
      // X = X1
-     // pmatrix2D_cproxy  = pmatrix2D_bbproxy
 
       when m_multiplied() serial {
         if(iteration%percent==0)
           CkPrintf("\n[CONTROLLER] Multiplied Matrices - Step 2: X1 = X * M1");
 
-
         if(iteration%percent==0)CkPrintf("\n[CONTROLLER] Calling convergence\n");
+
         pmatrix2D_bbproxy.convergence_check(eps_matrix2D_proxy);
 
       }
 
        when converge_results(double max) serial{
+
 //        CkPrintf("\n convergence test = %lf\n",max);
         if(int(prev_max*100000) == (int)(max*100000)){
             CkPrintf("\nConverged at iteration %d\n", iteration);
             CkExit();
         }
+
         prev_max = max;
 
         pmatrix2D_bbproxy.sendTo(eps_matrix2D_proxy);
@@ -409,7 +408,7 @@ module controller {
 
       when finished_copy() serial {
       
-        //resultInsert = false;
+        resultInsert = false;
         thisProxy.transpose_complete();
         
      }
