@@ -897,7 +897,7 @@ void Ortho::tolerance_check(){
   if(config.useOrthoSectionRed)
   {
     CkCallback mycb(CkIndex_Ortho::collect_error(NULL), thisProxy(0, 0));
-    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch();
+    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oRedGID).ckLocalBranch();
     mcastGrp->contribute(sizeof(internalType),  &ret, CkReduction::sum_double, orthoCookie, mycb);
   }
   else
