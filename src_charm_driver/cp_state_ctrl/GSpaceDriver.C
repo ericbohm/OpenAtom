@@ -92,14 +92,7 @@ void GSpaceDriver::init()
     int numSfDups = config.numSfDups;
     if(numSfDups > simReadOnly.nstates)
       numSfDups = simReadOnly.nstates;
-    /// Create a list of SF chares in this section
-    sfelems.resize(numSfDups*config.numSfGrps);
-    for(int dup=0; dup<numSfDups; dup++)
-      for(int atm=0;atm<config.numSfGrps; atm++)
-        sfelems.push_back(CkArrayIndex3D(atm,thisIndex.y,dup));
-    /// Create the SF array section
-    sfCompSectionProxy = CProxySection_StructureFactor::ckNew(	UsfCompProxy[thisInstance.proxyOffset].ckGetArrayID(),
-        (CkArrayIndexMax*)sfelems.getVec(), sfelems.size());
+    sfCompSectionProxy = CProxySection_StructureFactor::ckNew(	UsfCompProxy[thisInstance.proxyOffset].ckGetArrayID(), 0, config.numSfGrps-1, 1, thisIndex.y, thisIndex.y, 1, 0, config.numSfDups-1,1);
     sfCompSectionProxy.ckSectionDelegate(CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch());
     
   } 
