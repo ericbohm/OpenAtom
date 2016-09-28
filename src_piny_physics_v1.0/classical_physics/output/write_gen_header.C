@@ -78,7 +78,7 @@ void ATOMOUTPUT::initialize_piny_output()
       write_gen_header_cp(ibinary,iwrite_confp,file_typ,temp_ext);
 
       sprintf (temp_ext,"%s/Bead.%d_Temper.%d/%s",dump_dir,ibead,itemper,cvname);
-      strcpy(file_typ,"pos_file");
+      strcpy(file_typ,"vel_file");
       write_gen_header_cp(ibinary,iwrite_confp,file_typ,temp_ext);
 
       if(low_lim_par<=high_lim_par){

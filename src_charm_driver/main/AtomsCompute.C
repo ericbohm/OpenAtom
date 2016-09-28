@@ -858,7 +858,7 @@ void AtomsCompute::outputAtmEnergy() {
       fprintf(temperScreenFile,"[b=%d] Iter [%d] ATM_COUL           = %5.8lf\n",thisInstance.idxU.x, iteration, pot_ewd_rs_now);
     }//endif
     if(cp_grimme==1){
-      fprintf(temperScreenFile,"[b=%d] Iter [%d] Grimme VdW         = %5.8lf\n",iteration,thisInstance.idxU.x, potGrimmeVdw_now);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] Grimme VdW         = %5.8lf\n",thisInstance.idxU.x, iteration,potGrimmeVdw_now);
     }//endif
     if(move_atoms==1){
       fprintf(temperScreenFile,"[b=%d] Iter [%d] atm eKin           = %5.8lf\n",thisInstance.idxU.x, iteration, eKinetic);
