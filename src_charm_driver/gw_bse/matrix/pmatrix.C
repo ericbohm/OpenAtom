@@ -94,7 +94,7 @@ void PMatrix2D::sendTo1D() {
   int local_mtx_size_y = num_rows;
   int global_x = local_mtx_size_x*thisIndex.x;
   for (unsigned i=0;i<local_mtx_size_y;++i) {
-    int global_y = local_mtx_size_y*thisIndex.y + i;
+    int global_y = local_mtx_size_y*thisIndex.x + i;
     int dest_chare = (int) ((double)global_y/local_mtx_size_1d_y);
     Phase2Message* msg;
     msg = new (local_mtx_size_x) Phase2Message();
@@ -203,7 +203,7 @@ void PMatrix1D::receiveRow(Phase2Message* msg) {
   for(unsigned i=0; i< msg->size; ++i){
     data[IDX(local_y,msg->global_x + i)] = msg->data[i];
   }
-  if(++arrival_counter == local_mtx_size_1d_y) {
+  if(++arrival_counter == number_of_chares_2d_x*local_mtx_size_1d_y) {
     contribute(CkCallback(CkReductionTarget(Controller, dataSendComplete), controller_proxy));
   }
   delete msg;
