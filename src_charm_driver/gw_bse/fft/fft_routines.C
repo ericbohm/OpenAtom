@@ -11,6 +11,16 @@ void gidx_to_fftidx(int ng, int **g, int nfft[3], int **fftidx){
   int keep_gidx[3];
   int upper, lower, sumi;
 
+  // make sure all fft sizes in all 3 directions are even
+  for (int i=0; i < 2; i++) {
+    sumi += nfft[i]%2;
+  }
+  if ( sumi > 0 ) {
+    printf("\nFFT grid size %d x %d x %d is not all even\n",
+        nfft[0], nfft[1], nfft[2]);
+    CkAbort("Error in gidx_to_fftidx()\n");
+  }
+
   // loop over g index
   for (int ig=0; ig<ng; ig++) {
     // g index at ig
@@ -22,19 +32,22 @@ void gidx_to_fftidx(int ng, int **g, int nfft[3], int **fftidx){
     // keep_gidx[i] has value -1 if this_gidx[i] is outside of the fftbox
     // keep_gidx[i] has value 0 if this_gidx[i] is inside of the fftbox
     // here, we initialize keep_gidx with -1
-    for (int i=0;i<3;i++) { keep_gidx[i]=-1; }
+    for (int i=0;i<3;i++) {
+      keep_gidx[i] = -1;
+      fftidx[ig][i] = -1;
+    }
 
     sumi = 0;
     for (int j=0; j<3; j++) {
-      // upper bound of the fftbox
+      // upper and lower bounds of the fftbox in direction j
       upper = nfft[j]/2;
-      // lower bound of the fftbox
-      lower = -1*nfft[j]/2;
-      if (this_gidx[j]<upper && this_gidx[j] >= lower) {
+      lower = -upper;
+      if (this_gidx[j] < upper && this_gidx[j] >= lower) {
         keep_gidx[j] = 0;
       }
       sumi += keep_gidx[j];
     }
+
     // put g index to fftbox index if keep_gidx[i] is 0 for all i
     if (sumi == 0) {
       for (int j=0; j<3; j++) {
@@ -45,9 +58,6 @@ void gidx_to_fftidx(int ng, int **g, int nfft[3], int **fftidx){
           fftidx[ig][j] += nfft[j];
         }
       }
-    } else {
-      // we need this to reject g if this_gidx doesn't fit into fftbox
-      for (int i=0;i<3;i++) { fftidx[ig][i] = -1; }
     }
   }// end ig loop
 }
@@ -68,6 +78,10 @@ void put_into_fftbox(int ng, complex *rawdata, int **fftidx, int nfft[3],
     // temporary index to put data into 1D array
     int idxtmp;
     for (int ig=0; ig<ng; ig++) {
+      // if -1 index in any component, it is to be skipped
+      if (fftidx[ig][0] == -1 || fftidx[ig][1] == -1 || fftidx[ig][2] == -1) {
+        continue;
+      }
       idxtmp = (fftidx[ig][0]-1)*nfft[1]*nfft[2] +
                (fftidx[ig][1]-1)*nfft[2] +
                 fftidx[ig][2];
@@ -118,6 +132,11 @@ void put_into_fftbox(int ng, complex *rawdata, int **fftidx, int nfft[3],
     // temporary index to put data into 1D array
     int idxtmp;
     for (int ig=0; ig<ng; ig++) {
+      // if -1 index in any component, it is to be skipped
+      if (fftidx[ig][0] == -1 || fftidx[ig][1] == -1 || fftidx[ig][2] == -1) {
+        continue;
+      }
+      // vector to box linear index conversion
       idxtmp = (fftidx[ig][0]-1)*nfft[1]*nfft[2] +
                (fftidx[ig][1]-1)*nfft[2] +
                 fftidx[ig][2];
