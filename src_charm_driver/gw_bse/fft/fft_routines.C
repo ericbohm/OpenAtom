@@ -12,6 +12,7 @@ void gidx_to_fftidx(int ng, int **g, int nfft[3], int **fftidx){
   int upper, lower, sumi;
 
   // make sure all fft sizes in all 3 directions are even
+  sumi = 0;
   for (int i=0; i < 2; i++) {
     sumi += nfft[i]%2;
   }
