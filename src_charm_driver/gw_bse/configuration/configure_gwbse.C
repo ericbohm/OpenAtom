@@ -582,7 +582,7 @@ void Config::set_config_dict_GW_file  (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_dict_GW_parallel  (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
   //  I) Malloc the dictionary                                              
-  num_dict[0] = 3;
+  num_dict[0] = 4;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
 
   //=================================================================================
@@ -614,6 +614,14 @@ void Config::set_config_dict_GW_parallel  (int *num_dict ,DICT_WORD **dict){
   //  3)\cols_per_chare{}
   ind =   3;
   strcpy((*dict)[ind].keyword,"cols_per_chare");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes,"a number >= 1");
+  //-----------------------------------------------------------------------------
+
+  //-----------------------------------------------------------------------------
+  //  4)\transpose_stages{}
+  ind =   4;
+  strcpy((*dict)[ind].keyword,"transpose_stages");
   strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number >= 1");
   //-----------------------------------------------------------------------------
@@ -906,6 +914,11 @@ void Config::set_config_params_GW_parallel  (DICT_WORD *dict, char *fun_key, cha
   if (int_arg<1){keyarg_barf(dict,input_name,fun_key,ind);}
   gw_parallel->cols_per_chare = int_arg;
 
+  //  4)\transpose_stages{}
+  ind =   4;
+  sscanf(dict[ind].keyarg,"%d",&int_arg);
+  if (int_arg<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  gw_parallel->transpose_stages = int_arg;
   //----------------------------------------------------------------------------- 
 }// end routine
 //================================================================================

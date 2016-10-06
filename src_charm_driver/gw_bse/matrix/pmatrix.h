@@ -78,6 +78,12 @@ class PMatrix1D : public CBase_PMatrix1D {
     unsigned number_of_chares_2d_x;
     unsigned number_of_chares_2d_y;
 
+    unsigned start_index, end_index;
+    unsigned chare_chunk;
+    unsigned send_count, recv_count;
+    unsigned iteration;
+    unsigned max_iterations;
+
     int arrival_counter;
 };
 

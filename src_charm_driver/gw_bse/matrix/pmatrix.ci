@@ -14,17 +14,23 @@ module pmatrix {
     entry void receiveChunk(Phase2Message*);
     entry void reportPTime();
   };
-
   array [1D] PMatrix1D {
     entry PMatrix1D(int, int);
 
     entry void fftRows(int);
+    entry [reductiontarget] void start_iteration();
     entry void sendTo2D();
     entry void receiveRow(Phase2Message*);
 
     // SDAG code for doing the transpose
     entry void receiveTransposeData(Phase2Message* msg);
     entry void doTranspose() {
+    while(iteration<max_iterations){
+      when start_iteration() serial{
+        chare_chunk = number_of_chares_1d/max_iterations;
+        start_index = iteration*chare_chunk;
+        end_index = start_index + chare_chunk;
+      }
       serial {
         Phase2Message* msg;
         unsigned my_start, their_start;
@@ -32,42 +38,68 @@ module pmatrix {
         num_cols = local_mtx_size_1d_x / number_of_chares_1d;
         num_rows = local_mtx_size_1d_y;
         unsigned ndata = num_rows * num_cols;
+        if(thisIndex>=start_index){
+          if(thisIndex<end_index)
+            send_count = number_of_chares_1d;
+          else
+            send_count = end_index;
 
-        for (int dest = 0; dest < number_of_chares_1d; dest++) {
-          my_start = dest * num_cols;
-          msg = new (ndata) Phase2Message();
+          for (int dest = start_index; dest < send_count; dest++) {
+            my_start = dest * num_cols;
+            msg = new (ndata) Phase2Message();
 
-          // Transpose x and y coordinate
-          msg-> global_x = thisIndex * local_mtx_size_1d_y;
-          msg-> global_y = my_start;
+            // Transpose x and y coordinate
+            msg-> global_x = thisIndex * local_mtx_size_1d_y;
+            msg-> global_y = my_start;
 
-          for (int x = 0; x < num_cols; x++) {
-            for (int y = 0; y < num_rows; y++) {
-              // The data is transposed on the sender side
-              msg->data[x*num_rows + y] = data[IDXBIG(y,x+my_start)];
+            for (int x = 0; x < num_cols; x++) {
+              for (int y = 0; y < num_rows; y++) {
+                // The data is transposed on the sender side
+                msg->data[x*num_rows + y] = data[IDXBIG(y,x+my_start)];
+              }
             }
-          }
+            thisProxy[dest].receiveTransposeData(msg);
+            }
 
-          thisProxy[dest].receiveTransposeData(msg);
         }
-      }
+     }
 
       // Wait to receive the Phase2Message from every other chare
-      for (trans_count = 0; trans_count < number_of_chares_1d; trans_count++) {
-        when receiveTransposeData(Phase2Message* msg) serial {
-          unsigned num_rows, num_cols;
-          num_cols = local_mtx_size_1d_x / number_of_chares_1d;
-          num_rows = local_mtx_size_1d_y;
-          for (int r = 0; r < num_rows; r++) {
-            int local_y = msg->global_y - thisIndex * local_mtx_size_1d_y + r;
-            for(unsigned i=0; i< num_cols; ++i){
-              data[IDXBIG(local_y,msg->global_x) + i] = msg->data[i + r*num_cols];
+      if(thisIndex>=start_index){
+        if(thisIndex<end_index) serial{
+          recv_count = number_of_chares_1d;
+        } else serial{
+          recv_count = end_index;
+        }
+        for (trans_count = start_index; trans_count < recv_count; trans_count++) {
+          when receiveTransposeData(Phase2Message* msg) serial {
+            unsigned num_rows, num_cols;
+            num_cols = local_mtx_size_1d_x / number_of_chares_1d;
+            num_rows = local_mtx_size_1d_y;
+            for (int r = 0; r < num_rows; r++) {
+              int local_y = msg->global_y - thisIndex * local_mtx_size_1d_y + r;
+              for(unsigned i=0; i< num_cols; ++i){
+                data[IDXBIG(local_y,msg->global_x) + i] = msg->data[i + r*num_cols];
+              }
             }
+            delete msg;
           }
-          delete msg;
         }
       }
       serial{
+        iteration++;
+        if(iteration < max_iterations)
+          contribute(CkCallback(CkReductionTarget(Controller, iterationComplete), controller_proxy));
+#ifdef DEBUG_TRANSPOSE_VERBOSE
+        if(thisIndex<end_index && thisIndex == end_index-1){
+          CkPrintf("\nTotal # of msgs sent by the X axis this iteration(%d) = %d*%d",iteration, (end_index-start_index), (number_of_chares_1d-start_index));fflush(stdout);}
+        if(thisIndex>=end_index && thisIndex == end_index){
+          CkPrintf("\nTotal # of msgs sent by the Y axis this iteration(%d) = %d*%d",iteration, (number_of_chares_1d-end_index), (end_index-start_index));fflush(stdout);}
+#endif
+      }
+   }
+      serial{
+        iteration = 0;//re-initializing for later re-use
         contribute(CkCallback(CkReductionTarget(Controller, transposeComplete), controller_proxy));
       }
     }

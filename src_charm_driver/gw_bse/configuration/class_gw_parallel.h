@@ -22,6 +22,7 @@ class GW_PARALLEL{
     unsigned pipeline_stages; // Number of stages in the M pipeline
     unsigned rows_per_chare;  // Rows per PMatrix chare
     unsigned cols_per_chare;  // Columns per PMatrix chare
+    unsigned transpose_stages; // Number of stages in transpose
 
     int fft_nelems[3];        // Num: size of FFT
 
@@ -33,6 +34,7 @@ class GW_PARALLEL{
       pipeline_stages = 0;
       rows_per_chare = 0;
       cols_per_chare = 0;
+      transpose_stages = 0;
       for (int i; i<3; i++){ fft_nelems[i] = 0; }
     };
     ~GW_PARALLEL(){};
@@ -46,6 +48,7 @@ class GW_PARALLEL{
       p | pipeline_stages;
       p | rows_per_chare;
       p | cols_per_chare;
+      p | transpose_stages;
 
       PUParray(p, fft_nelems, 3);
       
@@ -66,7 +69,8 @@ class GW_PARALLEL{
       fprintf(fp,"M %i\n", M);
       fprintf(fp,"pipeline_stages %i\n", pipeline_stages);
       fprintf(fp,"rows_per_chare %i\n", rows_per_chare);
-      fprintf(fp,"cols_per_chare %i\n", rows_per_chare);
+      fprintf(fp,"cols_per_chare %i\n", cols_per_chare);
+      fprintf(fp,"transpose_stages %i\n", transpose_stages);
       fprintf(fp,"fft size %d  %d  %d\n", fft_nelems[0], fft_nelems[1], fft_nelems[2]);
       fclose(fp);
     }// end routine
