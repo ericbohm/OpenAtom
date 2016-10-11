@@ -1,0 +1,44 @@
+module eps_matrix {
+  include "ckcomplex.h";
+  include "CLA_Matrix.h";
+  
+  extern module messages;
+  readonly CProxy_EpsMatrix2D eps_matrix2D_proxy;
+  readonly CProxy_EpsMatrix2D eps_matrix2D_bproxy;
+  readonly CProxy_EpsMatrix2D eps_matrix2D_cproxy;
+  readonly CProxy_EpsMatrix1D eps_proxy1D;
+
+  readonly CProxy_EpsMatrix2D eps_matrix2D_bbproxy;
+  readonly CProxy_EpsMatrix2D eps_matrix2D_ccproxy;  
+
+
+#define IDXBIG(r,c) ((r)*local_mtx_size_1d_x + (c))
+#define IDX(r,c) ((r)*num_cols + (c))
+
+  array [2D] EpsMatrix2D {
+    entry EpsMatrix2D();
+    entry void EpsMatrix2D(CLA_Matrix_interface mat);
+    entry void setSize(int size);
+    entry void createTranspose(bool todo);
+    entry void receiveTranspose(std::vector<complex> incoming);
+    entry void sendTo(CProxy_EpsMatrix2D receiver_proxy);
+    entry void receiveData(std::vector<complex> incoming);
+    entry void multiply(double alpha, double beta);
+    entry void round_done(void);
+    entry void sendTo1D(void);
+    entry void findAlpha(void);
+    entry void scalar_multiply(double alpha);
+    entry void add_compl_two();
+    entry void convergence_check(CProxy_EpsMatrix2D cmp_proxy);
+    entry void receiveConvCheck(std::vector<complex> incoming);
+    entry void setI(CLA_Matrix_interface mat, bool clean);
+    entry void receiveFs(Phase3Message*);
+  };
+  
+  array [1D] EpsMatrix1D {
+    entry EpsMatrix1D();
+    entry void setSize(int ncols);
+    entry void receiveData(Phase3Message*);
+    entry void findAlpha();
+  };
+};

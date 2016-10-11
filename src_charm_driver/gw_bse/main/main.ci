@@ -4,14 +4,16 @@ mainmodule main {
   readonly GWBSE  readonly_gwbse;
   extern module states;
   extern module messages;
+  extern module mat_mul;
+  extern module eps_matrix;
   extern module controller;
   extern module pmatrix;
   extern module fft_controller;
   extern module psi_cache;
 
+
   mainchare Main {
     entry Main(CkArgMsg* msg);
     entry void done();
   };  
-
 }; 

@@ -1500,11 +1500,19 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
     gw_parallel->fft_nelems[i] = nfft[i]; // data point in each direction
   }
   if (gw_parallel->n_elems % gw_parallel->rows_per_chare != 0) {
+    int reminder = gw_parallel->n_elems % gw_parallel->rows_per_chare;
+    gw_parallel->n_elems += (gw_parallel->rows_per_chare - reminder);
+/*
     PRINTF("ERROR: Number of rows per chare does not divide evenly!\n");
     EXIT();
+*/
   }
   if (gw_parallel->n_elems % gw_parallel->cols_per_chare != 0) {
+    int reminder = gw_parallel->n_elems % gw_parallel->cols_per_chare;
+    gw_parallel->n_elems += (gw_parallel->cols_per_chare - reminder);
+/*
     PRINTF("ERROR: Number of cols per chare does not divide evenly!\n");
     EXIT();
+*/
   }
 }

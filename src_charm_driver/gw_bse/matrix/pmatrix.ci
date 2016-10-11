@@ -1,6 +1,8 @@
 module pmatrix {
   include "ckcomplex.h";
   extern module messages;
+  extern module eps_matrix;
+
   readonly CProxy_PMatrix2D pmatrix2D_proxy;
   readonly CProxy_PMatrix1D pmatrix1D_proxy;
 
@@ -11,6 +13,7 @@ module pmatrix {
     entry PMatrix2D();
     entry [reductiontarget] void applyFs();
     entry void sendTo1D();
+    entry void sendTo1D_tmp();
     entry void receiveChunk(Phase2Message*);
     entry void reportPTime();
   };
@@ -21,10 +24,11 @@ module pmatrix {
     entry [reductiontarget] void start_iteration();
     entry void sendTo2D();
     entry void receiveRow(Phase2Message*);
-
+    entry void receiveRow_tmp(Phase2Message*);
+    entry void generateEpsilon(std::vector<int> accept);
     // SDAG code for doing the transpose
     entry void receiveTransposeData(Phase2Message* msg);
-    entry void doTranspose() {
+		entry void doTranspose() {
     while(iteration<max_iterations){
       when start_iteration() serial{
         chare_chunk = number_of_chares_1d/max_iterations;
