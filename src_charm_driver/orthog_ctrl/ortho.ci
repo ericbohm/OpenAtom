@@ -55,7 +55,8 @@ module ortho
     entry void ready();
     entry void all_ready();
     entry void sendOrthoTtoAsymm();
-  };
+    entry void output_eigen(int xoff, int yoff, int size, double data[size]);
+ };
 
   message OrthoHelperMsg {
     internalType A[];

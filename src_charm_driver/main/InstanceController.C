@@ -657,6 +657,7 @@ DiagonalizerBridge::DiagonalizerBridge() {
 }
 
 void DiagonalizerBridge::sendLambdaToDiagonalizer(int x, int y, int n, internalType *lmat) {
+  //  CkPrintf("sendLambdaToDiagonalizer\n");
   int remElems2 = numStatesOA % grainSizeOrtho;
   int stdElems = grainSizeOrtho * grainSizeOrtho;
   int remElems = remElems2 * grainSizeOrtho;
@@ -757,6 +758,7 @@ void DiagonalizerBridge::prepareDiagonalizerInput(int x, int y, int n, internalT
 
 void DiagonalizerBridge::sendLambdaBackToOrtho() {
   int mype = CkMyPe();
+  //  CkPrintf("sending Lambda back to ortho\n");
   if (mype >= (numEOrthosPerDim * numEOrthosPerDim)) {
     return;
   }
@@ -799,6 +801,7 @@ void DiagonalizerBridge::sendLambdaBackToOrtho() {
 }
 
 void DiagonalizerBridge::integrateLambda(int n, internalType* lmat) {
+  //  CkPrintf("sending to ortho::acceptDiagonalizedLambda\n");
   int mype = CkMyPe();
   x = mype / numOrthosPerDim;
   y = mype % numOrthosPerDim;
@@ -834,12 +837,14 @@ void DiagonalizerBridge::integrateLambda(int n, internalType* lmat) {
   else {
      orthoProxy(x,y).acceptDiagonalizedLambda(n, diagData->selflambda);
   }
+  //  CkPrintf("sent to acceptDiagonalizedLambda\n");
 }
+
 
 #if INTEROP
 void restartcharm() {
   if(CkMyPe() == 0){
-    CkPrintf("restarting charm now\n");
+    CkPrintf("restarting charm after sendLambdaBackToOrtho\n");
     diagonalizerBridgeProxy.sendLambdaBackToOrtho();
   }
   StartCharmScheduler();

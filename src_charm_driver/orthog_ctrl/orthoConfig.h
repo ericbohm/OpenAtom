@@ -41,7 +41,7 @@ namespace cp {
         bool isStep2HelperOn;
         /// Pander to the BGL NIC and split the GEMMs in ortho
         int gemmSplit;
-
+	std::string eigenFileName;
 
 
         void pup(PUP::er &p)
@@ -56,6 +56,7 @@ namespace cp {
           p|uponToleranceFailure;
           p|isStep2HelperOn;
           p|gemmSplit;
+	  p|eigenFileName;
         }
     };
 

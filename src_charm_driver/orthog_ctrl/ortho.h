@@ -167,7 +167,8 @@ class Ortho : public CBase_Ortho
     void maxCheck(CkReductionMsg *msg);
     /// Once all GSpaceDriver chares are notified, they resume Ortho execution via a redn broadcast to this method
     void resumeV(CkReductionMsg *msg);
-
+    //output eigen vectors when diagonalizer in use
+    void output_eigen(int xoff, int yoff, int size, double *data);
     /// Dumps the T matrix to an appropriately named file
     void print_results(void);
     /// pack/unpack method
@@ -175,7 +176,10 @@ class Ortho : public CBase_Ortho
     void orthoCookieinit(initCookieMsg *msg) { CkGetSectionInfo(orthoCookie,msg); delete msg; }
     /// called from each CLA_Matrix array (3 per multiplication, 3 mults)
     void all_ready() { if(++num_ready == 9) thisProxy.ready(); }
+
+
     /// Startup/Init synchronization. When all elements (PC, CLA_Matrix etc) are ready, first iteration is triggered
+
     void ready()
     { 
       // got_start comes from upstream PC reduction the last of got_start and
@@ -248,6 +252,9 @@ class Ortho : public CBase_Ortho
 #ifdef _CP_ORTHO_DEBUG_COMPARE_GMAT_
     double *savedgmat;
 #endif
+
+    int eigenRecv;
+    double **eigenData;
 };
 
 

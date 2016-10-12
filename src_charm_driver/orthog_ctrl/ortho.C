@@ -61,9 +61,8 @@
 #include <trace-projections.h>
 #endif
 
-#include "src_mathlib/mathlib.h"
-#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
-#include "src_piny_physics_v1.0/include/class_defs/piny_constants.h"
+
+
 #define PRINTF CkPrintf
 //============================================================================
 extern Config config;
@@ -75,6 +74,7 @@ extern int totalOrthos;
 extern int diagonalization;
 extern CProxy_Ortho orthoProxy;
 extern CProxy_ExtendedOrtho eOrthoProxy;
+
 //============================================================================
 
 /** @addtogroup Ortho
@@ -266,6 +266,44 @@ void Ortho::start_calc(CkReductionMsg *msg){
 //============================================================================
 
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::output_eigen(int xoff, int yoff, int size, double *data){
+
+  if(eigenData==NULL)
+    {
+      eigenRecv=0;
+      eigenData= new double*[cfg.numStates];
+      for(int i=0;i<cfg.numStates;i++)
+	eigenData[i]= new double[cfg.numStates];
+    }
+
+  for(int i=0; i<cfg.grainSize; i++)
+    for(int j=0; j<cfg.grainSize; j++)
+      eigenData[xoff+i][yoff+j]=data[i*cfg.grainSize+j];
+  if(++eigenRecv==(cfg.numStates/cfg.grainSize)*(cfg.numStates/cfg.grainSize))
+    {// output
+      std::string outfile=cfg.eigenFileName;
+      outfile.append(".");
+      outfile.append(std::to_string(numGlobalIter));
+      CkPrintf("output to ksfile %s\n",outfile.c_str());
+      FILE *eigenFile = fopen(outfile.c_str(), "w");
+      for(int i=0; i<cfg.grainSize; i++)
+	for(int j=0; j<cfg.grainSize; j++)
+	  {
+	    fprintf(eigenFile,"%d %d %.10g\n",i,j,eigenData[i][j]);
+	  }
+      fclose(eigenFile);
+      for(int i=0; i< cfg.grainSize;i++)
+	delete [] eigenData[i];
+      delete [] eigenData;
+      eigenRecv=0;
+    }
+  
+
+}//end routine
+//============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -574,7 +612,9 @@ void Ortho::acceptDiagonalizedLambda(int nn, internalType* rmat){
 #endif
   }
 #endif
+  thisProxy(0,0).output_eigen(thisIndex.x, thisIndex.y, nn, rmat);
   asymmSectionMgr.sendResults(nn, rmat, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
+  
 }
 
 void Ortho::transferControlToMPI() {
@@ -776,6 +816,8 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
   savedtmat=NULL;
 #endif
 
+  eigenRecv=0;
+  eigenData=NULL;
 }//end routine
 
 

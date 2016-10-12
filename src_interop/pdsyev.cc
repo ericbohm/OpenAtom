@@ -52,6 +52,7 @@ extern Config config;
 void restartcharm();
 
 int main(int argc, char **argv) {
+
 #ifdef CP_DIAGONALIZER_DEBUG
     setbuf(stdout, NULL);
 #endif
@@ -132,6 +133,8 @@ int main(int argc, char **argv) {
             printf("step 3 on proc : [%d] : [%d,%d] : info = [%d]\n", myrank_mpi, myrow, mycol, info);
             fflush(stdout);
 #endif
+
+            fflush(stdout);
             int looptot = mpA * nqA;
             diagData->rlambda = new double[looptot];
             for (i = 0; i < mpA; i++) {
@@ -149,7 +152,7 @@ int main(int argc, char **argv) {
             free(W);
             free(Z);
             free(A);
-        }
+	}
         else {
           printf("I <rank: <%d>> did not participate in diagonalization.\n", myrank_mpi);
           fflush(stdout);

@@ -438,6 +438,7 @@ main::main(CkArgMsg *msg) {
   GENERAL_DATA *general_data = GENERAL_DATA::get();
 
   char *output_directory=general_data->gentempering_ctrl.output_directory;
+
   if(output_directory==NULL)
     {
       output_directory="TEMPER_OUT";
@@ -668,6 +669,13 @@ main::main(CkArgMsg *msg) {
 		// Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
 
                 Timer = newtime;
+
+		// set eigenvector filename based on uber
+		char basename[1024];
+		GENERAL_DATA *general_data = GENERAL_DATA::get();
+		char *ksname=general_data->genfilenames.ksname;
+		snprintf(basename,1024, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/%s",config.dataPathOut, spin, kpoint, integral, temper, ksname);
+		orthoCfg.eigenFileName=std::string(basename);
 		orthostartup(&orthoCfg, &cfgSymmPC, &cfgAsymmPC, sim, peList4PCmapping);
                 newtime = CmiWallTimer();
                 CkPrintf("Ortho/PC created in %g s\n", newtime-Timer);

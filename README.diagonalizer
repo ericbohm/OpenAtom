@@ -1,0 +1,66 @@
+The diagonalizer used in OpenAtom is pdsyev, as provided by ScaLAPACK.  It can
+potentially be replaced by ELPA, or another implementation.  That is not
+directly supported by the current code.
+
+In order to use the diagonalizer several steps are necessary:
+
+1. OpenAtom must be built with a target that supports interoperability with
+MPI.  The simplest choice for this is to use an MPI based build of Charm++,
+but other options are available (see the interop section of the Charm++
+manual).
+
+2. ScaLAPACK must be built with an MPI compatible with the Charm target of the
+previous step.  The simplest way to assure that is to use the charmc wrapper
+in that charm to compile ScaLAPACK.  Compiled versions provided by the
+platform may be used if one can assure the MPI build provenance of them meets
+those compatibility requirements.
+
+2a. Building scalapack using charmc
+ use these settings in your Scalapack/SLmake.inc file:
+
+ FC            = $(YOURCHARMPATH)/charm/YOURPLATFORM/bin/charmc 
+ CC            = $(YOURCHARMPATH)/charm/YOURPLATFORM/bin/charmc 
+ FCFLAGS       = -fortran -O3
+ CCFLAGS       = -mpi -O3 -nomain
+
+ For example, On Bluewaters:
+  e.g., FC            = $(HOME)/work/git/charm/mpi-crayxe-smp/bin/charmc 
+        CC            = $(HOME)/work/git/charm/mpi-crayxe-smp/bin/charmc 
+
+ Copy libscalapack.a to a suitable directory (i.e., scalapack-2.0.2/lib)
+ that you will add to the LDFLAGS of OpenAtom later.
+
+3. Build OpenAtom for interoperability.
+
+i.e., your config.mk should have settings like these
+  ELPA_HOME        = $(HOME)/scalapack-2.0.2/
+  DIAGONALIZER     = YES
+  DIAGONALIZER_VAL = -DINTEROP=1
+
+ifeq ($(DIAGONALIZER), YES)
+  LDFLAGS    += -L$(ELPA_HOME)/lib
+#  LDLIBS     += -lscalapack -ltmg -llapack -lblas -lgfortran -module cpaimd
+  LDLIBS     += -lscalapack -module cpaimd
+  DIAGONALIZER_VAL  = -DINTEROP=1
+else
+  DIAGONALIZER_VAL  = -DINTEROP=0
+endif
+
+4. Enable diagonalization by setting 
+\cp_min_diagonalize{on}
+
+5. Set the target output file
+\cp_kseigs_file{YOURSYSTEMNAME.eigs}
+
+
+6. Configure orthograinsize to match the degree of parallelism you want for
+diagonalization, and be certain to launch enough ranks to meet, or exceed that
+level of parallelism.
+
+
+6a. Make sure the number of Processes >= (numstates/orthograinsize)^2
+    Note: MPI (as used by ScaLAPACK) has 1 rank per process
+
+7. Run it
+
+* Note: see makefiles/config.mk.xk6.scalapack for a Bluewaters example config.
