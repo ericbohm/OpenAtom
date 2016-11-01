@@ -21,6 +21,9 @@ HDR       =
 OBJ       = $(addsuffix .o, $(basename $(SRC)) )
 INTF      =
 LIBS      = $(moddriver) $(modphysics) $(modmath)
+ifeq ($(DIAGONALIZER), YES)
+  LIBS     += $(modinterop)
+endif
 
 # Compute the revision number (hash) of the build and feed it to the code
 ifeq ($(GIT),)
@@ -30,13 +33,18 @@ else
 endif
 CPPFLAGS += -DOPENATOM_REVISION=$(REVNUM)
 
-.PHONY: compile driver physics libs mathlib clean again test translateInterface
+.PHONY: compile driver physics libs mathlib interoplib clean again test translateInterface
 
 compile: $(TARGET)
 
 $(TARGET): $(LIBS:%=lib%.a) $(OBJ)
 	$(info-ld)
+ifeq ($(DIAGONALIZER), YES)
+	ar q libmodulecpaimd.a *.o
+	$q$(CXX) -mpi -nomain-module $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $(LDLIBS)
+else
 	$q$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+endif
 	@echo "=========== Target produced from commit hash: $(REVNUM)"
 
 driver: $(libdriver)
@@ -44,6 +52,8 @@ driver: $(libdriver)
 physics: $(libphysics)
 
 mathlib: $(libmath)
+
+interoplib: $(libinterop)
 
 libs: mathlib
 
@@ -64,5 +74,6 @@ depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(SRC)) ) )
 include $(driver)/makerules.mk
 include $(physics)/makerules.mk
 include $(mathlib)/makerules.mk
+include $(interoplib)/makerules.mk
 endif
 

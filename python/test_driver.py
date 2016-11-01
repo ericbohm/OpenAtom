@@ -12,6 +12,7 @@ if len(sys.argv) == 3:
 	print 'Reading test configuration from ' + sys.argv[2] + '\n'
 	f = open(sys.argv[2], 'r')
 	for line in f:
+		if line[0] == '#': continue
 		args = line.split()
 		tests = tests + test_parser.parse_tests(sys.argv[1], args)
 	f.close()

@@ -45,8 +45,10 @@
 
 #include "ortho.h"
 #include "orthoHelper.h"
+#include "diagonalizer.h"
 //#include "gSpaceDriver.decl.h"
 #include "timeKeeper.decl.h"
+#include "instanceController.decl.h"
 
 #include "charm++.h"
 #include "utility/matrix2file.h"
@@ -66,13 +68,26 @@
 //============================================================================
 extern Config config;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
-extern ComlibInstanceHandle orthoInstance;
-
+extern diagData_t<internalType> *diagData;
+extern CProxy_DiagonalizerBridge diagonalizerBridgeProxy;
+extern int numOrthosPerDim;
+extern int totalOrthos;
+extern int diagonalization;
+extern CProxy_Ortho orthoProxy;
+extern CProxy_ExtendedOrtho eOrthoProxy;
 //============================================================================
 
 /** @addtogroup Ortho
   @{
  */
+
+ExtendedOrtho::ExtendedOrtho() {
+}
+
+void ExtendedOrtho::lambdaSentToDiagonalizer() {
+  int myContribution = 1;
+  contribute(sizeof(int), &myContribution, CkReduction::sum_int, CkCallback(CkReductionTarget(Ortho, waitForQuiescence), CkArrayIndex2D(0,0), orthoProxy));
+}
 
 Ortho::~Ortho()
 {
@@ -86,9 +101,6 @@ Ortho::~Ortho()
     delete [] orthoT;
   }
 }
-
-
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -397,8 +409,6 @@ void Ortho::maxCheck(CkReductionMsg *msg){
 
   double tolMax=fabs(((double *) msg->getData())[0]);
   delete msg;
-  CkPrintf("S matrix tolerance = %f while maxTolerance = %f\n",tolMax, cfg.maxTolerance);
-
   //  CkPrintf("SMAT tol    = %g\n", tolMax);
   if(tolMax < cfg.maxTolerance){
     toleranceCheckOrthoT=false;
@@ -407,6 +417,7 @@ void Ortho::maxCheck(CkReductionMsg *msg){
     // smat is outside of the tolerance range  need new PsiV
     toleranceCheckOrthoT=true;
     CkPrintf("recalculating PsiV due to tolerance failure \n");
+    CkPrintf("S matrix tolerance = %f while maxTolerance = %f\n",tolMax, cfg.maxTolerance);
     // Use the callback to trigger tolerance failure events.
     cfg.uponToleranceFailure.send();
     // Simply suspend all work. We'll be resumed (by GSpaceDriver) when tolerance updates are done.
@@ -440,6 +451,12 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 
   internalType *lambda = (internalType*)msg->getData();
   int lambdaCount = msg->getSize()/sizeof(internalType);
+  int newcount = lambdaCount;
+  templambda = new internalType[newcount];
+  memcpy(templambda, lambda, lambdaCount*sizeof(internalType));
+  if(lambdaCount != (m*n)) {
+    CkAbort("incorrect value for lambdaCount\n");
+  }
 
 #ifdef _CP_ORTHO_DUMP_LMAT_
   dumpMatrix("lmat",lambda, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
@@ -488,6 +505,12 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
     if(ortho==NULL)
       ortho= new internalType[m*n];
     CmiMemcpy(ortho,orthoT,m*n*sizeof(internalType));
+    if(lsda)
+      {
+	// scale lambda by 2
+	for(int i=0; i<m*n; i++)
+	  lambda[i]=lambda[i]* 2.0;
+      }
     matA1.multiply(1, 0, orthoT, Ortho::gamma_done_cb, (void*) this,
         thisIndex.x, thisIndex.y);
     matB1.multiply(1, 0, lambda, Ortho::gamma_done_cb, (void*) this,
@@ -496,6 +519,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
         thisIndex.x, thisIndex.y);
 
     //completed gamma will call finishPairCalcSection2
+    delete msg;
   }
   else
   {
@@ -505,20 +529,76 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
     for(int i=0; i<m*n; i++)
       CkAssert( isfinite(lambda[i]) );
 #endif
+    if(lsda)
+      {
+	// scale lambda by 2
+	for(int i=0; i<m*n; i++)
+	  lambda[i]=lambda[i]* 2.0;
+      }
 
-    // finish pair calc
-    asymmSectionMgr.sendResults(lambdaCount, lambda, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
+    if (diagonalization == 0) {
+      // finish pair calc
+      asymmSectionMgr.sendResults(lambdaCount, lambda, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
 #ifdef _CP_DEBUG_ORTHO_VERBOSE_
-    if(thisIndex.x==0 && thisIndex.y==0)
-      CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
+      if(thisIndex.x==0 && thisIndex.y==0)
+        CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
 #endif
+      delete msg;
+    }
+    else {
+      int xind = thisIndex.x;
+      int yind = thisIndex.y;
+      int petoaddress = numOrthosPerDim * xind + yind;
+      diagonalizerBridgeProxy[petoaddress].sendLambdaToDiagonalizer(xind, yind, newcount, templambda);
+    }
   }
-  delete msg;
-
   //----------------------------------------------------------------------------
 }// end routine
 //==============================================================================
 
+void Ortho::acceptDiagonalizedLambda(int nn, internalType* rmat){
+  int okstatus = -1;
+  if (nn == m*n) {
+    okstatus = 1;
+  }
+  if (okstatus != 1) {
+    CkAbort("Incorrect number of elements in acceptDiagonalizerLambda.\n");
+  }
+#ifdef CP_DIAGONALIZER_DEBUG
+  for (int i = 0 ; i < nn ; i++) {
+#ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+    CkAssert(fabs(rmat[i].re - templambda[i].re)<0.00001);
+    CkAssert(fabs(rmat[i].im - templambda[i].im)<0.00001);
+#else
+    CkAssert(fabs(rmat[i] - templambda[i])<0.00001);
+#endif
+  }
+#endif
+  asymmSectionMgr.sendResults(nn, rmat, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
+}
+
+void Ortho::transferControlToMPI() {
+  if ((thisIndex.x != 0) || (thisIndex.y != 0)) {
+    CkPrintf("***************Charm++ error ********************");
+    CkPrintf("******************exiting************************");
+    CkPrintf("***************Charm++ error ********************");
+    CkExit();
+  }
+  CkPrintf("\n\nQuiescence Has Been Detected in Ortho\n\n");
+  CkExit();
+}
+
+void Ortho::waitForQuiescence(int totalContribution) {
+  if ((thisIndex.x != 0) || (thisIndex.y != 0)) {
+    CkPrintf("***************Charm++ error ********************");
+    CkPrintf("******************exiting************************");
+    CkPrintf("***************Charm++ error ********************");
+    CkExit();
+  }
+  CkPrintf("In waitForQuiescence: Total Contribution: <%d>\n", totalContribution);
+  CkCallback qdcb(CkIndex_Ortho::transferControlToMPI(), CkArrayIndex2D(0,0), thisProxy.ckGetArrayID());
+  CkStartQD(qdcb);
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -527,7 +607,7 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
 {
   /** For runs using a large numPE, Orthos chares are typically mapped onto a small fraction of the cores
    * However, array broadcasts in charm++ involve all PEs (due to some legacy quirk present because of any-time 
-   * migration support). Hence, to avoid this anti-scaling overhead, we delegate array collectives to comlib / CkMulticast
+   * migration support). Hence, to avoid this anti-scaling overhead, we delegate array collectives to  CkMulticast
    * by building a section that includes all chare elements! :)
    *
    * The (0,0) Ortho chare sets up these sections and delegates them
@@ -537,7 +617,7 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
     /// Create an array section that includes the whole Ortho chare array
     int numOrtho = cfg.numStates / cfg.grainSize;
     multiproxy = CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(), 0, numOrtho-1,1, 0, numOrtho-1, 1);
-    /// If reductions are being delegated to a comm library
+    /// If reductions are being delegated to a multicast library
     if(config.useOrthoSectionRed)
     {
       CProxySection_Ortho rproxy =   multiproxy;
@@ -551,19 +631,9 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
     /// If multicasts are being delegated to a comm library
     if(config.useOrthoSection)
     {
-      /// Use the appropriate library for multicasts
-      if( config.useCommlib && config.useOrthoDirect)
-      {
-#ifdef USE_COMLIB
-        ComlibAssociateProxy(orthoInstance,multiproxy);	  
-#endif
-      }
-      else
-      {
-        CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oMCastGID).ckLocalBranch();
-        CkAssert(mcastGrp != NULL);
-        multiproxy.ckSectionDelegate(mcastGrp);
-      }
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oMCastGID).ckLocalBranch();
+      CkAssert(mcastGrp != NULL);
+      multiproxy.ckSectionDelegate(mcastGrp);
     }
   }
 
@@ -646,15 +716,15 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
     CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
     orthoConfig &_cfg,
     CkArrayID _step2Helper,
-    int timekeep, CkGroupID _oMCastGID, CkGroupID _oRedGID):
+	     int timekeep, CkGroupID _oMCastGID, CkGroupID _oRedGID, bool _lsda):
   cfg(_cfg),
   oMCastGID(_oMCastGID), oRedGID(_oRedGID),
-  step2Helper(_step2Helper)
+  step2Helper(_step2Helper),
+  lsda(_lsda)
 {
 
   /* do basic initialization */
   parallelStep2=config.useOrthoHelpers;
-
   invsqr_max_iter=config.invsqr_max_iter;
   invsqr_tolerance=config.invsqr_tolerance;
   if(invsqr_tolerance==0)
@@ -705,6 +775,7 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
 #ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
   savedtmat=NULL;
 #endif
+
 }//end routine
 
 
@@ -826,7 +897,7 @@ void Ortho::tolerance_check(){
   if(config.useOrthoSectionRed)
   {
     CkCallback mycb(CkIndex_Ortho::collect_error(NULL), thisProxy(0, 0));
-    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch();
+    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oRedGID).ckLocalBranch();
     mcastGrp->contribute(sizeof(internalType),  &ret, CkReduction::sum_double, orthoCookie, mycb);
   }
   else

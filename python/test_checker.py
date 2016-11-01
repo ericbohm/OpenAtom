@@ -10,9 +10,8 @@ def check_result(test_dict):
 	output_temp = output_file+'.temp'
 	snip_iteration(iteration, output_file, output_temp)
 
-	# Compare the output reference to the temporary output, then remove it
+	# Compare the output reference to the temporary output
 	result = compare_iteration(output_temp, out_ref, sig_figs)
-	#os.remove(output_temp)
 
 	return result
 
@@ -41,8 +40,8 @@ def snip_iteration(num, inputfile, outputfile):
 			if bad_key_flag != 0-(len(bad_key)):
 				continue
 
-			# Strip off the 'Iter [x] ' before each line
-			counter = len(iter_num) + 1
+			# Strip off the 'Bead and Iter prefixes ' before each line
+			counter = line.find(iter_num,0,len(line)-1) + len(iter_num) + 1
 			line_new = ''
 			while counter < len(line) - 1:
 				line_new = line_new + line[counter]

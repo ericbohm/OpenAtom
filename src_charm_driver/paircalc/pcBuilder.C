@@ -28,15 +28,6 @@ namespace cp {
 
       pcHandle.mCastMgrGID = CProxy_CkMulticastMgr::ckNew(cfg.inputSpanningTreeFactor);
 
-#ifdef USE_COMLIB
-      // Setup the appropriate multicast strategy
-      Strategy *multistrat = new DirectMulticastStrategy();
-      if(cfg.isSymmetric)
-        mcastInstanceCP=ComlibRegister(multistrat);
-      else
-        mcastInstanceACP=ComlibRegister(multistrat);
-#endif
-
       return pcHandle;
     }
 
@@ -80,10 +71,17 @@ namespace cp {
       double mapCreationTime = CmiWallTimer();
 
       MapType4 mapTable;
-      if (cfg.instanceIndex == 0)
+      if (cfg.instanceIndex == 0 || config.simpleTopo)
       {
         /// Get an appropriately constructed PeList from the supplied factory functor
         PeList *availGlobG = mapCfg.getPeList();
+        if(availGlobG->size() != config.numPesPerInstance) {
+          availGlobG->checkAndAdd(0);
+        }
+        if(availGlobG->size() != config.numPesPerInstance) {
+          CkPrintf("Not enough PEs in PC. Expected %d Got %d\n", config.numPesPerInstance,
+            availGlobG->size());
+        }
         availGlobG->reset();
         mapTable.buildMap(cfg.numPlanes, cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize, achunks, cfg.grainSize);
 
@@ -144,76 +142,72 @@ namespace cp {
       pcHandle.mapperGID  = pcMapGrp.ckGetGroupID();
     }
 
-
-
-    /*
-       void Builder::createInputHandler(const pcConfig &cfg)
-       {
-       CkArrayOptions handlerOpts;
-    /// Create an empty input handler chare array that will accept all incoming messages from GSpace
-    handlerOpts.bindTo(pairCalculatorProxy);
-    CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> ::ckNew(pairCalculatorProxy,handlerOpts);
-    }
-     */
-
-
-
     void Builder::createPairCalcs()
     {
-      CkArrayOptions paircalcOpts,handlerOpts;
+      CkArrayOptions paircalcOpts, handlerOpts;
       CProxy_PairCalculator pairCalculatorProxy;
       CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy;
 
-      // Create an empty array but specify element locations using the map
-      paircalcOpts.setMap(pcHandle.mapperGID);
-      paircalcOpts.setAnytimeMigration(false);
-      pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, cfg, paircalcOpts);
-
 #ifdef DEBUG_CP_PAIRCALC_CREATION
-      CkPrintf("Builder: Creating a%s paircalc instance\n", (cfg.isSymmetric?" symmetric":"n asymmetric") );
-#endif
+      CkPrintf("Builder: Creating a%s paircalc instance.\n",
+          (cfg.isSymmetric?" symmetric":"n asymmetric") );
 #ifdef CP_PAIRCALC_USES_COMPLEX_MATH
       CkPrintf("Builder: Creating paircalcs for instance %d that use complex math\n", cfg.instanceIndex);
 #else
       CkPrintf("Builder: Creating paircalcs for instance %d that do not use complex math\n", cfg.instanceIndex);
 #endif
+#endif
 
-      /// Create an empty input handler chare array that will accept all incoming messages from GSpace
+      // Set up indices for start, end, step, and bounds. This will determine
+      // how many chares to create and at which indices to create them when we
+      // call ckNew().
+      short numPlanes = (short)cfg.numPlanes;
+      short numStates = (short)cfg.numStates;
+      short grainSize = (short)cfg.grainSize;
+      short numChunks = (short)cfg.numChunks;
+      // The state indices are set up in such a way that if numStates isn't
+      // divisible by grainSize, the remainder is stitched to the last chare.
+      short stateEnd  = (numStates / grainSize) * grainSize;
+      // Because we always start the 3rd index at zero, we must have phantoms
+      // on at all times. The current bulk construction in Charm++ is not
+      // flexible enough to handle creating the lower triangle of an array.
+      CkIndex4D start = {0,0,0,0};
+      CkIndex4D end = {numPlanes,stateEnd,stateEnd,numChunks};
+      CkIndex4D step = {1,grainSize,grainSize,1};
+
+#ifdef DEBUG_CP_PAIRCALC_CREATION
+      CkPrintf("Builder: numPlanes = %d, numStates = %d, grainSize = %d, numChunks = %d\n",
+          numPlanes, numStates, grainSize, numChunks);
+      CkPrintf("Builder: Start = (%d, %d, %d, %d).\n",
+          start.w, start.x, start.y, start.z);
+      CkPrintf("Builder: End = (%d, %d, %d, %d).\n",
+          end.w, end.x, end.y, end.z);
+      CkPrintf("Builder: Step = (%d, %d, %d, %d).\n",
+          step.w, step.x, step.y, step.z);
+#endif
+
+      // Set up paircalc to use our custom mapping, and the indices set above.
+      paircalcOpts.setMap(pcHandle.mapperGID);
+      paircalcOpts.setAnytimeMigration(false);
+      paircalcOpts.setStaticInsertion(true);
+      paircalcOpts.setStart(CkArrayIndex4D(start)).setEnd(CkArrayIndex4D(end)).setStep(CkArrayIndex4D(step));
+      paircalcOpts.setBounds(end.w, end.x, end.y, end.z);
+
+      pairCalculatorProxy = CProxy_PairCalculator::ckNew(cfg, paircalcOpts);
+
+      // The handler will be bound to the paircalc and use the same options.
       handlerOpts.bindTo(pairCalculatorProxy);
-      inputHandlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> ::ckNew(pairCalculatorProxy,handlerOpts);
+      handlerOpts.setAnytimeMigration(false);
+      handlerOpts.setStaticInsertion(true);
+      handlerOpts.setStart(CkArrayIndex4D(start)).setEnd(CkArrayIndex4D(end)).setStep(CkArrayIndex4D(step));
+      handlerOpts.setBounds(end.w, end.x, end.y, end.z);
 
-      // Initialize my set of array / group IDs
+      inputHandlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType>::ckNew(pairCalculatorProxy,handlerOpts);
+
+      // Initialize my set of array / group IDs.
       pcHandle.pcAID = pairCalculatorProxy.ckGetArrayID();
       pcHandle.handlerAID = inputHandlerProxy.ckGetArrayID();
-
-      // Compute the max value of the state dimension indices of the paircalc array
-      int pcMaxStateDimIndex = (cfg.numStates / cfg.grainSize - 1) * cfg.grainSize;
-      // Populate the sparse, 4D paircalc array
-      for(int numX = 0; numX < cfg.numPlanes; numX ++)
-      {
-        for (int s1 = 0; s1 <= pcMaxStateDimIndex; s1 += cfg.grainSize)
-        {
-          // Make the symmetric array a triangular prism of chares only if phantoms are not needed
-          int s2start = (cfg.isSymmetric && !cfg.arePhantomsOn) ? s1 : 0;
-          for (int s2 = s2start; s2 <= pcMaxStateDimIndex; s2 += cfg.grainSize)
-          {
-            for (int c = 0; c < cfg.numChunks; c++)
-            {
-#ifdef DEBUG_CP_PAIRCALC_CREATION
-              CkPrintf("\tInserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,cfg.isSymmetric);
-#endif
-              pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, cfg);
-            }
-          }
-        }
-      }
-
-      /// Notify the runtime that we're done inserting all the PC elements
-      pairCalculatorProxy.doneInserting();
     }
-
-
-
 
   } // end namespace paircalc
 } // end namespace cp

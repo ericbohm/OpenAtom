@@ -74,14 +74,13 @@ extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 
 extern CkGroupID            mCastGrpId;
-extern ComlibInstanceHandle gssPInstance;
 
 extern int    nstates;
 extern int    nchareG;
 extern Config config;
 
 //#define _CP_DEBUG_STATE_GPP_VERBOSE_
-
+//#define BARRIER_CP_PARTICLEPLANE_NONLOCAL
 //=========================================================================
 
 
@@ -166,8 +165,8 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   // report your status to main
 
   int constructed=1;
-  contribute(sizeof(int), &constructed, CkReduction::sum_int, 
-      CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
+  contribute(CkCallback(CkIndex_InstanceController::doneInit(), 
+      CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   savedprojpsiBf=NULL;
   savedprojpsiBfsend=NULL;
@@ -191,10 +190,6 @@ void CP_State_ParticlePlane::initKVectors()
   if(ees_nonlocal == 1)
   {
     realPP_proxy = UrealParticlePlaneProxy[thisInstance.proxyOffset];
-#ifdef USE_COMLIB
-    if (config.useGssInsRealPP)
-      ComlibAssociateProxy(gssPInstance,realPP_proxy);
-#endif
   }
 
   //============================================================================
@@ -228,26 +223,36 @@ void CP_State_ParticlePlane::initKVectors()
   int *usedProc= new int[numProcs];
   memset(usedProc,0,sizeof(int)*numProcs);
   int charperpe=nstates/numProcs;
-  if(nstates%numProcs!=0)  charperpe++;
-  if(charperpe<1) charperpe=1;
+    if(charperpe<1)
+    {charperpe=1;}
+  else
+    {
+      if(nstates%numProcs!=0)  charperpe++;
+    }
   for(int state=0; state<nstates;state++){
     int plane=nchareG-1;
     while(plane>=0)
-    {
-      bool used=false;
-      int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%numProcs;
-      if(usedProc[thisstateplaneproc]>=charperpe);
       {
-        used=true;
+	bool used=false;
+	int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%numProcs;
+	if(usedProc[thisstateplaneproc]>=charperpe)
+	{
+	  used=true;
+	  if(plane==0)
+	    {
+	      red_pl[state]=plane;
+	      (usedProc[thisstateplaneproc])++;
+	      plane=-1;
+	    }
+	}
+	else
+	  {
+	    red_pl[state]=plane;
+	    (usedProc[thisstateplaneproc])++;
+	    plane=-1;
+	  }
+	plane--;
       }
-      if(!used || plane==0)
-      {
-        red_pl[state]=plane;
-        (usedProc[thisstateplaneproc])++;
-        plane=-1;
-      }
-      plane--;
-    }
   }
   for(int state=0; state<nstates;state++){
     int plane=0;
@@ -255,11 +260,17 @@ void CP_State_ParticlePlane::initKVectors()
     {
       bool used=false;
       int thisstateplaneproc = GSImaptable[thisInstance.proxyOffset].get(state, plane)%CkNumPes();
-      if(usedProc[thisstateplaneproc]>=charperpe);
+      if(usedProc[thisstateplaneproc]>=charperpe)
       {
         used=true;
+        if(plane+1==nchareG)
+        {
+          usedProc[thisstateplaneproc]++;
+          red_pl[state]=plane;
+          plane=nchareG;
+        }
       }
-      if(!used || (plane+1==nchareG))
+      else
       {
         usedProc[thisstateplaneproc]++;
         red_pl[state]=plane;
@@ -974,7 +985,7 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
 
   CPNONLOCAL::eesProjGchare(ncoef,psi,k_x,k_y,k_z,ihave_g0,ind_g0,iterNL,
       d_re,d_im,dyp_re,dyp_im,projPsiGTmp,ind_gspl,h_gspl,
-      thisIndex.x,thisIndex.y,kpoint_ind,config.nfreq_cpnonlocal_eesfwd);
+			    thisIndex.x,thisIndex.y,kpoint_ind,config.nfreq_cpnonlocal_eesfwd, thisInstance.proxyOffset);
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(eesProjG_, StartTime, CmiWallTimer());    
 #endif
@@ -1077,14 +1088,6 @@ void CP_State_ParticlePlane::sendToEesRPP(){
     CkPrintf("HI, I am gPP %d %d in sendtoEesRPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-  if (config.useGssInsRealPP){gssPInstance.beginIteration();}
-#else
-  if (config.useGssInsRealPP){ComlibBegin(realPP_proxy, iterNL);}
-#endif
-#endif
-
   //============================================================================
   // Send your (x,y,z) to processors z.
 
@@ -1112,16 +1115,6 @@ void CP_State_ParticlePlane::sendToEesRPP(){
     realPP_proxy(thisIndex.x, z).recvFromEesGPP(msg);  // same state, realspace char[z]
   }//endfor
 
-  //============================================================================
-  // Turn off commlib
-
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-  if (config.useGssInsRealPP){gssPInstance.endIteration();}
-#else
-  if (config.useGssInsRealPP){ComlibEnd(realPP_proxy, iterNL);}
-#endif    
-#endif
   sendDone = 1;
 
   //============================================================================
@@ -1320,7 +1313,7 @@ void CP_State_ParticlePlane::computeNLEesForces(){
 #endif    
 
   CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,nkx0,projPsiGTmp,fPsiG,dyp_re,dyp_im,
-      k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL,config.nfreq_cpnonlocal_eesbk);
+			       k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL,config.nfreq_cpnonlocal_eesbk, thisInstance.proxyOffset);
   fftcache->freeCacheMem("CP_State_ParticlePlane::computeNLEesForces");
 
 #if CMK_TRACE_ENABLED

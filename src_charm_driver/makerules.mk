@@ -2,14 +2,14 @@
 libdriver_src = \
                 cpaimd.C TemperController.C InstanceController.C pcCreationManager.C eesCache.C CLA_Matrix.C \
 		AtomsCompute.C AtomsCache.C energyGroup.C PhysScratchCache.C \
-                CP_State_GSpacePlane.C CP_State_RealSpacePlane.C GSpaceDriver.C pcCommManager.C \
+                CP_State_GSpacePlane.C CP_State_RealSpacePlane.C HFCalculator.C GSpaceDriver.C pcCommManager.C \
                 CP_LargeSP_RhoGSpacePlane.C  CP_LargeSP_RhoRealSpacePlane.C \
                 CP_State_ParticlePlane.C CP_State_RealParticlePlane.C \
                 CP_Rho_RealSpacePlane.C CP_Rho_GSpacePlane.C CP_Rho_GHartExt.C CP_Rho_RHartExt.C \
                 ckPairCalculator.C pcBuilder.C \
                 ortho.C pcSectionManager.C orthoBuilder.C \
                 StructureFactor.C StructFactorCache.C \
-                fftCache.C stateSlab.C rhoSlab.C \
+                fftCache.C stateSlab.C \
                 MapTable.C PeList.C ENL_EKE_Collector.C \
                 util.C MapFile.C para_grp_parse.C matrix2file.C PIBeadAtoms.C
 libdriver_obj = $(addsuffix .o, $(basename $(libdriver_src)) )
@@ -36,7 +36,7 @@ $(libdriver): $(libdriver_obj)
 # Include the generated files containing dependency info
 depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(libdriver_src)) ) )
 ifneq ($(MAKECMDGOALS),clean)
-$(depFiles): CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC)
+$(depFiles): CPPFLAGS += -I. -I$(main) -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC) -I$(interoplib)
 -include $(depFiles)
 -include $(libdriver_intf:.ci=.di)
 endif

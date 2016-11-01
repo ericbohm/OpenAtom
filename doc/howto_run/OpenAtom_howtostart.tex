@@ -1,0 +1,281 @@
+%% instruction for Martins-Troullier type pseudopotential
+%
+%\documentclass[letterpaper,12pt]{article}
+%
+%\usepackage{helvet}
+%\usepackage{courier}
+%
+%\textwidth = 6.5 in
+%\textheight = 9 in
+%\oddsidemargin = 0.0 in
+%\evensidemargin = 0.0 in
+%\topmargin = 0.0 in
+%\headheight = 0.0 in
+%\headsep = 0.0 in
+%\parskip = 0.2in
+%\parindent = 0.0in
+%
+%\newcommand{\openatom}{\textsc{OpenAtom}}
+%\renewcommand\labelitemi{\textendash}
+%
+%
+%\title{\fontfamily{phv}\selectfont{\openatom: Get started}}
+%%\author{\fontfamily{phv}\selectfont{Minjung Kim}}
+%\date{}
+%
+%\begin{document}
+%\maketitle
+
+\section{\textsc{OpenAtom}: Getting started}
+
+Before running any type of ``CP'' (which means quantum in \openatom \ land) simulations supported by \openatom \ package, you first need to obtain minimized wavefunction files by performing \verb+cp_wave_min+.
+
+This document explains how to make input files for \verb+cp_wave_min+ with a system of one water (H$_2$O) molecule.
+
+
+--Minjung Kim
+
+%%%%%%%%%%%%%%%%% Compilation
+%\subsection{Compilation}
+
+%%%%%%%%%%%%%%%%% Input files
+
+\subsection{Input files - basic}
+
+There are 7 different types of input files to run \openatom. 
+
+\subsubsection{Simulation keyword file}
+
+Let's create a file named \verb+water.input+. The name of the input file is your choice. This file includes general information of the simulation such as, what  type of simulation to perform, where to write the output files, where to find other input files, etc. 
+
+The simulation keyword file contains 9 subsections (i.e., meta-keywords):
+\begin{verbatim}
+~sim_list_def[ ]
+~sim_cp_def[ ]
+~sim_gen_def[ ]
+~sim_class_PE_def[ ]
+~sim_run_def[ ]
+~sim_nhc_def[ ]
+~sim_vol_def[ ]
+~sim_write_def[ ]
+~sim_pimd_def[ ]
+\end{verbatim}
+
+It is not required to use all meta-keywords in the input file. For example, if you are not running your calculation with multiple beads, \verb+sim_pimd_def[]+ meta-keyword is unnecessary. 
+
+Each meta-keyword requires keywords and key-arguments. Complete information of keywords and key-arguments is found in \openatom \ website. This document explains a few keywords and its key-arguments that are necessary to run \verb+cp_wave_min+.
+Here is the example of \verb+water.input+:
+
+\begin{verbatim}
+~sim_gen_def[
+\simulation_typ{cp_wave_min}
+\num_time_step{100000}
+\restart_type{initial}
+]
+ 
+~sim_cp_def[
+\cp_minimize_typ{min_cg}
+\cp_restart_type{gen_wave}
+]
+
+~sim_run_def[
+\cp_min_tol{0.001}
+]
+
+~sim_vol_def[
+\periodicity{3}
+]
+
+~sim_write_def[
+\write_screen_freq{3}
+\write_dump_freq{100}
+\in_restart_file{water.coords_initial}
+\mol_set_file{water.set}
+\sim_name{water}
+\write_binary_cp_coef{off_gzip}
+]
+\end{verbatim}
+
+Short explanation for each keyword \& argument:
+\begin{itemize}
+\item Simulation type is \verb+cp_wave_min+, which means minimizing wavefunction coefficients.
+\item It performs 100000 iterations. After 100000 iteration, it stops even if it does not converge.
+\item Restart type is \verb+initial+, which means it starts from scratch.
+\item \verb+min_cg+ uses the conjugate gradient method for minimization.
+\item \verb+gen_wave+ stands for generating wavefunction coefficients.
+\item Once the force of wavefunction reaches to the \verb+cp_min_tol+ value, it stops the wavefunction minimization.
+\item \verb+periodicity+ indicates the boundary condition. 3 means it is fully periodic.
+\item \verb+write_screen_freq+ defines the frequency of writing information to an output file. 
+\item \verb+write_dump_freq+ determines how frequently write the wavefunction coefficients to \verb+STATES_OUT+ directory. 
+\item \verb+in_restart_file+ reads the name of coordinate input file. \verb+water.coords_initial+ will be read from \verb+ATOM_COORDS_IN+ directory.
+\item \verb+mol_set_file+ reads the setup file named \verb+water.set+. 
+\item \verb+sim_name+ sets the simulation name. In this example, \verb+water+ file will be generated at the end of the simulation.
+\item \verb+off_gzip+ means the wavefunction coefficients are not binary and gzipped.
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%SETUP file
+\subsubsection{Setup file}
+In the input file, keyword \verb+\mol_set_file+ has a key-argument \verb+water.set+. This is a setup file. It gives the information of total number of electrons, types of of molecules (or atoms), pseudopotential database, etc.
+
+The setup file contains 4 subsections (=meta-keywords):
+\begin{verbatim}
+~wavefunc_def[ ]
+~molecule_def[ ]
+~data_base_def[ ]
+~bond_free_def[ ]
+\end{verbatim}
+
+The first three meta-keywords are necessary. For ``CP'' simulations, we do not need the last meta-keyword. Below is what \verb+water.set+ may look like:
+
+\begin{verbatim}
+~wavefunc_def[
+\nstate_up{4}\nstate_dn{4}\cp_nhc_opt{none}
+ ]
+
+~molecule_def[
+\mol_name{Hydrogen}\mol_parm_file{./DATABASE/H.parm}
+\num_mol{2}\mol_index{1}\mol_opt_nhc{mass_mol}
+]
+
+~molecule_def[
+\mol_name{Oxygen}\mol_parm_file{./DATABASE/O.parm}
+\num_mol{1}\mol_index{2}\mol_opt_nhc{mass_mol}
+]
+
+~data_base_def[
+\inter_file{./water.inter}
+\vps_file{./water.vps}
+]
+\end{verbatim}
+
+\begin{itemize}
+\item \verb+wavefunc_def+ defines the number of electrons. The number of states for spin-up and spin-down has to be the same. 
+
+\item \verb+molecule_def+ defines the name of the molecule and specify the parameter file (\verb+.parm+ files). In quantum simulations, molecule should be the individual atom.
+
+\item \verb+data_base_def+ defines the name of interaction file (\verb+water.inter+) and pseudopotential file (\verb+water.vps+).  
+
+\end{itemize}
+
+% Coordinates
+\subsubsection{Coordinate input file}
+This file includes the information of atom coordinates and the size of the simulation cell. The name of the atom coordinate file (e.g., \verb+water.coords_initial+) is defined in input file (see subsection above).
+
+The coordinate file includes three parts:
+
+[number of atoms] [number of beads] [number of path]\\
+coordinates (in \AA)\\
+simulation cell information (in \AA)\\
+
+In this example, \verb+water.coords_initial+ may look like below:
+
+\begin{verbatim}
+3 1 1
+0.757 0.586 0.0
+-0.757 0.586 0.0
+0.000 0.000 0.0
+10 0 0
+0 10 0
+0 0 10
+\end{verbatim}
+
+Make sure that the coordinates must follow the order defined in \verb+water.set+ file with \verb+\mol_index+ keyword, i.e., the first two coordinates for H, and the third coordinate for O. 
+
+% PARALLEL DECOMPOSITION PARAMETERS (CHARM PARAMETERS)
+\subsubsection{Charm parameter file}
+
+The charm parameter file includes all options related to charm++. It can be an empty file. Usually, that is the best way to start. If  \openatom \ complains about some key-arguments, change it accordingly. In our example, we will name this file as \verb+cpaimd_config+.
+
+
+% Potential parameter keywords file
+\subsubsection{Potential parameter files}
+
+In the setup file (\verb+water.set+), we have specified two files: \verb+water.inter+ and \verb+water.vps+. For ``CP'' calculations (remember in \openatom \ world, CP means quantum), \verb+water.inter+ is irrelevant. However, if this file does not exist, the code will complain, so it is necessary to create this file as well. \verb+water.vps+ indicates types of the pseudopotential, names of the pseudopotential file, the number of angular momentum, and local component of the pseudopotential. Here are examples of \verb+water.inter+ and \verb+water.vps+.
+
+\verb+water.inter+ file:
+
+\begin{verbatim}
+~inter_parm[\atom1{H}\atom2{H}\pot_type{null}\min_dist{0.1}\max_dist{12.9}]
+~inter_parm[\atom1{O}\atom2{H}\pot_type{null}\min_dist{0.1}\max_dist{12.9}]
+~inter_parm[\atom1{O}\atom2{O}\pot_type{null}\min_dist{0.1}\max_dist{12.9}]
+\end{verbatim}
+
+\verb+water.vps+ file:
+
+\begin{verbatim}
+~PSEUDO_PARM[\ATOM1{H}\VPS_TYP{LOC}\N_ANG{0}\LOC_OPT{0}
+\VPS_FILE{./DATABASE/H_BLYP_PP30.pseud}]
+
+~PSEUDO_PARM[\ATOM1{O}\VPS_TYP{KB}\N_ANG{1}\LOC_OPT{1}
+ \VPS_FILE{./DATABASE/O_BLYP_PP30.pseud}]
+
+\end{verbatim}
+
+% Topology keywords file (.parm file)
+\subsubsection{Topology keywords file}
+
+In setup file, the topology keywords file is defined in \verb+\mol_parm_file+ keyword for each molecule. In this file, we specify which atoms consist of the molecule (in our case, atom is the molecule). The example of these files for our water system is below:
+
+\verb+H.parm+ file:
+
+\begin{verbatim}
+~MOLECULE_NAME_DEF[\MOLECULE_NAME{Hydrogen}\NATOM{1}]
+
+~ATOM_DEF[\ATOM_TYP{H}\ATOM_IND{1}\MASS{1.0}\CHARGE{1.0}
+\cp_valence_up{0}\cp_valence_dn{0}\cp_atom{yes}]
+\end{verbatim}
+
+\verb+O.parm+ file:
+
+\begin{verbatim}
+~MOLECULE_NAME_DEF[\MOLECULE_NAME{Oxygen}\NATOM{1}]
+
+~ATOM_DEF[\ATOM_TYP{O}\ATOM_IND{1}\MASS{16.0}\CHARGE{6.0}
+\cp_valence_up{4}\cp_valence_dn{4}\cp_atom{yes}]
+\end{verbatim}
+
+% Pseudopotential files
+\subsubsection{Pseudopotential files}
+The name of the pseudopotential files are indicated in potential parameter file (\verb+water.vps+). Generating pseudopotential for \openatom \ can be found in the \openatom \ website.
+
+
+
+% k points calculation explanation
+\subsection{Run with k-points}
+\openatom\ not only runs with a single k-point, but also runs with multiple k-points. This section explains how to run \openatom\ with multiple k-points. 
+
+%complex executable
+\subsubsection{Complex executable}
+To enable k-points calculation, complex version of \openatom\ is required. 
+There is a file \verb+README.complexpc+ in the top directory of openatom source code. This explains you how to compile the complex version.
+
+\subsubsection{additional keywords and input files}
+In the input file and the set file, add k-point specific keywords. 
+\begin{enumerate}
+
+\item New keyword in the input file (see \verb+Si.input+ in the example): \\
+Add \verb+\cp_force_complex_psi{on}+ keyword in \verb+~sim_cp_def[]+
+
+\item New keywords in the set file (see \verb+Si.set+ in the example): \\
+Add three keywords \verb+\num_kpoint{nk}\num_kpoint_wave{nk}\kpoint_file{kpoints.in}+ in \verb+~WAVEFUNC_DEF[]+
+
+\item k-points file (see \verb+kpoints.in+ in the example):\\
+Syntax: \\
+{\it
+nk \\$k1_x$ $k1_y$ $k1_z$ $wk1$ \\$k2_x$ $k2_y$ $k2_z$ $wk2$ \\.. \\$kn_x$ $kn_y$ $kn_z$ $wkn$ \\
+}nk : number of total k points\\$k1_{x/y/z}$ : special k points\\wk1 : weight of k point k1\\
+
+\item Create directories for state files: \\
+To save/read state files, each k-point requires individual directory in \verb+STATES+ and \verb+STATES_OUT+. For example, if you have 2 k-points in your system, you should create these two directories inside \verb+STATES+ and \verb+STATES_OUT+: \\
+\verb+Spin.0_Kpt.0_Bead.0_Temper.0+\\
+\verb+Spin.0_Kpt.1_Bead.0_Temper.0+
+
+\end{enumerate}
+
+
+Run the code with the complex executable!
+
+
+
+%\end{document}

@@ -60,6 +60,9 @@ class AtomsCompute: public CBase_AtomsCompute {
     int numPIMDBeads;
     int tol_reached;
     unsigned int handleForcesCount;
+    bool switchMoveNow;
+    double new_t_ext;       // temperature post switch
+    double old_t_ext;       // temperature prior to switch
     double kT;              // temperature
     double pot_ewd_rs;      // total real space ewald energy
     double potGrimmeVdw;    // Grimme vdw energy
@@ -88,17 +91,21 @@ class AtomsCompute: public CBase_AtomsCompute {
 
     int ktemps;
     FILE *temperScreenFile;
+    bool atomsOutputReady;
+    bool energyGroupReady;
+
+
 
     AtomsCompute(CkMigrateMessage *m) {}
     AtomsCompute(int, int, int, int, int, int, int ,int, int, double, Atom *, AtomNHC *, int nChareAtoms, UberCollection thisInstance);
     void init();
     ~AtomsCompute();
     void integrateAtoms();
-    void accept_PIMD_x(double _x, double _y, double _z, int atomI);
-    void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);
-    void accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu, double _xu, double _yu, double _zu, int atomI);
-    void accept_PIMD_CM(AtomXYZMsg *m);
-    void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
+    void accept_PIMD_x(AtomXYZMsg*);
+    void accept_PIMD_Fu(AtomXYZMsg*);
+    void accept_PIMD_Fu_and_u(AtomXYZMsg*);
+    void accept_PIMD_CM(AtomXYZMsg*);
+    void accept_PIMD_u(AtomXYZMsg*);
     void acceptNewTemperature(double temp);
     void recvContribute(CkReductionMsg *);
     void recvContributeForces(CkReductionMsg *);
@@ -108,6 +115,7 @@ class AtomsCompute: public CBase_AtomsCompute {
     void send_PIMD_Fx_and_x();
     void send_PIMD_x();
     void sendAtoms(double,double ,double,double,int,int,int);
+    void energyReady();
     void acceptAtoms(AtomMsg *);
     void outputAtmEnergy();
     void bcastAtomsToAtomCache();

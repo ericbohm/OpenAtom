@@ -1,21 +1,11 @@
 #ifndef CK_PAIR_CALCULATOR_H
 #define CK_PAIR_CALCULATOR_H
 
-#undef  OLD_COMMLIB
-//#define OLD_COMMLIB 1
 #include "debug_flags.h"
 
 #include "ckmulticast.h"
 #include "ckhashtable.h"
 #include "ckcomplex.h"
-
-#include "PipeBroadcastStrategy.h"
-#include "BroadcastStrategy.h"
-#include "DirectMulticastStrategy.h"
-#include "RingMulticastStrategy.h"
-#include "MultiRingMulticast.h"
-#include "NodeMulticast.h"
-
 
 // If the machine is capable of RDMA...
 #if CMK_DIRECT
@@ -50,8 +40,6 @@
 #define NORMALPC   0  ///< standard
 #define KEEPORTHO  1  ///< retain orthoT
 #define PSIV       2  ///< multiply new psiV by retained orthoT
-
-extern ComlibInstanceHandle mcastInstanceCP;
 
 extern "C" {
 
@@ -306,7 +294,7 @@ extern "C" {
 {
   public:
     /// @entry (obviously)
-    PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig _cfg);
+    PairCalculator(const pc::pcConfig _cfg);
     /// Constructor for migration
     PairCalculator(CkMigrateMessage *);
     /// Destructor (nothing needs to be done?)
@@ -401,8 +389,6 @@ extern "C" {
 
     /// A private copy of the input configurations
     pc::pcConfig cfg;
-    /// A handle to the co-located chare array that handles data input 
-    CProxy_InputDataHandler<CollatorType,CollatorType> myMsgHandler;
     /// Data collators for the left and right matrix blocks
     CollatorType *leftCollator, *rightCollator;
     /// Flags indicating if the left and right matrix blocks have been received

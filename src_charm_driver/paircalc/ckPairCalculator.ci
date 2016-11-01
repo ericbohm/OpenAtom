@@ -6,9 +6,6 @@ module pcMessages {
 
   include "paircalc/pcFwdDeclarations.h";
 
-  readonly ComlibInstanceHandle mcastInstanceCP;
-  readonly ComlibInstanceHandle mcastInstanceACP;
-
   initnode registersumMatrixDouble(void);
 
   message initResultMsg;
@@ -106,7 +103,7 @@ module ckPairCalculator
 
   array [4D] PairCalculator 
   {
-    entry PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig cfg);
+    entry PairCalculator(const pc::pcConfig cfg);
     entry void lbsync();
     entry void bwbarrier(CkReductionMsg *msg);
     entry void sendBWResult(sendBWsignalMsg *msg);

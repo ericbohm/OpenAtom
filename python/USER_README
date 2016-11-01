@@ -46,5 +46,10 @@
 
 5) Output reference:
   5.1 An output reference file is a stripped down version of the output from a
-      single iteration. Examples can be found in the water_32M_10Ry regression
-      test.
+      single iteration. ie: water_32M_10Ry/tests/regression/cpout.log
+  5.2 When each test runs, output from the test goes in the output directory for
+      that specific test. ie: water_32M_10Ry/tests/regression/output
+  5.3 The Python framework uses the test output to create a new file, with a
+      stripped down version of the output to be compared to the reference output
+    5.3.1 To update the reference output, this temp file can be copied to the
+          ref output file.

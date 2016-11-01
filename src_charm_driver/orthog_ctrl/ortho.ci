@@ -1,5 +1,14 @@
 module ortho
 {
+  readonly CProxy_Ortho orthoProxy;
+  readonly CProxy_ExtendedOrtho eOrthoProxy;
+  readonly int totalOrthos;
+  readonly int grainSizeOrtho;
+  readonly int diagonalization;
+  readonly int numStatesOA;
+  readonly int numOrthosPerDim;
+  readonly int numEOrthosPerDim;
+  readonly int orthoShrinkExpand;
   class CLA_Matrix_interface;
   include "paircalc/pcFwdDeclarations.h";
   include "orthog_ctrl/orthoConfig.h";
@@ -20,10 +29,14 @@ module ortho
         CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
         cp::ortho::orthoConfig &_cfg,
         CkArrayID step2Helper,
-        int timekeep, CkGroupID oMCastGID, CkGroupID oRedGID
+        int timekeep, CkGroupID oMCastGID, CkGroupID oRedGID,
+	bool lsda
         );
     entry Ortho();
     entry void acceptSectionLambda(CkReductionMsg *msg);
+    entry [reductiontarget] void waitForQuiescence(int totalcents);
+    entry void acceptDiagonalizedLambda(int n, internalType rmat[n]);
+    entry void transferControlToMPI();
     entry void resume();
     entry void resumeV(CkReductionMsg *msg);
     entry void maxCheck(CkReductionMsg *msg);
@@ -44,14 +57,10 @@ module ortho
     entry void sendOrthoTtoAsymm();
   };
 
-
-
   message OrthoHelperMsg {
     internalType A[];
     internalType B[];
   };
-
-
 
   array [2D] OrthoHelper {
     entry void OrthoHelper(int m, int n, CLA_Matrix_interface matA2,CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, CkCallback);
@@ -59,16 +68,17 @@ module ortho
     entry void recvAB(OrthoHelperMsg *msg);
   };
 
-
-
   include "load_balance/IntMap.h";
   group OrthoMap : CkArrayMap {
     entry OrthoMap(MapType2);
   };
 
-
-
   group OrthoHelperMap : CkArrayMap {
     entry OrthoHelperMap(MapType2);
+  };
+
+  array [2D] ExtendedOrtho {
+    entry ExtendedOrtho();
+    entry void lambdaSentToDiagonalizer();
   };
 };

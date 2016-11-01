@@ -51,6 +51,7 @@ class Config {
     int UberMmax;
     int numInstances;
     int temperCycle;
+    int numBeadAtomChares;
   //==================================
 
   //==================================
@@ -67,10 +68,11 @@ class Config {
     int rhogpriority;
     double gExpandFactRho;
     int lbdensity;
-    int rhoGHelpers;
-    int rhoRsubplanes;
-    int rhoSubPlaneBalance;
-    int rhoGToRhoRMsgComb;
+    int nchareRhoR_x, nchareRhoR_y;
+    int nchareRhoRHart_x, nchareRhoRHart_y;
+    int nchareRhoInter_x, nchareRhoInter_z;
+    int nchareHartInter_x, nchareHartInter_z;
+    int nchareAtmSFInter_x, nchareAtmSFInter_z;
     int prioEextFFTMsg;
     //==================================
     // density commlib flags
@@ -108,6 +110,7 @@ class Config {
    int useGssInsRealP;
    int useMssInsGP;
    char dataPathOut[1024];
+   int screenOutputPsi;
   //==================================
 
   //==================================
@@ -184,6 +187,8 @@ class Config {
    int useStrictCuboid;
    int useCentroidMap;
    int useCentroidMapRho;
+   int simpleTopo;
+   int simpleTopoCentroid;
    int Gstates_per_pe;
    int Rstates_per_pe;
    int loadMapFiles;

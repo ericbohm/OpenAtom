@@ -222,7 +222,7 @@ int make_multiplier(
 #define MM_ALG_MAX	2
 
 /* Error codes */
-#define SUCCESS			0
+//#define SUCCESS			0
 #define ERR_INVALID_ALG		-1
 #define ERR_INVALID_DIM		-2
 

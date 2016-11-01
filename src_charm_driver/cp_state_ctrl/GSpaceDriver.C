@@ -3,15 +3,14 @@
 #include "CP_State_ParticlePlane.h"
 #include "main/TimeKeeper.h"
 
-extern int nstates;
 extern Config config;
-
+extern CPcharmParaInfo                          simReadOnly;
 extern CProxy_TimeKeeper 			TimeKeeperProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>      UgSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane> 	UparticlePlaneProxy;
 extern CkVec <CProxy_StructureFactor> 			UsfCompProxy;
 extern CProxy_InstanceController      instControllerProxy;
-
+extern CkGroupID mCastGrpId;
 /** @addtogroup GSpaceState
   @{
  */
@@ -91,16 +90,18 @@ void GSpaceDriver::init()
   {
     /// numDups must be less than the number of states because thats the maximum number of times you can duplicate a plane
     int numSfDups = config.numSfDups;
-    if(numSfDups > nstates)
-      numSfDups = nstates;
+    if(numSfDups > simReadOnly.nstates)
+      numSfDups = simReadOnly.nstates;
     /// Create a list of SF chares in this section
-    CkVec <CkArrayIndex3D> sfelems;
+    sfelems.resize(numSfDups*config.numSfGrps);
     for(int dup=0; dup<numSfDups; dup++)
       for(int atm=0;atm<config.numSfGrps; atm++)
         sfelems.push_back(CkArrayIndex3D(atm,thisIndex.y,dup));
     /// Create the SF array section
     sfCompSectionProxy = CProxySection_StructureFactor::ckNew(	UsfCompProxy[thisInstance.proxyOffset].ckGetArrayID(),
         (CkArrayIndexMax*)sfelems.getVec(), sfelems.size());
+    sfCompSectionProxy.ckSectionDelegate(CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch());
+    
   } 
 }
 
@@ -137,8 +138,8 @@ void GSpaceDriver::needUpdatedPsiV()
 /// Trigger the nonlocal computations
 void GSpaceDriver::startNonLocalEes(int iteration_loc)
 {
-  //if(iteration_loc!=myGSpaceObj->iteration)
-  //  CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
+  if(iteration_loc!=myGSpaceObj->iteration)
+    CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
 
   /// Set to false, just before I spawn the nonlocal work
 

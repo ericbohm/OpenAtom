@@ -20,7 +20,7 @@ namespace cp {
         /// A builder will always create the same ortho as per the supplied configs
         Builder(const orthoConfig &_cfg): cfg(_cfg) {}
         /// Construct an ortho world given the configs
-        CkArrayID build(cp::paircalc::InstanceIDs &asymmHandle, const startup::PCMapConfig mapCfg);
+      CkArrayID build(cp::paircalc::InstanceIDs &asymmHandle, const startup::PCMapConfig mapCfg, bool lsda);
 
       private:
         /// The configurations for the ortho that should be instantiated

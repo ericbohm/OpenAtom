@@ -15,6 +15,7 @@ makedir       = $(base)/makefiles
 driver        = $(base)/src_charm_driver
 physics       = $(base)/src_piny_physics_v1.0
 mathlib       = $(base)/src_mathlib
+interoplib    = $(base)/src_interop
 topinclude    = $(base)/include
 docs          = $(base)/doc
 data          = $(base)/data
@@ -65,7 +66,9 @@ executable   := OpenAtom
 moddriver    := CharmDriver
 modphysics   := PinyInterface
 modmath      := MyMathLib
+modinterop   := Interop
 libdriver    := lib$(moddriver).a
 libphysics   := lib$(modphysics).a
 libmath      := lib$(modmath).a
+libinterop   := lib$(modinterop).a
 

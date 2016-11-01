@@ -44,7 +44,7 @@ extern CkVec <CProxy_StructFactCache>      UsfCacheProxy;
 extern CkVec <CProxy_eesCache>             UeesCacheProxy;
 extern CProxy_TemperController temperControllerProxy;
 extern CProxy_InstanceController instControllerProxy;
-extern CProxy_PhysScratchCache pScratchProxy;
+extern CkVec <CProxy_PhysScratchCache> UpScratchProxy;
 
 //----------------------------------------------------------------------------
 
@@ -71,6 +71,22 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 {// begin routine
   //==============================================================================
   // parameters, options and energies
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(a[i].x));
+      CkAssert(finite(a[i].y));
+      CkAssert(finite(a[i].z));
+      CkAssert(finite(a[i].fx));
+      CkAssert(finite(a[i].fy));
+      CkAssert(finite(a[i].fz));
+    }
+#endif
+
+
+  switchMoveNow = false;
+  new_t_ext=old_t_ext=kT * BOLTZ;
   handleForcesCount=0;
   ktemps          = 0;
   pot_ewd_rs      = 0.0;
@@ -86,6 +102,10 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
   atomsCMrecv=atomsPIMDXrecv=false;
   temperScreenFile = (UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch())->temperScreenFile;
 
+  atomsOutputReady=false;
+  energyGroupReady=(thisIndex>0) ? true: false;
+
+  
   //==============================================================================
   // Initial positions, forces, velocities 
   numPIMDBeads    = config.UberImax;
@@ -395,6 +415,18 @@ fclose(fp);
 CkExit();
 #endif
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(atoms[i].x));
+      CkAssert(finite(atoms[i].y));
+      CkAssert(finite(atoms[i].z));
+      CkAssert(finite(atoms[i].fx));
+      CkAssert(finite(atoms[i].fy));
+      CkAssert(finite(atoms[i].fz));
+    }
+#endif
+
 
 //==========================================================================
 // if classical go on to integration, otherwise Fx -> Fu
@@ -567,14 +599,41 @@ void AtomsCompute::integrateAtoms(){
   }//endif
   //============================================================
   // Integrate the atoms : Path Integral Ready
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(atoms[i].x));
+      CkAssert(finite(atoms[i].y));
+      CkAssert(finite(atoms[i].z));
+      CkAssert(finite(atoms[i].fx));
+      CkAssert(finite(atoms[i].fy));
+      CkAssert(finite(atoms[i].fz));
+    }
+#endif
 
 #ifndef  _CP_DEBUG_SCALC_ONLY_ 
   ATOMINTEGRATE::ctrl_atom_integrate(*iteration,natm,len_nhc,cp_min_opt,
       cp_wave_opt,cp_bomd_opt,tol_reached,iextended_on,atoms,atomsNHC,myid,
       &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
-      myoutput_on,natmNow,natmStr,natmEnd,mybead);
+      myoutput_on,natmNow,natmStr,natmEnd,mybead, switchMoveNow, 
+      new_t_ext, old_t_ext);
 #endif
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(atoms[i].x));
+      CkAssert(finite(atoms[i].y));
+      CkAssert(finite(atoms[i].z));
+      CkAssert(finite(atoms[i].fx));
+      CkAssert(finite(atoms[i].fy));
+      CkAssert(finite(atoms[i].fz));
+
+    }
+#endif
+
+
+  switchMoveNow=false;
   //============================================================
   // Path integral :  Rescale to the physical masses
 
@@ -620,11 +679,16 @@ void AtomsCompute::integrateAtoms(){
     eg->estruct.potPIMDChain    = 0.0;
 
     copySlowToFast();
-    outputAtmEnergy();
+    atomsOutputReady=true;
+    if(energyGroupReady) {
+      outputAtmEnergy();
+      int i=0;
+      CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
+      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+      atomsOutputReady=false;
+      energyGroupReady=(thisIndex>0) ? true: false;
+    }
 
-    int i=0;
-    CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
-    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
   //-------------------------------------------------------------------------
@@ -660,10 +724,36 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   vbgr         = 0.0;
   potPerdCorr  = 0.0;
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(fastAtoms.x[i]));
+      CkAssert(finite(fastAtoms.y[i]));
+      CkAssert(finite(fastAtoms.z[i]));
+      CkAssert(finite(fastAtoms.fx[i]));
+      CkAssert(finite(fastAtoms.fy[i]));
+      CkAssert(finite(fastAtoms.fz[i]));
+    }
+#endif
+
+
 #ifndef _CP_DEBUG_PSI_OFF_
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
-  CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr, pScratchProxy.ckLocalBranch()->psscratch,&potGrimmeVdw);
+
+  CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr, UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch,&potGrimmeVdw);
+
 #endif
+#endif
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(fastAtoms.x[i]));
+      CkAssert(finite(fastAtoms.y[i]));
+      CkAssert(finite(fastAtoms.z[i]));
+      CkAssert(finite(fastAtoms.fx[i]));
+      CkAssert(finite(fastAtoms.fy[i]));
+      CkAssert(finite(fastAtoms.fz[i]));
+    }
 #endif
 
   //==========================================================================
@@ -675,6 +765,17 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   // get the atomCache working to collect the other force contribution for us
   if(thisIndex==0)
     UatomsCacheProxy[thisInstance.proxyOffset].contributeforces();
+#ifdef _NAN_CHECK_
+  for(int i=0;i<natm;i++)
+    {
+      CkAssert(finite(fastAtoms.x[i]));
+      CkAssert(finite(fastAtoms.y[i]));
+      CkAssert(finite(fastAtoms.z[i]));
+      CkAssert(finite(fastAtoms.fx[i]));
+      CkAssert(finite(fastAtoms.fy[i]));
+      CkAssert(finite(fastAtoms.fz[i]));
+    }
+#endif
 
   double *ftot           = new double[(3*natm+3)];
   for(int i=0,j=0; i<natm; i++,j+=3){
@@ -691,6 +792,22 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   //==========================================================================
 }//end routine
 //==========================================================================
+
+void AtomsCompute::energyReady() {
+
+  if(atomsOutputReady)
+    {
+      outputAtmEnergy();
+      int i=0;
+      CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
+      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+      atomsOutputReady=false;
+      energyGroupReady=(thisIndex>0) ? true: false;
+    }
+  else{
+    energyGroupReady=true;
+  }
+}
 
 
 //==========================================================================
@@ -723,30 +840,32 @@ void AtomsCompute::outputAtmEnergy() {
   int do_output = 0;
   if (cp_min_opt==0 && cp_wave_opt==0) { move_atoms = 1; }
   if (cp_bomd_opt==1 && tol_reached==1) { move_atoms = 1; }
-  if (cp_bomd_opt==0 || tol_reached==1) { do_output = 1; }
+  if ((cp_bomd_opt==0 && ( iteration % sim->nscreen_frq==0 ))
+      || tol_reached==1) { do_output = 1; }
 
   int myid = CkMyPe();  
   if(myid==0 && do_output){
     fprintf(temperScreenFile,"AtomsCompute printing energies computed in iteration %d\n",iteration);
+    CkPrintf("[b=%d] Iter [%d] TOTAL_ENERGY       = %5.8lf\n", thisInstance.idxU.x, iteration, eg->estruct.totalElecEnergy + vself + vbgr + eg->estruct.eewald_real + eg->estruct.eewald_recip + eg->estruct.grimmeVdw);
     if(iperd!=0){
-      fprintf(temperScreenFile,"Iter [%d] EWALD_REAL  = %5.8lf\n",iteration, pot_ewd_rs_now);
-      fprintf(temperScreenFile,"Iter [%d] EWALD_SELF  = %5.8lf\n",iteration, vself);
-      fprintf(temperScreenFile,"Iter [%d] EWALD_BGR   = %5.8lf\n",iteration, vbgr);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_REAL         = %5.8lf\n",thisInstance.idxU.x, iteration, pot_ewd_rs_now);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_SELF         = %5.8lf\n",thisInstance.idxU.x, iteration, vself);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_BGR          = %5.8lf\n",thisInstance.idxU.x, iteration, vbgr);
       if(iperd!=3){
-        fprintf(temperScreenFile,"Iter [%d] EWALD_Perd  = %5.8lf\n",iteration, potPerdCorr);
+        fprintf(temperScreenFile,"[b=%d] Iter [%d] EWALD_Perd         = %5.8lf\n",thisInstance.idxU.x, iteration, potPerdCorr);
       }//endif
     }else{
-      fprintf(temperScreenFile,"Iter [%d] ATM_COUL    = %5.8lf\n",iteration, pot_ewd_rs_now);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] ATM_COUL           = %5.8lf\n",thisInstance.idxU.x, iteration, pot_ewd_rs_now);
     }//endif
     if(cp_grimme==1){
-      fprintf(temperScreenFile,"Iter [%d] Grimme VdW  = %5.8lf\n",iteration,potGrimmeVdw_now);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] Grimme VdW         = %5.8lf\n",thisInstance.idxU.x, iteration,potGrimmeVdw_now);
     }//endif
     if(move_atoms==1){
-      fprintf(temperScreenFile,"Iter [%d] atm eKin    = %5.8lf\n",iteration, eKinetic);
-      fprintf(temperScreenFile,"Iter [%d] atm Temp    = %5.8lf\n",iteration, (2.0*eKinetic*BOLTZ/free_atm));
-      fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",iteration, fmag);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] atm eKin           = %5.8lf\n",thisInstance.idxU.x, iteration, eKinetic);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] atm Temp           = %5.8lf\n",thisInstance.idxU.x, iteration, (2.0*eKinetic*BOLTZ/free_atm));
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] atm fmag           = %5.8lf\n",thisInstance.idxU.x, iteration, fmag);
       if(numPIMDBeads>1){
-        fprintf(temperScreenFile,"Iter [%d] Bead Chain  = %5.8lf\n",iteration, potPIMDChain);
+        fprintf(temperScreenFile,"[b=%d] Iter [%d] Bead Chain         = %5.8lf\n",thisInstance.idxU.x, iteration, potPIMDChain);
       }//endif
       if(iextended_on==1){
         double free_Nhc;
@@ -755,12 +874,12 @@ void AtomsCompute::outputAtmEnergy() {
         }else{
           free_Nhc    = free_atm*((double)(len_nhc-1));
         }//endif
-        fprintf(temperScreenFile,"Iter [%d] atm eKinNhc = %5.8lf\n",iteration, eKineticNhc);
-        fprintf(temperScreenFile,"Iter [%d] atm TempNHC = %5.8lf\n",iteration, (2.0*eKineticNhc*BOLTZ/free_Nhc));
-        fprintf(temperScreenFile,"Iter [%d] atm potNHC  = %5.8lf\n",iteration, potNhc);
+        fprintf(temperScreenFile,"[b=%d] Iter [%d] atm eKinNhc        = %5.8lf\n",thisInstance.idxU.x, iteration, eKineticNhc);
+        fprintf(temperScreenFile,"[b=%d] Iter [%d] atm TempNHC        = %5.8lf\n",thisInstance.idxU.x, iteration, (2.0*eKineticNhc*BOLTZ/free_Nhc));
+        fprintf(temperScreenFile,"[b=%d] Iter [%d] atm potNHC         = %5.8lf\n",thisInstance.idxU.x, iteration, potNhc);
       }//endif
     }else{
-      fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",iteration, fmag);
+      fprintf(temperScreenFile,"[b=%d] Iter [%d] atm fmag           = %5.8lf\n",thisInstance.idxU.x, iteration, fmag);
     }//endif
   }//endif
 
@@ -943,7 +1062,7 @@ void AtomsCompute::bcastAtomsToAtomCache()
 
   UatomsCacheProxy[thisInstance.proxyOffset].acceptAtoms(msg);
 
-  if(amBeadRoot && !amZerothBead){
+  if(numPIMDBeads>1 && amBeadRoot && !amZerothBead){
       UberCollection instance=thisInstance;
       instance.idxU.x=0;
       int offset=instance.calcPO();
@@ -1046,7 +1165,7 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
 
     //---------------------------------------------------------------------------------
     copySlowToFast();  // not complete for PIMD as you have xu not x but that's OK
-    outputAtmEnergy();
+    atomsOutputReady=true;
 
     //---------------------------------------------------------------------------------
     // Output : Iteration is time of atoms[i].xold
@@ -1074,7 +1193,7 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
       //           thisInstance.proxyOffset, CkMyPe(), *iteration);
       if(amBeadRoot){send_PIMD_u();}
       if(amBeadRoot && amZerothBead){//For staging, this is the 1st bead not the CM but that's fine
-        AtomXYZMsg *msg = new (natm,natm,natm) AtomXYZMsg;
+        AtomXYZMsg *msg = new (natm,natm,natm, 8*sizeof(int)) AtomXYZMsg;
         for(int atomI=0;atomI<natm;atomI++){
           msg->x[atomI]=atoms[atomI].xu;
           msg->y[atomI]=atoms[atomI].yu;
@@ -1085,9 +1204,14 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
       }//endif : I am King of the Beads
     }else{
       //non PIMD case we're done
-      int i=0;
-      CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
-      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+      if(energyGroupReady) {
+	outputAtmEnergy();
+	int i=0;
+	CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
+	contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+	atomsOutputReady=false;
+	energyGroupReady=(thisIndex>0) ? true: false;
+      }
     }//endif : 
 
   }//endif : I have received all my messages 
@@ -1131,9 +1255,14 @@ void AtomsCompute::accept_PIMD_CM(AtomXYZMsg *msg){
 #ifdef _CP_DEBUG_ATMS_
     CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_CM contributing to atomsDone atomsPIMDXrecv is %d iteration %d\n ", thisInstance.proxyOffset, thisIndex, atomsPIMDXrecv, *iteration);     
 #endif
-    int i=0;
-    CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
-    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+    if(energyGroupReady) {
+      outputAtmEnergy();
+      int i=0;
+      CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
+      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+      atomsOutputReady=false;
+      energyGroupReady=(thisIndex>0) ? true: false;
+    }
     atomsCMrecv=atomsPIMDXrecv=false;
   }else{
 #ifdef _CP_DEBUG_ATMS_
@@ -1153,9 +1282,18 @@ void AtomsCompute::send_PIMD_u(){
   //==============================================================================
   //  CkPrintf("{%d}[%d] AtomsCompute::send_PIMD_u iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), *iteration);     
 
-  for(int atomnum=0;atomnum<natm;atomnum++){
-    UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_u(
-        atoms[atomnum].xu,atoms[atomnum].yu,atoms[atomnum].zu, PIBeadIndex);
+  for(int beadChare = 0; beadChare < config.numBeadAtomChares; beadChare++) {
+    int startAtm = (beadChare * natm)/config.numBeadAtomChares;
+    int endAtm = ((beadChare + 1) * natm)/config.numBeadAtomChares;
+    int numAtm = endAtm - startAtm;
+    AtomXYZMsg * toSend = new (numAtm, numAtm, numAtm,  8*sizeof(int)) AtomXYZMsg;
+    toSend->index = PIBeadIndex;
+    for(int i = 0; i < numAtm; i++) {
+      toSend->x[i] = atoms[startAtm + i].xu;
+      toSend->y[i] = atoms[startAtm + i].yu;
+      toSend->z[i] = atoms[startAtm + i].zu;
+    }
+    UPIBeadAtomsProxy[thisInstance.proxyOffset][beadChare].accept_PIMD_u(toSend);
   }//endfor
 
 }//end routine
@@ -1166,19 +1304,26 @@ void AtomsCompute::send_PIMD_u(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 // is broadcast to us
-void AtomsCompute::accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI){
+void AtomsCompute::accept_PIMD_Fu(AtomXYZMsg *msg){
   //==============================================================================
 
-  atoms[atomI].fxu    =_fxu; // FastAtoms not used for integration or output
-  atoms[atomI].fyu    =_fyu;
-  atoms[atomI].fzu    =_fzu;
+  int startAtm = (msg->index * natm)/config.numBeadAtomChares;
+  int endAtm = ((msg->index + 1) * natm)/config.numBeadAtomChares;
+  int curAtm = 0; 
+  for(int atomI = startAtm; atomI < endAtm; atomI++) {
+    atoms[atomI].fxu    = msg->x[curAtm];
+    atoms[atomI].fyu    = msg->y[curAtm];
+    atoms[atomI].fzu    = msg->z[curAtm];
+    curAtm++;
+  }
 
+  delete msg;
   acceptCountfu++;
 #ifdef _CP_DEBUG_ATMS_
-  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
-      thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, atomI, _fxu, _fyu, _fzu);     
+  //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
+  //      thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, _fxu, _fyu, _fzu);     
 #endif
-  if(acceptCountfu==natm){
+  if(acceptCountfu == config.numBeadAtomChares){
     //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu done calling integrator iteration %d\n ", 
     //              thisInstance.proxyOffset, CkMyPe(), *iteration);     
     integrateAtoms();
@@ -1193,24 +1338,29 @@ void AtomsCompute::accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int ato
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 // is broadcast to us
-void AtomsCompute::accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu, 
-    double _xu, double _yu, double _zu, int atomI){
+void AtomsCompute::accept_PIMD_Fu_and_u(AtomXYZMsg* msg) {
   //==============================================================================
-
-  atoms[atomI].fxu    =_fxu; // FastAtoms not used for integration or output
-  atoms[atomI].fyu    =_fyu;
-  atoms[atomI].fzu    =_fzu;
-
-  atoms[atomI].xu    =_xu; // FastAtoms not used for integration or output
-  atoms[atomI].yu    =_yu;
-  atoms[atomI].zu    =_zu;
+  int startAtm = (msg->index * natm)/config.numBeadAtomChares;
+  int endAtm = ((msg->index + 1) * natm)/config.numBeadAtomChares;
+  int curAtm = 0; 
+  int numAtm = endAtm - startAtm;
+  for(int atomI = startAtm; atomI < endAtm; atomI++) {
+    atoms[atomI].fxu    = msg->x[curAtm];
+    atoms[atomI].fyu    = msg->y[curAtm];
+    atoms[atomI].fzu    = msg->z[curAtm];
+    atoms[atomI].xu    = msg->x[curAtm + numAtm];
+    atoms[atomI].yu    = msg->y[curAtm + numAtm];
+    atoms[atomI].zu    = msg->z[curAtm + numAtm];
+    curAtm++;
+  }
+  delete msg;
 
   acceptCountfu++;
 #ifdef _CP_DEBUG_ATMS_
-  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
-      thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, atomI, _fxu, _fyu, _fzu);     
+  //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d %d %.5g %.5g %.5g\n", 
+	   //      thisInstance.proxyOffset, thisIndex,acceptCountfu, natm, *iteration, atomI, _fxu, _fyu, _fzu);     
 #endif
-  if(acceptCountfu==natm){
+  if(acceptCountfu == config.numBeadAtomChares){
     //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu done calling integrator iteration %d\n ", 
     //              thisInstance.proxyOffset, CkMyPe(), *iteration);     
     integrateAtoms();
@@ -1225,22 +1375,27 @@ void AtomsCompute::accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void AtomsCompute::accept_PIMD_x(double _x, double _y, double _z, int atomI){
+void AtomsCompute::accept_PIMD_x(AtomXYZMsg* msg) {
   //==============================================================================
   //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_x iteration %d\n ", thisInstance.proxyOffset, thisIndex, *iteration);     
   //==============================================================================
-
-  atoms[atomI].x=_x;
-  atoms[atomI].y=_y;
-  atoms[atomI].z=_z;
-
-  fastAtoms.x[atomI]=_x;
-  fastAtoms.y[atomI]=_y;
-  fastAtoms.z[atomI]=_z;
-
+  int startAtm = (msg->index * natm)/config.numBeadAtomChares;
+  int endAtm = ((msg->index + 1) * natm)/config.numBeadAtomChares;
+  int curAtm = 0; 
+  for(int atomI = startAtm; atomI < endAtm; atomI++) {
+    atoms[atomI].x    = msg->x[curAtm];
+    atoms[atomI].y    = msg->y[curAtm];
+    atoms[atomI].z    = msg->z[curAtm];
+    fastAtoms.x[atomI]    = msg->x[curAtm];
+    fastAtoms.y[atomI]    = msg->y[curAtm];
+    fastAtoms.z[atomI]    = msg->z[curAtm];
+    curAtm++;
+  }
+  
+  delete msg;
   acceptCountX++;
 
-  if(acceptCountX==natm){
+  if(acceptCountX == config.numBeadAtomChares){
     acceptCountX=0;
     atomsPIMDXrecv=true;
     if(atomsCMrecv){
@@ -1272,9 +1427,18 @@ void AtomsCompute::accept_PIMD_x(double _x, double _y, double _z, int atomI){
 void AtomsCompute::send_PIMD_x(){
   //==============================================================================
 
-  for(int atomnum=0;atomnum<natm;atomnum++){
-    UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_x(atoms[atomnum].x,atoms[atomnum].y,atoms[atomnum].z, 
-        PIBeadIndex);
+  for(int beadChare = 0; beadChare < config.numBeadAtomChares; beadChare++) {
+    int startAtm = (beadChare * natm)/config.numBeadAtomChares;
+    int endAtm = ((beadChare + 1) * natm)/config.numBeadAtomChares;
+    int numAtm = endAtm - startAtm;
+    AtomXYZMsg * toSend = new (numAtm, numAtm, numAtm,  8*sizeof(int)) AtomXYZMsg;
+    toSend->index = PIBeadIndex;
+    for(int i = 0; i < numAtm; i++) {
+      toSend->x[i] = atoms[startAtm + i].x;
+      toSend->y[i] = atoms[startAtm + i].y;
+      toSend->z[i] = atoms[startAtm + i].z;
+    }
+    UPIBeadAtomsProxy[thisInstance.proxyOffset][beadChare].accept_PIMD_x(toSend);
   }//endfor
 
   //==============================================================================
@@ -1283,9 +1447,20 @@ void AtomsCompute::send_PIMD_x(){
 
 void AtomsCompute::acceptNewTemperature(double temp)
 {
-  // Hey GLENN do something with your new temperature here
-  // when you're done
+  // finish the old time step at the prior temperature
+  // in the integrator:
+  //  1. rescale particle velocities 
+  //  2. rescale extended system velocities 
+  //  3. modify all extended system parameters that depend on kT
+  //     to reflect the new temperature 
+
+  switchMoveNow=true;
+  CkPrintf("old_t_ext %g, new_t_ext %g, temp %g\n",old_t_ext, new_t_ext, temp);
+  old_t_ext=new_t_ext;  // soon to be old
+  new_t_ext=temp;  // soon to be old
+
   int i=1;
+  // when you're done
   contribute(sizeof(int), &i, CkReduction::sum_int, 
       CkCallback(CkIndex_InstanceController::atomsDoneNewTemp(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
   //==============================================================================
@@ -1297,17 +1472,24 @@ void AtomsCompute::acceptNewTemperature(double temp)
 //==============================================================================
 // done during initialization in 1st iteration
 //==============================================================================
-void AtomsCompute::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI){
+void AtomsCompute::accept_PIMD_u(AtomXYZMsg *msg) {
   //==============================================================================
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_u iteration %d\n", thisInstance.proxyOffset, thisIndex, *iteration);     
 #endif
-  atoms[atomI].xu =_xu;
-  atoms[atomI].yu =_yu;
-  atoms[atomI].zu =_zu;
-
+  int startAtm = (msg->index * natm)/config.numBeadAtomChares;
+  int endAtm = ((msg->index + 1) * natm)/config.numBeadAtomChares;
+  int curAtm = 0; 
+  for(int atomI = startAtm; atomI < endAtm; atomI++) {
+    atoms[atomI].xu    = msg->x[curAtm];
+    atoms[atomI].yu    = msg->y[curAtm];
+    atoms[atomI].zu    = msg->z[curAtm];
+    curAtm++;
+  }
+  
+  delete msg;
   acceptCountu++;
-  if(acceptCountu==natm){
+  if(acceptCountu == config.numBeadAtomChares){
     integrateAtoms();
     acceptCountu=0;
   }//endif

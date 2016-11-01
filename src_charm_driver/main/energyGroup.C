@@ -11,8 +11,11 @@ extern CProxy_TemperController temperControllerProxy;
 extern CkVec <CProxy_eesCache>             UeesCacheProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>         UgSpaceDriverProxy;
+extern CkVec <CProxy_AtomsCompute>         UatomsComputeProxy;
 //==========================================================================
-//Energy group that can retrieve the energies from
+//Energy group for each Uber to hold the energies
+// the energies are explicitely reduced over Ubers for spin and k-points
+// but not for beads or tempers
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -55,7 +58,7 @@ EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInst
   estruct.fmag_atm        = 0;    // magnitude of atm forces
   estruct.iteration_atm   = 0;
   estruct.potPIMDChain    = 0;
-
+  countOfEnergies         = 0;
   //-------------------------------------------------------------------------
 } //end routine
 //==========================================================================
@@ -65,12 +68,13 @@ EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInst
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 /**
- * CP_StateGspacePlane(0,0) calls this to replicate the energies everywhere for
- * consistency and tolerance checking.
+ * CP_StateGspacePlane(0,0) from this Uber Instance calls this to
+ * replicate the energies everywhere for consistency and tolerance
+ * checking.
  */
 void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) {
   //==========================================================================
-
+  countOfEnergies++;
   if(config.UberJmax>1 || config.UberMmax >1)
   {// need to sum enl and eke across kpoints and spin
     estruct.enl          += es.enl;
@@ -87,7 +91,7 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) 
   }
   // these other stuff comes from rho and we only have one of them for
   // all kpoints
-  estruct.eext         = es.eext;  // TODO: is this reduced over spin?
+  estruct.eext         = es.eext;
   estruct.ehart        = es.ehart;
   estruct.eewald_recip = es.eewald_recip;
   estruct.egga         = es.egga;
@@ -96,8 +100,6 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) 
   // the kpoint>1 case
 
   // we can construct this after all k-points have reported
-  if(config.UberJmax>1)
-    CkPrintf("GLENN!! you need to fix estruct.totalElecEnergy for k-points\n");
   estruct.totalElecEnergy  = es.totalElecEnergy;
   estruct.iteration_gsp= es.iteration_gsp;
   iteration_gsp        = es.iteration_gsp;
@@ -107,9 +109,35 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) 
       estruct.eewald_recipt,estruct.egga,estruct.eexc,
       estruct.fictEke,estruct.totalEnergy);
 #endif
-  int i=0;
-  CkCallback cb(CkIndex_EnergyGroup::energyDone(NULL),UegroupProxy[thisInstance.proxyOffset]);
-  contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+  if(countOfEnergies == config.UberJmax * config.UberMmax)
+    {
+      int i=0;
+      int myBeadIndex    = thisInstance.idxU.x;
+      CkCallback cb(CkIndex_EnergyGroup::energyDone(NULL),UegroupProxy[thisInstance.proxyOffset]);
+      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+      countOfEnergies=0;
+      estruct.totalElecEnergy  = estruct.enl + estruct.eke + estruct.eext + estruct.ehart
+	+  estruct.egga+    estruct.eexc;
+      CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+      if(CkMyPe()==0)
+	{
+	  if(iteration_gsp % sim->nscreen_frq==0 )
+	    {
+	      if(config.UberJmax>1 || config.UberMmax>1)
+		{
+		  CkPrintf("[b=%d] Iter [%d] ENL_TOT              = %5.8lf\n", myBeadIndex, iteration_gsp, estruct.enl);
+		  CkPrintf("[b=%d] Iter [%d] EKE_TOT              = %5.8lf\n", myBeadIndex, iteration_gsp, estruct.eke);
+		}
+	      CkPrintf("[b=%d] Iter [%d] ELEC_ENERGY_TOT    = %5.8lf\n", myBeadIndex, iteration_gsp, estruct.totalElecEnergy);
+	    }
+	  UatomsComputeProxy[thisInstance.proxyOffset](0).energyReady();
+	}
+      estruct.enl          = 0.0;
+      estruct.eke          = 0.0;
+      estruct.fictEke      = 0.0;
+      estruct.fmagPsi      = 0.0;
+
+    }
 
   //-------------------------------------------------------------------------
 }//end routine
@@ -126,39 +154,42 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) 
 void EnergyGroup::energyDone(CkReductionMsg *msg) {
   //==========================================================================
   delete msg;
-  // need to receive one of these for each k-point
-  if(++kpointEnergyDoneCount==config.UberJmax)
-  {
-    kpointEnergyDoneCount=0;
-    if(config.UberKmax>1 && config.temperCycle >0 && iteration_atm % config.temperCycle == 0) // its temper time, 
+  // we will receive one of these per bead and temper
+  if(config.UberKmax>1 && config.temperCycle >0 ) // its temper time, 
     { 
-      ktemps=0;
-      // resumeFromTemper will reactivate us later
+        // resumeFromTemper will reactivate us later
+      // when all the energies are done, the 0th element calls sendToTemper
       int i=1;
       CkCallback cb(CkIndex_EnergyGroup::sendToTemper(NULL),0,  UegroupProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
     }
-    else
+  else
     {
       energyDone();
     }
-  }
 }
 //==========================================================================
 
 
+// called on 0th element, send our energies to tempercontroller
+// when every instance has done so, it will switch them around
 void EnergyGroup::sendToTemper(CkReductionMsg *m)
 {
   delete m;
-  temperControllerProxy[0].acceptData(thisInstance.idxU.x, estruct);
+  //  CkPrintf("{%d,%d,%d} energyGroup %d sendToTemper iter %d at freq %d\n",thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, CkMyPe(), iteration_atm, config.temperCycle);
+  temperControllerProxy[0].acceptData(thisInstance.idxU.z, iteration_atm, estruct);
 }
 
+
+// triggered by instancecontroller
 void EnergyGroup::resumeFromTemper()
 {
-  // you will receive 1 per kpoint, only release when all are ready
+  // you will receive 1, only release when all are ready
   ktemps++;
-  if(ktemps==config.UberJmax)
+
+  if(ktemps==config.UberJmax*config.UberMmax)
   {
+    //    CkPrintf("{%d} energyGroup [%d] resumeFromTemper, my iter %d\n",thisInstance.idxU.z, CkMyPe(), iteration_atm);
     energyDone();
     ktemps=0;
   }
@@ -178,6 +209,7 @@ void EnergyGroup::energyDone(){
   int myid          = CkMyPe();
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
   int limit=eesData->gspKptSpinStatePlaneVec.length();
+
   for(int i=0; i<limit; i++)
     {
       UberCollection thisPoint=thisInstance;
@@ -194,7 +226,7 @@ void EnergyGroup::energyDone(){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
       }//endif
-      //       CkPrintf("{%d}[%d] AtomsCache::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
+      //      if(state==0 && plane==0)      CkPrintf("{%d,%d,%d}[%d] energyGroup::energyDone calling gsp(%d,%d).doneComputingEnergy iteration %d thisPoint.idU.y %d thisPoint.idxU.s %d offset %d \n ", thisInstance.idxU.x, thisInstance.idxU.y, thisInstance.idxU.z, CkMyPe(), state,plane, iteration_atm, thisPoint.idxU.y, thisPoint.idxU.s, thisPoint.proxyOffset);     
       UgSpaceDriverProxy[thisPoint.proxyOffset](state,plane).doneComputingEnergy(iteration_atm); 
     }//endfor
 }//end routine

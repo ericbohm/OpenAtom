@@ -19,7 +19,7 @@ namespace cp {
 
 
 
-    void PCCreationManager::build(CkCallback cb, const PCMapConfig &mapCfg)
+    void PCCreationManager::build(CkCallback cb, const PCMapConfig &mapCfg, bool lsda)
     {
       /// Create the message that will hold the handles to created chares
       pcSetupMsg *msg = new pcSetupMsg();
@@ -35,7 +35,7 @@ namespace cp {
       // Spawn the ortho array and its world of chares/classes (CLA_Matrix, OrthoHelper etc.)
       CkPrintf("Creating the ortho array\n");
       cp::ortho::Builder orthoBuilder(orthoCfg);
-      msg->orthoAID = orthoBuilder.build(msg->asymmIDs, mapCfg);
+      msg->orthoAID = orthoBuilder.build(msg->asymmIDs, mapCfg, lsda);
 
       // Ask ortho to setup its communication sections of paircalcs
       CkPrintf("Setting up communication between gspace <--> paircalc <--> ortho\n");

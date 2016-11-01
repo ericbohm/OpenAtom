@@ -334,19 +334,37 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
 
   //==========================================================================
   // I) scaled coordinates                                                   
-
+#define _NAN_CHECK_ 1
 #ifdef TIME_BSPLINE
   cputime(&cpu1);
 #endif
 
   for(i=0;i<natm;i++){
+#ifdef _NAN_CHECK_
+    CkAssert(finite(xatm[i]));
+    CkAssert(finite(yatm[i]));
+    CkAssert(finite(zatm[i]));
+#endif
     int k = map_nl[(i+1)]-1;
     x     = xatm[k];
     y     = yatm[k];
     z     = zatm[k];
+#ifdef _NAN_CHECK_
+    CkAssert(finite(xatm[k]));
+    CkAssert(finite(yatm[k]));
+    CkAssert(finite(zatm[k]));
+#endif
+
     atemp = x*hmati[1] + y*hmati[4] + z*hmati[7];
     btemp = x*hmati[2] + y*hmati[5] + z*hmati[8];
     ctemp = x*hmati[3] + y*hmati[6] + z*hmati[9];
+
+#ifdef _NAN_CHECK_
+    CkAssert(finite(atemp));
+    CkAssert(finite(btemp));
+    CkAssert(finite(ctemp));
+#endif
+    
     atemp -= NINT((atemp-0.5));
     btemp -= NINT((btemp-0.5));
     ctemp -= NINT((ctemp-0.5));
@@ -563,7 +581,7 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
 //==========================================================================
 
 
-
+//#define _CP_DEBUG_EES_NONLOCAL_ 1
 //==========================================================================
 /** \brief Compute the nl-projector in g-space - spherical harmonic times bessel
   transformed radial pseudo in the channel times  psi(g).
@@ -577,7 +595,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
     int ihave_g0, int ind_g0, int iter_nl,
     double *d_re, double *d_im, double *dyp_re, double *dyp_im,
     complex *projPsiG, int **ind_gspl, double **h_gspl,
-    int istate,int ichare,int kpt, int nfreq_cmi_update)
+			       int istate,int ichare,int kpt, int nfreq_cmi_update, int idx)
   //==========================================================================
 {//begin routine
   //==========================================================================
@@ -624,7 +642,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
 
 #ifdef _CP_DEBUG_EES_NONLOCAL_
   char myFileName[1000];
-  sprintf(myFileName, "proj_Gpsi_%d.out.%d.%d",istate,ichare,iter_nl);
+  sprintf(myFileName, "proj_Gpsi:%d_%d.out.%d.%d",idx,istate,ichare,iter_nl);
   FILE *fp;
   if(istate==4){fp = fopen(myFileName,"w");}
 #endif  
@@ -1440,7 +1458,7 @@ void CPNONLOCAL::eesZmatRchareC(complex *projPsiR, int iter_nl, complex *zmat,
     sprintf(myFileName2, "proj_zmat_%d.out.%d.%d",state,plane,iter_nl);
     FILE *fp = fopen(myFileName2,"w");
     for(int jatm=0;jatm<natm;jatm++){ // atms of this type
-      fprintf(fp,"%d %g\n",jatm,zmat[jatm]);
+      fprintf(fp,"%d %g %g\n",jatm,zmat[jatm].re, zmat[jatm].im);
     }//endfor
     fclose(fp);
   }//endif : state=0
@@ -1933,14 +1951,14 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
           fx[katm]  -= (fxx.re*zmat[jatm].re + fxx.im*zmat[jatm].im); // finish up
           fy[katm]  -= (fyy.re*zmat[jatm].re + fyy.im*zmat[jatm].im);
           fz[katm]  -= (fzz.re*zmat[jatm].re + fzz.im*zmat[jatm].im);
-#ifdef _CP_DEBUG_EES_NONLOCAL_
+	  /*#ifdef _CP_DEBUG_EES_NONLOCAL_
           for(int j=1;j<=n_interp2;j++){
             complex pz  = projPsiR[igrid[iatm][j]]*zmat[jatm]; // projector*psi
             fxt[jatm] -= pz*dmn_x[iatm][j];                   // forces 
             fyt[jatm] -= pz*dmn_y[iatm][j];
             fzt[jatm] -= pz*dmn_z[iatm][j];
           }//endif
-#endif
+	  #endif*/
         }//endif : atom is interpolated on this plane
       }//endfor : iatm
 
@@ -1983,7 +2001,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
         complex *projPsiG,complex *fPsiG, 
         double *dyp_re,double *dyp_im,
         int *ka, int *kb,int *kc,
-        int istate,int ichare,int iter_nl,int nfreq_cmi_update)
+				      int istate,int ichare,int iter_nl,int nfreq_cmi_update, int idx)
       //==========================================================================
     {//Begin Routine 
       //==========================================================================
@@ -1995,7 +2013,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
 
 #ifdef _CP_DEBUG_EES_NONLOCAL_
       char myFileName[1000];
-      sprintf(myFileName, "proj_fpsiG_%d.out.%d.%d",istate,ichare,iter_nl);
+      sprintf(myFileName, "proj_fpsiG:%d:_%d.out.%d.%d",idx,istate,ichare,iter_nl);
       FILE *fp;
       if(istate==0){fp = fopen(myFileName,"w");}
 #endif
@@ -2014,10 +2032,15 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
       //        The sum over iterations leads to a sum reduction here.
 
       for(int ig=0;ig<nkx0;ig++){ 
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+        if(istate==0){fprintf(fp,"b %d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
+            fPsiG[ig].re,fPsiG[ig].im);}
+#endif
+
         fPsiG[ig].re    -= (dyp_re[ig]*projPsiG[ig].re - dyp_im[ig]*projPsiG[ig].im);
         fPsiG[ig].im    += (dyp_im[ig]*projPsiG[ig].re + dyp_re[ig]*projPsiG[ig].im);
 #ifdef _CP_DEBUG_EES_NONLOCAL_
-        if(istate==0){fprintf(fp,"%d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
+        if(istate==0){fprintf(fp,"a %d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
             fPsiG[ig].re,fPsiG[ig].im);}
 #endif
       }//endfor
@@ -2028,10 +2051,15 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
       double wght = 1.0;
       if(doublePack){wght = 2.0;}
       for(int ig=nkx0;ig<ncoef;ig++){ 
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+        if(istate==0){fprintf(fp,"b %d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
+            fPsiG[ig].re,fPsiG[ig].im);}
+#endif
+
         fPsiG[ig].re    -= wght*(dyp_re[ig]*projPsiG[ig].re - dyp_im[ig]*projPsiG[ig].im);
         fPsiG[ig].im    += wght*(dyp_im[ig]*projPsiG[ig].re + dyp_re[ig]*projPsiG[ig].im);
 #ifdef _CP_DEBUG_EES_NONLOCAL_
-        if(istate==0){fprintf(fp,"%d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
+        if(istate==0){fprintf(fp,"a %d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
             fPsiG[ig].re,fPsiG[ig].im);}
 #endif
       }//endfor

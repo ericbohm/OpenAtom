@@ -76,6 +76,7 @@
 #include "ortho.decl.h"
 #include "pcSectionManager.h"
 #include "CLA_Matrix.h"
+#include "mpi-interoperate.h"
 using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within namespace ortho
 
 #ifndef _ortho_h_
@@ -99,6 +100,13 @@ class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 class orthoMtrigger : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 };
 
+class ExtendedOrtho : public CBase_ExtendedOrtho {
+  public:
+    ExtendedOrtho();
+    ExtendedOrtho(CkMigrateMessage *m) {}
+    void lambdaSentToDiagonalizer();
+};
+
 /** @addtogroup Ortho
   @{
  */
@@ -115,7 +123,7 @@ class Ortho : public CBase_Ortho
         CLA_Matrix_interface matA3, CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
         orthoConfig &_cfg,
         CkArrayID step2Helper,
-        int timeKeep, CkGroupID _oMCastGID, CkGroupID _oRedGID);
+	  int timeKeep, CkGroupID _oMCastGID, CkGroupID _oRedGID, bool lsda);
 
     /// Trigger the creation of appropriate sections of paircalcs to talk to. Also setup internal comm sections
     void makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, CkArrayID symAID, CkArrayID asymAID);
@@ -147,6 +155,9 @@ class Ortho : public CBase_Ortho
 
     // Accepts lamda reduced from the asymm PC instance. In min, acts as via point and mcasts lambda back to the asymm PCs. In dynamics, triggers computation of gamma = lambda x T
     void acceptSectionLambda(CkReductionMsg *msg);
+    void acceptDiagonalizedLambda(int nn, internalType* rmat);
+    void transferControlToMPI();
+    void waitForQuiescence(int n);
     /// Used in dynamics, to accept computed gamma and send it to the asymm PC instance. Also sends T if it hasnt yet been sent
     void gamma_done();
 
@@ -196,10 +207,12 @@ class Ortho : public CBase_Ortho
     bool step3done;
 
   private:
+    bool lsda;
     orthoConfig cfg;
     int timeKeep;
     internalType *orthoT; // only used on [0,0]
     internalType *ortho; //only used on [0,0]
+    internalType *templambda;
     int numGlobalIter; // global leanCP iterations
     // used in each element
     int iterations; //local inv_sq iterations
@@ -276,14 +289,15 @@ inline double Ortho::array_diag_max(int sizem, int sizen, internalType *array)
   }
   else
   { //on diagonal 
-    max_ret = myabs(array[0]-2.0);
+    double diag= (lsda) ? 1.0 : 2.0;
+    max_ret = myabs(array[0]-diag);
     for(int i=0;i<sizem;i++)
     {
       for(int j=0;j<sizen;j++)
       {
         absval = myabs(array[i*sizen+j]);
         if(i == j)
-          absval = myabs(absval - 2.0);
+          absval = myabs(absval - diag);
         max_ret = (max_ret>absval) ? max_ret : absval;
       }
     }//endfor

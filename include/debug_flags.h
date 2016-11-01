@@ -38,6 +38,8 @@
 //-----------------------------------------------------------------------
 //#define _CP_DEBUG_HARTEEXT_OFF_   // this leaves everything on but eext/hartree
 
+#define _HFCALCULATOR_VERBOSE_
+
 //-----------------------------------------------------------------------
 /// Debug the PairCalculator and its companion whistles
 //#define _PAIRCALC_DEBUG_
@@ -101,8 +103,9 @@
 // src_charm_driver/cp_state_ctrl/CP_State_GSpacePlane.C    
 //#define _CP_DEBUG_NON_LOCAL_ONLY_
 //#define _CP_DEBUG_OLDFORCE_
-//#define _CP_DEBUG_LMAT_
 //#define _CP_DEBUG_STATEG_VERBOSE_
+//#define _CP_DEBUG_STATE_GPP_VERBOSE_
+//#define _CP_DEBUG_LMAT_
 //#define _CP_DEBUG_DYNAMICS_
 //#define _CP_DEBUG_ORTHO_OFF_
 //#define _CP_DEBUG_SFNL_OFF_
@@ -111,7 +114,7 @@
 //#define _CP_DEBUG_UPDATE_OFF_
 //#define DEBUG_CP_GSPACE_CREATION
 //#define DEBUG_CP_GSPACE_PSIV
-
+//#define  _CP_GSPACE_PSI_FORCE_OUTPUT_BEFORE_LAMBDA_
 /**
  * Enables dumping of Psi and Lambda from GSpace
  * Psi and Lambda are dumped both before being sent to PC ("Bf" suffix)
@@ -149,6 +152,9 @@
 
 //=============================================================================
 // src_charm_driver/orthog_ctrl/ortho.C
+//#define  _CP_DEBUG_ORTHO_VERBOSE_
+//#define VERBOSE_ORTHO
+
 //#define _CP_DEBUG_SMAT_
 //#define _CP_DEBUG_TMAT_
 //#define _CP_ORTHO_DUMP_LMAT_
@@ -192,6 +198,7 @@
 //#define _CP_GS_DUMP_VKS_
 //#define _CP_GS_DUMP_LAMBDA_
 //#define _CP_GS_DUMP_PSI_
+//#define _CP_GS_DEBUG_COMPARE_PSI_
 //#define _PAIRCALC_DEBUG_PARANOID_FW_
 //#define _CP_ORTHO_DUMP_SMAT_
 //#define _CP_ORTHO_DUMP_TMAT_

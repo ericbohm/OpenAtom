@@ -2,11 +2,8 @@
 #include "utility/matrix2file.h"
 #include <sstream> 
 
-ComlibInstanceHandle mcastInstanceCP;
-ComlibInstanceHandle mcastInstanceACP;
-
 CkReduction::reducerType sumMatrixDoubleType;
-
+//#define _PAIRCALC_DEBUG_PARANOID_BW_ 1
 
 void registersumMatrixDouble(void)
 {
@@ -76,10 +73,11 @@ void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
 /** \brief constructor */
-PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig _cfg): cfg(_cfg)
+PairCalculator::PairCalculator(const pc::pcConfig _cfg): cfg(_cfg)
 {
-#ifdef _PAIRCALC_DEBUG_PLACE_
-  CkPrintf("{%d} [PAIRCALC] [%d,%d,%d,%d,%d] inited on pe %d \n", _instance,thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,_sym, CkMyPe());
+#ifdef DEBUG_CP_PAIRCALC_CREATION
+  CkPrintf("Paircalc: [%d,%d,%d,%d] created on pe %d.\n",
+      thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,CkMyPe());
 #endif
 
 
@@ -210,15 +208,6 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
 #ifdef DEBUG_CP_PAIRCALC_INPUTDATAHANDLER
   CkPrintf("[%d,%d,%d,%d,%d] My left and right data collators: %p %p\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,leftCollator,rightCollator);
 #endif
-  /// This is the first point during execution when I can supply my InputDataHandler with pointers to the msg handlers, hence
-  /// it is (now) safe to insert the [w,x,y,z]th element of the InputDataHandler chare array (as it will immediately clamor 
-  /// for access to these handlers)
-  myMsgHandler = inProxy;
-#ifdef DEBUG_CP_PAIRCALC_CREATION
-  CkPrintf("[%d,%d,%d,%d,%d] Inserting my InputDataHandler\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
-#endif
-  myMsgHandler(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).insert(thisProxy);
-  myMsgHandler.doneInserting();
 }
 
 
@@ -406,14 +395,14 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   //  CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d numRecd %d numOrtho %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, cfg.isSymmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY, numRecd, numOrtho);
   if(numRecd==numOrtho)
   {
-    contribute(sizeof(int), &numRecd , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
+    contribute(cfg.uponSetupCompletion);
     numRecd=0;
-  }
-  if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)
-  {
+    if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)
+    {
 
-    //      CkPrintf("[%d,%d,%d,%d,%d] phantom trigger\n");
-    thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).phantomDone();
+      //      CkPrintf("[%d,%d,%d,%d,%d] phantom trigger\n");
+      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).phantomDone();
+    }
   }
 
   //  do not delete nokeep msg
@@ -423,7 +412,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
 void PairCalculator::phantomDone()
 {
   //  CkPrintf("[%d,%d,%d,%d,%d] phantom contrib\n");
-  contribute(sizeof(int), &numOrtho , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
+  contribute(cfg.uponSetupCompletion);
 }
 
 /** \brief initialize the multicast tree and cookies for backward path */
@@ -1428,7 +1417,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     enqueueBWsend(unitcoef);
   else
   {
-    CkPrintf("[%d,%d,%d,%d,%d] not sending cfg.isBWstreaming %d cfg.areBWTilesCollected %d cfg.isBWbarriered %d actionType %d  numRecdBW %d numOrtho%d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,cfg.isBWstreaming,cfg.areBWTilesCollected,cfg.isBWbarriered,actionType, numRecdBW,numOrtho);
+    //    CkPrintf("[%d,%d,%d,%d,%d] not sending cfg.isBWstreaming %d cfg.areBWTilesCollected %d cfg.isBWbarriered %d actionType %d  numRecdBW %d numOrtho%d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,cfg.isBWstreaming,cfg.areBWTilesCollected,cfg.isBWbarriered,actionType, numRecdBW,numOrtho);
   }
 #endif
 
@@ -2074,22 +2063,23 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
                   sizeX=sizeY;
                   sizeY=size;
                   }*/
-      int index=orthoY;
-      if(notOnDiagonal)
-        index=orthoX;
+      int index=orthoX;
+      //      if(notOnDiagonal)
+      //        index=orthoY;
+      //      CkPrintf("[%d,%d,%d,%d,%d]: bwSendHelper !amPhantom orthoXgrain %d sizeX %d orthoYgrain %d sizeY %d columncount[%d] is %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric,  orthoXgrain, sizeX, orthoYgrain, sizeY, index, columnCount[index]);
       if(++columnCount[index]==numOrthoCol ) // BNC
       {
 #ifdef _PAIRCALC_DEBUG_
         CkPrintf("[%d,%d,%d,%d,%d]: bwSendHelper !amPhantom orthoXgrain %d sizeX %d orthoYgrain %d sizeY %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric,  orthoXgrain, sizeX, orthoYgrain, sizeY);
 #endif
 
-        int   startGrain=orthoYgrain;
-        int   endGrain=startGrain+sizeY;
-        if(notOnDiagonal)
-        {
-          startGrain=orthoXgrain;
-          endGrain=startGrain+sizeY;
-        }
+        int   startGrain=orthoXgrain;
+        int   endGrain=startGrain+sizeX;
+	if(notOnDiagonal)
+	  {
+	    //	    startGrain=orthoYgrain;
+	    endGrain=startGrain+sizeY;
+	  }
         // send orthoX in newData
         if(cfg.isOutputReduced)
           sendBWResultColumn(false, startGrain, endGrain);
@@ -2120,9 +2110,9 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
   // asymm off diag dynamics
   if((amPhantom || (!cfg.arePhantomsOn && (othernewData!=NULL)&& notOnDiagonal))&& existsRight)
   {
-    int index =orthoX;
+    int index =orthoY;
     if(cfg.isSymmetric)
-      index=orthoY;
+      index=orthoX;
     if(++columnCountOther[index]==numOrthoCol) // BTC
     {
 #ifdef _PAIRCALC_DEBUG_
@@ -2130,19 +2120,19 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 #endif
 
 
-      int startGrain=orthoXgrain;
-      int endGrain=sizeX+startGrain;
+      int startGrain=orthoYgrain;
+      int endGrain=sizeY+startGrain;
 
       //int startGrain=orthoYgrain;
       //int endGrain=sizeY+startGrain;
       if(cfg.isSymmetric)
       {
-        startGrain=orthoYgrain;
+        startGrain=orthoXgrain;
         endGrain=sizeX+startGrain;
       }
       if(amPhantom)
       {
-        startGrain=orthoYgrain;
+        startGrain=orthoXgrain;
         //startGrain=orthoYgrain;
         //		endGrain=startGrain+orthoGrainSizeY;
         //				endGrain=startGrain+sizeY;

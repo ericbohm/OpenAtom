@@ -6,24 +6,23 @@
  *  @{
  *
  *  This is a description of the "life" of a CP_Rho_GSpacePlane  object
- * 
+ *
  *  At the start of the program, the constructor CP_Rho_GSpacePlane is called.
- *  The RealSpaceDensity objects send data to CP_Rho_GSpacePlane using the 
- *  acceptData() method. Inverse ffts in z and x directions are performed 
- *  before the data is received, so here inverse fft in y direction is 
+ *  The RealSpaceDensity objects send data to CP_Rho_GSpacePlane using the
+ *  acceptData() method. Inverse ffts in z and x directions are performed
+ *  before the data is received, so here inverse fft in y direction is
  *  performed. This data is processed using the CP_hart_eext_calc. Then forward
- *  fft in the y direction is performed and data is send back to 
+ *  fft in the y direction is performed and data is send back to
  *  RealSpaceDensity objects.
- * 
+ *
  *  The CP_Rho_GSpacePlaneHelper objects essentially help to split the work involved
  *  in g-space density computation. They receive their share of the work
- *  through the method recvCP_Rho_GSpacePlanePart() and send the processed 
+ *  through the method recvCP_Rho_GSpacePlanePart() and send the processed
  *  data back to CP_Rho_GSpacePlane objects using the recvProcessedPart() method.
  *
- */ 
+ */
 //============================================================================
 
-#include "charm++.h"
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -31,155 +30,61 @@
 #include "debug_flags.h"
 #include "utility/util.h"
 #include "main/cpaimd.h"
-#include "fft_slab_ctrl/fftCacheSlab.h"
 #include "cp_state_ctrl/CP_State_Plane.h"
 
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
+#include "fft_charm.h"
 
 //============================================================================
 
-extern Config                               config;
-extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
-extern CkVec <CProxy_CP_Rho_GHartExt>       UrhoGHartExtProxy;
-extern CkVec <CProxy_CP_State_GSpacePlane>  UgSpacePlaneProxy;
-extern CkVec <CProxy_GSpaceDriver>          UgSpaceDriverProxy;
+extern Config                                   config;
+extern CkVec <CProxy_CP_Rho_RealSpacePlane>     UrhoRealProxy;
+extern CkVec <CProxy_CP_Rho_GHartExt>           UrhoGHartExtProxy;
+extern CkVec <CProxy_CP_State_GSpacePlane>      UgSpacePlaneProxy;
+extern CkVec <CProxy_GSpaceDriver>              UgSpaceDriverProxy;
+extern CkVec <CProxy_CP_Rho_GSpacePlane>        UrhoGProxy;
+extern CkVec <CProxy_fft2d>                     Urho_fft_xProxy, Urho_fft_yProxy,
+                                                Urho_fft_zProxy, Urho_fft_hartProxy;
+extern CPcharmParaInfo                          simReadOnly;
 
-extern ComlibInstanceHandle commGInstance0;
-extern ComlibInstanceHandle commGInstance1;
-extern ComlibInstanceHandle commGInstance2;
-extern ComlibInstanceHandle commGInstance3;
-extern ComlibInstanceHandle commGByrdInstance;
-extern CProxy_ComlibManager mgrProxy;
-
-extern CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
-extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
-//extern ComlibInstanceHandle mssInstance;
-
-//#define _CP_DEBUG_RHOG_VERBOSE_
+//#define _CP_DEBUG_RHOG_VERBOSE_ 1
 //============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, 
-    int numRealSpace, 
-    int numRealSpaceDensity, 
-    bool _useCommlib,
-    UberCollection _instance) :
-  thisInstance(_instance)
-  //============================================================================
-{//begin routine
-  //============================================================================
+CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(UberCollection _instance) :
+    thisInstance(_instance)
+{
 #ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("[%d %d] Rho GS constructor\n",thisIndex.x,thisIndex.y);
+  CkPrintf("{%d} Rho GS [%d] constructor\n", thisInstance.proxyOffset, thisIndex);
 #endif
-  //============================================================================
-  // Set counters local variables
 
-  CPcharmParaInfo *sim = CPcharmParaInfo::get();
-  cp_grad_corr_on = sim->cp_grad_corr_on;
+  myTime        = 1;
+  divRhoX  = NULL;
+  divRhoY  = NULL;
+  divRhoZ  = NULL;
 
-  iplane_ind    = thisIndex.x;
-  rhoRsubplanes = config.rhoRsubplanes;
-  count      = 0;
-  countDebug = 0;
-  count = 0;
-  myTime          = 1;
+  //RAZ:  Added spin flags;
+  cp_lsda              = simReadOnly.cp_lsda;
+  mySpinIndex          = thisInstance.idxU.s;
 
-  doneWhiteByrd = 0;
-  for(int i=1;i<=3;i++){countWhiteByrd[i]=0;}
-
-  int sizeZ=sim->sizeZ;
-  if(rhoRsubplanes>1){
-    recvCountFromRRho = 0;
-    for(int i=0;i<rhoRsubplanes;i++){
-      if(sim->nline_send_rho_y[thisIndex.x][i]>0){recvCountFromRRho++;}
-    }//endfor
-    recvCountFromRRho*=sizeZ;
-  }else{
-    recvCountFromRRho=sizeZ;
+  if(mySpinIndex==1 && cp_lsda!=1){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Error in spin index and LSDA flag in Hartree call.\n");
+    CkPrintf("Good-bye.\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
   }//endif
 
-
-  //============================================================================
-  // Deal with the run descriptors then malloc
-
-  //------------------------------------------------------------------------
-  // Run descriptors
-  CkVec <RunDescriptor> *sortedRunDescriptors = sim->RhosortedRunDescriptors;
-
-  rho_gs.sizeX    = sizeX;
-  rho_gs.sizeY    = sim->sizeY;
-  rho_gs.sizeZ    = sim->sizeZ;
-
-  int x = thisIndex.x;
-
-  rho_gs.numRuns  = sortedRunDescriptors[x].size();
-  rho_gs.numLines = sortedRunDescriptors[x].size()/2;
-  rho_gs.numFull  = (rho_gs.numLines)*rho_gs.sizeZ;
-  rho_gs.size     = rho_gs.numFull;
-  rho_gs.runs     = new RunDescriptor[rho_gs.numRuns];
-  rho_gs.numPoints = 0;
-  for (int r = 0; r < rho_gs.numRuns; r++) {
-    rho_gs.numPoints += sortedRunDescriptors[x][r].length;
-    rho_gs.runs[r]    = sortedRunDescriptors[x][r];
-  }//endfor
-
-  //------------------------------------------------------------------------
-  // Malloc and set your kvectors
-  rho_gs.setKVectors(&nPacked); // consistency with numPoints checked within
-  rho_gs.nPacked   = nPacked;
-
-  //------------------------------------------------------------------------
-  //  Malloc density (packed Rho) and a master scratch array (Rho)
-
-  int numFull      = rho_gs.numFull;
-  // Full size Needed to receive from realSpace whenever it feels like sending
-  rho_gs.divRhoX   = (complex *)fftw_malloc(numFull*sizeof(complex));
-  rho_gs.divRhoY   = (complex *)fftw_malloc(numFull*sizeof(complex));
-  rho_gs.divRhoZ   = (complex *)fftw_malloc(numFull*sizeof(complex));
-
-  rho_gs.Rho       = NULL;  // clean out my memory
-  rho_gs.packedVks = NULL;
-  rho_gs.packedRho = NULL;
-
-  //============================================================================
-  // Decompose your g-space further to create/define GHartEext Chare
-
-  rhoGHelpers       = config.rhoGHelpers;
-  int num_line_tot  = rho_gs.numLines;
-  numSplit          = new int [rhoGHelpers];
-  istrtSplit        = new int [rhoGHelpers];
-  iendSplit         = new int [rhoGHelpers];
-
-  x = thisIndex.x;
-  int istrt_pts = 0;
-  for(int i=0;i<rhoGHelpers;i++){
-
-    int istrt_line,iend_line,num_line;
-    getSplitDecomp(&istrt_line,&iend_line,&num_line,num_line_tot,rhoGHelpers,i);
-
-    int num_pts=0;
-    for (int r=(2*istrt_line);r<(2*iend_line);r++){
-      num_pts += sortedRunDescriptors[x][r].length;
-    }//endif
-
-    istrtSplit[i] = istrt_pts;
-    numSplit[i]   = num_pts;     
-    iendSplit[i]  = istrt_pts+num_pts;
-
-    istrt_pts    += num_pts;
-  }//endfor
-
-
+  doneWhiteByrd = 0;
   usesAtSync = true;
   if(config.lbdensity){
     setMigratable(true);
   }else{
     setMigratable(false);
-  }//endif
-
+  }
   //---------------------------------------------------------------------------
 }//end routine
 //============================================================================
@@ -190,331 +95,127 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX,
 //============================================================================
 void CP_Rho_GSpacePlane::init()
 {
-  CPcharmParaInfo *sim = CPcharmParaInfo::get();
-  //make section proxy
-  if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==2){ 
-    // haven't written support for kpoint rhog nl launch yet
-    // not that hard to do, but also probably not worth doing unless
-    // we clearly need this feature to work.
-    CkAssert(config.UberJmax<=1);  
+  //query fft library to find my extents
+  Charm_getOutputIndex(thisIndex, fft_xoffset,
+      Urho_fft_xProxy[thisInstance.proxyOffset]);
+  Charm_getOutputIndex(thisIndex, fft_yoffset,
+      Urho_fft_yProxy[thisInstance.proxyOffset]);
+  Charm_getOutputIndex(thisIndex, fft_zoffset,
+      Urho_fft_zProxy[thisInstance.proxyOffset]);
+  Charm_getOutputExtents(myGrid_start[MY_X], myGrid_end[MY_X],
+                        myGrid_start[MY_Y], myGrid_end[MY_Y],
+                        myGrid_start[MY_Z], myGrid_end[MY_Z],
+                        Urho_fft_xProxy[thisInstance.proxyOffset], fft_xoffset);
+  Charm_getAllPoints(myPoints, Urho_fft_xProxy[thisInstance.proxyOffset],
+      fft_xoffset);
 
-    if(config.nchareRhoG<config.nchareG)
-    {
-      // just divvy them up as well as we can
-      int gperrho=config.nchareG/config.nchareRhoG;
-      int grem= config.nchareG%config.nchareRhoG;
-      int startplane=thisIndex.x*gperrho;
-      int endplane=startplane;
-      if(gperrho>1)
-        endplane=startplane+gperrho;
-      //dump the remainders into the 0th section
-      if(grem>0 && thisIndex.x<grem)
-      { // manual section creation for our share plus remainder
-        CkArrayIndexMax *elems= new CkArrayIndexMax[config.nstates*(gperrho+grem)];
-        int ecount=0;
-        //our usual share
-        for(int plane=startplane;plane<=endplane;plane++)
-          for(int state =0; state<config.nstates;state++)
-          {
-            CkArrayIndex2D idx2d(state,plane);
-            elems[ecount++]=idx2d;
-          }
-        // the overflow
-        int plane=config.nchareRhoG+thisIndex.x;
-        for(int state =0; state<config.nstates;state++)
-        {
-          CkArrayIndex2D idx2d(state,plane);
-          elems[ecount++]=idx2d;
-        }
-        //	      for(int i=0;i<ecount;i++)
-        //		CkPrintf("nl sect %d %d\n",elems[i].data()[0],elems[i].data()[1]);
-        nlsectproxy = CProxySection_GSpaceDriver::ckNew(UgSpaceDriverProxy[thisInstance.proxyOffset].ckGetArrayID(),elems,ecount);
-        delete [] elems;
-      }
-      else
-      {
-        nlsectproxy = CProxySection_GSpaceDriver::ckNew(UgSpaceDriverProxy[thisInstance.proxyOffset].ckGetArrayID(),
-            0, config.nstates-1, 1,startplane, endplane, 1);
-        //	      CkPrintf("nl sect state 0 through %d plane %d through %d\n",config.nstates-1,startplane, endplane);
-      }
-    }
-    else
-    {
-      if(thisIndex.x<config.nchareG){
-        nlsectproxy = CProxySection_GSpaceDriver::ckNew(UgSpaceDriverProxy[thisInstance.proxyOffset].ckGetArrayID(),
-            0, config.nstates-1, 1,thisIndex.x, thisIndex.x, 1);
-      }//endif
-    }
-  }//endif
-  //============================================================================
-  // Set up proxies and set migration options
+  for(int i = 0; i < 3; i++) {
+    myGrid_length[i] = myGrid_end[i] - myGrid_start[i];
+  }
 
-  rhoRealProxy0_com = UrhoRealProxy[thisInstance.proxyOffset];
-  rhoRealProxy1_com = UrhoRealProxy[thisInstance.proxyOffset];
-  rhoRealProxy2_com = UrhoRealProxy[thisInstance.proxyOffset];
-  rhoRealProxy3_com = UrhoRealProxy[thisInstance.proxyOffset];
-  rhoRealProxyByrd_com = UrhoRealProxy[thisInstance.proxyOffset];
+  numPoints = (*myPoints).size();
 
-#ifdef USE_COMLIB 
-  if(config.useGIns0RhoRP)
-    ComlibAssociateProxy(commGInstance0,rhoRealProxy0_com);
-  if(config.useGIns1RhoRP)
-    ComlibAssociateProxy(commGInstance1,rhoRealProxy1_com);
-  if(config.useGIns2RhoRP)
-    ComlibAssociateProxy(commGInstance2,rhoRealProxy2_com);
-  if(config.useGIns3RhoRP)
-    ComlibAssociateProxy(commGInstance3,rhoRealProxy3_com);
-  if(config.useGByrdInsRhoRBP)
-    ComlibAssociateProxy(commGByrdInstance,rhoRealProxyByrd_com);
+#ifdef _CP_DEBUG_RHOG_VERBOSE_
+  CkPrintf("{%d} Rho GS [%d] init: grid size %d %d %d, numPoints %d\n",
+      thisInstance.proxyOffset, thisIndex, myGrid_length[0], myGrid_length[1], myGrid_length[2],
+      numPoints);
 #endif
 
-}
+  int data_size = myGrid_length[MY_X] * myGrid_length[MY_Y];
+  myGrid_size = data_size;
 
+  divRhoX   = (complex *) fftw_malloc(data_size * sizeof(complex));
+  Charm_setOutputMemory((void*)divRhoX,
+      Urho_fft_xProxy[thisInstance.proxyOffset], fft_xoffset);
+  Charm_createOutputPlan(Urho_fft_xProxy[thisInstance.proxyOffset], fft_xoffset);
+
+  divRhoY   = (complex *) fftw_malloc(data_size * sizeof(complex));
+  Charm_setOutputMemory((void*)divRhoY,
+      Urho_fft_yProxy[thisInstance.proxyOffset], fft_yoffset);
+  Charm_createOutputPlan(Urho_fft_yProxy[thisInstance.proxyOffset], fft_yoffset);
+
+  divRhoZ   = (complex *) fftw_malloc(data_size * sizeof(complex));
+  Charm_setOutputMemory((void*)divRhoZ,
+      Urho_fft_zProxy[thisInstance.proxyOffset], fft_zoffset);
+  Charm_createOutputPlan(Urho_fft_zProxy[thisInstance.proxyOffset], fft_zoffset);
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_Rho_GSpacePlane::~CP_Rho_GSpacePlane(){
-  if(numSplit!=NULL)
-    delete [] numSplit;
-  if(istrtSplit!=NULL)
-    delete [] istrtSplit;
-  if(iendSplit != NULL)
-    delete [] iendSplit;
+  fftw_free((void*)divRhoX);
+  fftw_free((void*)divRhoY);
+  fftw_free((void*)divRhoZ);
 }
 //============================================================================
 
 //============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_Rho_GSpacePlane::pup(PUP::er &p){
-  ArrayElement2D::pup(p);
-  p|iplane_ind;
-  p|nPacked;
-  p|count;
-  PUParray(p,countWhiteByrd,4);
-  p|doneWhiteByrd;
-  p|rhoGHelpers;
-  p|rhoRsubplanes;
-  rho_gs.pup(p);  // I pup my data class
-  if(p.isUnpacking()){
-    numSplit   = new int[rhoGHelpers];
-    istrtSplit = new int[rhoGHelpers];
-    iendSplit  = new int[rhoGHelpers];
-  }//endif
-  PUParray(p,numSplit,rhoGHelpers);
-  PUParray(p,istrtSplit,rhoGHelpers);
-  PUParray(p,iendSplit,rhoGHelpers);
-  if(p.isUnpacking()){ 
-    //pupping of comlib proxies unreliable
-    rhoRealProxy0_com = UrhoRealProxy[thisInstance.proxyOffset];
-    rhoRealProxy1_com = UrhoRealProxy[thisInstance.proxyOffset];
-    rhoRealProxy2_com = UrhoRealProxy[thisInstance.proxyOffset];
-    rhoRealProxy3_com = UrhoRealProxy[thisInstance.proxyOffset];
-    rhoRealProxyByrd_com = UrhoRealProxy[thisInstance.proxyOffset];
-
-#ifdef USE_COMLIB
-    if(config.useGIns0RhoRP)
-      ComlibAssociateProxy(commGInstance0,rhoRealProxy0_com);
-    if(config.useGIns1RhoRP)
-      ComlibAssociateProxy(commGInstance1,rhoRealProxy1_com);
-    if(config.useGIns2RhoRP)
-      ComlibAssociateProxy(commGInstance2,rhoRealProxy2_com);
-    if(config.useGIns3RhoRP)
-      ComlibAssociateProxy(commGInstance3,rhoRealProxy3_com);
-    if(config.useGByrdInsRhoRBP)
-      ComlibAssociateProxy(commGByrdInstance,rhoRealProxyByrd_com);
-#endif
-
-  }//endif
-
-  //--------------------------------------------------------------------------
-}//end routine
-//============================================================================
-
-
-//============================================================================
-//  RhoReal sends rho(gx,gy,z) here such that it is now decomposed 
-//  with lines of constant gx,gy in funny order to load balance.
-//  Nothing can return to this chare UNTIL this message is fully received
-//  and processed. Thus, we can receive into divRhox and use cache to post 
-//  process
+// This function when the density FFT from Rho_R is complete
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_Rho_GSpacePlane::acceptRhoData(RhoGSFFTMsg *msg) {
-  //============================================================================
+void CP_Rho_GSpacePlane::acceptRhoData() {
 #ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("RGS [%d %d] receives message size %d offset %d numlines %d\n",
-      thisIndex.x,thisIndex.y,msg->size,msg->offset,rho_gs.numLines);
+  CkPrintf("{%d} Rho GS [%d] acceptRhoData\n", thisInstance.proxyOffset, thisIndex);
 #endif
-  //============================================================================
-  // Set local pointers, constants,
-
-  int size             = msg->size;
-  int offset           = msg->offset;   // z index
-  int isub             = msg->offsetGx; // subplane index
-  complex *partlyIFFTd = msg->data;
-
-  CPcharmParaInfo *sim = CPcharmParaInfo::get();
-  int ix               = thisIndex.x;   // chare array index
-  int sizeZ            = rho_gs.sizeZ;
-  int numLines         = rho_gs.numLines;
-  int ***index_pack;
-
-  if(rhoRsubplanes>1){
-    int **nline_send = sim->nline_send_rho_y;
-    index_pack       = sim->index_tran_pack_rho_y;
-    numLines         = nline_send[ix][isub];
-  }//endif
-
-  //============================================================================
-  // Check for errors
-
-#ifdef _NAN_CHECK_
-  for(int i=0;i<msg->size ;i++){
-    CkAssert(isnan(msg->data[i].re)==0);
-    CkAssert(isnan(msg->data[i].im)==0);
-  }//endfor
-#endif
-  if(size!=numLines){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("size %d != numLines %d\n",size,numLines);
-    CkPrintf("RGS [%d %d] receives message size %d offset %d numlines %d\n",
-        thisIndex.x,thisIndex.y,msg->size,msg->offset,rho_gs.numLines);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
-
-  //============================================================================
-  // upack the message : No need to zero, every value is set
-
-  complex *chunk = rho_gs.divRhoX;
-
-  if(rhoRsubplanes==1){
-    for(int i=0,j=offset; i< size; i++,j+=sizeZ){chunk[j] = partlyIFFTd[i];}
-  }else{
-    for(int i=0; i< size; i++){
-      chunk[(offset+index_pack[ix][isub][i])] = partlyIFFTd[i];
-    }//endif
-  }//endif
-
-  delete msg;
-
-  if(count==0){count_stuff=0;}
-  count_stuff += size;
-
-  //============================================================================
-  // when you have all the data, get moving
-
-  count++;
-  if(count== recvCountFromRRho){
-    if(count_stuff!=rho_gs.numLines*sizeZ){
-      CkPrintf("Not enough stuff %d %d on %d\n",count_stuff,rho_gs.numLines,thisIndex.x);
-      CkExit();
-    }//endif
-    count=0;
-#ifndef _DEBUG_INT_TRANS_FWD
-    thisProxy(thisIndex.x,thisIndex.y).doRhoFFT();
-#else   
-    char name[100];
-    sprintf(name,"partFFTGxGyZT%d.out.%d",rhoRsubplanes,thisIndex.x);
-    FILE *fp = fopen(name,"w");
-    numLines = rho_gs.numLines;
-    for(int ix =0;ix<numLines;ix++){
-      for(int iy =0;iy<sizeZ;iy++){
-        int i = ix*sizeZ + iy;
-        fprintf(fp,"%d %d : %g %g\n",iy,ix,chunk[i].re,chunk[i].im);
-      }//endfor
-    }//endof
-    fclose(fp);
-    UrhoGProxy[thisInstance.proxyOffset](0,0).exitForDebugging();
-#endif
-  }//endif
-
-  //============================================================================
-}//end routine
-//============================================================================
-
-
-//============================================================================
-// Complete the FFT to give use Rho(gx,gy,gz)
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_Rho_GSpacePlane::doRhoFFT() { 
-  //============================================================================
-
-#ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("Data has arrive in rhogs : peforming FFT %d %d\n",
-      thisIndex.x,thisIndex.y);
-#endif
-
-  //============================================================================
-  // I) Finish ffting  the density into g-space :
-  //      a)FFT b) Compress to sphere and store in data_out
-
-  int ioptRho=0;
-#if CMK_TRACE_ENABLED
-  double StartTime=CmiWallTimer();
-#endif
-  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
-  fftcache->getCacheMem("CP_Rho_GSpacePlane::acceptRhoData");
-  complex *data_out  = fftcache->tmpData;
-  complex *data_in   = rho_gs.divRhoX;
-  fftcache->doRhoFFTRtoG_Gchare(data_in,data_out,
-      rho_gs.numFull,rho_gs.numPoints,
-      rho_gs.numLines,rho_gs.numRuns,rho_gs.runs, 
-      rho_gs.sizeZ,1,iplane_ind);
-#if CMK_TRACE_ENABLED
-  traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
-#endif
-
-  //============================================================================
-  // II) Debug output
-
 #ifdef _CP_DEBUG_RHOG_RHOG_
   char myFileName[100];
-  sprintf(myFileName, "Rho_Gspace_%d.out", thisIndex.x);
+  sprintf(myFileName, "Rho_Gspace_%d.out", thisIndex);
+  std::vector< gridPoint > & dpoints = (*myPoints);
   FILE *fp = fopen(myFileName,"w");
-  for (int i = 0; i < rho_gs.numPoints; i++){ 
-    fprintf(fp," %d %d %d : %g %g\n",
-        rho_gs.k_x[i],rho_gs.k_y[i],rho_gs.k_z[i],
-        data_out[i].re,data_out[i].im);
+  for (int i = 0; i < numPoints; i++){
+    fprintf(fp," %d %d %d : %g %g\n", dpoints[i].d3, dpoints[i].d2, dpoints[i].d1,
+      divRhoX[dpoints[i].offset].re, divRhoX[dpoints[i].offset].im);
   }//endfor
   fclose(fp);
 #endif
-
   //============================================================================
-  // II) Communicate rho(g) to RHoGHartExt to compute eext and hart part of vks
+  // I) Communicate rho(g) to RHoGHartExt to compute eext and hart part of vks
   //     or print out that you are taking the day off
 
   //------------------------------------------------
   // Hartree is on, send rhoG to the harteext-G chare
 #ifndef _CP_DEBUG_HARTEEXT_OFF_  // hartree is cooking
-  int nchareHartAtmT=config.nchareHartAtmT;
-  for(int i=0;i<rhoGHelpers;i++){
-    for(int j=0;j<nchareHartAtmT;j++){
-      RhoGHartMsg *msg = new (numSplit[i],8*sizeof(int)) RhoGHartMsg;
-      msg->size        = numSplit[i];     
-      msg->senderIndex = thisIndex.x;
-      CmiMemcpy(msg->data,&data_out[istrtSplit[i]],numSplit[i]*sizeof(complex));
+  //create first message to be able to copy
+  RhoGHartMsg *msg, *base_msg = new (numPoints) RhoGHartMsg;
+  complex *dest = base_msg->data;
+  std::vector< gridPoint > & points = (*myPoints);
+  for(int p = 0; p < numPoints; p++) {
+    int off = points[p].offset;
+    dest[p] = divRhoX[off];
+  }
 
-      if(config.prioFFTMsg){
-        CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-        *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
-      }//endif
+  int nchareHartAtmT = config.nchareHartAtmT;
+  for(int j = 0; j < nchareHartAtmT; j++) {
+    if(j != (nchareHartAtmT - 1)) {
+      msg = new (numPoints) RhoGHartMsg;
+      CmiMemcpy(msg->data, base_msg->data, numPoints * sizeof(complex));
+    } else {
+      msg = base_msg;
+    }
+    msg->size        = numPoints;
+    //------------------------------------------------
+    //RAZ: This is important:  
+    // This is spin modified logic to send to up 
+    // instance GHartExt Calc.
+    // No way spin down should go there.
+    // We are sending Grho from data_out
+    //------------------------------------------------
+    if (mySpinIndex==0){
+      UrhoGHartExtProxy[thisInstance.proxyOffset](thisIndex,j).acceptData(msg);
+    }else if(mySpinIndex==1){
+      UberCollection upinstance=thisInstance;
+      // flip the spin
+      upinstance.idxU.s= !upinstance.idxU.s;
+      // get new offset
+      int Offset2RhoUp=upinstance.setPO();
+      UrhoGHartExtProxy[Offset2RhoUp](thisIndex,j).acceptData(msg);
+    }//endif spin logic
 
-      int index = thisIndex.x*rhoGHelpers + i;
-      UrhoGHartExtProxy[thisInstance.proxyOffset](index,j).acceptData(msg);
-    }//endfor : atmType parallelization
-  }//endfor : helper parallelization
-#endif
-
-  //------------------------------------------------
-  // Hartree is off, chill
-#ifdef _CP_DEBUG_HARTEEXT_OFF_ //hartree is sitting this one out
-  if(thisIndex.x==0 && thisIndex.y==0){
+  }//endfor : atmType parallelization
+#else // Hartree is off, chill
+  if(thisIndex == 0) {
     CkPrintf("EHART       = OFF FOR DEBUGGING\n");
     CkPrintf("EExt        = OFF FOR DEBUGGING\n");
     CkPrintf("EWALD_recip = OFF FOR DEBUGGING\n");
@@ -525,21 +226,19 @@ void CP_Rho_GSpacePlane::doRhoFFT() {
   // III) Start grad corr computations if necessary
 
 #if CMK_TRACE_ENABLED
-  StartTime=CmiWallTimer();
-#endif    
-  if(cp_grad_corr_on!=0){
+  double StartTime=CmiWallTimer();
+#endif
+  if(simReadOnly.cp_grad_corr_on != 0) {
     divRhoVksGspace();
-  }else{
-    fftcache->freeCacheMem("CP_Rho_GSpacePlane::acceptRhoData");
-  }//endif
+  }
 #if CMK_TRACE_ENABLED
-  traceUserBracketEvent(divRhoVksGspace_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(divRhoVksGspace_, StartTime, CmiWallTimer());
 #endif
 
   //============================================================================
   //kick off NL if its our job
 
-  launchNlG(); 
+  launchNlG();
 
   //---------------------------------------------------------------------------
 }//end routine
@@ -551,7 +250,6 @@ void CP_Rho_GSpacePlane::doRhoFFT() {
 //============================================================================
 //
 // The density is here : Launch ees NL
-//
 // Do this once an algorithm step
 //
 //============================================================================
@@ -559,20 +257,11 @@ void CP_Rho_GSpacePlane::launchNlG() {
   //============================================================================
   // Launch the nonlocal energy computation
 
-  CPcharmParaInfo *sim = CPcharmParaInfo::get();
-
-  if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==2){ 
-    /*      if(config.nchareRhoG<config.nchareG){
-    // there aren't enough rhoG's so 
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Bad chare sizes %d %d\n",config.nchareRhoG,config.nchareG);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-    }//endif
-    CkAssert(config.nchareRhoG>=config.nchareG);
-     */
-    if(thisIndex.x<config.nchareG){
-      nlsectproxy.startNonLocalEes(myTime);
+  if(simReadOnly.ees_nloc_on == 1 && config.launchNLeesFromRho == 2){
+    CkAssert(config.UberJmax <= 1);
+    //TODO: converted to broadcast, ensure correctness
+    if(thisIndex == 0) {
+     UgSpaceDriverProxy[thisInstance.proxyOffset].startNonLocalEes(myTime);
     }//endif
   }//endif
 
@@ -583,607 +272,170 @@ void CP_Rho_GSpacePlane::launchNlG() {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// invoke fft subroutine : doFwFFT() unpack do an FFT 1D along z rho(gx,gy,gz)
-// parallelized in full z-lines with constant (gx,gy)
-// invoke a transpose back to r-space
+// Generate divX, divY, divZ, and begin the three FFTs
 //============================================================================
 
-void CP_Rho_GSpacePlane::divRhoVksGspace() { 
+void CP_Rho_GSpacePlane::divRhoVksGspace() {
 
-  //============================================================================
-  // Setup up options, get box and -i*rho(g)
-
-  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
-  complex *packedRho = fftcache->tmpData;
-  complex *divRhoX   = rho_gs.divRhoX;
-  complex *divRhoY   = rho_gs.divRhoY;
-  complex *divRhoZ   = rho_gs.divRhoZ;
-  int ioptx          = 1;
-  int iopty          = 2; 
-  int ioptz          = 3; 
   double tpi,*hmati;
 
   CPXCFNCTS::CP_fetch_hmati(&hmati,&tpi);
-  rho_gs.divRhoGdot(hmati,tpi,packedRho); //divRhoAlpha's are class variable
-  fftcache->freeCacheMem("CP_Rho_GSpacePlane::divRhoVksGspace");
 
-  //============================================================================
-  // I)   fft_gz(divRhoX), launch transpose to R-space
+  memset(divRhoY, 0, sizeof(complex) * myGrid_size);
+  memset(divRhoZ, 0, sizeof(complex) * myGrid_size);
+  double gx,gy,gz;
 
-  fftcache->doRhoFFTGtoR_Gchare(divRhoX,divRhoX,rho_gs.numFull,rho_gs.numPoints,
-      rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-      rho_gs.sizeZ,0,iplane_ind);
-  if(config.rhoGToRhoRMsgComb==0){RhoGSendRhoR(ioptx);}
-
-  //============================================================================
-  // II)  fft_gz(divRhoY), launch transpose to R-space
-
-  fftcache->doRhoFFTGtoR_Gchare(divRhoY,divRhoY,rho_gs.numFull,rho_gs.numPoints,
-      rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-      rho_gs.sizeZ,0,iplane_ind);
-  if(config.rhoGToRhoRMsgComb==0){RhoGSendRhoR(iopty);}
-
-  //============================================================================
-  // III)  fft_gz(divRhoZ),  launch transpose to R-space
-
-  fftcache->doRhoFFTGtoR_Gchare(divRhoZ,divRhoZ,rho_gs.numFull,rho_gs.numPoints,
-      rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-      rho_gs.sizeZ,0,iplane_ind);
-  if(config.rhoGToRhoRMsgComb==0){RhoGSendRhoR(ioptz);}
-
-  //============================================================================
-
-  if(config.rhoGToRhoRMsgComb==1){RhoGSendRhoRall();}
-
-  //---------------------------------------------------------------------------
-}//end routine
-//============================================================================
-
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-/**
- * Send partly FFTed gradients back to RhoR one at a time
- */
-//============================================================================
-void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) { 
-  //============================================================================
-
-#ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("Communicating data from RhoG to RhoR : %d %d %d\n",
-      thisIndex.x,thisIndex.y,iopt);
+  std::vector< gridPoint > & points = (*myPoints);
+  double sumX = 0, sumY = 0, sumZ = 0;
+  for(int p = 0; p < numPoints; p++) {
+    int offset = points[p].offset;
+    gx = tpi * (points[p].d3 * hmati[1] + points[p].d2 * hmati[2] +
+        points[p].d1 * hmati[3]);
+    gy = tpi * (points[p].d3 * hmati[4] + points[p].d2 * hmati[5] +
+        points[p].d1 * hmati[6]);
+    gz = tpi * (points[p].d3 * hmati[7] + points[p].d2 * hmati[8] +
+        points[p].d1 * hmati[9]);
+    complex tmp = (divRhoX[offset].multiplyByi())*(-1.0);
+    divRhoX[offset] = tmp * gx;
+    divRhoY[offset] = tmp * gy;
+    divRhoZ[offset] = tmp * gz;
+#if _CP_DEBUG_RHOG_VERBOSE_
+    sumX += divRhoX[offset].re + divRhoX[offset].im;
+    sumY += divRhoY[offset].re + divRhoY[offset].im;
+    sumZ += divRhoZ[offset].re + divRhoZ[offset].im;
 #endif
-
-  //============================================================================
-  // Local Pointers and Variables
-
-  CPcharmParaInfo *sim = CPcharmParaInfo::get();
-  int sizeZ    = rho_gs.sizeZ;
-  int ix       = thisIndex.x;
-  int numLines = rho_gs.numLines;
-  int ***index_pack;
-  int **nline_send;
-  if(rhoRsubplanes>1){
-    nline_send  = sim->nline_send_rho_y;
-    index_pack  = sim->index_tran_pack_rho_y;
-  }//endif
-
-  complex *ffttempdata;
-  switch(iopt){
-    case 1 : ffttempdata = rho_gs.divRhoX; break;
-    case 2 : ffttempdata = rho_gs.divRhoY; break;
-    case 3 : ffttempdata = rho_gs.divRhoZ; break;
-    case 4 : ffttempdata = rho_gs.divRhoX; break;  //its whitebyrd
-    default: CkAbort("impossible iopt");   break;
-  }//end switch
-
-  //============================================================================
-  // Do a Comlib Dance
-
-#ifdef USE_COMLIB
-  if(rhoRsubplanes==1){
-    switch(iopt){
-#ifdef OLD_COMMLIB
-      case 1 : if(config.useGIns1RhoRP)     commGInstance1.beginIteration();   break;
-      case 2 : if(config.useGIns2RhoRP)     commGInstance2.beginIteration();   break;
-      case 3 : if(config.useGIns3RhoRP)     commGInstance3.beginIteration();   break;
-      case 4 : if(config.useGByrdInsRhoRBP) commGByrdInstance.beginIteration();break;
-#else
-      case 1 :if(config.useGIns1RhoRP) ComlibBegin(rhoRealProxy1_com,0); break;
-      case 2 :if(config.useGIns2RhoRP) ComlibBegin(rhoRealProxy2_com,0); break;
-      case 3 :if(config.useGIns3RhoRP) ComlibBegin(rhoRealProxy3_com,0); break;
-      case 4 :if(config.useGByrdInsRhoRBP) ComlibBegin(rhoRealProxyByrd_com,0); break;
-#endif
-      default: CkAbort("impossible iopt"); break;
-    }//end switc
-  }//endif
-#endif
-
-
-  //============================================================================
-  // Send the message
-
-  for(int z=0;z<sizeZ;z++) {
-    for(int s=0;s<rhoRsubplanes;s++){
-
-      if(rhoRsubplanes>1){numLines = nline_send[ix][s];}
-      if(numLines>0){
-        RhoRSFFTMsg *msg = new (numLines,8*sizeof(int)) RhoRSFFTMsg;
-        msg->size        = numLines;     // number of z-lines in this batch
-        msg->senderIndex = thisIndex.x;  // line batch index
-        msg->iopt        = iopt;         // iopt
-
-        if(config.prioFFTMsg){
-          CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-          *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
-        }//endif
-
-        // beam out all points with same z to chare array index z
-        complex *data = msg->data;
-        if(rhoRsubplanes==1){
-          for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = ffttempdata[j];}
-        }else{
-          for(int i=0; i< numLines; i++){
-            data[i] = ffttempdata[(z+index_pack[ix][s][i])];
-          }//endif
-        }//endif
-
-        if(rhoRsubplanes==1){    
-          switch(iopt){
-            case 1 : rhoRealProxy1_com(z,0).acceptGradRhoVks(msg); break;
-            case 2 : rhoRealProxy2_com(z,0).acceptGradRhoVks(msg); break;
-            case 3 : rhoRealProxy3_com(z,0).acceptGradRhoVks(msg); break;
-            case 4 : rhoRealProxyByrd_com(z,0).acceptWhiteByrd(msg); break;
-            default: CkAbort("impossible iopt"); break;
-          }//end switch
-        }else{
-          switch(iopt){
-            case 1 : UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptGradRhoVks(msg); break;
-            case 2 : UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptGradRhoVks(msg); break;
-            case 3 : UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptGradRhoVks(msg); break;
-            case 4 : UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptWhiteByrd(msg); break;
-            default: CkAbort("impossible iopt"); break;
-          }//end switch
-        }//endif
-      }// endif
-    }//endfor
   }//endfor
 
-  //============================================================================
-  // Complete the commlib dance
-
-#ifdef USE_COMLIB
-  if(rhoRsubplanes==1){    
-    switch(iopt){
-#ifdef OLD_COMMLIB
-      case 1 : if(config.useGIns1RhoRP)     commGInstance1.endIteration();break;
-      case 2 : if(config.useGIns2RhoRP)     commGInstance2.endIteration();break;
-      case 3 : if(config.useGIns3RhoRP)     commGInstance3.endIteration();break;
-      case 4 : if(config.useGByrdInsRhoRBP) commGByrdInstance.endIteration();break;
-#else
-      case 1 :if(config.useGIns1RhoRP) ComlibEnd(rhoRealProxy1_com,0); break;
-      case 2 :if(config.useGIns2RhoRP) ComlibEnd(rhoRealProxy2_com,0); break;
-      case 3 :if(config.useGIns3RhoRP) ComlibEnd(rhoRealProxy3_com,0); break;
-      case 4 :if(config.useGByrdInsRhoRBP) ComlibEnd(rhoRealProxyByrd_com,0); break;
+#if _CP_DEBUG_RHOG_VERBOSE_
+  CkPrintf("{%d} Rho GS [%d] divSums %lf %lf %lf\n", thisInstance.proxyOffset, thisIndex,
+    sumX, sumY, sumZ);
 #endif
-      default: CkAbort("impossible iopt"); break;
-    }//end switc
-  }//endif
 
-#endif
+  Charm_doBackwardFFT(CkCallback(CkIndex_CP_Rho_RealSpacePlane::acceptGradRhoVks(),
+        UrhoRealProxy[thisInstance.proxyOffset]),
+        Urho_fft_xProxy[thisInstance.proxyOffset], fft_xoffset,
+        1 / simReadOnly.vol);
+  Charm_doBackwardFFT(CkCallback(CkIndex_CP_Rho_RealSpacePlane::acceptGradRhoVks(),
+        UrhoRealProxy[thisInstance.proxyOffset]),
+        Urho_fft_yProxy[thisInstance.proxyOffset], fft_yoffset,
+        1 / simReadOnly.vol);
+  Charm_doBackwardFFT(CkCallback(CkIndex_CP_Rho_RealSpacePlane::acceptGradRhoVks(),
+        UrhoRealProxy[thisInstance.proxyOffset]),
+        Urho_fft_zProxy[thisInstance.proxyOffset], fft_zoffset,
+        1 / simReadOnly.vol);
 
   //---------------------------------------------------------------------------
 }//end routine
 //============================================================================
 
-
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
- * Send partly FFTed gradients back to RhoR all at once
- */
-//============================================================================
-void CP_Rho_GSpacePlane::RhoGSendRhoRall() { 
-  //============================================================================
-
-#ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("Communicating data from RhoG to RhoR : %d %d\n",
-      thisIndex.x,thisIndex.y);
-#endif
-
-  //============================================================================
-  // Local Pointers and Variables
-
-  CPcharmParaInfo *sim = CPcharmParaInfo::get();
-  int sizeZ    = rho_gs.sizeZ;
-  int ix       = thisIndex.x;
-  int numLines = rho_gs.numLines;
-  int ***index_pack;
-  int **nline_send;
-  if(rhoRsubplanes>1){
-    nline_send  = sim->nline_send_rho_y;
-    index_pack  = sim->index_tran_pack_rho_y;
-  }//endif
-
-  complex *ffttempdataX = rho_gs.divRhoX;
-  complex *ffttempdataY = rho_gs.divRhoY;
-  complex *ffttempdataZ = rho_gs.divRhoZ;
-
-  //============================================================================
-  // Send the message : no comlib
-
-  for(int z=0;z<sizeZ;z++) {
-    for(int s=0;s<rhoRsubplanes;s++){
-
-      if(rhoRsubplanes>1){numLines = nline_send[ix][s];}
-      if(numLines>0){
-        RhoRSFFTMsg *msg = new (3*numLines,8*sizeof(int)) RhoRSFFTMsg;
-        msg->size        = numLines;     // number of z-lines in this batch
-        msg->senderIndex = thisIndex.x;    // line batch index
-        msg->iopt        = 1;           // iopt
-
-        if(config.prioFFTMsg){
-          CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-          *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
-        }//endif
-
-        // beam out all points with same z to chare array index z
-        complex *data = msg->data;
-        if(rhoRsubplanes==1){
-          for (int i=0,j=z; i<3*numLines; i+=3,j+=sizeZ){
-            data[i]   = ffttempdataX[j];
-            data[i+1] = ffttempdataY[j];
-            data[i+2] = ffttempdataZ[j];
-          }//endfor
-        }else{
-          for(int i=0,ii=0; ii< numLines; i+=3,ii++){
-            int j = (z+index_pack[ix][s][ii]);
-            data[i]   = ffttempdataX[j];
-            data[i+1] = ffttempdataY[j];
-            data[i+2] = ffttempdataZ[j];
-          }//endfor
-        }//endif
-        UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptGradRhoVksAll(msg);
-      }//endif : the subplane recvs a message from us
-    }//endfor : subplanes
-  }//endfor : planes
-
-  //---------------------------------------------------------------------------
-}//end routine
-//============================================================================
-
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-/**
- *  RhoReal sends rho(gx,gy,z) here such that it is now decomposed 
- *  with lines of constant gx,gy in funny order to load balance.
+ *
+ *  Callback for all 3 divRho FFT
  *
  *  We cannot receive whitebyrds until every divRho sent above has been received
- *  and processed by RhoReal. Therefore, our divRho memory is safe and warm 
+ *  and processed by RhoReal. Therefore, our divRho memory is safe and warm
  *  while it it processing in the routines before the send. It is also safe
  *  during the send
 */
-//============================================================================
-void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
-  //============================================================================
-
-#ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("RGS [%d %d] receives white-byrd message size %d offset %d numlines %d\n",
-      thisIndex.x,thisIndex.y,msg->size,msg->offset,rho_gs.numLines);
-#endif
-
-  //============================================================================
-
-  int iopt             = msg->iopt;
-  int size             = msg->size;
-  int offset           = msg->offset;   // z index
-  int isub             = msg->offsetGx; // subplane index
-  complex *partlyIFFTd = msg->data;
-
-  CPcharmParaInfo *sim = CPcharmParaInfo::get();
-  int ix               = thisIndex.x;   // chare array index
-  int sizeZ            = rho_gs.sizeZ;
-  int numLines         = rho_gs.numLines;
-  int ***index_pack;
-  if(rhoRsubplanes>1){
-    int **nline_send = sim->nline_send_rho_y;
-    index_pack       = sim->index_tran_pack_rho_y;
-    numLines         = nline_send[ix][isub];
-  }//endif
-
-  //============================================================================
-  // Error checking
-
-#ifdef _NAN_CHECK_
-  for(int i=0;i<msg->size ;i++){
-    CkAssert(isnan(msg->data[i].re)==0);
-    CkAssert(isnan(msg->data[i].im)==0);
-  }
-#endif
-  if(size!=numLines){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("size %d != numLines %d\n",size,numLines);
-    CkPrintf("RGS [%d %d] receives message size %d offset %d numlines %d opt %d\n",
-        thisIndex.x,thisIndex.y,size,offset,numLines,iopt);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
-
-  //============================================================================
-  // unpack the message
-
-  complex *chunk;
-  switch(iopt){
-    case 1 : chunk = rho_gs.divRhoX; break;
-    case 2 : chunk = rho_gs.divRhoY; break;
-    case 3 : chunk = rho_gs.divRhoZ; break;
-    default: CkAbort("impossible iopt"); break;
-  }//end switch
-
-  if(rhoRsubplanes==1){
-    for(int i=0,j=offset; i< size; i++,j+=sizeZ){chunk[j] = partlyIFFTd[i];}
-  }else{
-    for(int i=0; i< size; i++){
-      chunk[(offset+index_pack[ix][isub][i])] = partlyIFFTd[i];
-    }//endif
-  }//endif
-
-  delete msg;
-
-  //============================================================================
-  // If all chares for a gradient report, perform final FFT.
-
-  countWhiteByrd[iopt]++;
-  if(countWhiteByrd[iopt]==recvCountFromRRho){
-    countWhiteByrd[iopt]=0;
-    doneWhiteByrd++;
-
-#if CMK_TRACE_ENABLED
-    double StartTime=CmiWallTimer();
-#endif    
-    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
-    fftcache->doRhoFFTRtoG_Gchare(chunk,chunk,rho_gs.numFull,rho_gs.numPoints,
-        rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-        rho_gs.sizeZ,0,iplane_ind);
-#if CMK_TRACE_ENABLED
-    traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
-#endif
-
-  }//endif
-
-  //============================================================================
-  // When all 3 gradients are in g-space, then you will ready for the next step.
-
-  if(doneWhiteByrd==3){
-    doneWhiteByrd=0;
-    acceptWhiteByrd();
-  }//endif
-
-  //============================================================================
-}//end routine
-//============================================================================
-
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-/**
- *  RhoReal sends rho(gx,gy,z) here such that it is now decomposed 
- *  with lines of constant gx,gy in funny order to load balance.
- *
- *  We cannot receive whitebyrds until every divRho sent above has been received
- *  and processed by RhoReal. Therefore, our divRho memory is safe and warm 
- *  while it it processing in the routines before the send. It is also safe
- *  during the send
-*/
-//============================================================================
-void CP_Rho_GSpacePlane::acceptWhiteByrdAll(RhoGSFFTMsg *msg) {
-  //============================================================================
-
-#ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("RGS [%d %d] receives white-byrd message size %d offset %d numlines %d\n",
-      thisIndex.x,thisIndex.y,msg->size,msg->offset,rho_gs.numLines);
-#endif
-
-  //============================================================================
-
-  int iopt             = msg->iopt;
-  int size             = msg->size;
-  int offset           = msg->offset;   // z index
-  int isub             = msg->offsetGx; // subplane index
-  complex *partlyIFFTd = msg->data;
-
-  CPcharmParaInfo *sim = CPcharmParaInfo::get();
-  int ix               = thisIndex.x;   // chare array index
-  int sizeZ            = rho_gs.sizeZ;
-  int numLines         = rho_gs.numLines;
-
-  int ***index_pack;
-  if(rhoRsubplanes>1){
-    int **nline_send = sim->nline_send_rho_y;
-    index_pack       = sim->index_tran_pack_rho_y;
-    numLines         = nline_send[ix][isub];
-  }//endif
-
-  //============================================================================
-  // Error checking
-
-#ifdef _NAN_CHECK_
-  for(int i=0;i<3*(msg->size) ;i++){
-    CkAssert(isnan(msg->data[i].re)==0);
-    CkAssert(isnan(msg->data[i].im)==0);
-  }
-#endif
-
-  if(size!=numLines){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("size %d != numLines %d\n",size,numLines);
-    CkPrintf("RGS [%d %d] receives message size %d offset %d numlines %d opt %d\n",
-        thisIndex.x,thisIndex.y,size,offset,numLines,iopt);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
-
-  //============================================================================
-  // unpack the message
-
-  complex *chunkX = rho_gs.divRhoX; 
-  complex *chunkY = rho_gs.divRhoY; 
-  complex *chunkZ = rho_gs.divRhoZ; 
-
-  if(rhoRsubplanes==1){
-    for(int i=0,j=offset; i< 3*size; i+=3,j+=sizeZ){
-      chunkX[j] = partlyIFFTd[i];
-      chunkY[j] = partlyIFFTd[i+1];
-      chunkZ[j] = partlyIFFTd[i+2];
-    }//endfor
-  }else{
-    for(int i=0,ii=0; ii< size; i+=3,ii++){
-      int j=offset+index_pack[ix][isub][ii];
-      chunkX[j] = partlyIFFTd[i];
-      chunkY[j] = partlyIFFTd[i+1];
-      chunkZ[j] = partlyIFFTd[i+2];
-    }//endfor
-  }//endif
-
-  delete msg;
-
-  //============================================================================
-  // If all chares for a gradient report, perform final FFT.
-
-  countWhiteByrd[1]++;
-  if(countWhiteByrd[1]==recvCountFromRRho){
-    countWhiteByrd[1]=0;
-    doneWhiteByrd+=3;
-
-#if CMK_TRACE_ENABLED
-    double StartTime=CmiWallTimer();
-#endif    
-    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
-    fftcache->doRhoFFTRtoG_Gchare(chunkX,chunkX,rho_gs.numFull,rho_gs.numPoints,
-        rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-        rho_gs.sizeZ,0,iplane_ind);
-    fftcache->doRhoFFTRtoG_Gchare(chunkY,chunkY,rho_gs.numFull,rho_gs.numPoints,
-        rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-        rho_gs.sizeZ,0,iplane_ind);
-    fftcache->doRhoFFTRtoG_Gchare(chunkZ,chunkZ,rho_gs.numFull,rho_gs.numPoints,
-        rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-        rho_gs.sizeZ,0,iplane_ind);
-#if CMK_TRACE_ENABLED
-    traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
-#endif
-  }//endif
-
-  //============================================================================
-  // When all 3 gradients are in g-space, then you will ready for the next step.
-
-  if(doneWhiteByrd==3){
-    doneWhiteByrd=0;
-    acceptWhiteByrd();
-  }//endif
-
-  //============================================================================
-}//end routine
-//============================================================================
-
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-/**
-    The partially FFT'ed white byrd correction to VKS arrives to RhoG 
-    and ffts invoked. Only happens if gradient corrections are on.
- */
 //============================================================================
 void CP_Rho_GSpacePlane::acceptWhiteByrd() {
   //============================================================================
-  // Set the timer and some options
 
-#if CMK_TRACE_ENABLED
-  double StartTime=CmiWallTimer();
-#endif    
-
-  int ioptSendWhite = 4; 
-
-  //============================================================================
-  // Compute my whiteByrd : store it in divrhox 
-
-  double tpi,*hmati;
-  CPXCFNCTS::CP_fetch_hmati(&hmati,&tpi);
-  rho_gs.createWhiteByrd(hmati,tpi);
-
-  //============================================================================
-  // FFT my whitebyrd : which is stored in divRhox 
-
-  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
-  complex *white = rho_gs.divRhoX;
-  fftcache->doRhoFFTGtoR_Gchare(white,white,rho_gs.numFull,rho_gs.numPoints,
-      rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-      rho_gs.sizeZ,0,iplane_ind);
-
-  //============================================================================
-  // End tracing and send whitebyrd back to Rhoreal space
-
-#if CMK_TRACE_ENABLED
-  traceUserBracketEvent(ByrdanddoFwFFTGtoR_, StartTime, CmiWallTimer());    
+#ifdef _CP_DEBUG_RHOG_VERBOSE_
+  CkPrintf("{%d} Rho GS [%d] acceptWhiteByrd_%d\n", thisInstance.proxyOffset, thisIndex,
+      doneWhiteByrd);
 #endif
 
-  RhoGSendRhoR(ioptSendWhite);
-  myTime++;
-  //---------------------------------------------------------------------------
+  doneWhiteByrd++;
+
+  // When all 3 gradients are in g-space, then you will ready for the next step.
+  if(doneWhiteByrd == 3){
+    doneWhiteByrd = 0;
+    /** The partially FFT'ed white byrd correction to VKS arrives to RhoG
+      and ffts invoked. Only happens if gradient corrections are on.  */
+#if CMK_TRACE_ENABLED
+    double StartTime=CmiWallTimer();
+#endif
+
+    //============================================================================
+    // Compute my whiteByrd : store it in divrhox
+    double tpi,*hmati;
+    CPXCFNCTS::CP_fetch_hmati(&hmati, &tpi);
+
+    double gx, gy, gz;
+    complex *whitebyrd = divRhoX; // zeroing done carefully inside loop
+
+    complex zero;
+    zero.re = 0.0; zero.im = 0.0;
+    std::vector< gridPoint > & points = (*myPoints);
+    int last_offset = -1;
+    for(int p = 0; p < numPoints; p++) {
+      int offset = points[p].offset;
+      if(offset != (last_offset + 1)) {
+        for(int cur_off = last_offset + 1; cur_off < offset; cur_off++) {
+          whitebyrd[cur_off] = zero;
+        }
+      }
+      gx = tpi * (points[p].d3 * hmati[1] + points[p].d2 * hmati[2] +
+          points[p].d1 * hmati[3]);
+      gy = tpi * (points[p].d3 * hmati[4] + points[p].d2 * hmati[5] +
+          points[p].d1 * hmati[6]);
+      gz = tpi * (points[p].d3 * hmati[7] + points[p].d2 * hmati[8] +
+          points[p].d1 * hmati[9]);
+      complex tmp = divRhoX[offset]*gx + divRhoY[offset]*gy + divRhoZ[offset]*gz;
+      whitebyrd[offset] = tmp.multiplyByi()*(-1.0);
+      last_offset = offset;
+    }
+
+    for(int cur_off = last_offset + 1; cur_off < myGrid_size; cur_off++) {
+      whitebyrd[cur_off] = zero;
+    }
+
+    Charm_doBackwardFFT(CkCallback(CkIndex_CP_Rho_RealSpacePlane::acceptWhiteByrd(),
+          UrhoRealProxy[thisInstance.proxyOffset]),
+          Urho_fft_xProxy[thisInstance.proxyOffset], fft_xoffset);
+    myTime++;
+  }
+    //---------------------------------------------------------------------------
 }//end routine
 //============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_Rho_GSpacePlane::ResumeFromSync(){
-
-#ifdef USE_COMLIB
-  /*
-     if (config.useGIns0RhoRP) 
-     ComlibResetProxy(rhoRealProxy0_com);
-     if (config.useGIns1RhoRP) 
-     ComlibResetProxy(rhoRealProxy1_com);
-     if (config.useGIns2RhoRP)
-     ComlibResetProxy(rhoRealProxy2_com);
-     if (config.useGIns3RhoRP) 
-     ComlibResetProxy(rhoRealProxy3_com);
-     if (config.useGByrdInsRhoRBP) 
-     ComlibResetProxy(rhoRealProxyByrd_com);
-   */
-#endif
-
-}
-//============================================================================
-
-
 
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
- * Glenn's RhoG exit 
+ * Glenn's RhoG exit
  */
 //============================================================================
 void CP_Rho_GSpacePlane::exitForDebugging(){
-  countDebug++;  
-  CPcharmParaInfo *sim = CPcharmParaInfo::get();
-  int nchareG          = sim->nchareRhoG;
-  if(countDebug==nchareG){
-    countDebug=0;
-    CkPrintf("I am in the exitfordebuging rhoG puppy. Bye-bye\n");
-    CkExit();
-  }//endif
+  CkPrintf("I am in the exitfordebuging rhoG puppy. Bye-bye\n");
+  CkExit();
+}//end routine
+//============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_GSpacePlane::pup(PUP::er &p){
+  ArrayElement1D::pup(p);
+  PUParray(p, myGrid_length, 3);
+  PUParray(p, myGrid_start, 3);
+  PUParray(p, myGrid_end, 3);
+  p|myGrid_size;
+  p|numPoints;
+  p|myTime;
+  p|doneWhiteByrd;
+  p|ehart_ret;
+  p|eext_ret;
+  p|ewd_ret;
+
+  //TODO: pup needs to be done for following
+  //myPoints, nlsectproxy
+  //divRho{X,Y,Z}
+  //--------------------------------------------------------------------------
 }//end routine
 //============================================================================
 /*@}*/

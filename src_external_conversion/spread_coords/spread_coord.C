@@ -74,6 +74,7 @@ int main (int argc, char *argv[]){
 
   NAME *atm_typ;
   char start_typ[MAXWORD];
+  char mass_file[MAXWORD];
   char fnameIn[MAXLINE];
   char dnameOut[MAXLINE];
   char fnameOut[MAXLINE];
@@ -106,7 +107,8 @@ int main (int argc, char *argv[]){
   fp = fopen(argv[1],"r");
   fscanf(fp,"%d %lf %s",&pi_beads,&dseed,start_typ); readtoendofline(fp);
   fscanf(fp,"%lf %lf",&rcut,&T_ext); readtoendofline(fp);
-  fscanf(fp,"%s %s %s",fnameIn,dnameOut,fnameOut);
+  fscanf(fp,"%s %s %s",fnameIn,dnameOut,fnameOut); readtoendofline(fp);
+  fscanf(fp,"%s",mass_file); 
   fclose(fp);
   PRINTF("Finished reading input parameters from %s\n\n",argv[1]);
 
@@ -159,18 +161,31 @@ int main (int argc, char *argv[]){
   read_coord(istart,natm_tot,x,y,z,atm_typ,hmat,fnameIn);
 
   //==========================================================================
-  // Set up the masses
+  // Set up the masses by reading from file
 
-  PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
-  PRINTF("The atom masses are hard coded for water on lines 159-163\n");
-  PRINTF("The program needs an upgrade for general use\n");
-  PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");    
-  for(i=1;i<=natm_tot;i+=3){
-    mass[(i  )] = 1822.0*16.0; // oxygen
-    mass[(i+1)] = 1836.0;      // hydrogen
-    mass[(i+2)] = 1836.0;      // hydrogen
+  // PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+  // PRINTF("The atom masses are hard coded for water on lines 159-163\n");
+  // PRINTF("The program needs an upgrade for general use\n");
+  // PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");    
+  // for(i=1;i<=natm_tot;i+=3){
+  //   mass[(i  )] = 1822.0*16.0; // oxygen
+  //   mass[(i+1)] = 1836.0;      // hydrogen
+  //   mass[(i+2)] = 1836.0;      // hydrogen
+  // }//endfor
+
+  fp = fopen(mass_file,"r");
+  fscanf(fp,"%d",&i);  readtoendofline(fp);
+  if (i!=natm_tot) {
+    PRINTF("\nNaughty!  Your number of atoms in the mass file does not match the natm_tot\n\n");
+    PRINTF("From masses file %d  while natm_tot = %d\n",i,natm_tot);
+    EXIT(1);
+  }
+  for(i=1;i<=natm_tot;i++){
+    fscanf(fp,"%lg",&mass[i]); readtoendofline(fp);
+    mass[i] *= 1822.0;  // covert from amu to atomic units
   }//endfor
-
+  fclose(fp);
+  
   //==========================================================================
   // Write the coordinate files in initial restart mode
 

@@ -3,10 +3,6 @@
 
 #include <algorithm>
 
-#ifdef USE_COMLIB
-extern ComlibInstanceHandle mcastInstanceCP;
-extern ComlibInstanceHandle mcastInstanceACP;
-#endif
 /** @addtogroup Ortho
   @{
  */
@@ -85,7 +81,7 @@ namespace cp {
       orthoIndexY-=s2;
       int orthoArrIndex=orthoIndexX*numOrthoCol+orthoIndexY;
 
-      std::random_shuffle(elems, elems + ecount);
+      //std::random_shuffle(elems, elems + ecount);
 
       /// Create and save this paircalc section
       pcSection = CProxySection_PairCalculator::ckNew(pcArrayID,  elems, ecount);
@@ -167,24 +163,10 @@ namespace cp {
         gredMsg->orthoX=orthoIndex.x;
         gredMsg->orthoY=orthoIndex.y;
         pcSection.initGRed(gredMsg);
-      }
-
-      /// Delegate the ortho --> pc section multicast to the appropriate library
-      if(useComlibForOrthoToPC)
-      {
-#ifdef USE_COMLIB
-        CkPrintf("NOTE: Rectangular Send In USE\n");
-        if(isSymmetric)
-          ComlibAssociateProxy(mcastInstanceCP,pcSection);
-        else
-          ComlibAssociateProxy(mcastInstanceACP,pcSection);
-#endif
-      }
-      else
-      {
-        CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(orthomCastGrpID).ckLocalBranch();
-        pcSection.ckSectionDelegate(mcastGrp);
-      }
+      } 
+      
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(orthomCastGrpID).ckLocalBranch();
+      pcSection.ckSectionDelegate(mcastGrp);
     }
 
 

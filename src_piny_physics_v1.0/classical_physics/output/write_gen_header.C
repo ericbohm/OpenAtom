@@ -50,10 +50,11 @@ void ATOMOUTPUT::initialize_piny_output()
   int iwrite_confp     = genfilenames->iwrite_confp;
   int iwrite_par_confp = genfilenames->iwrite_par_confp;
 
-  char *dname          = genfilenames->dname;
-  char *cpname         = genfilenames->cpname;
-  char *cpparname      = genfilenames->cpparname;
-  char *dump_dir       = genfilenames->atm_crd_dir_out;
+  char *dname          = genfilenames->dname;             // restart file (both pos and vel)
+  char *cpname         = genfilenames->cpname;            // position trajectory file
+  char *cpparname      = genfilenames->cpparname;         // partial position trajectory file
+  char *cvname         = genfilenames->cvname;            // velocity trajectory file
+  char *dump_dir       = genfilenames->atm_crd_dir_out;   // directory where the files go
 
   int ntemper         = gensimopts->ntemper;
   int pi_beads        = gensimopts->pi_beads;
@@ -74,6 +75,10 @@ void ATOMOUTPUT::initialize_piny_output()
 
       sprintf (temp_ext,"%s/Bead.%d_Temper.%d/%s",dump_dir,ibead,itemper,cpname);
       strcpy(file_typ,"pos_file");
+      write_gen_header_cp(ibinary,iwrite_confp,file_typ,temp_ext);
+
+      sprintf (temp_ext,"%s/Bead.%d_Temper.%d/%s",dump_dir,ibead,itemper,cvname);
+      strcpy(file_typ,"vel_file");
       write_gen_header_cp(ibinary,iwrite_confp,file_typ,temp_ext);
 
       if(low_lim_par<=high_lim_par){

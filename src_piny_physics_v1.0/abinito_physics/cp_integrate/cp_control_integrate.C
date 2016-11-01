@@ -28,7 +28,8 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
     double *mNHC,double *v0NHC, double *a2NHC, double *a4NHC, double kTCP,
     double gamma_conj_grad,double *fictEke,int nkx0_red,int nkx0_uni,
     int nkx0_zero,double *ekeNHC,double *potNHC, double degfree,double degfreeNHC,
-    double *degFreeSplt, int *istrNHC,int *iendNHC,int halfStepEvolve, int nfreq_cmi_update)
+    double *degFreeSplt, int *istrNHC,int *iendNHC,int halfStepEvolve, int nfreq_cmi_update,
+    bool switchMoveNow, double old_t_ext, double new_t_ext)
   //============================================================================
 { /* Begin Function */
   //---------------------------------------------------------------------------
@@ -57,7 +58,13 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
   // I) CP Minimization :
 
   if(cp_min_on==1){
-
+    if(switchMoveNow){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("No Tempering while minimizing\n");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+    
     if(genminopts->cp_min_std==1){
       ifound++;
       CP_integrate_min_STD(ncoef,istate,forces,psi_g,k_x,k_y,k_z,cmass,nfreq_cmi_update);
@@ -98,7 +105,7 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
         k_x,k_y,k_z,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
         mNHC,v0NHC,a2NHC,a4NHC,kTCP,fictEke,nkx0_red,nkx0_uni,nkx0_zero,
         ekeNHC,potNHC,degfree,degfreeNHC,degFreeSplt,
-        istrNHC,iendNHC,halfStepEvolve);
+	istrNHC,iendNHC,halfStepEvolve, switchMoveNow, new_t_ext, old_t_ext);
   }//endif
 
   //============================================================================

@@ -2,7 +2,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 /** \file eesCache.C
- * 
+ *
  *
  */
 //==============================================================================
@@ -28,12 +28,13 @@
 
 //----------------------------------------------------------------------------
 extern Config config;
+extern CPcharmParaInfo                      simReadOnly;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-extern CProxy_PhysScratchCache         pScratchProxy;
-extern CkVec <CProxy_AtomsCache>                   UatomsCacheProxy;
+extern CkVec <CProxy_PhysScratchCache>           UpScratchProxy;
+extern CkVec <CProxy_AtomsCache>                 UatomsCacheProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 
 #define _EESCACHE_VERBOSE_OFF_
@@ -47,8 +48,7 @@ extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-eesCache::eesCache(int _nchareRPP, int _nchareGPP, int _nchareRHart,
-    int _nchareGHart, int _nstates, int _nchareRhoG, int _nkpoint, 
+eesCache::eesCache(int _nchareRPP, int _nchareGPP, int _nstates, int _nkpoint,
     UberCollection _thisInstance): thisInstance(_thisInstance)
                                    //==============================================================================
 {//begin rotuine
@@ -62,46 +62,29 @@ eesCache::eesCache(int _nchareRPP, int _nchareGPP, int _nchareRHart,
   nkpoint         = _nkpoint;
   nchareRPP       = _nchareRPP;
   nchareGPP       = _nchareGPP;
-  nchareRHart     = _nchareRHart;
-  nchareGHart     = _nchareGHart;
   nchareGSP       = _nchareGPP;
-  nchareRhoG      = _nchareRhoG; 
-  nstates         = _nstates;
+  nstates         = simReadOnly.nstates;
 
   nchareGSPProcT  = 0;
   nchareGSPProc   = 0;
   nchareRPPProc   = 0;
   nchareGPPProc   = 0;
-  nchareRHartProc = 0;
-  nchareGHartProc = 0;
 
   allowedRppChares      = new int[nchareRPP];
   allowedGppChares      = new int[nchareGPP];
-  allowedRhoRHartChares = new int[nchareRHart];
-  allowedRhoGHartChares = new int[nchareGHart];
   allowedGspChares      = new int[nchareGSP];
-  allowedRhoGChares     = new int[nchareRhoG];
 
   for(int i=0;i<nchareRPP  ;i++){allowedRppChares[i]      = 0;}
   for(int i=0;i<nchareGPP  ;i++){allowedGppChares[i]      = 0;}
-  for(int i=0;i<nchareRHart;i++){allowedRhoRHartChares[i] = 0;}
-  for(int i=0;i<nchareGHart;i++){allowedRhoGHartChares[i] = 0;}
   for(int i=0;i<nchareGSP;  i++){allowedGspChares[i]      = 0;}
-  for(int i=0;i<nchareRhoG ;i++){allowedRhoGChares[i]     = 0;}
 
   indGppChares      = new int[nchareGPP];  // over dimensioned
   indRppChares      = new int[nchareRPP];
-  indRhoRHartChares = new int[nchareRHart];
-  indRhoGHartChares = new int[nchareGHart];
   indGspChares      = new int[nchareGSP];
-  indRhoGChares     = new int[nchareRhoG];
 
   GppData           = new GPPDATA *   [nchareGPP]; // over dimensioned
   RppData           = new RPPDATA *   [nchareRPP];
-  RhoGHartData      = new RHOGHARTDATA*[nchareGHart];
-  RhoRHartData      = new RHORHARTDATA*[nchareRHart];
   GspData           = new GSPDATA*[nchareGSP];
-  //RhoGData          = new RHOGDATA[nchareRhoG];
 
 }// end constructor
 //==============================================================================
@@ -152,19 +135,29 @@ void eesCache::registerCacheGPP  (int index, int ncoef, int *ka, int *kb, int *k
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void eesCache::registerCacheRHart(int index){
+int eesCache::registerCacheRHart(int xindex, int yindex, int gridc_start,
+    int gridc_end, int gridb_start, int gridb_end) {
   //==============================================================================
-  // Cache warm up
 
-  if(allowedRhoRHartChares[index]==0){
-#ifdef  _EESCACHE_VERBOSE_
-    CkPrintf("Registering Rhart %d\n",index);
-#endif
-    nchareRHartProc             += 1;
-    allowedRhoRHartChares[index] = 1;
-    RhoRHartData[index] = new RHORHARTDATA();
-    RhoRHartData[index]->init(index);
-  }//endif
+  for(int i = 0; i < RhoRHartData.size(); i++) {
+    if(RhoRHartData[i].xindex == xindex && RhoRHartData[i].yindex == yindex) {
+      return i;
+    }
+  }
+
+  int returnIndex = RhoRHartData.size();
+  RHORHARTDATA tempData;
+  tempData.xindex = xindex;
+  tempData.yindex = yindex;
+  tempData.gridc_start = gridc_start;
+  tempData.gridb_start = gridb_start;
+  tempData.gridc_end = gridc_end;
+  tempData.gridb_end = gridb_end;
+  tempData.mygridc = gridc_end - gridc_start;
+  tempData.mygridb = gridb_end - gridb_start;
+  RhoRHartData.push_back(tempData);
+  RhoRHartData[returnIndex].init();
+  return returnIndex;
 
 }//end routine
 //==============================================================================
@@ -175,17 +168,21 @@ void eesCache::registerCacheRHart(int index){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void eesCache::registerCacheGHart(int index, int ncoef, int *ka, int *kb, int *kc){
+int eesCache::registerCacheGHart(int index, std::vector< gridPoint > * myPoints)
+{
   //==============================================================================
-  // Cache warm up
-
-  if(allowedRhoGHartChares[index]==0){
-    nchareGHartProc             += 1;
-    allowedRhoGHartChares[index] = 1;
-    RhoGHartData[index] = new RHOGHARTDATA();
-    RhoGHartData[index]->init(index,ncoef,ka,kb,kc);
-  }//endif
-
+  for(int i = 0; i < RhoGHartData.size(); i++) {
+    if(RhoGHartData[i].index == index) {
+      return i;
+    }
+  }
+  int returnIndex = RhoGHartData.size();
+  RHOGHARTDATA tempData;
+  tempData.index = index;
+  tempData.points = myPoints;
+  RhoGHartData.push_back(tempData);
+  RhoGHartData[returnIndex].init();
+  return returnIndex;
 }//end routine
 //==============================================================================
 
@@ -238,16 +235,16 @@ void RPPDATA::init(int index_in){
   dmn_y = (double **)fftw_malloc(natm*sizeof(double*));
   dmn_z = (double **)fftw_malloc(natm*sizeof(double*));
   for(int i=0;i<natm;i++){
-    igrid[i]    = (int *)fftw_malloc(n_interp2*sizeof(int))-1;    
+    igrid[i]    = (int *)fftw_malloc(n_interp2*sizeof(int))-1;
 #ifdef _CP_BRK_BETTER_
-    sBreakJ[i]  = (int *)fftw_malloc((n_interp2+1)*sizeof(int))-1;    
+    sBreakJ[i]  = (int *)fftw_malloc((n_interp2+1)*sizeof(int))-1;
 #endif
     double *tmp = (double *)fftw_malloc(4*n_interp2*sizeof(double));
     int ioff    = 0;
     mn[i]       = &tmp[ioff]-1;  ioff+=n_interp2;
     dmn_x[i]    = &tmp[ioff]-1;  ioff+=n_interp2;
     dmn_y[i]    = &tmp[ioff]-1;  ioff+=n_interp2;
-    dmn_z[i]    = &tmp[ioff]-1;  
+    dmn_z[i]    = &tmp[ioff]-1;
   }//endfor
 
 }//end routine
@@ -284,64 +281,41 @@ void GPPDATA::init(int nkpoint_in,int index_in,int ncoef_in, int *ka, int *kb, i
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void RHORHARTDATA::init(int index_in){
+void RHORHARTDATA::init() {
   //==============================================================================
   // General intialization : Set parameters
 
-  index          = index_in;
-  rhoRsubplanes  = config.rhoRsubplanes;
-
-  CPLOCAL::getEesPrms(&ngrid_a,&ngrid_b,&ngrid_c,&n_interp,&natm);
+  CPLOCAL::getEesPrms(&ngrid_a, &ngrid_b, &ngrid_c, &n_interp, &natm);
 
   //====================================================
-  // The subplane decomposition vectors
+  // Mallocs
+  itemp  = (int     **)fftw_malloc(mygridc * sizeof(int    *));
+  nSub   = (int     **)fftw_malloc(mygridc * sizeof(int    *));
+  igrid  = (int    ***)fftw_malloc(mygridc * sizeof(int   **));
+  mn     = (double ***)fftw_malloc(mygridc * sizeof(double**));
+  dmn_x  = (double ***)fftw_malloc(mygridc * sizeof(double**));
+  dmn_y  = (double ***)fftw_malloc(mygridc * sizeof(double**));
+  dmn_z  = (double ***)fftw_malloc(mygridc * sizeof(double**));
+  plane_index = (int **)fftw_malloc(mygridc * sizeof(int*));
 
-  subStr = (int *)fftw_malloc(rhoRsubplanes*sizeof(int));
-  subEnd = (int *)fftw_malloc(rhoRsubplanes*sizeof(int));
-  subSiz = (int *)fftw_malloc(rhoRsubplanes*sizeof(int));
-  ntemp  = (int *)fftw_malloc(rhoRsubplanes*sizeof(int));
-  itemp  = (int **)fftw_malloc(rhoRsubplanes*sizeof(int*));
-  for(int s=0;s<rhoRsubplanes;s++){itemp[s] = (int *)fftw_malloc(n_interp*sizeof(int))-1;}
-
-  for(int s=0; s<rhoRsubplanes; s++){
-    int div   = (ngrid_b / rhoRsubplanes); // parallelize y
-    int rem   = (ngrid_b % rhoRsubplanes);
-    int add   = (s < rem ? 1 : 0);
-    int max   = (s < rem ? s : rem);
-    subStr[s] = div*s + max;              // start of y desired by chare s
-    subSiz[s] = div + add;                // total of y desired by chare s
-    subEnd[s] = subStr[s] + subSiz[s];    // end   of y desired by chare s
-  }//endfor
-
-  //====================================================
-  // Mallocs 
-
-  plane_index = (int *)fftw_malloc(natm*sizeof(int));
-
-  nSub  = (int     **)fftw_malloc(rhoRsubplanes*sizeof(int    *));
-  igrid = (int    ***)fftw_malloc(rhoRsubplanes*sizeof(int   **));
-  mn    = (double ***)fftw_malloc(rhoRsubplanes*sizeof(double**));
-  dmn_x = (double ***)fftw_malloc(rhoRsubplanes*sizeof(double**));
-  dmn_y = (double ***)fftw_malloc(rhoRsubplanes*sizeof(double**));
-  dmn_z = (double ***)fftw_malloc(rhoRsubplanes*sizeof(double**));
-
-  int n_interp21 = n_interp*n_interp+1;
-  for(int s=0;s<rhoRsubplanes;s++){
-    nSub[s]  = (int    *)fftw_malloc (natm*sizeof(int   *));
-    igrid[s] = (int    **)fftw_malloc(natm*sizeof(int   *));
-    mn[s]    = (double **)fftw_malloc(natm*sizeof(double*));
-    dmn_x[s] = (double **)fftw_malloc(natm*sizeof(double*));
-    dmn_y[s] = (double **)fftw_malloc(natm*sizeof(double*));
-    dmn_z[s] = (double **)fftw_malloc(natm*sizeof(double*));
-    for(int i=0;i<natm;i++){
-      igrid[s][i] = (int    *)fftw_malloc(n_interp21*sizeof(int   ))-1;
-      mn[s][i]    = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
-      dmn_x[s][i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
-      dmn_y[s][i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
-      dmn_z[s][i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+  int n_interp21 = n_interp * n_interp + 1;
+  for(int c = 0; c < mygridc; c++) {
+    plane_index[c] = (int *)fftw_malloc(natm * sizeof(int));
+    nSub[c]  = (int     *)fftw_malloc(natm * sizeof(int));
+    itemp[c] = (int     *)fftw_malloc(n_interp * sizeof(int)) - 1;
+    igrid[c] = (int    **)fftw_malloc(natm * sizeof(int *));
+    mn[c]    = (double **)fftw_malloc(natm * sizeof(double*));
+    dmn_x[c] = (double **)fftw_malloc(natm * sizeof(double*));
+    dmn_y[c] = (double **)fftw_malloc(natm * sizeof(double*));
+    dmn_z[c] = (double **)fftw_malloc(natm * sizeof(double*));
+    for(int i = 0; i < natm; i++){
+      igrid[c][i] = (int    *)fftw_malloc(n_interp21 * sizeof(int   )) - 1;
+      mn[c][i]    = (double *)fftw_malloc(n_interp21 * sizeof(double)) - 1;
+      dmn_x[c][i] = (double *)fftw_malloc(n_interp21 * sizeof(double)) - 1;
+      dmn_y[c][i] = (double *)fftw_malloc(n_interp21 * sizeof(double)) - 1;
+      dmn_z[c][i] = (double *)fftw_malloc(n_interp21 * sizeof(double)) - 1;
     }//endfor : atoms
-  }//endfor : subplanes
-
+  }
   //-----------------------------------------------------------------------------
 }//end routine
 //==============================================================================
@@ -352,16 +326,15 @@ void RHORHARTDATA::init(int index_in){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void RHOGHARTDATA::init(int index_in,int ncoef_in, int *ka, int *kb, int *kc){
+void RHOGHARTDATA::init() {
 
-  index    = index_in;
-  ncoef    = ncoef_in;
+  ncoef    = (*points).size();
   b_re     = (double *)fftw_malloc((ncoef+1)*sizeof(double));
   b_im     = (double *)fftw_malloc((ncoef+1)*sizeof(double));
 
-  CPLOCAL::getEesPrms(&ngrid_a,&ngrid_b,&ngrid_c,&n_interp,&natm);
-  CPLOCAL::eesSetEesWghtGgrp(ncoef,ka,kb,kc,b_re,b_im,ngrid_a,ngrid_b,ngrid_c,
-      n_interp);
+  CPLOCAL::getEesPrms(&ngrid_a, &ngrid_b, &ngrid_c, &n_interp, &natm);
+  CPLOCAL::eesSetEesWghtGgrp(ncoef, (*points), b_re, b_im, ngrid_a, ngrid_b,
+      ngrid_c, n_interp);
 }
 //==============================================================================
 
@@ -396,12 +369,23 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
     CkAssert(fastAtoms->x!=NULL);
 #if CMK_TRACE_ENABLED
     double  StartTime=CmiWallTimer();
-#endif    
+#endif
 
-    CPNONLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRppChares,RppData, pScratchProxy.ckLocalBranch()->psscratch);
+
+#ifdef _NAN_CHECK_
+    for(int i=0;i<ag->natm;i++)
+    {
+      CkAssert(finite(fastAtoms->x[i]));
+      CkAssert(finite(fastAtoms->y[i]));
+      CkAssert(finite(fastAtoms->z[i]));
+    }
+#endif
+
+
+    CPNONLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRppChares,RppData, UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch);
 
 #if CMK_TRACE_ENABLED
-    traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());    
+    traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());
 #endif
 
   }//endif : time to update the B-splines
@@ -415,23 +399,24 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void eesCache::queryCacheRHart(int index,int itime,int iter){
+void eesCache::queryCacheRHart(int index, int itime, int iter){
   //==============================================================================
   // Cache compute : 1st guy in does the job
 
 #ifdef  _EESCACHE_VERBOSE_
-  CkPrintf("Querying Rhart by %d at t= %d %d\n",index,itime,itimeRHart);
+  CkPrintf("Querying Rhart by %d at t= %d %d\n", index, itime, itimeRHart);
 #endif
 
-  if(itime != itimeRHart){
+  if(itime != itimeRHart) {
 
-    if(itime!=itimeRHart+1 || iter != 1 || allowedRhoRHartChares[index] != 1){
+    if(itime != itimeRHart+1 || iter != 1) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Broken HartR cache query by %d at %d %d %d\n",index,itime,itimeRHart,iter);
+      CkPrintf("Broken RHart cache query by %d at %d %d %d\n",index, itime,
+          itimeRHart, iter);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
-    itimeRHart= itime;
+    itimeRHart = itime;
 
 #ifdef  _EESCACHE_VERBOSE_
     CkPrintf("Computing eesAtmBspline\n");
@@ -439,14 +424,16 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
 
     AtomsCache *ag = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
+
 #if CMK_TRACE_ENABLED
     double  StartTime=CmiWallTimer();
-#endif    
+#endif
 
-    CPLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRhoRHartChares,RhoRHartData, pScratchProxy.ckLocalBranch()->psscratch);
+    CPLOCAL::eesAtmBsplineRgrp(fastAtoms, RhoRHartData,
+        UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch);
 
 #if CMK_TRACE_ENABLED
-    traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());    
+    traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());
 #endif
 
   }//endif : time to update the B-splines
@@ -472,13 +459,13 @@ void GSPDATA::init(int index_in,int nkpoint_in){
   ngrid_a  = sim->sizeX;
   ngrid_b  = sim->sizeY;
   ngrid_c  = sim->sizeZ;
-  ncoef    = sim->npts_per_chareG[index];  
+  ncoef    = sim->npts_per_chareG[index];
   numLines = sim->nlines_per_chareG[index];
   numRuns  = 2*numLines;
   nkpoint  = nkpoint_in;
 
   //------------------------------------------------------------
-  // Set the runs from the generic group : 
+  // Set the runs from the generic group :
 
   CkVec <RunDescriptor> *sortedRunDescriptors = sim->sortedRunDescriptors;
   runs  = new RunDescriptor[numRuns];

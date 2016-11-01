@@ -16,23 +16,57 @@
 #include "ckmulticast.h"
 #include "structure_factor/StructFactorCache.h"
 #include "structure_factor/StructureFactor.h"
+#include "fft_types.h"
 //#include "ckPairCalculator.h"
+extern bool HartreeFockOn;
 void getSplitDecomp(int *,int *,int *,int , int ,int );
 
-
-
+#define MY_X 0
+#define MY_Y 1
+#define MY_Z 2
+#define MY_A MY_Z
+#define MY_B MY_Y
+#define MY_C MY_X
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-class ProductMsg : public CkMcastBaseMsg, public CMessage_ProductMsg {
+//RAZ:  Added message for sending Dn Density to Up Instance
+//      Used in sendRhoDnToRhoUp();
+//      See also addition to cpaim.ci file
+class RhoRDnMsg : public CMessage_RhoRDnMsg{
   public:
-    int datalen, hops;
-    int subplane;
-    double *data;
-    int idx;
+  int datalen;
+  int time;
+  double *data;
+  int idx;
+  };
+
+class VksHartMsg : public CMessage_VksHartMsg{
+ public:
+  int datalen;
+  int time;
+  double *data;
+  int idx;
 };
 //============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class InitDensity : public CkMcastBaseMsg, public CMessage_InitDensity {
+  public:
+    int grid_offset_b, grid_num_b;
+    int pencil_offset_x, pencil_offset_y;
+};
+
+class VksMsg : public CkMcastBaseMsg, public CMessage_VksMsg {
+  public:
+    int pencil_offset_y;
+    int myspin;
+    double *data;
+};
+
+//============================================================================
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -51,46 +85,10 @@ class CompAtmForcMsg: public CkMcastBaseMsg, public CMessage_CompAtmForcMsg {
 };
 //============================================================================
 
-
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-class GHartDummyMsg: public CMessage_GHartDummyMsg {
-};
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class RSDummyResume: public CMessage_RSDummyResume {
-};
-//============================================================================
-
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class TMsg: public CMessage_TMsg {
-  public:
-    int datalen;
-    complex *data;
-};
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class RhoGSFFTMsg: public CMessage_RhoGSFFTMsg {
-  public:
-    int size;
-    int offset;   
-    int offsetGx; 
-    int iopt;
-    int num;
-    complex *data;
+class FFT_Done_Msg: public CkMcastBaseMsg, public CMessage_FFT_Done_Msg {
 };
 //============================================================================
 
@@ -100,64 +98,17 @@ class RhoGSFFTMsg: public CMessage_RhoGSFFTMsg {
 class RhoGHartMsg: public CMessage_RhoGHartMsg {
   public:
     int size;
-    int senderIndex;
-    int offset;
-    int offsetGx; 
-    int iter;
-    int iopt;
-    int num;
+    int mySpinIndex;
     complex *data;
 };
 //============================================================================
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class RhoRHartMsg: public CMessage_RhoRHartMsg {
-  public:
-    int size;
-    int senderIndex;
-    int iopt;
-    int iter;
-    complex *data;
-};
-//============================================================================
-
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class RhoRSFFTMsg: public CMessage_RhoRSFFTMsg {
-  public:
-    int size; 
-    int senderIndex;
-    int iopt;
-    complex *data;
-};
-//============================================================================
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class RhoHartRSFFTMsg: public CMessage_RhoHartRSFFTMsg {
-  public:
-    int size; 
-    int index;
-    int senderBigIndex;
-    int senderStrtLine;
-    int iopt;
-    complex *data;
-};
-//============================================================================
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 class RPPPFFTMsg: public CMessage_RPPPFFTMsg {
   public:
-    int size; 
+    int size;
     int senderIndex;
     int numPlanes;
     complex *data;
@@ -174,21 +125,25 @@ class RPPPFFTMsg: public CMessage_RPPPFFTMsg {
  */
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
   public:
-    CP_State_RealSpacePlane_SDAG_CODE
-      CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
+    CP_State_RealSpacePlane_SDAG_CODE;
+
+    CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
     CP_State_RealSpacePlane(CkMigrateMessage *m) {};
-    ~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
+    ~CP_State_RealSpacePlane() {
+      if(cookie!=NULL) delete [] cookie;
+    };
+
     void unpackFFT(RSFFTMsg *);
     void doFFT();
     void doVksFFT();
-    void unpackProduct(ProductMsg *);
+    void unpackVks(VksMsg *);
     void doProductThenFFT();
     void sendFPsiToGSP();
     void setNumPlanesToExpect(int num);
     void printData();
-    void init(ProductMsg *);
+    void init(InitDensity *);
     void doReduction();
-    void ResumeFromSync();	
+    void ResumeFromSync();
     void pup(PUP::er &);
   private:
     const UberCollection thisInstance;
@@ -197,7 +152,6 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
     int iplane_ind;
     int ibead_ind,kpoint_ind, itemper_ind;
     int iteration;
-    int rhoRsubplanes;
     int ngrida;
     int ngridb;
     int ngridc;
@@ -207,6 +161,12 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
     int countProduct;
     int numCookies;
     int istate;
+    //RAZ: Added spin index:
+    int mySpinIndex;
+
+    int *grid_offset_b, *grid_num_b;
+    double* hartree1;
+    int rho_rpencil_offset_x, rho_rpencil_num_y;
     UberCollection RhoReductionDest;
     RealStateSlab rs;
     CkSectionInfo *cookie;
@@ -222,91 +182,93 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
-  public:	
-    int listSubFlag;
-    int cp_grad_corr_on;
-    int ees_eext_on;
-    int nplane_rho_x;
-    int ngridcEext;
-    int ngrida;
-    int ngridb;
-    int ngridc;
-    int iplane_ind;
-    int myNgridb;      // I don't have all ngridb lines of x now
-    int myNplane_rho;  // I don't have all nplane_rho_x lines of y now
-    int nptsExpndA;
-    int nptsExpndB;
-    int nptsA;
-    int nptsB;
-    int myBoff;
-    int myAoff;
-    int countDebug;
-    int countFFTRyToGy;
-    int rhoRsubplanes;
+  public:
+    int myGrid_length[3];
+    int myGrid_start[3], myGrid_end[3];
+    int myGrid_size;
+    int fft_xoffset, fft_yoffset, fft_zoffset, fft_hartoffset;
     int myTime;
-    bool doneRhoReal;
-    bool doneRHart;
-    int recvCountFromGRho;
-    int recvCountFromGHartExt;
-    CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
-    CP_Rho_RealSpacePlane(int, bool,int,int,int, UberCollection);
-    void init();
+
+    CP_Rho_RealSpacePlane(CkMigrateMessage *m) { }
+    CP_Rho_RealSpacePlane(int, UberCollection);
     ~CP_Rho_RealSpacePlane();
     void pup(PUP::er &);
+
+    void init();
     void acceptDensity(CkReductionMsg *);
     void handleDensityReduction();
+
+
+    //RAZ: Added Spin dn declarations:
+    void handleDensityReductionDn();  
+    void sendRhoDnToRhoUp();          
+    void acceptDensityDn(RhoRDnMsg *);
+
+    
     void launchEextRNlG();
     void energyComputation();
-    void fftRhoRtoRhoG();
     void launchNLRealFFT();
-    void sendPartlyFFTRyToGy(int iopt);
-    void acceptRhoGradVksRyToGy(RhoGSFFTMsg *msg);
-    void fftRhoRyToGy(int iopt);
-    void sendPartlyFFTtoRhoG(int );
-    void acceptGradRhoVks(RhoRSFFTMsg *);
-    void sendPartlyFFTGxToRx(int );
-    void acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg);
-    void GradCorr();
     void whiteByrdFFT();
-    void acceptWhiteByrd(RhoRSFFTMsg *msg);
-    void addWhiteByrdVks();
-    void acceptHartVks(RhoHartRSFFTMsg *);
-    void addHartEextVks();
-    void RHartReport();
+    void acceptWhiteByrd();
     void doMulticastCheck();
     void doMulticast();
     void exitForDebugging();
-    void isAtSync(int iter){AtSync();};
-    void ResumeFromSync();
-    void sendPartlyFFTtoRhoGall();
-    void acceptGradRhoVksAll(RhoRSFFTMsg *msg);
+    void isAtSync(int iter) {
+      AtSync();
+    };
+    void ResumeFromSync() { }
+    void scaleData(double *scaledData, double scaleFac);
+    void acceptHartVks();
+    void RHartReport();
+    void acceptGradRhoVks();
+
+    //RAZ:  Added vks to vks_dn routine:
+    void sendVksHartToVksDn();
+    void acceptVksHartDn(VksHartMsg *);
+    void fftRhoRtoRhoG();
+    void launchNlG();
+    void launchEextR();
 
   private:
     const UberCollection thisInstance;
+    //RAZ:  added spin vars here:
+    int mySpinIndex;
+    int cp_lsda;
+    bool doneRhoUp;
+    bool doneRhoDn;
     int rhoKeeperId;
-    int rhoGHelpers;
-    int countGradVks[5]; // number of collections that have arrived
-    int countIntRtoG[5]; // our internal transpose friends.
-    int countIntGtoR[5]; // our internal transpose friends.
-    int countWhiteByrd;  // number of collections that have arrived
-    int countRHart;
-    int countRHartValue;
     int doneGradRhoVks; // count 1,2,3 = x,y,z all done
     bool doneWhiteByrd;
     bool doneHartVks;
-    double FFTscale;        
-    double volumeFactor;        
-    double probScale;             
-    RhoRealSlab rho_rs; 
-    //Comlib multicast proxies
-    CProxySection_CP_State_RealSpacePlane *realSpaceSectionProxyA;
-    CProxySection_CP_State_RealSpacePlane *realSpaceSectionCProxyA;
-    CProxy_CP_Rho_GSpacePlane rhoGProxy_com;
-    CProxy_CP_Rho_GSpacePlane rhoGProxyIGX_com;
-    CProxy_CP_Rho_GSpacePlane rhoGProxyIGY_com;
-    CProxy_CP_Rho_GSpacePlane rhoGProxyIGZ_com;
-    int redCount;
-    CkReductionMsg *RedMsg;
+    bool doneRHart;
+    int countRHart;
+    int countRHartValue;
+    double FFTscale;
+    double volumeFactor;
+    double probScale;
+    double exc_ret, muxc_ret, exc_gga_ret;  //energy
+
+    int *redCount, num_redn_complete;
+    CkReductionMsg **RedMsg;
+    CProxySection_CP_State_RealSpacePlane **realSpaceSectionProxyA;
+
+    //data
+    double *Vks;
+    double *VksDn;
+    double *density;
+    double *densityDn;
+    double *rhoIRX,*rhoIRY,*rhoIRZ;
+    double *rhoIRXDn,*rhoIRYDn,*rhoIRZDn;
+    double *VksHart;
+    // complex pointers to the same memory as the corresponding double array
+    complex *VksC;
+    complex *VksDnC;
+    complex *densityC;
+    complex *densityDnC;
+    complex *rhoIRXC,*rhoIRYC,*rhoIRZC;
+    complex *rhoIRXDnC,*rhoIRYDnC,*rhoIRZDnC;
+    complex *VksHartC;
+
 };
 //============================================================================
 /*@}*/
@@ -314,56 +276,54 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 /** @addtogroup Density
   @{
  */
-
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
   public:
     CP_Rho_GSpacePlane(CkMigrateMessage *m) {}
-    CP_Rho_GSpacePlane(int, int, int, bool, UberCollection);
+    CP_Rho_GSpacePlane(UberCollection);
     ~CP_Rho_GSpacePlane();
+    void ResumeFromSync() { }
+    void pup(PUP::er &p);
+    void isAtSync(int iter){
+      AtSync();
+    };
+
     void run();
     void init();
-    void acceptRhoData(RhoGSFFTMsg *msg);
-    void doRhoFFT(); // refine the name
-    void ResumeFromSync();
+    void acceptRhoData();
     void divRhoVksGspace();
-    void RhoGSendRhoR(int );
-    void acceptWhiteByrd(RhoGSFFTMsg *);
     void acceptWhiteByrd();
-    void pup(PUP::er &p);
-    void isAtSync(int iter){AtSync();};
-    int cp_grad_corr_on;
-    int ees_eext_on;
-    int ngridcEext;
-    int rhoRsubplanes;
-    int countDebug;
     void exitForDebugging();
-    void acceptWhiteByrdAll(RhoGSFFTMsg *msg);
-    void RhoGSendRhoRall(); 
     void launchNlG();
+
+    //RAZ: added spin dn send to Vks routine 
+    void sendRhoGDntoHartVks();
+
+    std::vector< gridPoint > * myPoints;
+    int myGrid_length[3];
+    int myGrid_start[3], myGrid_end[3];
+    int myGrid_size, numPoints;
+    int fft_xoffset, fft_yoffset, fft_zoffset;
+
   private:
     const UberCollection thisInstance;
     CProxySection_GSpaceDriver nlsectproxy;
     int myTime;
-    int recvCountFromRRho;
-    int nPacked;
-    int count_stuff;
-    int count;
-    int countWhiteByrd[4];
     int doneWhiteByrd;
-    int rhoGHelpers;
-    int iplane_ind;
-    int *numSplit;
-    int *istrtSplit;
-    int *iendSplit;
-    RhoGSlab rho_gs;
-    CProxy_CP_Rho_RealSpacePlane rhoRealProxy0_com;
-    CProxy_CP_Rho_RealSpacePlane rhoRealProxy1_com;
-    CProxy_CP_Rho_RealSpacePlane rhoRealProxy2_com;
-    CProxy_CP_Rho_RealSpacePlane rhoRealProxy3_com;
-    CProxy_CP_Rho_RealSpacePlane rhoRealProxyByrd_com;
+
+    complex *divRhoX;
+    complex *divRhoY;
+    complex *divRhoZ;
+
+    //RAZ:  added spin vars here:
+    int mySpinIndex;
+    int cp_lsda;
+
+
+    /* return values from rhoGSubroutine in subroutine.C */
+    double ehart_ret, eext_ret, ewd_ret;
 };
 //============================================================================
 /*@}*/
@@ -377,38 +337,20 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
   public:
     const UberCollection thisInstance;
-    int listSubFlag;
-    int nplane_rho_x;
-    int rhoRsubplanes;
-    int registrationFlag;
-    int launchFlag;
-    int ngrida;
-    int ngridb;
-    int ngridc;
-    int iplane_ind;
-    int ees_eext_on;
-    int natmTyp;
-    int countFFT[2];
-    int countIntRtoG;
-    int countIntGtoR[2];
+    int registrationFlag, launchFlag;
+    int natmTyp, atmTypoff;
+
     int iteration;
     int iterAtmTyp;
-    int csize;
     int nAtmTypRecv;
-    int csizeInt;
-    int myNgridb;
-    int myBoff;
-    int nptsB;
-    int nptsExpndB;
-    int myNplane_rho;
-    int myAoff;
-    int nptsA;
-    int nptsExpndA;
     int countDebug;
-    int recvCountFromGHartExt;
-    int nchareHartAtmT;
-    int natmTypTot;
-    int atmTypoff;
+    int myGrid_length[3];
+    int myGrid_start[3], myGrid_end[3];
+    int myGrid_size, numPoints;
+    int fft_atmSFOffset;
+    int fft_atmSFTotOffset;
+    int eesRHart_index;
+
 
     complex *atmSFC;
     double  *atmSFR;
@@ -420,35 +362,23 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
     complex *atmEwdForcC;
     double  *atmEwdForcR;
 
-    complex *atmSFCint;
-    double  *atmSFRint;
-    complex *atmForcCint;
-    double  *atmForcRint;
-
-    complex *atmEwdSFCint;
-    double  *atmEwdSFRint;
-    complex *atmEwdForcCint;
-    double  *atmEwdForcRint;
-
-    CProxy_CP_Rho_GHartExt rhoGHartProxy_com;
     CP_Rho_RHartExt(CkMigrateMessage *m) {}
-    CP_Rho_RHartExt(int , int , int , int , int, UberCollection );
+    CP_Rho_RHartExt( UberCollection );
     ~CP_Rho_RHartExt();
     void init();
     void pup(PUP::er &p);
     void startEextIter();
     void computeAtmSF();
-    void registrationDone(CkReductionMsg *msg);
-    void fftAtmSfRtoG();
-    void sendAtmSfRyToGy();
-    void recvAtmSfRyToGy(RhoGHartMsg *msg);
-    void sendAtmSfRhoGHart();
-    void recvAtmForcFromRhoGHart(RhoRHartMsg *msg);
-    void fftAtmForcGtoR(int flagEwd);
-    void sendAtmForcGxToRx(int iopt);
-    void recvAtmForcGxToRx(RhoGHartMsg *msg);
+    void registrationDone();
+    void recvAtmForcFromRhoGHart();
+    void recvAtmForcTotFromRhoGHart();
     void computeAtmForc(int);
     void exitForDebugging();
+    void doneAtmSF_FFT();
+    void doneAtmSF_Multicast(FFT_Done_Msg*);
+    void doneAtmSFTot_FFT();
+    void doneAtmSFTot_Multicast(FFT_Done_Msg*);
+
 };
 //============================================================================
 /*@}*/
@@ -462,69 +392,72 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
 class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
   public:
     CP_Rho_GHartExt(CkMigrateMessage *m) {}
-    CP_Rho_GHartExt(int , int , int , int ,int, UberCollection );
-    void init();
+    CP_Rho_GHartExt(UberCollection );
     ~CP_Rho_GHartExt();
     void pup(PUP::er &);
+    void isAtSync(int iter){
+      AtSync();
+    };
+    void init();
+
     void acceptData(RhoGHartMsg *msg);
     void HartExtVksG();
     void FFTVks();
-    void sendVks();
-    void acceptVks(int size, complex * inVks);
-    void acceptAtmSFTot(int size, complex * inAtm);
-    void recvAtmSFFromRhoRHart(RhoGHartMsg *msg);
+    void exitForDebugging();
+
+    void acceptVks(RhoGHartMsg*);
+    void acceptAtmSFTot(RhoGHartMsg*);
+    void recvAtmSFFromRhoRHart();
     void FFTEesBck();
     void getHartEextEes();
     void FFTEesFwd(int );
-    void sendAtmSF(int );
-    void isAtSync(int iter){AtSync();};
-    int rhoRsubplanes;
-    int ngridaEext;
-    int ngridbEext;
-    int ngridcEext;
-    int ees_eext_on;
-    int natmTyp;
-    int iterAtmTyp;
-    int nsendAtmTyp;
-    int numFullEext;
+    void registrationDone();
+    void doneAtmSF_FFT();
+    void doneAtmSF_Multicast(FFT_Done_Msg*);
+
+    
+    void operateOnData();
+
+    std::vector< gridPoint > * myPoints;
+    //RAZ:  added spin vars here:
+    int numAcceptDensity;
+    int mySpinIndex;
+    int cp_lsda;
+
+    int myGrid_length[3];
+    int myGrid_start[3], myGrid_end[3];
+    int myGrid_size, numPoints;
+    int fft_hartoffset;
+    int densityHere;
+    int iteration;
+
+    //ees method
     int registrationFlag;
     int launchFlag;
+    int atmSFHere;
+    int eesGHart_index;
+    int iterAtmTyp;
+    int nsendAtmTyp;
     int CountDebug;
-    int iperd;
-    complex *atmSF;
-    complex *atmSFtot;
+    int natmTyp;
+    int atmTypoff;
+    std::vector< gridPoint > * myPoints_ext;
+    int myGrid_length_ext[3];
+    int myGrid_start_ext[3], myGrid_end_ext[3];
+    int myGrid_size_ext, numPoints_ext;
+    int fft_atmSFOffset;
+    int fft_atmSFTotOffset;
+
+    //dataValues
     double ehart_ret;
     double eext_ret;
     double ewd_ret;
-    void registrationDone(CkReductionMsg *msg);
-    void exitForDebugging();
-  private:
     const UberCollection thisInstance;
-    complex *atmSFtotRecv;
-    complex *VksRecv;
     int countAtmSFtot;
     int countVksTot;
-    int nchareHartAtmT;
-    int natmTypTot;
-    int atmTypoff;
-    int recvCountFromRHartExt;
-    RhoGSlab rho_gs;
-    int atmSFHere;
-    int densityHere;
-    int countEextFFT;
-    int iopt;
-    int iteration;
-    int ind_x;       // This chares index=thisIndex.x.
-    int ind_xdiv;    // This chare is a subcollection of rhog(ind_xdiv).
-    int ind_xrem;    // The subcollection index  0<= ind_rem < rhoGHelpers.
-    int rhoGHelpers; // The number of subcolletions of each rhog(ind_xdiv).
-    int istrt_lines;  // start of my subdivion of lines in rhog()
-    int iend_lines;   // end of my subdivion of lines in rhog()
-    int numLines;    // Number of lines in my subdivision
-    CProxy_CP_Rho_RealSpacePlane rhoRealProxy_com;
-    CProxy_CP_Rho_RHartExt       rhoRHartProxy_com0;
-    CProxy_CP_Rho_RHartExt       rhoRHartProxy_com1;
-    int **index_pack_tran;
+    complex *Rho, *Vks;
+    complex *atmSF, *atmSFtot, *atmSFtotRecv;
+    complex *VksRecv;
 };
 //============================================================================
 /*@}*/
@@ -560,10 +493,11 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
     int ngridB;            // FFT grid size along b
     int ngridC;            // FFT grid size along c
     int planeSize;         // expanded plane size for FFTing
-    int planeSizeT;        // true plane size 
+    int planeSizeT;        // true plane size
     int csize;             // complex variable size for FFT
     int zmatSizeMax;       // zmatrix size for projector
     int reductionPlaneNum; // Reduction Plane number
+    int state0ReductionPlaneNum;
     int itimeRed;
 
     int registrationFlag;
@@ -573,6 +507,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
     bool fftDataDone;
     bool planeRedSectionComplete;
     bool enlSectionComplete;
+    bool initDone;
 
     double cp_enl;         // Non-local energy
     double cp_enlTot;      // Reduced Non-local energy
@@ -636,8 +571,8 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
   @{
  */
 
-//============================================================================  
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
  * The Large Sparse RhoG is where we interface with NAMD in QMMM for
@@ -663,8 +598,8 @@ class CP_LargeSP_RhoGSpacePlane: public CBase_CP_LargeSP_RhoGSpacePlane {
   @{
  */
 
-//============================================================================  
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
  * The Large Sparse RhoR is where we interpolate dense RhoR onto the large

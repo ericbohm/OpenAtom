@@ -21,7 +21,7 @@ extern CkVec <CProxy_StructureFactor> UsfCompProxy;
 extern CkVec <CProxy_StructFactCache> UsfCacheProxy;
 extern CkVec <CProxy_AtomsCache> UatomsCacheProxy;
 extern CkVec <CProxy_EnergyGroup> UegroupProxy;
-extern CProxy_PhysScratchCache  pScratchProxy;
+extern CkVec <CProxy_PhysScratchCache>  UpScratchProxy;
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
 //#define _CP_DEBUG_SF_CALC_
@@ -47,7 +47,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
     if(UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != 
         UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp || 
         UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != (iteration_src-1)){
-      CkPrintf("Flow of Control Warning  in computeSF : atoms slow\n");
+      CkPrintf("Flow of Control Warning  in computeSF : atoms slow at iter [%d] egroup iter [%d] caller [%d]\n", UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration,UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp, iteration_src) ;
       SFDummyMsg *newMsg = new(8*sizeof(int)) SFDummyMsg;
       CkSetQueueing(newMsg, CK_QUEUEING_IFIFO);
       *(int*)CkPriorityPtr(newMsg) = config.sfpriority;
@@ -78,7 +78,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
     CPNONLOCAL::CP_calc_Struct_Fact(gsSize,k_x, k_y,k_z, 
         structFactor,structFactor_fx,structFactor_fy,
         structFactor_fz,fastAtoms, config.doublePack, 
-        numSfGrps,thisIndex.x, pScratchProxy.ckLocalBranch()->psscratch);
+        numSfGrps,thisIndex.x, UpScratchProxy[thisInstance.proxyOffset].ckLocalBranch()->psscratch);
     //----------------------------------------------------------------------------
     // Communicate the results
     int totalsize=gsSize*natm_nl_grp_max;

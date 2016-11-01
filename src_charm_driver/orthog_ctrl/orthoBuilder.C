@@ -12,6 +12,16 @@
   @{
  */
 
+CProxy_Ortho orthoProxy;
+CProxy_ExtendedOrtho eOrthoProxy;
+int numOrthosPerDim;
+int numEOrthosPerDim;
+int orthoShrinkExpand;
+int totalOrthos;
+int diagonalization;
+int grainSizeOrtho;
+int numStatesOA;
+
 namespace cp {
   namespace ortho {
 
@@ -21,7 +31,7 @@ namespace cp {
     /**
      * Create the map objects and also all the chare arrays needed for an Ortho instance
      */
-    CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, const startup::PCMapConfig mapCfg)
+    CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, const startup::PCMapConfig mapCfg,  bool lsda)
     {
       CkPrintf("Building Ortho Chares\n");
 
@@ -39,7 +49,6 @@ namespace cp {
       /// The step 2 helper map logic object
       MapType2 helperMapTable;
 
-
       //-------------------------------------------------------------------------
       // Create maps for placing the Ortho chare array elements
 
@@ -50,11 +59,10 @@ namespace cp {
 
       MapType2 orthoMapTable;
       int success = 0;
-      if(cfg.instanceIndex == 0) {
+      if(cfg.instanceIndex == 0 || config.simpleTopo) {
         avail = mapCfg.getPeList();
         avail->reset();
-        excludePes= new PeList(1);
-        excludePes->TheList[0] = config.numPes;
+        excludePes= new PeList(1, 0, 0);
         orthoMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
 
         if(config.loadMapFiles)
@@ -65,7 +73,6 @@ namespace cp {
           success = mf->loadMap("OrthoMap", &orthoMapTable);
           delete mf;
         }
-
         if(success == 0)
         {
           SCalcMap *asymmMap = CProxy_SCalcMap(asymmHandle.mapperGID).ckLocalBranch();
@@ -110,16 +117,16 @@ namespace cp {
       CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(orthoMapTable);
       CkArrayOptions orthoOpts;
       orthoOpts.setMap(orthoMap);
-      orthoOpts.setStaticInsertion(true);
+      orthoOpts.setStaticInsertion(false);
       orthoOpts.setAnytimeMigration(false);
-      CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
+      orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
 
       // Create maps for the Ortho helper chares
       if(config.useOrthoHelpers)
       {
         double Timer=CmiWallTimer();
 
-        if (cfg.instanceIndex == 0)
+        if (cfg.instanceIndex == 0 || config.simpleTopo)
         {
           helperMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
           int success = 0;
@@ -179,11 +186,6 @@ namespace cp {
 
       //-------------------------------------------------------------------------
       // Delegate collectives within the ortho array
-#ifdef USE_COMLIB
-      Strategy *multistrat = new DirectMulticastStrategy();
-      orthoInstance=ComlibRegister(multistrat);
-      //  ComlibAssociateProxy(orthoInstance, orthoProxy);
-#endif
 
       // Set the root of array reductions within Ortho
       CkCallback ocb= CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
@@ -260,7 +262,35 @@ namespace cp {
       // Register with the time keeper
       int timekeep=keeperRegister("Ortho S to T");
       int maxorthoindex=(cfg.numStates/cfg.grainSize-1);
+      numOrthosPerDim = maxorthoindex + 1;
+      totalOrthos = numOrthosPerDim * numOrthosPerDim;
+      if ((cfg.numStates % cfg.grainSize) != 0) {
+        numEOrthosPerDim = numOrthosPerDim + 1;
+        orthoShrinkExpand = 1;
+      }
+      else {
+        numEOrthosPerDim = numOrthosPerDim;
+        orthoShrinkExpand = 0;
+      }
+#if INTEROP
+        diagonalization = 1;
+#else
+        diagonalization = 0;
+#endif
+      if (diagonalization != 0) {
+        if (CkNumPes() < (numEOrthosPerDim * numEOrthosPerDim)) {
+          CkAbort("Insufficient number of pes for diagonalizer to run.\n");
+        }
+      }
+      grainSizeOrtho = cfg.grainSize;
+      numStatesOA = cfg.numStates;
       int maxorthostateindex=(cfg.numStates/cfg.grainSize-1) * cfg.grainSize;
+
+      CkArrayOptions eOrthoOpts(numEOrthosPerDim, numEOrthosPerDim);
+      eOrthoOpts.setStaticInsertion(true);
+      orthoOpts.setAnytimeMigration(false);
+      eOrthoProxy = CProxy_ExtendedOrtho::ckNew(eOrthoOpts);
+
       // Insert each element of the Ortho array
       for (int s1 = 0; s1 <= maxorthostateindex; s1 += cfg.grainSize)
         for (int s2 = 0; s2 <= maxorthostateindex; s2 += cfg.grainSize)
@@ -278,7 +308,7 @@ namespace cp {
               cfg,
               helperAID,
               timekeep,
-              orthoMcastGID, orthoRedGID);
+              orthoMcastGID, orthoRedGID, lsda);
 
           if(config.useOrthoHelpers)
           {

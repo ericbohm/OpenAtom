@@ -1,10 +1,16 @@
 #===============================================================================
 #------------------------- Path to Charm++ and FFTW ----------------------------
   # Location of the charm installation
-  CHARMBASE	= $(HOME)/charm
+  CHARMBASE	= $(HOME)/charm/netlrts-linux-x86_64-smp
   # Location of the FFTW library installation
 #assumes module load Libraries/FFTW/2.1.5
-  FFT_HOME	= $(FFTW2_DIR)
+  FFT3_HOME	= $(FFTW3_DIR)
+  FFT2_HOME	= $(FFTW2_DIR)
+  CHARMFFT_HOME = $(HOME)/fft
+
+  ELPA_HOME        = $(HOME)/scalapack/install
+  DIAGONALIZER     = NO
+  DIAGONALIZER_VAL =
 
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
@@ -22,21 +28,29 @@
   OPT       = -O3
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2
-  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
-	      -I$(FFT_HOME)/include #-DUSE_COMLIB
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 $(DIAGONALIZER_VAL) \
+	      -I$(FFT3_HOME)/include -I$(FFT2_HOME)/include -I$(CHARMFFT_HOME) \
+	      -Wl,--allow-multiple-definition
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
   CXXFLAGS += $(OPT)
 
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
-  LDFLAGS  += -L$(FFT_HOME)/lib
-  LDLIBS   += -module CkMulticast -module comlib -lz -lconv-util -lm
+ifeq ($(DIAGONALIZER), YES)
+  LDFLAGS    += -L$(ELPA_HOME)/lib
+  LDLIBS     += -lscalapack -ltmg -lreflapack -lrefblas -lgfortran -module cpaimd
+  DIAGONALIZER_VAL  = -DINTEROP=1
+else
+  DIAGONALIZER_VAL  = -DINTEROP=0
+endif
+  LDFLAGS  += -L./ -L$(FFT3_HOME)/lib -L$(FFT2_HOME)/lib -L$(CHARMFFT_HOME)
+  LDLIBS   += -module CkMulticast -lz -lconv-util -lm
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
-$(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include \
-			   -I$(STANDARD_INC)
+$(libdriver):  CPPFLAGS += -I. -I$(main) -I$(driver) -I$(base) -I$(base)/include \
+			   -I$(STANDARD_INC) -I$(interoplib)
 $(libdriver):  FFLAGS   +=
 $(libdriver):  CFLAGS   +=
 $(libdriver):  CXXFLAGS +=
@@ -58,6 +72,14 @@ $(libmath):    FFLAGS   +=
 $(libmath):    CFLAGS   += -seq
 $(libmath):    CXXFLAGS += -seq
 
+#-------------------------------------------------------------------------------
+#------------------ Flags and settings just for the interop lib ------------------
+$(libinterop):    CXX       = mpicxx
+$(libinterop):    CPPFLAGS  = $(DIAGONALIZER_VAL) -I. -I$(main) -I$(driver) -I$(base) -I$(STANDARD_INC) -I$(CHARMINC) -I$(topinclude)
+$(libinterop):    FFLAGS    =
+$(libinterop):    CFLAGS    =
+$(libinterop):    CXXFLAGS  =
+
 #===============================================================================
 #-------------------------------------------------------------------------------
   # Should we use dual fft or not
@@ -72,9 +94,9 @@ $(libmath):    CXXFLAGS += -seq
   # The fft (and other) math libraries to link based on whether DUAL_FFTW is
   # turned on or off
   ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
-    LDLIBS   += -lrfftw -lfftw
+    LDLIBS   += -lrfftw -lfftw -lfft_charm -lfftw3
   else
-    LDLIBS   += -ldrfftw -ldfftw
+    LDLIBS   += -ldrfftw -ldfftw -lfft_charm -lfftw3
   endif
 
 #===============================================================================

@@ -8,3 +8,22 @@ Instructions: Create PIMD ring polymers from a classical config
    4) example input_file=spread.input
    5) example coordinate file (classical config)  = coords.in
 =================================================================
+
+
+Example spread.input file contents:
+4 1475145.0 initial          : pi_beads,seed,start_typ (intial/restart_pos)
+1.0  300.0                   : rcut in Angstrom , kT in Kelvin
+coords.in ATOMS_COORDS_IN water.coords_initial : filenameIn,directorynameOut,filenameOut
+masses.in  : masses in amu
+
+4 = number of beads
+seed = random number generator seed
+start_type = initial means output is in Angstroms, restart_pos means in atomic units
+rcut = does not allow the spread of the ring polymer to exceed this number in Angstroms
+       this is to keep things reasonable since only the springs are sampled in this
+       setup which tends to make the intial guess too "fluffy"
+kT = temperature of beads
+coords.in = input coordinates for one bead
+ATOMS_COORDS_IN = directory specifying where to write the bead positions (one subdirectory per bead)
+water.coords_initial = what the coordinate output is called inside those subdirectories
+masses.in = file containing atomic masses in amu

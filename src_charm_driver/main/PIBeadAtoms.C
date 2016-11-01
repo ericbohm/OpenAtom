@@ -27,18 +27,22 @@ PIBeadAtoms::PIBeadAtoms(UberCollection _thisInstance, int _numBeads, int _natm)
   //============================================================================
   //  CkPrintf("{%d}[%d] PIBeadAtoms::PIBeadAtoms numbeads %d\n",thisInstance.proxyOffset,thisIndex, numBeads);
 
-  x= new double[numBeads];
-  y= new double[numBeads];
-  z= new double[numBeads];
-  xu= new double[numBeads];
-  yu= new double[numBeads];
-  zu= new double[numBeads];
-  fx= new double[numBeads];
-  fy= new double[numBeads];
-  fz= new double[numBeads];
-  fxu= new double[numBeads];
-  fyu= new double[numBeads];
-  fzu= new double[numBeads];
+  startAtm = (thisIndex * natm)/config.numBeadAtomChares;
+  endAtm = ((thisIndex + 1) * natm)/config.numBeadAtomChares;
+  numAtm = endAtm - startAtm;
+
+  x= new double[numAtm * numBeads];
+  y= new double[numAtm * numBeads];
+  z= new double[numAtm * numBeads];
+  xu= new double[numAtm * numBeads];
+  yu= new double[numAtm * numBeads];
+  zu= new double[numAtm * numBeads];
+  fx= new double[numAtm * numBeads];
+  fy= new double[numAtm * numBeads];
+  fz= new double[numAtm * numBeads];
+  fxu= new double[numAtm * numBeads];
+  fyu= new double[numAtm * numBeads];
+  fzu= new double[numAtm * numBeads];
 
   rat1 = new double[numBeads];
   rat2 = new double[numBeads];
@@ -76,15 +80,18 @@ PIBeadAtoms::PIBeadAtoms(UberCollection _thisInstance, int _numBeads, int _natm)
 void PIBeadAtoms::accept_PIMD_Fx(AtomXYZMsg *msg)
   //============================================================================
 {// begin routine
-  fx[msg->index]=msg->x[thisIndex];
-  fy[msg->index]=msg->y[thisIndex];
-  fz[msg->index]=msg->z[thisIndex];
+  int curAtm = startAtm;
+  int offset = msg->index;
+  for(int i = 0; i < numAtm; i++) {
+    fx[offset] = msg->x[curAtm];
+    fy[offset] = msg->y[curAtm];
+    fz[offset] = msg->z[curAtm];
+    curAtm++;
+    offset += numBeads;
+  }
   delete msg;
-  //  atomdest[PIBeadIndex]=atomdest;
   acceptCount_Fx++;
-  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx (%d of %d)\n",thisInstance.proxyOffset,thisIndex, acceptCount_Fx, numBeads);
 
-  // 
   if(acceptCount_Fx==numBeads){
     compute_PIMD_Fu();
     acceptCount_Fx=0;
@@ -96,7 +103,16 @@ void PIBeadAtoms::accept_PIMD_Fx(AtomXYZMsg *msg)
       //	  UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_fu(fxu[bead],
       //	  fyu[bead], fzu[bead], thisIndex);
       // this atom index has to send the Fu to everyone
-      UatomsComputeProxy[proxyOffset].accept_PIMD_Fu(fxu[bead], fyu[bead], fzu[bead], thisIndex);
+      AtomXYZMsg * toSend = new (numAtm, numAtm, numAtm,  8*sizeof(int)) AtomXYZMsg;
+      toSend->index  = thisIndex;
+      int offset = bead;
+      for(int i = 0; i < numAtm; i++) {
+        toSend->x[i] = fxu[offset];
+        toSend->y[i] = fyu[offset];
+        toSend->z[i] = fzu[offset];
+        offset += numBeads;
+      }
+      UatomsComputeProxy[proxyOffset].accept_PIMD_Fu(toSend);
     }//endfor
   }//endif
   //============================================================================
@@ -111,13 +127,18 @@ void PIBeadAtoms::accept_PIMD_Fx_and_x(AtomXYZMsg *msg)
   //============================================================================
 {// begin routine
   //============================================================================
-
-  fx[msg->index]=msg->x[thisIndex];
-  fy[msg->index]=msg->y[thisIndex];
-  fz[msg->index]=msg->z[thisIndex];
-  x[msg->index]=msg->x[(thisIndex+natm)];
-  y[msg->index]=msg->y[(thisIndex+natm)];
-  z[msg->index]=msg->z[(thisIndex+natm)];
+  int curAtm = startAtm;
+  int offset = msg->index;
+  for(int i = 0; i < numAtm; i++) {
+    fx[offset] = msg->x[curAtm];
+    fy[offset] = msg->y[curAtm];
+    fz[offset] = msg->z[curAtm];
+    x[offset] = msg->x[(curAtm+natm)];
+    y[offset] = msg->y[(curAtm+natm)];
+    z[offset] = msg->z[(curAtm+natm)];
+    offset += numBeads;
+    curAtm++;
+  }
   delete msg;
 
   //============================================================================
@@ -138,7 +159,19 @@ void PIBeadAtoms::accept_PIMD_Fx_and_x(AtomXYZMsg *msg)
       //	  UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_fu(fxu[bead],
       //	  fyu[bead], fzu[bead], thisIndex);
       // this atom index has to send the Fu to everyone
-      UatomsComputeProxy[proxyOffset].accept_PIMD_Fu_and_u(fxu[bead], fyu[bead], fzu[bead],xu[bead], yu[bead], zu[bead], thisIndex);
+      AtomXYZMsg * toSend = new (2*numAtm, 2*numAtm, 2*numAtm,  8*sizeof(int)) AtomXYZMsg;
+      toSend->index  = thisIndex;
+      int offset = bead;
+      for(int i = 0; i < numAtm; i++) {
+        toSend->x[i] = fxu[offset];
+        toSend->y[i] = fyu[offset];
+        toSend->z[i] = fzu[offset];
+        toSend->x[numAtm + i] = xu[offset];
+        toSend->y[numAtm + i] = yu[offset];
+        toSend->z[numAtm + i] = zu[offset];
+        offset += numBeads;
+      }
+      UatomsComputeProxy[proxyOffset].accept_PIMD_Fu_and_u(toSend);
     }//endfor
   }//endif
   //============================================================================
@@ -150,26 +183,37 @@ void PIBeadAtoms::accept_PIMD_Fx_and_x(AtomXYZMsg *msg)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void PIBeadAtoms::accept_PIMD_u(double _xu, double _yu, double _zu, int PIBeadIndex)
+void PIBeadAtoms::accept_PIMD_u(AtomXYZMsg *msg)
   //============================================================================
 {// begin routine
   //============================================================================
-
-  xu[PIBeadIndex]=_xu;
-  yu[PIBeadIndex]=_yu;
-  zu[PIBeadIndex]=_zu;
+  int offset = msg->index;
+  for(int i = 0; i < numAtm; i++) {
+    xu[offset] = msg->x[i];
+    yu[offset] = msg->y[i];
+    zu[offset] = msg->z[i];
+    offset += numBeads;
+  }
+  delete msg;
   acceptCount_u++;
   //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_u (%d of %d)\n",thisInstance.proxyOffset,thisIndex, acceptCount_u, numBeads );
-  if(acceptCount_u==numBeads){
+  if(acceptCount_u == numBeads){
     compute_PIMD_x();
     acceptCount_u=0;
     UberCollection instance=thisInstance;
     for(int bead=0;bead<numBeads; bead++){
       instance.idxU.x=bead;
       int proxyOffset=instance.setPO();
-      int atomdest=0;
-      //	    UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_x(x[bead],y[bead], z[bead], thisIndex);
-      UatomsComputeProxy[proxyOffset].accept_PIMD_x(x[bead], y[bead], z[bead], thisIndex);
+      AtomXYZMsg * toSend = new (numAtm, numAtm, numAtm,  8*sizeof(int)) AtomXYZMsg;
+      toSend->index  = thisIndex;
+      int offset = bead;
+      for(int i = 0; i < numAtm; i++) {
+        toSend->x[i] = x[offset];
+        toSend->y[i] = y[offset];
+        toSend->z[i] = z[offset];
+        offset += numBeads;
+      }
+      UatomsComputeProxy[proxyOffset].accept_PIMD_x(toSend);
     }//endfor
   }//endif
 
@@ -182,14 +226,19 @@ void PIBeadAtoms::accept_PIMD_u(double _xu, double _yu, double _zu, int PIBeadIn
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void PIBeadAtoms::accept_PIMD_x(double _x, double _y, double _z, int PIBeadIndex )
+void PIBeadAtoms::accept_PIMD_x(AtomXYZMsg *msg)
   //============================================================================
 {// begin routine
   //============================================================================
+  int offset = msg->index;
+  for(int i = 0; i < numAtm; i++) {
+    x[offset] = msg->x[i];
+    y[offset] = msg->y[i];
+    z[offset] = msg->z[i];
+    offset += numBeads;
+  }
+  delete msg;
 
-  x[PIBeadIndex]=_x;
-  y[PIBeadIndex]=_y;
-  z[PIBeadIndex]=_z;
   acceptCount_x++;
   //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_x (%d of %d) \n",thisInstance.proxyOffset,thisIndex, acceptCount_x, numBeads);
   if(acceptCount_x==numBeads){
@@ -199,9 +248,16 @@ void PIBeadAtoms::accept_PIMD_x(double _x, double _y, double _z, int PIBeadIndex
     for(int bead=0;bead<numBeads; bead++){
       instance.idxU.x=bead;
       int proxyOffset=instance.setPO();
-      int atomdest=0;
-      //	    UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_u(xu[bead],yu[bead],zu[bead],  thisIndex);
-      UatomsComputeProxy[proxyOffset].accept_PIMD_u(xu[bead],yu[bead],zu[bead], thisIndex);
+      AtomXYZMsg * toSend = new (numAtm, numAtm, numAtm,  8*sizeof(int)) AtomXYZMsg;
+      toSend->index  = thisIndex;
+      int offset = bead;
+      for(int i = 0; i < numAtm; i++) {
+        toSend->x[i] = xu[offset];
+        toSend->y[i] = yu[offset];
+        toSend->z[i] = zu[offset];
+        offset += numBeads;
+      }
+      UatomsComputeProxy[proxyOffset].accept_PIMD_u(toSend);
     }//endfor
   }//endif
 
@@ -229,19 +285,28 @@ void PIBeadAtoms::compute_PIMD_Fu()
   //============================================================================
 
   if(numBeads>1){
-    fxu[0]  = 0.0;  fyu[0]  = 0.0;  fzu[0]  = 0.0;
-    for(int ip=0;ip<numBeads;ip++){
-      fxu[0] += fx[ip]; fyu[0] += fy[ip]; fzu[0] += fz[ip];
-    }/*endfor*/
-    fxu[1]  = fx[1];  fyu[1]  = fy[1];  fzu[1] = fz[1];
-    for(int ip=1;ip<numBeads-1;ip++){
-      int ip1 = ip+1;
-      fxu[ip1] = fx[ip1] + rat1[ip]*fxu[ip];
-      fyu[ip1] = fy[ip1] + rat1[ip]*fyu[ip];
-      fzu[ip1] = fz[ip1] + rat1[ip]*fzu[ip];
-    }/*endfor*/
+    for(int i = 0; i < numAtm; i++) {
+      int offset = i * numBeads;
+      fxu[offset]  = 0.0;  fyu[offset]  = 0.0;  fzu[offset]  = 0.0;
+      for(int ip = 0; ip < numBeads; ip++) {
+        fxu[offset] += fx[offset + ip]; 
+        fyu[offset] += fy[offset + ip]; 
+        fzu[offset] += fz[offset + ip];
+      }/*endfor*/
+      fxu[offset + 1] = fx[offset + 1];  
+      fyu[offset + 1] = fy[offset + 1];  
+      fzu[offset + 1] = fz[offset + 1];
+      for(int ip = 1; ip < numBeads-1; ip++){
+        int ip1 = ip+1;
+        fxu[offset + ip1] = fx[offset + ip1] + rat1[ip]*fxu[offset + ip];
+        fyu[offset + ip1] = fy[offset + ip1] + rat1[ip]*fyu[offset + ip];
+        fzu[offset + ip1] = fz[offset + ip1] + rat1[ip]*fzu[offset + ip];
+      }/*endfor*/
+    }
   }else{
-    fxu[0]  = fx[0];  fyu[0]  = fy[0];  fzu[0] = fz[0];
+    for(int i = 0; i < numAtm; i++) {
+      fxu[i]  = fx[i];  fyu[i]  = fy[i];  fzu[i] = fz[i];
+    }
   }/*endif*/
 
   //============================================================================
@@ -269,22 +334,29 @@ void PIBeadAtoms::compute_PIMD_u()
   //============================================================================
 
   if(numBeads>1){
-    xu[0]   = x[0];  yu[0]   = y[0];  zu[0]   = z[0];
-    for(int ip=1;ip<numBeads-1;ip++){
-      int ip1 = ip+1;
-      double xstar = rat1[ip]*x[ip1] + rat2[ip]*x[0];
-      double ystar = rat1[ip]*y[ip1] + rat2[ip]*y[0];
-      double zstar = rat1[ip]*z[ip1] + rat2[ip]*z[0];
-      xu[ip] =  x[ip] - xstar;
-      yu[ip] =  y[ip] - ystar;
-      zu[ip] =  z[ip] - zstar;
-    }/*endfor:ip*/
-    int ip = numBeads-1;
-    xu[ip] =  x[ip] - x[0];
-    yu[ip] =  y[ip] - y[0];
-    zu[ip] =  z[ip] - z[0];
+    for(int i = 0; i < numAtm; i++) {
+      int offset = i * numBeads;
+      xu[offset]   = x[offset];  
+      yu[offset]   = y[offset];  
+      zu[offset]   = z[offset];
+      for(int ip = 1; ip < numBeads - 1; ip++){
+        int ip1 = ip+1;
+        double xstar = rat1[ip] * x[offset + ip1] + rat2[ip]*x[offset];
+        double ystar = rat1[ip] * y[offset + ip1] + rat2[ip]*y[offset];
+        double zstar = rat1[ip] * z[offset + ip1] + rat2[ip]*z[offset];
+        xu[offset + ip] =  x[offset + ip] - xstar;
+        yu[offset + ip] =  y[offset + ip] - ystar;
+        zu[offset + ip] =  z[offset + ip] - zstar;
+      }/*endfor:ip*/
+      int ip = numBeads-1;
+      xu[offset + ip] =  x[offset + ip] - x[offset];
+      yu[offset + ip] =  y[offset + ip] - y[offset];
+      zu[offset + ip] =  z[offset + ip] - z[offset];
+    }
   }else{
-    xu[0]  = x[0];  yu[0]  = y[0];  zu[0] = z[0];
+    for(int i = 0; i < numAtm; i++) {
+      xu[i]  = x[i];  yu[i]  = y[i];  zu[i] = z[i];
+    }
   }//endif
 
   //============================================================================
@@ -313,20 +385,27 @@ void PIBeadAtoms::compute_PIMD_x()
 
 
   if(numBeads>1){
-    x[0] = xu[0];  y[0] = yu[0];  z[0] = zu[0];
-    int ip = numBeads-1;
-    x[ip] = xu[ip] + x[0]; y[ip] = yu[ip] + y[0]; z[ip] = zu[ip] + z[0];
-    for(int ip=numBeads-2;ip>=1;ip--){
-      int ip1 = ip+1;
-      double xadd = rat1[ip]*x[ip1]+xu[0]*rat2[ip];
-      double yadd = rat1[ip]*y[ip1]+yu[0]*rat2[ip];
-      double zadd = rat1[ip]*z[ip1]+zu[0]*rat2[ip];
-      x[ip] = xu[ip] + xadd;
-      y[ip] = yu[ip] + yadd;
-      z[ip] = zu[ip] + zadd;
-    }/*endfor*/
+    for(int i = 0; i < numAtm; i++) {
+      int offset = i * numBeads;
+      x[offset] = xu[offset];  y[offset] = yu[offset];  z[offset] = zu[offset];
+      int ip = numBeads-1;
+      x[offset + ip] = xu[offset + ip] + x[offset]; 
+      y[offset + ip] = yu[offset + ip] + y[offset]; 
+      z[offset + ip] = zu[offset + ip] + z[offset];
+      for(int ip=numBeads-2;ip>=1;ip--){
+        int ip1 = ip+1;
+        double xadd = rat1[ip] * x[offset + ip1] + xu[offset] * rat2[ip];
+        double yadd = rat1[ip] * y[offset + ip1] + yu[offset] * rat2[ip];
+        double zadd = rat1[ip] * z[offset + ip1] + zu[offset] * rat2[ip];
+        x[ip] = xu[ip] + xadd;
+        y[ip] = yu[ip] + yadd;
+        z[ip] = zu[ip] + zadd;
+      }/*endfor*/
+    }
   }else{
-    x[0]  = xu[0];  y[0]  = yu[0];  z[0] = zu[0];
+    for(int i = 0; i < numAtm; i++) {
+      x[i]  = xu[i];  y[i]  = yu[i];  z[i] = zu[i];
+    }
   }//endif
 
   //============================================================================
@@ -346,9 +425,12 @@ void PIBeadAtoms::output_PIMD_x()
   //============================================================================
 
   CkPrintf("\n=================================\n");
-  for(int i =0;i<numBeads;i++){
-    CkPrintf("x[%d]: %g %g %g\n",i,x[i],y[i],z[i]);
-  }//endfor
+  for(int atm = 0; atm < numAtm; atm++) {
+    for(int i =0; i< numBeads;i++) {
+      CkPrintf("x[%d,%d]: %g %g %g\n", startAtm + atm, i, x[atm * numBeads + i], 
+        y[atm * numBeads + i], z[atm * numBeads + i]);
+    }//endfor
+  }
   CkPrintf("=================================\n\n");
 
   //============================================================================
@@ -367,9 +449,12 @@ void PIBeadAtoms::output_PIMD_u()
   //============================================================================
 
   CkPrintf("\n=================================\n");
-  for(int i =0;i<numBeads;i++){
-    CkPrintf("u[%d]: %g %g %g\n",i,xu[i],yu[i],zu[i]);
-  }//endfor
+  for(int atm = 0; atm < numAtm; atm++) {
+    for(int i =0;i<numBeads;i++){
+      CkPrintf("u[%d,%d]: %g %g %g\n", startAtm + atm, i, xu[atm * numBeads + i],       
+        yu[atm * numBeads + i], zu[atm * numBeads + i]);
+    }//endfor
+  }
   CkPrintf("=================================\n\n");
 
   //============================================================================
@@ -387,9 +472,13 @@ void PIBeadAtoms::zero_PIMD_u()
 {// begin routine
   //============================================================================
 
-  for(int i =0;i<numBeads;i++){
-    xu[i] = 0.0; yu[i] = 0.0; zu[i] = 0.0;;
-  }//endfor
+  for(int atm = 0; atm < numAtm; atm++) {
+    for(int i =0;i<numBeads;i++){
+      xu[atm * numBeads + i] = 0.0; 
+      yu[atm * numBeads + i] = 0.0; 
+      zu[atm * numBeads + i] = 0.0;;
+    }//endfor
+  }
 
   //============================================================================
 }//end routine
@@ -405,9 +494,13 @@ void PIBeadAtoms::zero_PIMD_fu()
 {// begin routine
   //============================================================================
 
-  for(int i =0;i<numBeads;i++){
-    fxu[i] = 0.0; fyu[i] = 0.0; fzu[i] = 0.0;;
-  }//endfor
+  for(int atm = 0; atm < numAtm; atm++) {
+    for(int i =0;i<numBeads;i++){
+      fxu[atm * numBeads + i] = 0.0; 
+      fyu[atm * numBeads + i] = 0.0; 
+      fzu[atm * numBeads + i] = 0.0;;
+    }//endfor
+  }
 
   //============================================================================
 }//end routine
@@ -424,9 +517,13 @@ void PIBeadAtoms::zero_PIMD_x()
 {// begin routine
   //============================================================================
 
-  for(int i =0;i<numBeads;i++){
-    x[i] = 0.0; y[i] = 0.0; z[i] = 0.0;;
-  }//endfor
+  for(int atm = 0; atm < numAtm; atm++) {
+    for(int i = 0; i < numBeads; i++){
+      x[atm * numBeads + i] = 0.0; 
+      y[atm * numBeads + i] = 0.0; 
+      z[atm * numBeads + i] = 0.0;;
+    }//endfor
+  }
 
   //============================================================================
 }//end routine
@@ -446,21 +543,23 @@ void PIBeadAtoms::energy_PIMD_x()
   int ip  = 0;
   int ip1 = numBeads-1;
   double ep;
-  ep = ( (x[ip]-x[ip1])*(x[ip]-x[ip1])
-      +(y[ip]-y[ip1])*(y[ip]-y[ip1])
-      +(z[ip]-z[ip1])*(z[ip]-z[ip1]) 
-      );
-  for(int ip=1;ip<numBeads;ip++){
-    int ip1 = ip-1;
-    ep += ( (x[ip]-x[ip1])*(x[ip]-x[ip1])
-        +(y[ip]-y[ip1])*(y[ip]-y[ip1])
-        +(z[ip]-z[ip1])*(z[ip]-z[ip1]) 
+  for(int atm = 0; atm < numAtm; atm++) {
+    int offset = atm * numBeads;
+    ep = ( (x[offset + ip]-x[offset + ip1])*(x[offset + ip]-x[offset + ip1])
+        +(y[offset + ip]-y[offset + ip1])*(y[offset + ip]-y[offset + ip1])
+        +(z[offset + ip]-z[offset + ip1])*(z[offset + ip]-z[offset + ip1]) 
         );
-  }//endfor
-  CkPrintf("\n=================================\n");
-  CkPrintf("x energy %.10g\n",ep);
-  CkPrintf("=================================\n");
-
+    for(int ip=1;ip<numBeads;ip++){
+      int ip1 = ip-1;
+      ep += ( (x[offset + ip]-x[offset + ip1])*(x[offset + ip]-x[offset + ip1])
+          +(y[offset + ip]-y[offset + ip1])*(y[offset + ip]-y[offset + ip1])
+          +(z[offset + ip]-z[offset + ip1])*(z[offset + ip]-z[offset + ip1]) 
+          );
+    }//endfor
+    CkPrintf("\n=================================\n");
+    CkPrintf("x[%d] energy %.10g\n", startAtm + atm, ep);
+    CkPrintf("=================================\n");
+  }
   //============================================================================
 }//end routine
 //============================================================================
@@ -476,17 +575,20 @@ void PIBeadAtoms::energy_PIMD_u()
 {// begin routine
   //============================================================================
 
-  double ep = 0.0;
-  for(int ip =1;ip<numBeads;ip++){
-    double fk = veig[ip];
-    ep += fk*(xu[ip]*xu[ip]
-        +yu[ip]*yu[ip]
-        +zu[ip]*zu[ip]
-        );
-  }//endfor
-  CkPrintf("\n=================================\n");
-  CkPrintf("u energy %.10g\n",ep);
-  CkPrintf("=================================\n");
+  for(int atm = 0; atm < numAtm; atm++) {
+    double ep = 0.0;
+    int offset = atm * numBeads;
+    for(int ip =1;ip<numBeads;ip++){
+      double fk = veig[ip];
+      ep += fk*(xu[offset + ip]*xu[offset + ip]
+          +yu[offset + ip]*yu[offset + ip]
+          +zu[offset + ip]*zu[offset + ip]
+          );
+    }//endfor
+    CkPrintf("\n=================================\n");
+    CkPrintf("u[%d] energy %.10g\n", startAtm + atm, ep);
+    CkPrintf("=================================\n");
+  }
 
   //============================================================================
 }//end routine
@@ -503,7 +605,7 @@ void PIBeadAtoms::checkUforce()
   //============================================================================
 {// begin routine
   //============================================================================
-
+#if 0
   printf("\n=================================\n");
 
   double potpx,potmx;
@@ -542,6 +644,7 @@ void PIBeadAtoms::checkUforce()
   }//endfor
 
   printf("=================================\n");
+#endif
 
   //============================================================================
 }//end routine
@@ -558,16 +661,19 @@ void PIBeadAtoms::modelpot_PIMD_x(double *pot_out)
 {// begin routine
   //============================================================================
 
-  double pot = 0.0;
-  double fk = 0.5;
-  for(int ip =0;ip<numBeads;ip++){
-    pot += fk*(x[ip]*x[ip]
-        +y[ip]*y[ip]
-        +z[ip]*z[ip]
-        );
-  }//endfor
+  for(int atm = 0; atm < numAtm; atm++) {
+    double pot = 0.0;
+    double fk = 0.5;
+    int offset = atm * numBeads;
+    for(int ip =0;ip<numBeads;ip++){
+      pot += fk*(x[offset + ip]*x[offset + ip]
+          +y[offset + ip]*y[offset + ip]
+          +z[offset + ip]*z[offset + ip]
+          );
+    }//endfor
 
-  pot_out[0] = pot;
+    pot_out[offset] = pot;
+  }
 
   //============================================================================
 }//end routine

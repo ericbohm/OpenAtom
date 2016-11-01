@@ -86,6 +86,7 @@ class GSpaceDriver: public CBase_GSpaceDriver
     const UberCollection thisInstance;
     /// Array section of the structure factor chares that I will be triggering
     CProxySection_StructureFactor sfCompSectionProxy;
+    CkVec <CkArrayIndex3D> sfelems;
 };
 /*@}*/
 #endif // GSPACE_DRIVER_H

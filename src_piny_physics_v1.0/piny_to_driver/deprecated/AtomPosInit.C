@@ -55,7 +55,7 @@ AtomPosInit::AtomPosInit () {
     therm_class.x_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"main.C");
     therm_class.v_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"main.C");
   }// endif
-
+  CkAbort("do we get here?\n");
   read_coord(mdintegrate,mdatoms,mdinter,mdintra,general_data,cp,
       mdclatoms_pos,&therm_class,therm_bead);
 

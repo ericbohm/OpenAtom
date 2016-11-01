@@ -19,11 +19,9 @@
 //#define TEST_ALIGN
 //==============================================================================
 
-CPcharmParaInfo *sim  = CPcharmParaInfo::get();
 extern CkVec <CProxy_FFTcache> UfftCacheProxy;
 extern Config config;
-extern int nstates;
-extern int sizeX;
+extern CPcharmParaInfo  simReadOnly;
 CmiNodeLock FFTcache::fftw_plan_lock;
 //==============================================================================
 
@@ -202,7 +200,7 @@ FFTcache::FFTcache(
   char wisstring[1024];
   snprintf(wisstring,1024,"fftwwisdom_%d.dat",CkNumPes());
   if(iopt==0){
-    /**
+    /*
      * If there is a wisdom file already made for this decomp, load
      * it.  We assume here that the rho decomposition choice changes
      * only with the number of processors.  It should be noted that
@@ -282,51 +280,16 @@ FFTcache::FFTcache(
     skipC = ngrida;
   }//endif
 
-  if(rhoRsubPlanes==1){
-    initFFTholder  (&fwdYPlanRho, &iopt,&nwork1,&nwork2T,&scale,&plus,&ngridb,
-        &skipC,&unit,nchareRRhoTot,&nsplitR,numRYRho);
-    initFFTholder  (&bwdYPlanRho, &iopt,&nwork1,&nwork2T,&scale,&mnus,&ngridb,
-        &skipC,&unit,nchareRRhoTot,&nsplitR,numRYRho);
-  }else{
-    initFFTholder  (&fwdYPlanRhoS,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridb,
-        &unit, &ngridb,nchareRRhoTot,&nsplitR,numRYRho);
-    initFFTholder  (&bwdYPlanRhoS,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridb,
-        &unit, &ngridb,nchareRRhoTot,&nsplitR,numRYRho);
-  }//endif
-  initCRFFTholder(&fwdXPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&ngrida,
-      &skipR,&skipC,nchareRRhoTot,&nsplitR,numRXRho);
-  initRCFFTholder(&bwdXPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&ngrida,
-      &skipR,&skipC,nchareRRhoTot,&nsplitR,numRXRho);
-  initFFTholder  (&fwdZPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&ngridc,
-      &unit, &ngridc,nchareGRho,&nsplitG,numGRho);
-  initFFTholder  (&bwdZPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&ngridc,
-      &unit, &ngridc,nchareGRho,&nsplitG,numGRho);
   // I'm special
-  initFFTholder  (&fwdZPlanRhoHart,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridc,
-      &unit, &ngridc,nchareGEext,&nsplitG,numGEext);
+  //initFFTholder  (&fwdZPlanRhoHart,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridc,
+ //     &unit, &ngridc,nchareGEext,&nsplitG,numGEext);
 
-  if(iopt==0){
+ /* if(iopt==0){
     size[0] = ngrida; size[1] = ngridb; size[2] = 1; 
-    fwdXPlanRho.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
-        FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    bwdXPlanRho.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_REAL_TO_COMPLEX,
-        FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-    fwdYPlanRho.fftwPlan  =  fftw_create_plan(ngridb, FFTW_FORWARD, 
-        FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-    bwdYPlanRho.fftwPlan =   fftw_create_plan(ngridb, FFTW_BACKWARD, 
-        FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-    fwdYPlanRhoS.fftwPlan =  fftw_create_plan(ngridb, FFTW_FORWARD, 
-        FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-    bwdYPlanRhoS.fftwPlan  =  fftw_create_plan(ngridb, FFTW_BACKWARD, 
-        FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-    fwdZPlanRho.fftwPlan  =  fftw_create_plan(ngridc,FFTW_FORWARD, 
-        FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-    bwdZPlanRho.fftwPlan  =  fftw_create_plan(ngridc,FFTW_BACKWARD, 
-        FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM); 
     fwdZPlanRhoHart.fftwPlan=fftw_create_plan(ngridc,FFTW_FORWARD, 
         FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
   }//endif
-
+ */
   //==============================================================================
   // Euler spline plans : better names : non-cubic broken
 
@@ -428,7 +391,7 @@ FFTcache::FFTcache(
   skipR = ngridaEext+2;
   skipC = ngridaEext/2+1;
 
-  if(ees_eext_on){
+  /*if(ees_eext_on){
     if(rhoRsubPlanes==1){
       initFFTholder  (&fwdYPlanEext ,&iopt,&nwork1,&nwork2T,&scale,&plus,&ngridbEext,
           &skipC,&unit,nchareREextTot,&nsplitR,numRYEext);
@@ -468,6 +431,7 @@ FFTcache::FFTcache(
     bwdZPlanEext.fftwPlan  =  fftw_create_plan(ngridcEext,FFTW_BACKWARD, 
         FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
   }//end switch
+  */
   if(iopt==0 && CkMyPe()==0){
     FILE *wisdomFile=fopen(wisstring,"w");
     if(wisdomFile ==NULL){

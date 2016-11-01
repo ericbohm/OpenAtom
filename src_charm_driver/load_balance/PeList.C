@@ -1,10 +1,3 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
 /** \file PeList.C
  *
  */
@@ -17,216 +10,423 @@
 extern TopoManager *topoMgr;
 extern Config config;
 
-/**
- * construct the list by iterating through boxes which are sub partitions
- * boxy constructor
- */
-PeList::PeList(int boxX, int boxY, int boxZ, int order, int maxX, int maxY, int maxZ, int maxT) 
-{
-  if(config.torusMap==1)
-  {
-    CkAssert(topoMgr!=NULL);
-    CkAssert(boxX>0);
-    CkAssert(boxY>0);
-    CkAssert(boxZ>0);
-    current=0;
-    sorted=false;
-    size=config.numPesPerInstance;
-    int i=0;
-    CkPrintf("Ordering processors along long axis %d in %d X %d X %d\n",order, maxX, maxY, maxZ);
-    TheList= new int[size];
-    sortIdx= new int[size];
-    int numBoxes=0;
-    if(order==0)  // long axis along X
-    {
-      for(int x=0; x<maxX; x+=boxX) // new box  in X
-        for(int y=0; y<maxY; y+=boxY) // new box in Y 
-          for(int z=0; z<maxZ; z+=boxZ) // new box in Z
-          {
-            // fill out this box
-            numBoxes++;
+#ifndef USE_ROUND_ROBIN_INSTANCE_MAP
+static inline int IN_THIS_INSTANCE(int globalCount, int instanceIndex) {
+  if(globalCount >= config.numPesPerInstance * instanceIndex &&
+    globalCount < config.numPesPerInstance * (instanceIndex + 1)) {
+    return 1;
+  } else return 0;
+}
+#else
+static inline int IN_THIS_INSTANCE(int globalCount, int instanceIndex) {
+  if(globalCount % config.numInstances == instanceIndex) {
+    return 1;
+  } else return 0;
+}
+#endif
 
-            for(int bx=0;bx<boxX;bx++)
-              for(int by=0;by<boxY;by++) // make inner planes along X
-                for(int bz=0;bz<boxZ;bz++)
-                  for(int bt=0;bt<maxT;bt++)
-                  {
-                    sortIdx[i]=i;
-                    // CkPrintf("i %d bx %d x %d by %d y bz %d z bt %d\n",i,bx,x,by,y,bz,z,bt);
-                    TheList[i++]=topoMgr->coordinatesToRank(bx+x, by+y, bz+z, bt);
-                  }
-          }
-    }
-    else if(order ==1) // long axis is along Y
-    {
-      for(int y=0; y<maxY; y+=boxY) // new box in Y 
-        for(int x=0; x<maxX; x+=boxX) // new box  in X
-          for(int z=0; z<maxZ; z+=boxZ) // new box in Z
-          {
-            // fill out this box
-            numBoxes++;
-
-
-            for(int by=0;by<boxY;by++)
-              for(int bz=0;bz<boxZ;bz++)
-                for(int bx=0;bx<boxX;bx++)
-                  for(int bt=0;bt<maxT;bt++)
-                  {
-                    sortIdx[i]=i;
-                    TheList[i++]=topoMgr->coordinatesToRank(bx+x, by+y, bz+z, bt);
-                  }
-          }
-
-    }
-    else if(order ==2) // long axis is along Z
-    {
-      for(int z=0; z<maxZ; z+=boxZ) // new box in Z
-        for(int x=0; x<maxX; x+=boxX) // new box  in X
-          for(int y=0; y<maxY; y+=boxY) // new box in Y 
-          {
-            // fill out this box
-            numBoxes++;
-            for(int bz=0;bz<boxZ;bz++)
-              for(int by=0;by<boxY;by++)
-                for(int bx=0;bx<boxX;bx++)
-                  for(int bt=0;bt<maxT;bt++)
-                  {
-                    sortIdx[i]=i;
-                    TheList[i++]=topoMgr->coordinatesToRank(bx+x, by+y, bz+z, bt);
-                  }
-          }
-
-    }
-    else
-    {
-      CkAbort("unknown order");
-    }
-    // size is actually boxsize times the number of whole boxes
-    // that fit in the mesh
-    int end=numBoxes*boxX*boxY*boxZ;
-    // fill out remainder 
-    if(i<config.numPesPerInstance)
-    {
-      PeList remainder(config.numPesPerInstance);
-      for(int i=0; i< size;i++)
-      {
-        int j=0;
-        while(j< size)
-          if(remainder.TheList[j]==TheList[i])
-          {
-            CkPrintf("IF %d %d %d %d %d\n", i, j, size, TheList[j], TheList[i]);
-            remainder.remove(j);
-          }
-          else
-          {
-            CkPrintf("ELSE %d %d %d %d %d\n", i, j, size, TheList[j], TheList[i]);
-            j++;
-          }
-      }
-      remainder.reindex();
-      // now we just plunk these at the end
-      int i=0;
-      for(; i< remainder.size ; i++)
-      {
-        TheList[i+end]=remainder.TheList[i];
-        sortIdx[i+end]=i+end;
-      }
-    }
+PeList::PeList(int ndims, const int bdims[10], int instanceIndex) {
+  isSet = 1; //needed because there are PE tht may not be part of a box
+  isList = 0; //has to be a vector since we want to jump to a loc
+  isSetOnly = 0;
+  LisV = 0;
+    
+#if USE_BITVECTOR
+  if(isSet) {
+    allPE.clear();
+    allPE.resize(config.numPes, false);
+    true_size = 0;
   }
-  else
+#endif
+  int pe_added = 0;
+  int size = config.numPes;
+  vectorList.reserve(size);
+
+  if(config.simpleTopo == 1) {
+    CkAssert(topoMgr != NULL);
+
+    if(ndims == 3) {
+      int globalCount = 0;
+      int boxes[4], dims[4], order[4];
+      TopoManager_getDims(dims);
+      dims[3] *= CkMyNodeSize();
+      printf("Dims are %d %d %d %d\n", dims[0], dims[1], dims[2], dims[3]);
+      if(dims[0] >= dims[1] && dims[0] >= dims[2]) {
+        order[0] = 0;
+        if(dims[1] >= dims[2]) {
+          order[1] = 1; order[2] = 2;
+        } else {
+          order[1] = 2; order[2] = 1;
+        }
+      } else if(dims[1] >= dims[0] && dims[1] >= dims[2]) {
+        order[0] = 1;
+        if(dims[0] >= dims[2]) {
+          order[1] = 0; order[2] = 2;
+        } else {
+          order[1] = 2; order[2] = 0;
+        }
+      } else if(dims[2] >= dims[0] && dims[2] >= dims[1]) {
+        order[0] = 2;
+        if(dims[0] >= dims[1]) {
+          order[1] = 0; order[2] = 1;
+        } else {
+          order[1] = 1; order[2] = 0;
+        }
+      } else {
+        printf("Weird math...none of the dimension seems to be largest\n");
+        order[0] = 0; order[1] = 1; order[2] = 2;
+      }
+      printf("Order is %d %d %d\n", order[0], order[1], order[2]);
+
+      for(boxes[ order[0] ] = 0; boxes[ order[0] ] < dims[ order[0] ]; boxes[ order[0] ] += bdims[ order[0] ]) {
+        for(boxes[ order[1] ] = 0; boxes[ order[1] ] < dims[ order[1] ]; boxes[ order[1] ]  += bdims[ order[1] ]) {
+          for(boxes[ order[2] ] = 0; boxes[ order[2] ] < dims[ order[2] ]; boxes[ order[2] ] += bdims[ order[2] ]) {
+
+            int begin[3], end[3], curLoc[4];
+            for(int i = 0; i < 3; i++) {
+              begin[i] = boxes[i];
+              end[i] = std::min((begin[i] + bdims[i]), dims[i]);
+            }
+
+            for(curLoc[ order[0] ] = begin[ order[0] ]; curLoc[ order[0] ] < end[ order[0] ]; curLoc[ order[0] ] ++) {
+              for(curLoc[ order[1] ] = begin[ order[1] ]; curLoc[ order[1] ] < end[ order[1] ]; curLoc[ order[1] ] ++) {
+                for(curLoc[ order[2] ] = begin[ order[2] ]; curLoc[ order[2] ] < end[ order[2] ]; curLoc[ order[2] ] ++) {
+                  for(curLoc[3] = 0; curLoc[3] < dims[3]; curLoc[3]++) {
+                    int pe = -1;
+                    TopoManager_getPeRank(&pe, curLoc);
+                    if(pe > 0 || (!config.excludePE0 && pe == 0)) {
+                      if(IN_THIS_INSTANCE(globalCount, instanceIndex)) {
+#if USE_BITVECTOR
+                        allPE[pe] = true;
+                        true_size++;
+#else
+                        setList.insert(pe);
+#endif
+                        vectorList.push_back(pe);
+                        pe_added++;
+                      }
+                    }
+                    if(pe >= 0) {
+                      globalCount++;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } else if(ndims == 5) {
+      int globalCount = 0;
+      int boxes[6], dims[6], order[6];
+      TopoManager_getDims(dims);
+      dims[5] *= CkMyNodeSize();
+      printf("Dims are %d %d %d %d %d %d\n", dims[0], dims[1], dims[2], dims[3],
+          dims[4], dims[5]);
+
+      //find largest two index
+      int largest = 0, val = dims[0];
+      for(int i = 1; i < 4; i++) {
+        if(val < dims[i]) {
+          val = dims[i];
+          largest = i;
+        }
+      }
+      order[0] = largest;
+
+      if(order[0] != 0) { 
+        largest = 0; val = dims[0];
+      } else {
+        largest = 1; val = dims[1];
+      }
+
+      for(int i = 1; i < 4; i++) {
+        if(i != order[0]) {
+          if(val < dims[i]) {
+            val = dims[i];
+            largest = i;
+          }
+        }
+      }
+      order[1] = largest;
+
+      int loc = 2;
+      for(int i = 0; i < 4; i++) {
+        if(order[0] != i && order[1] != i) {
+          order[loc++] = i;
+        }
+      }
+      order[4] = 4;
+      printf("Order is %d %d %d %d %d\n", order[0], order[1], order[2], order[3],
+          order[4]);
+
+      for(boxes[ order[0] ] =  0 ; boxes[ order[0] ] < dims[ order[0] ]; boxes[ order[0] ] += bdims[ order[0] ]) {
+        for(boxes[ order[1] ] = 0; boxes[ order[1] ] < dims[ order[1] ]; boxes[ order[1] ]  += bdims[ order[1] ]) {
+          for(boxes[ order[2] ] = 0; boxes[ order[2] ] < dims[ order[2] ]; boxes[ order[2] ] += bdims[ order[2] ]) {
+            for(boxes[ order[3] ] = 0; boxes[ order[3] ] < dims[ order[3] ]; boxes[ order[3] ] += bdims[ order[3] ]) {
+              for(boxes[4] = 0; boxes[4] < dims[4]; boxes[4] += bdims[4]) {
+
+                int begin[5], end[5], curLoc[6];
+                for(int i = 0; i < 5; i++) {
+                  begin[i] = boxes[i];
+                  end[i] = std::min((begin[i] + bdims[i]), dims[i]);
+                }
+
+                for(curLoc[ order[0] ] = begin[ order[0] ]; curLoc[ order[0] ] < end[ order[0] ]; curLoc[ order[0] ]++) {
+                  for(curLoc[ order[1] ] = begin[ order[1] ]; curLoc[ order[1] ] < end[ order[1] ]; curLoc[ order[1] ]++) {
+                    for(curLoc[ order[2] ] = begin[ order[2] ]; curLoc[ order[2] ] < end[ order[2] ]; curLoc[ order[2] ]++) {
+                      for(curLoc[ order[3] ] = begin[ order[3] ]; curLoc[ order[3] ] < end[ order[3] ]; curLoc[ order[3] ]++) {
+                        for(curLoc[4] = begin[4]; curLoc[4] < end[4]; curLoc[4]++) {
+                          for(curLoc[5] = 0; curLoc[5] < dims[5]; curLoc[5]++) {
+                            int pe = -1;
+                            TopoManager_getPeRank(&pe, curLoc);
+                            if(pe > 0 || (!config.excludePE0 && pe == 0)) {
+                              if(IN_THIS_INSTANCE(globalCount, instanceIndex)) {
+#if USE_BITVECTOR
+                                allPE[pe] = true;
+                                true_size++;
+#else
+                                setList.insert(pe);
+#endif
+                                vectorList.push_back(pe);
+                                pe_added++;
+                              }
+                            }
+                            if(pe >= 0) {
+                              globalCount++;
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } else {
+      CkAbort("Unsupported ndims\n");
+    }
+  
+  } else {
     CkAbort("You shouldn't be calling this function\n");
-}
-
-
-PeList::PeList() // default constructor
-{
-  sorted=true;
-  current=0;
-  size=config.numPesPerInstance;
-  TheList= new int[size+1];
-  sortIdx= new int[size+1];
-  for(int i=0;i<size;i++)
-  {
-    TheList[i]=i;
-    sortIdx[i]=i;
   }
-  sortSource(0);
+  reset();
 }
 
-void PeList::rebuild()
-{
-  sorted=true;
-  current=0;
-  size=config.numPesPerInstance;
-  for(int i=0;i<size;i++)
-  {
-    TheList[i]=i;
-    sortIdx[i]=i;
+PeList::PeList() {
+  CkAbort("Default constructor not implemented\n");
+}
+
+void PeList::sortSource(int srcPe, int pushToList) {
+  CkAssert(srcPe >= 0);
+  CkAssert(srcPe < config.numPes);
+  int pe_dims[10];
+  TopoManager_getPeCoordinates(srcPe, pe_dims);
+  sortSource(pe_dims, pushToList);
+}
+
+void PeList::sortSource(int *srcPe, int pushToList) {
+  if(isSetOnly) {
+    CkAbort("Cannot sort a list which is setOnly\n");
   }
-
-}
-
-
-int *PeList::pelower_bound(int pe)
-{
-  return(std::lower_bound(&TheList[0],&TheList[size],pe));
-}
-bool PeList::binsearch(int pe)
-{
-  return(std::binary_search(&TheList[0],&TheList[size],pe));
-}
-
-void PeList::sortSource(int srcPe)
-{
-  if(config.torusMap==1) 
-  {
-    // sort it using TopoManager 
-    //  CkPrintf("PRE: sortIndexByHops\n");
-    CkAssert(srcPe>=0);
-    CkAssert(srcPe<config.numPes);
-    topoMgr->sortRanksByHops(srcPe, TheList, sortIdx, size);
-    //  CkPrintf("POST sortIndexByHops\n");
-  }
-  else 
-  {
-    // alternate form in non BG/L case (just an ordered list)
-    // sort it using CkVec quicksort
-    CkVec <int> sortme(size);
-    CmiMemcpy(sortme.getVec(), TheList,size*sizeof(int));
-    sortme.quickSort();
-    CmiMemcpy(TheList, sortme.getVec(), size*sizeof(int));
-  }
-}
-
-int PeList::minDist(int srcPe)
-{
-  if(config.torusMap==1)
-    return(TheList[topoMgr->pickClosestRank(srcPe, TheList, size)]);
-  else
-    return(TheList[0]);
-  // if not a torus distance is meaningless we just pick the first element
-}
-
-int PeList::findNext()        // return next available, increment liststart
-{
-  int value; 
-  if(config.torusMap==1) { 
-    if(current>=size)
-    {
-      //CkPrintf("hey why is current %d >= size %d\n",current, size);
-      current=0;
+  //first ensure, we have an updated vector
+  std::vector< int > sortIdx, tempVec;
+  if(isList && !LisV) {
+    if(config.simpleTopo && !pushToList) { 
+      //store to a tempArray
+      tempVec.reserve(list.size());
+      std::copy(list.begin(), list.end(), std::back_inserter(tempVec));
+      vectorList.clear();
+      vectorList.resize(list.size());
+    } else {
+      vectorList.clear();
+      vectorList.reserve(list.size());
+      std::copy(list.begin(), list.end(), std::back_inserter(vectorList));
     }
-    CkAssert(current<size);
-    CkAssert(sortIdx[current]<size);
-    value=TheList[sortIdx[current]]; 
-    //    TheList.remove(sortIdx[0]);
-    //    sortIdx.remove(0);
+  } else {
+    if(config.simpleTopo && !pushToList) { 
+      //store to a tempArray
+      tempVec.resize(vectorList.size());
+      memcpy(&tempVec[0], &vectorList[0], vectorList.size() * sizeof(int));
+    }
   }
-  else {
-    value=TheList[current]; 
-    //    TheList.remove(0);
+  if(config.simpleTopo) {
+    sortIdx.resize(vectorList.size());
+    for(int i = 0; i < sortIdx.size(); i++) {
+      sortIdx[i] = i;
+    }
+    if(pushToList) {
+      topoMgr->sortRanksByHops(srcPe, &vectorList[0], &sortIdx[0], vectorList.size());
+    } else {
+      topoMgr->sortRanksByHops(srcPe, &tempVec[0], &sortIdx[0], tempVec.size());
+    }
+    if(pushToList) {
+      list.clear();
+      for(int i = 0; i < sortIdx.size(); i++) {
+        list.push_back(vectorList[sortIdx[i]]);
+      }
+      isList = 1;
+      LisV = 1;
+    } else {
+      for(int i = 0; i < sortIdx.size(); i++) {
+        vectorList[i] = tempVec[sortIdx[i]];
+      }
+      if(isList) {
+        isList = 0;
+        LisV = 1;
+      }
+    }
+  } else {
+    std::sort(vectorList.begin(), vectorList.end());
+    if(pushToList) {
+      list.clear();
+      for(int i = 0; i < vectorList.size(); i++) {
+        list.push_back(vectorList[i]);
+      }
+      isList = 1;
+      LisV = 1;
+    } else {
+      if(isList) {
+        isList = 0;
+        LisV = 1;
+      }
+    }
   }
-  current++;
-  return(value); 
+  reset();
 }
+
+int PeList::minDist(int srcPe) {
+  CkAssert(srcPe >= 0);
+  CkAssert(srcPe < config.numPes);
+  int pe_dims[10];
+  TopoManager_getPeCoordinates(srcPe, pe_dims);
+  return minDist(pe_dims);
+}
+
+int PeList::minDist(int *srcPe)
+{
+  if(isSetOnly) {
+    CkAbort("Cannot find minDist in a list which is setOnly\n");
+    return -1;
+  }
+  if(config.simpleTopo) {
+    if(isList) {
+      std::list< int >::iterator it = list.begin();
+      offsetList = 0;
+      int count = 0;
+      currList = it;
+      int minHops = topoMgr->getHopsBetweenRanks(srcPe, *it);
+      int minPE = *it;
+      if(minHops == 0) return minPE;
+      it++;
+      while(it != list.end()) {
+        count++;
+        int nowHops = topoMgr->getHopsBetweenRanks(srcPe, *it);
+        if(nowHops < minHops) {
+          minHops = nowHops;
+          minPE = *it;
+          currList = it;
+          offsetList = count;
+          if(minHops == 0) return minPE;
+        }
+        it++;
+      }
+      return minPE;
+    } else {
+      std::vector< int >::iterator it = vectorList.begin();
+      int minHops = topoMgr->getHopsBetweenRanks(srcPe, *it);
+      int minPE = *it;
+      if(minHops == 0) return minPE;
+      it++;
+      while(it != vectorList.end()) {
+        int nowHops = topoMgr->getHopsBetweenRanks(srcPe, *it);
+        if(nowHops < minHops) {
+          minHops = nowHops;
+          minPE = *it;;
+          if(minHops == 0) return minPE;
+        }
+        it++;
+      }
+      return minPE;
+    }
+  } else {
+    // if not a topology distance is meaningless we just pick the first element
+    if(isList) {
+      std::list< int >::iterator it = list.begin();
+      currList = it;
+      offsetList = 0;
+      return *it;
+    } else {
+      return vectorList[0];
+    }
+  }
+}
+
+int PeList::findNext() {
+  int pe;
+  CkAssert(isSetOnly == 0);
+  if(size() == 0) {
+    reset();
+    return -1;
+  }
+  if(isList) {
+    if(!dontIncr) {
+      currList++;
+      offsetList++;
+      if(currList == list.end()) {
+        currList = list.begin();
+        offsetList = 0;
+      }
+    } else {
+      dontIncr = false;
+    }
+    pe = *currList;
+  } else {
+    if(!dontIncr) {
+      offsetVector++;
+      if(offsetVector >= vectorList.size()) {
+        offsetVector = 0;
+      }
+    } else {
+      dontIncr = false;
+    }
+    pe = vectorList[offsetVector];
+  }
+  return pe;
+}
+
+PeList *PeList::distributeAcrossPelist(int numElements, int listoffset)
+{
+  if(isSetOnly) {
+    CkAbort("Cannot distributeAcrossPelist in a list which is setOnly\n");
+  }
+  int newListSize = (size() > numElements) ? numElements : size();
+  PeList *outlist = new PeList(1, 1, 0);
+  int stride = size() / numElements + 1;
+  int mod = size() % numElements;
+  if(isList) {
+    std::list< int >::iterator it = list.begin();
+    for(int i = 0; i < listoffset; i++) it++;
+    for(int i = 0; i < newListSize; i++) {
+      if(it == list.end()) it = list.begin();
+      outlist->checkAndAdd(*it);
+      if(i == mod) stride--;
+      for(int j = 0; j < stride; j++) {
+        if(it == list.end()) it = list.begin();
+        it++;
+      }
+    }
+  } else {
+    for(int i = 0; i < newListSize; i++, listoffset += stride) {
+      outlist->checkAndAdd(vectorList[listoffset % size()]);
+      if(i == mod) stride--;
+    }
+  }
+  outlist->reset();
+  return outlist;
+}
+
 
