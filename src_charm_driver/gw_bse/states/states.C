@@ -95,12 +95,6 @@ void States::sendToComputeF() {
   msg->shifted = false;
   psi_cache_proxy.computeFs(msg);
  
-  msg = new (ndata) PsiMessage(ndata, stateCoeffR_shifted);
-  msg->spin_index = ispin;
-  msg->k_index = ikpt;
-  msg->state_index = istate;
-  msg->shifted = true;
-  psi_cache_proxy.computeFs(msg);
 }
 
 //==============================================================================
