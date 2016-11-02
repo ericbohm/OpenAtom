@@ -66,10 +66,18 @@ void States::sendToCache() {
   //CkPrintf("[%i,%i,%i]: Sending psi to node cache...\n", ispin, ikpt, istate);
   int ndata = nfft[0]*nfft[1]*nfft[2];
 
-  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR, stateCoeffR_shifted);
+  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
   msg->spin_index = ispin;
   msg->k_index = ikpt;
   msg->state_index = istate;
+  msg->shifted = false;
+  psi_cache_proxy.receivePsi(msg);
+
+  msg = new (ndata) PsiMessage(ndata, stateCoeffR_shifted);
+  msg->spin_index = ispin;
+  msg->k_index = ikpt;
+  msg->state_index = istate;
+  msg->shifted = true;
   psi_cache_proxy.receivePsi(msg);
 
 }
@@ -80,10 +88,18 @@ void States::sendToCache() {
 void States::sendToComputeF() {
   //CkPrintf("[%i,%i,%i]: Sending psi for f-comp...\n", ispin, ikpt, istate);
   int ndata = nfft[0]*nfft[1]*nfft[2];
-  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR, stateCoeffR_shifted);
+  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
   msg->spin_index = ispin;
   msg->k_index = ikpt;
   msg->state_index = istate;
+  msg->shifted = false;
+  psi_cache_proxy.computeFs(msg);
+ 
+  msg = new (ndata) PsiMessage(ndata, stateCoeffR_shifted);
+  msg->spin_index = ispin;
+  msg->k_index = ikpt;
+  msg->state_index = istate;
+  msg->shifted = true;
   psi_cache_proxy.computeFs(msg);
 }
 

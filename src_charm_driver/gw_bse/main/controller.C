@@ -161,8 +161,8 @@ void PsiCache::receivePsi(PsiMessage* msg) {
   CkAssert(msg->k_index < K);
   CkAssert(msg->state_index < L);
   CkAssert(msg->size == psi_size);
-  std::copy(msg->psi, msg->psi+psi_size, psis[msg->k_index][msg->state_index]);
-  std::copy(msg->psi, msg->psi+psi_size, psis_shifted[msg->k_index][msg->state_index]);
+  if(msg->shifted==false){std::copy(msg->psi, msg->psi+psi_size, psis[msg->k_index][msg->state_index]);}
+  if(msg->shifted==true){std::copy(msg->psi, msg->psi+psi_size, psis_shifted[msg->k_index][msg->state_index]);}
   delete msg;
 
   // Once the cache has received all of it's data start the sliding pipeline
@@ -237,7 +237,7 @@ void PsiCache::computeFs(PsiMessage* msg) {
   // Create the FComputePacket for this set of f vectors and start CkLoop
   f_packet.size = psi_size;
   f_packet.unocc_psi = msg->psi;
-  if ( Q_IDX == 0 ) { 
+  if ( qindex == 0 ) { 
     f_packet.occ_psis = psis_shifted[ikq]; 
     f_packet.e_occ = e_occ_shifted[msg->spin_index][ikq];
   }
