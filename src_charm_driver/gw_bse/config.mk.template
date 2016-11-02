@@ -18,6 +18,7 @@ LAPACKLIB = -framework Accelerate
 LAPACKINC = -I/System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Headers/
 CFLAGS += -DUSE_LAPACK $(LAPACKINC)
 LFLAGS += $(LAPACKLIB)
+LFLAGS += -module CkMulticast  -module RotateLB
 
 # Flags for enabling CkLoop
 CFLAGS += -DUSE_CKLOOP
@@ -27,6 +28,6 @@ LFLAGS += -module CkLoop
 CFLAGS += -DQ_IDX=0
 
 # The sub directories used for compilation
-DIRS=configuration main fft matrix states
+DIRS=configuration matmul main fft matrix states
 INCLUDES=$(addprefix -I$(SRCDIR)/, $(DIRS))
 CFLAGS+=$(INCLUDES)

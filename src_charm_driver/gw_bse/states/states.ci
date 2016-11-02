@@ -13,6 +13,10 @@ module messages {
   message Phase2Message {
     complex data[];
   };
+
+  message Phase3Message {
+    complex data[];
+  };
 };
 
 module states {

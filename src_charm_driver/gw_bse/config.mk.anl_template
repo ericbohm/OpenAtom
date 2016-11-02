@@ -18,6 +18,7 @@ LAPACKLIB = -L/soft/libraries/alcf/current/xl/CBLAS/lib -L/soft/libraries/alcf/c
 LAPACKINC = -I/soft/libraries/alcf/current/xl/CBLAS/include/
 CFLAGS += -DUSE_LAPACK $(LAPACKINC)
 LFLAGS += $(LAPACKLIB)
+LFLAGS += -module CkMulticast  -module RotateLB
 
 # Toggle CkLoop
 CFLAGS += -DUSE_CKLOOP
@@ -27,6 +28,6 @@ LFLAGS += -module CkLoop
 CFLAGS += -DQ_IDX=0
 
 # The sub directories used for compilation
-DIRS=configuration main fft matrix states
+DIRS=configuration matmul main fft matrix states
 INCLUDES=$(addprefix -I$(SRCDIR)/, $(DIRS))
 CFLAGS+=$(INCLUDES)

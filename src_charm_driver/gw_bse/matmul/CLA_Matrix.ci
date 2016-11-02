@@ -1,0 +1,71 @@
+/**
+ * Module: CLA_Matrix
+ * Purpose: dense matrix-matrix multiplication
+ *
+ * Usage:
+ *  - To create the arrays, use the make_multiplier call detailed in
+ *  CLA_Matrix.h.
+ *  - To multiply once you have the CLA_Matrix_interface object o, do this:
+ *   o.multiply(alpha, beta, data, fptr, usr_data, thisIndex.x, thisIndex.y)
+ *
+ *   Note: When mentioning which parameters below are used, we refer only to
+ *   the 2D algorithm. Notes for the 3D algorithm will be added later.
+ *
+ *   Alpha and beta should be doubles. Only the alpha and beta passed to the C
+ *   array will be used. Data should be a double* pointing to
+ *   the data to be multiplied if we are at the chare array bound to the A
+ *   or B arrays. Otherwise (we are at C), it should be the location where to
+ *   store the result. We need to pass the index since we will use ckLocal
+ *   calls. Once the multiplication has finished, the C array will call
+ *   to function pointed to by fptr, passing it usr_data. These arguments will
+ *   be ignored by A and B. fptr should take a void* as an argument are return
+ *   void.
+ */
+
+module CLA_Matrix{
+  /* used to send matrix chunks */
+  message CLA_Matrix_msg{
+    complex data[];
+  };
+
+  /* auxiliary array, map, and message classes for 3D algorithm */
+  message CLA_MM3D_mult_init_msg;
+  message CLA_MM3D_mult_reinit_msg;
+  message CLA_MM3D_migrate_msg;
+  group CLA_MM3D_Map : CkArrayMap {
+    entry CLA_MM3D_Map(int M_chunks, int K_chunks, int N_chunks);
+  };
+  array [3D] CLA_MM3D_multiplier{
+    entry void CLA_MM3D_multiplier();
+    entry void CLA_MM3D_multiplier(int m, int k, int n);
+    entry void initialize_reduction(CLA_MM3D_mult_init_msg *m);
+    entry void reinitialize_reduction(CLA_MM3D_mult_reinit_msg *m);
+    entry void receiveA(CLA_Matrix_msg *msg);
+    entry void receiveB(CLA_Matrix_msg *msg);
+    entry void synchronize(CLA_MM3D_migrate_msg *msg);
+  };
+  readonly CkGroupID CLA_GID;
+  readonly CProxy_CLA_MM3D_multiplier CLA_3D_multiplier_proxy;
+
+  /* Main array used for all algorithms */
+  array [2D] CLA_Matrix{
+    entry void CLA_Matrix();
+
+    /* for 2D algorithm */
+    entry void CLA_Matrix(int M, int K, int N, int m, int k, int n,
+     int strideM, int strideK, int strideN, int part,
+     CProxy_CLA_Matrix other1, CProxy_CLA_Matrix other2,
+     CkCallback ready);
+    entry void receiveA(CLA_Matrix_msg *m);
+    entry void receiveB(CLA_Matrix_msg *m);
+
+    /* for 3D algorithm */
+    entry void CLA_Matrix(CProxy_CLA_MM3D_multiplier p, int M, int K, int N,
+     int m, int k, int n, int strideM, int strideK, int strideN, int part,
+     CkCallback cb);//, CkGroupID gid);
+    entry void ready(CkReductionMsg *m);
+    entry void readyC(CkReductionMsg *m);
+    entry void mult_done(CkReductionMsg *m);
+  };
+
+}

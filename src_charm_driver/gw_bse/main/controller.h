@@ -6,8 +6,10 @@
 
 #include "fft_controller.decl.h"
 #include "psi_cache.decl.h"
+
 #include "controller.decl.h"
 
+#define ITERATION 10 //needs to be read from epsilon.in
 // Structure keeping track of all timers we report
 struct Timers {
   // Setup timers
@@ -20,18 +22,39 @@ struct Timers {
   double total_phase2, to1D, to2D, fft1, fft2, trans1, trans2;
   // Phase 3 timers
   double total_phase3;
+	double total_phase4;
 };
 
 class Controller : public CBase_Controller {
   Controller_SDAG_CODE
   public:
     Controller();
-
+    void prep();
+    void calc_Geps();
+    void got_geps(std::vector<int> accept, int epsilon_size);
+    void got_vcoulb(std::vector<double> vcoulb_in);
   private:
     bool do_output;
+    int msg_received;
+    int iter, maxiter;
+    int iteration;
+    unsigned dimension, rows;
+    bool resultInsert;
+    double epsCut;
+    double alat;
+    double vol;
+    std::vector<double> vcoulb;
+    double shift[3];
     unsigned K, L, M, pipeline_stages;
     unsigned next_K, next_state, total_sent, total_complete;
     unsigned max_sends, next_report_threshold;
+    unsigned p_matrix_dimension, num_p_rows;
+    int global_inew, global_jnew;
+    int max_local_inew;
+    int padded_epsilon_size;
+    double prev_max;
+    std::vector<int> accept_result;
+    CLA_Matrix_interface matA, matB, matC, matA2, matB2, matC2, matA3, matB3, matC3;
     Timers timers;
 };
 
@@ -61,6 +84,7 @@ class PsiCache : public CBase_PsiCache {
     void reportFTime();
     complex* getPsi(unsigned, unsigned, unsigned) const;
     complex* getF(unsigned) const;
+    int getWrote();
   private:
     void kqIndex(unsigned, unsigned&, int*);
     void computeUmklappFactor(int*);
@@ -71,8 +95,9 @@ class PsiCache : public CBase_PsiCache {
     unsigned K, L, psi_size, received_psis, qindex;
     complex*** psis;
     complex* fs;
+    int wrote;
     complex* umklapp_factor;
-
+    
     double total_time;
 };
 

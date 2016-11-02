@@ -53,6 +53,7 @@ States::States(CkMigrateMessage *msg) { }
 void States::sendToCache() {
   //CkPrintf("[%i,%i,%i]: Sending psi to node cache...\n", ispin, ikpt, istate);
   int ndata = nfft[0]*nfft[1]*nfft[2];
+  
   PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
   msg->spin_index = ispin;
   msg->k_index = ikpt;
@@ -65,7 +66,7 @@ void States::sendToCache() {
 // Pack up our realspace coefficients and broadcast them to the cache to be
 // multiplied with each occupied psi to create a set of f vectors.
 void States::sendToComputeF() {
-  //CkPrintf("[%i,%i,%i]: Sending psi for f-comp...\n", ispin, ikpt, istate);
+//  CkPrintf("[%i,%i,%i]: Sending psi for f-comp...\n", ispin, ikpt, istate);
   int ndata = nfft[0]*nfft[1]*nfft[2];
   PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
   msg->spin_index = ispin;
@@ -85,10 +86,13 @@ void States::fftGtoR() {
   // Set up the FFT data structures in the FFTController
   FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
   int backward = 1;
+
   fft_controller->setup_fftw_3d(nfft,backward);
+
   fftw_complex* in_pointer = fft_controller->get_in_pointer();
   fftw_complex* out_pointer = fft_controller->get_out_pointer();
-  
+ 
+ 
    // we need to setup fftidx
   int *g[3]; // put_into_fftbox routine takes 2D g array, so we need to do this
   g[0] = ga;
@@ -272,7 +276,7 @@ void States::readState(char *fromFile)
   }
   else if (ibinary_opt==3)
   {
-    //	CkPrintf("Using ZLIB to load binary states\n");
+    	CkPrintf("Using ZLIB to load binary states\n");
     char localFile[1000]; // fromFile is const
     strcpy(localFile,fromFile);
     strcat(localFile,".gz");
