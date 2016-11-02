@@ -126,6 +126,14 @@ PsiCache::PsiCache() {
       psis[k][l] = new complex[psi_size];
     }
   }
+  // shifted k grid psis. Need this for qindex=0
+  psis_shifted = new complex**[K];
+  for (int k = 0; k < K; k++) {
+    psis_shifted[k] = new complex*[L];
+    for (int l = 0; l < L; l++) {
+      psis_shifted[k][l] = new complex[psi_size];
+    }
+  }
 
   fs = new complex[L*psi_size];
 
@@ -154,11 +162,12 @@ void PsiCache::receivePsi(PsiMessage* msg) {
   CkAssert(msg->state_index < L);
   CkAssert(msg->size == psi_size);
   std::copy(msg->psi, msg->psi+psi_size, psis[msg->k_index][msg->state_index]);
+  std::copy(msg->psi, msg->psi+psi_size, psis_shifted[msg->k_index][msg->state_index]);
   delete msg;
 
   // Once the cache has received all of it's data start the sliding pipeline
   // sending of psis to P to start the accumulation of fxf'.
-  if (++received_psis == K*L) {
+  if (++received_psis == 2*K*L) {
     //CkPrintf("[%d]: Cache filled\n", CkMyPe());
     contribute(CkCallback(CkReductionTarget(Controller,cachesFilled), controller_proxy));
   }
@@ -222,13 +231,20 @@ void PsiCache::computeFs(PsiMessage* msg) {
 
   GWBSE* gwbse = GWBSE::get();
   double*** e_occ = gwbse->gw_epsilon.Eocc;
+  double*** e_occ_shifted = gwbse->gw_epsilon.Eocc_shifted;
   double*** e_unocc = gwbse->gw_epsilon.Eunocc;
 
   // Create the FComputePacket for this set of f vectors and start CkLoop
   f_packet.size = psi_size;
   f_packet.unocc_psi = msg->psi;
-  f_packet.occ_psis = psis[ikq];
-  f_packet.e_occ = e_occ[msg->spin_index][ikq];
+  if ( Q_IDX == 0 ) { 
+    f_packet.occ_psis = psis_shifted[ikq]; 
+    f_packet.e_occ = e_occ_shifted[msg->spin_index][ikq];
+  }
+  else { 
+    f_packet.occ_psis = psis[ikq];
+    f_packet.e_occ = e_occ[msg->spin_index][ikq]; 
+  }
   f_packet.e_unocc = e_unocc[msg->spin_index][msg->k_index][msg->state_index-L];
   f_packet.fs = fs;
 

@@ -10,7 +10,7 @@
 // node, and others are streamed in to the PMatrix as needed.
 class PsiMessage : public CMessage_PsiMessage {
   public:
-    PsiMessage(unsigned s, complex* p) : size(s) {
+    PsiMessage(unsigned s, complex* p, complex* p_s) : size(s) {
       std::copy(p, p+size, psi);
     }
     unsigned spin_index, k_index, state_index, size;
