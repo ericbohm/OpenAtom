@@ -259,11 +259,6 @@ complex* PsiCache::getF(unsigned idx) const {
   return &(fs[idx*psi_size]);
 }
 
-int PsiCache::getWrote(){
-    return wrote;
-}
-
-
 void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   GWBSE* gwbse = GWBSE::get();
 

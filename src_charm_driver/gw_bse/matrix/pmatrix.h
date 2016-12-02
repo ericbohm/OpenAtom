@@ -66,23 +66,6 @@ class PMatrix2D : public CBase_PMatrix2D {
     
 };
 
-
-class EpsData{
-  public:
-    EpsData(){}
-    complex* eps_data_array;
-    int size;
-    int global_x;
-    int global_y;
-    int start_i;
-    int start_j;
-    int end_i;
-    int end_j;
-    int curr_index;
-    bool first_time;
-
-};
-
 class PMatrix1D : public CBase_PMatrix1D {
   PMatrix1D_SDAG_CODE
   public:

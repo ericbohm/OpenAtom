@@ -28,6 +28,6 @@ LFLAGS += -module CkLoop
 CFLAGS += -DQ_IDX=0
 
 # The sub directories used for compilation
-DIRS=configuration matmul main fft matrix states
+DIRS=configuration main fft matrix matmul states
 INCLUDES=$(addprefix -I$(SRCDIR)/, $(DIRS))
 CFLAGS+=$(INCLUDES)
