@@ -115,9 +115,7 @@ PsiCache::PsiCache() {
   K = gwbse->gw_parallel.K;
   L = gwbse->gw_parallel.L;
   qindex = Q_IDX;
-  int* nfft;
-  nfft = gwbse->gw_parallel.fft_nelems;
-  psi_size = nfft[0]*nfft[1]*nfft[2];//gwbse->gw_parallel.n_elems;
+  psi_size = gwbse->gw_parallel.n_elems;
   received_psis = 0;
   psis = new complex**[K];
   for (int k = 0; k < K; k++) {
@@ -174,25 +172,21 @@ void computeF(int first, int last, void* result, int count, void* params) {
   double e_unocc = f_packet->e_unocc;
   complex* fs = f_packet->fs;
 
-  complex total = 0;
   for (int l = first; l <= last; l++) {
     complex* f = &(fs[l*psi_size]);
     complex* psi_occ = f_packet->occ_psis[l];
     double scaling_factor = 2/sqrt(e_unocc - e_occ[l]);
 
     for (int i = 0; i < psi_size; i++) {
-      f[i] = psi_occ[i] * psi_unocc[i].conj();// * scaling_factor;
-/*
+      f[i] = psi_occ[i] * psi_unocc[i].conj() * scaling_factor;
       if (umklapp_factor) {
         f[i] *= umklapp_factor[i];
       }
-      total += psi_occ[i];
 #ifdef USE_LAPACK
       // BLAS calls compute the complex conjugate of P, which is hermitian. This
       // change to f corrects that so we get the correct P.
       f[i] = f[i].conj();
 #endif
-*/
     }
   }
 }
@@ -200,7 +194,6 @@ void computeF(int first, int last, void* result, int count, void* params) {
 // Receive an unoccupied psi, and split off the computation of all associated f
 // vectors across the node using CkLoop.
 void PsiCache::computeFs(PsiMessage* msg) {
-//  CkPrintf("\nIn corresponding computeFs\n");
   double start = CmiWallTimer();
 
   if (msg->spin_index != 0) {
@@ -242,13 +235,11 @@ void PsiCache::computeFs(PsiMessage* msg) {
     computeF(l,l,NULL,1,&f_packet);
   }
 #endif
-  fs = f_packet.fs;
-  wrote = 4;
+
   // Let the matrix chares know that the f vectors are ready
-//  CkPrintf("\nAbout to call pmatrix2D_proxy\n");
   CkCallback cb(CkReductionTarget(PMatrix2D, applyFs), pmatrix2D_proxy);
   contribute(cb);
-//  CkPrintf("\nAfter calling pmatrix2D_proxy\n");
+
   // Cleanup
   delete msg;
   total_time += CmiWallTimer() - start;
@@ -280,9 +271,8 @@ void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   double *this_k, *this_q;
   double k_plus_q[3], k_plus_q_orig[3];
   
-  this_k = gwbse->gwbseopts.kvec[1];//ikpt];
-  
-  this_q = gwbse->gwbseopts.qvec[1];//qindex];
+  this_k = gwbse->gwbseopts.kvec[ikpt];
+  this_q = gwbse->gwbseopts.qvec[qindex];
 
   for (int i=0; i<3; i++) {
     // calculate k+q vector 
