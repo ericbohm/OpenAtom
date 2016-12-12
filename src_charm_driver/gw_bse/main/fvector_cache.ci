@@ -1,0 +1,9 @@
+module fvector_cache {
+  extern module messages;
+  readonly CProxy_FVectorCache fvector_cache_proxy;
+
+  nodegroup FVectorCache {
+    entry FVectorCache();
+    entry void putFVec(Phase4Message *msg);
+  };
+};
