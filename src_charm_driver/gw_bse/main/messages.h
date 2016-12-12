@@ -45,4 +45,10 @@ class Phase3Message : public CMessage_Phase3Message {
     int end_i;
     int end_j;
 };
+
+class Phase4Message : public CMessage_Phase3Message {
+  public:
+    complex* data;
+    int n;
+};
 #endif

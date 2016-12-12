@@ -6,6 +6,7 @@
 
 #include "fft_controller.decl.h"
 #include "psi_cache.decl.h"
+#include "fvector_cache.decl.h"
 
 #include "controller.decl.h"
 
@@ -104,7 +105,16 @@ class PsiCache : public CBase_PsiCache {
     double total_time;
 };
 
+class FVectorCache : public CBase_FVectorCache {
+  public:
+    FVectorCache();
+    void putFVec(Phase4Message* msg);
+  private:
+    unsigned L, psi_size, fcount, n_list_size;
+    complex* fs;
+};
 extern /* readonly */ CProxy_Controller controller_proxy;
 extern /* readonly */ CProxy_PsiCache psi_cache_proxy;
+extern /* readonly */ CProxy_FVectorCache fvector_cache_proxy;
 
 #endif

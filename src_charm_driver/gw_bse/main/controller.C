@@ -257,6 +257,12 @@ void PsiCache::computeFs(PsiMessage* msg) {
 #endif
   received_chunks++;
 
+  FVectorCache *fvec_cache = fvector_cache_proxy.ckLocalBranch();
+  Phase4Message *fvec_msg;
+  fvec_msg = new(L*psi_size) Phase4Message();
+  fvec_msg->n = msg->state_index-L;
+  fvec_msg->data = fs;
+  fvec_cache->putFVec(fvec_msg);
   // Let the matrix chares know that the f vectors are ready
   CkCallback cb(CkReductionTarget(PMatrix2D, applyFs), pmatrix2D_proxy);
   contribute(cb);
@@ -368,6 +374,30 @@ void PsiCache::computeUmklappFactor(int uklpp[3]){
 
 }//end function
 
+FVectorCache::FVectorCache() {
+  GWBSE *gwbse = GWBSE::get();
+  L = gwbse->gw_parallel.L;
+  psi_size = gwbse->gw_parallel.n_elems;
+  fcount = 0;
+  n_list_size = 10; //TODO: to be greater than 0, read in from user input file
+  fs = new complex[L*psi_size*n_list_size];//
+}
+
+void FVectorCache::putFVec(Phase4Message *msg) {
+  if(fcount==0)
+    CkPrintf("\nCaching f[%d*L] vectors\n", msg->n);
+//Simple scheme where all Fs are stored in each node
+//  if(inList(msg->n))
+  { //Store all n*l's for all l in L
+    complex* f = &(fs[fcount*L*psi_size]);
+    f = msg->data;
+  }
+
+  fcount++;
+//TODO: Partition Fs and duplicate to reduce access latency
+}
+
 #include "psi_cache.def.h"
+#include "fvector_cache.def.h"
 #include "fft_controller.def.h"
 #include "controller.def.h"

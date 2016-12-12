@@ -10,6 +10,7 @@ mainmodule main {
   extern module pmatrix;
   extern module fft_controller;
   extern module psi_cache;
+  extern module fvector_cache;
 
 
   mainchare Main {

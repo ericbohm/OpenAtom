@@ -36,6 +36,7 @@
 /* readonly */ GWBSE readonly_gwbse;
 /* readonly */ CProxy_States states_proxy;
 /* readonly */ CProxy_PsiCache psi_cache_proxy;
+/* readonly */ CProxy_FVectorCache fvector_cache_proxy;
 
 /* readonly */ CProxy_EpsMatrix2D eps_matrix2D_proxy;
 
@@ -103,7 +104,7 @@ Main::Main(CkArgMsg* msg) {
   controller_proxy = CProxy_Controller::ckNew();
   fft_controller_proxy = CProxy_FFTController::ckNew();
   psi_cache_proxy = CProxy_PsiCache::ckNew();
-   
+  fvector_cache_proxy = CProxy_FVectorCache::ckNew();
 
   // -------------------------------------------------------------------
   // Create the array of P matrix chare objects.
