@@ -5,5 +5,36 @@ module fvector_cache {
   nodegroup FVectorCache {
     entry FVectorCache();
     entry void putFVec(Phase4Message *msg);
+    entry void receive(Phase4Message *in_data);
+
+    entry void getFVec(int n, const CkCallback &cb){
+        if(isLocal(n)){//local
+        serial{
+          Phase4Message *msg;
+            msg = new(L*psi_size)Phase4Message();
+            complex* f = &(fs[n*L*psi_size]);
+            msg->data = f;
+            cb.send(msg);
+          }
+        }
+        else{
+          serial{thisProxy[homeNode(n)].remoteFVec(n, CkMyNode());};
+          when receive(Phase4Message* in_data) serial{
+            Phase4Message *msg;
+            msg = new(L*psi_size)Phase4Message();
+            msg->data = in_data->data;
+            cb.send(msg);
+          }
+        }
+    };
+    entry void remoteFVec(int n, int requesterIndex){
+      serial{
+      Phase4Message *msg;
+      msg = new(L*psi_size)Phase4Message();
+      complex* f = &(fs[n*L*psi_size]);
+      msg->data = f;
+      thisProxy[requesterIndex].receive(msg);
+      }
+    };
   };
 };

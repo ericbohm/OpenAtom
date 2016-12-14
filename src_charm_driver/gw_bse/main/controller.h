@@ -106,13 +106,26 @@ class PsiCache : public CBase_PsiCache {
 };
 
 class FVectorCache : public CBase_FVectorCache {
+  FVectorCache_SDAG_CODE
   public:
     FVectorCache();
     void putFVec(Phase4Message* msg);
+    bool isLocal(int n){
+      if(n/node_count==CkMyNode())
+        return true;
+      return false;
+    }
+    int homeNode(int n){
+      return n/node_count;
+    }
+ //   void receive(complex* in_data);
+//    void getFVec(int n, const CkCallback &cb);
   private:
-    unsigned L, psi_size, fcount, n_list_size;
+    unsigned L, psi_size, fcount, n_list_size, node_count;
     complex* fs;
 };
+
+
 extern /* readonly */ CProxy_Controller controller_proxy;
 extern /* readonly */ CProxy_PsiCache psi_cache_proxy;
 extern /* readonly */ CProxy_FVectorCache fvector_cache_proxy;

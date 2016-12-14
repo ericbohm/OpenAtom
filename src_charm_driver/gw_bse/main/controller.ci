@@ -402,8 +402,18 @@ module controller {
     }//end of for loop
     
     serial{
-	PHASE_BOUNDARY(total_phase3, total_phase4, "PHASE 3 (Epsilon Matrix Inversion) COMPLETE");
-        CkPrintf("Phase 4 not implemented yet. Exiting.\n");
+	      PHASE_BOUNDARY(total_phase3, total_phase4, "PHASE 3 (Epsilon Matrix Inversion) COMPLETE");
+
+    }
+
+    serial{
+    //Bare exchange
+        //compute Fs that for n's that are occ
+
+    }
+
+    serial {
+        CkPrintf("Phase 5 not implemented yet. Exiting.\n");
         CkExit();
     }
     }
