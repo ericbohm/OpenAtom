@@ -94,6 +94,7 @@ class PsiCache : public CBase_PsiCache {
 
     unsigned K, L, psi_size, received_psis, qindex;
     complex*** psis;
+    complex*** psis_shifted;
     complex* fs;
     int wrote;
     complex* umklapp_factor;

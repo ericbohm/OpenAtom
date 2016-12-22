@@ -14,6 +14,7 @@ class PsiMessage : public CMessage_PsiMessage {
       std::copy(p, p+size, psi);
     }
     unsigned spin_index, k_index, state_index, size;
+    bool shifted;
     complex* psi;
 };
 

@@ -1401,19 +1401,24 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
   int nocc = gw_epsilon->nocc;
   int nunocc = gw_epsilon->nunocc;
   double*** Eocc;
+  double*** Eocc_shifted;
   double*** Eunocc;
 
   Eocc = new double**[nspin];
+  Eocc_shifted = new double**[nspin];
   Eunocc = new double**[nspin];
   for (int s = 0; s < nspin; s++) {
     Eocc[s] = new double*[nkpt];
+    Eocc_shifted[s] = new double*[nkpt];
     Eunocc[s] = new double*[nkpt];
     for (int k = 0; k < nkpt; k++) {
       Eocc[s][k] = new double[nocc];
+      Eocc_shifted[s][k] = new double[nocc];
       Eunocc[s][k] = new double[nunocc];
     }
   }
   gw_epsilon->Eocc = Eocc;
+  gw_epsilon->Eocc_shifted = Eocc_shifted;
   gw_epsilon->Eunocc = Eunocc;
 
   for (int s = 0; s < nspin; s++) {
@@ -1432,6 +1437,22 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
       }
     } // endfor kpts
   } // endfor spin
+
+  // shifted states eigenvalues
+  for (int s = 0; s < nspin; s++) {
+    for (int k = 0; k < nkpt; k++) {
+      sprintf(fromFile, "./STATES_IN/Spin.%d_Kpt.0%d_Bead.0_Temper.0/%s",s,k,gw_epsilon->eigFileName);
+      FILE* fp = fopen(fromFile, "r");
+      if (fp == NULL) {
+        PRINTF("Cannot open Eigen Value File: %s\n", fromFile);
+        EXIT(1);
+      }
+      for (int i = 0; i < nocc; i++) {
+        fscanf(fp,"%lg",&Eocc_shifted[s][k][i]);
+      }
+    } // endfor kpts
+  } // endfor spin
+
 
   // =======================================================================
   // Share K-Points and number of states with the parallel controller
