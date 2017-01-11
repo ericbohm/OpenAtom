@@ -93,7 +93,9 @@ void GSpaceDriver::init()
     if(numSfDups > simReadOnly.nstates)
       numSfDups = simReadOnly.nstates;
     sfCompSectionProxy = CProxySection_StructureFactor::ckNew(	UsfCompProxy[thisInstance.proxyOffset].ckGetArrayID(), 0, config.numSfGrps-1, 1, thisIndex.y, thisIndex.y, 1, 0, config.numSfDups-1,1);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
     sfCompSectionProxy.ckSectionDelegate(CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch());
+#endif
     
   } 
 }

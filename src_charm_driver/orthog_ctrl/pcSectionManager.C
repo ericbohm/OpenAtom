@@ -153,8 +153,10 @@ namespace cp {
       if ( !(isSymmetric && pc.y<pc.x) )
       {
         /// Delegate the pc section --> ortho reduction to CkMulticast
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
         CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(orthoRedGrpID).ckLocalBranch();
         pcSection.ckSectionDelegate(mcastGrp);
+#endif
         /// Register this ortho chare with all the paircalcs in this section 
         initGRedMsg *gredMsg=new initGRedMsg;
         gredMsg->cb=cb;
@@ -164,9 +166,10 @@ namespace cp {
         gredMsg->orthoY=orthoIndex.y;
         pcSection.initGRed(gredMsg);
       } 
-      
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_      
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(orthomCastGrpID).ckLocalBranch();
       pcSection.ckSectionDelegate(mcastGrp);
+#endif
     }
 
 

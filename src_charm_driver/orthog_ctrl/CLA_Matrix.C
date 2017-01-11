@@ -621,8 +621,13 @@ CLA_MM3D_multiplier::CLA_MM3D_multiplier(int m, int k, int n){
 void CLA_MM3D_multiplier::initialize_reduction(CLA_MM3D_mult_init_msg *m){
   reduce_CB = m->reduce;
   CkGetSectionInfo(sectionCookie, m);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
   redGrp = CProxy_CkMulticastMgr(m->gid).ckLocalBranch();
-  redGrp->contribute(0, NULL, CkReduction::sum_int, sectionCookie, m->ready);
+  redGrp->
+#else
+  CProxySection_CLA_MM3D_multiplier::
+#endif
+    contribute(0, NULL, CkReduction::sum_int, sectionCookie, m->ready);
   delete m;
 }
 
@@ -670,7 +675,12 @@ void CLA_MM3D_multiplier::multiply(internalType *A, internalType *B){
   traceUserBracketEvent(402, StartTime, CmiWallTimer());
 #endif
   //    redGrp->contribute(m * n * sizeof(double), C, CkReduction::sum_double,
-  redGrp->contribute(m * n * sizeof(internalType), C, sumFastDoubleType,
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+  redGrp->
+#else
+  CProxySection_CLA_MM3D_multiplier::
+#endif
+      contribute(m * n * sizeof(internalType), C, sumFastDoubleType,
       sectionCookie, reduce_CB);
   delete [] C;
 }

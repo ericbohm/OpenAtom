@@ -488,8 +488,13 @@ void CP_State_RealSpacePlane::doReduction(){
     CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(NULL),
         CkArrayIndex2D(rho_rpencil_offset_x, density_reduction),
         UrhoRealProxy[RhoReductionDest.proxyOffset].ckGetArrayID());
-    mcastGrp->contribute(dataSize*sizeof(double),&(data[off]),
-        sumFastDoubleType, cookie[density_reduction], cb, thisIndex.y);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+    mcastGrp->
+#else
+    CProxySection_CP_Rho_RealSpacePlane::
+#endif
+      contribute(dataSize*sizeof(double),&(data[off]),
+      sumFastDoubleType, cookie[density_reduction], cb, thisIndex.y);
     //CkPrintf("[%d] RSP [%d,%d] contributed %d to %d %d \n", CkMyPe(), 
     //    thisIndex.x, thisIndex.y, dataSize, rho_rpencil_offset_x, density_reduction);
   }//endfor : subplanes

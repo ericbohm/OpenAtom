@@ -186,11 +186,18 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
       else if(thisIndex.x==0 && thisIndex.y==0){
 	// can't let any bead stop until they all reach tolerance.
 	// but we only need one contributor from each replica.
-	CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+
 	int result=(fmagPsi_total <= tol_cp_min);
 	//	    CkPrintf("{%d} [%d,%d] tolcheck contrib %d %.5g %5g %5g\n",thisInstance.proxyOffset, thisIndex.x, thisIndex.y, result, fmagPsi_total, tol_cp_min,fmagPsi_total - tol_cp_min);
-	mcastGrp->contribute(sizeof(int), &result, CkReduction::logical_and,
-			     beadCookie);
+	CkCallback cb(CkIndex_InstanceController::fmagMinTest(NULL),CkArrayIndex1D(0),thisProxy);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_	
+	CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+	mcastGrp->
+#else
+	CProxySection_CP_State_GSpacePlane::  
+#endif
+	  contribute(sizeof(int), &result, CkReduction::logical_and,
+	  beadCookie, cb);
       }
 #endif // _CP_DEBUG_SCALC_ONLY_
     }

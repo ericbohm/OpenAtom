@@ -80,8 +80,10 @@ InstanceController::InstanceController(int _fft_expected) {
     }
 
     CProxySection_InstanceController sectProxy=CProxySection_InstanceController::ckNew(thisProxy.ckGetArrayID(),elems.getVec(),elems.size());
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
     sectProxy.ckSectionDelegate(mcastGrp);
+#endif
     ICCookieMsg *cookieme=new ICCookieMsg;
     sectProxy.initCookie(cookieme);
   }
@@ -122,11 +124,11 @@ void InstanceController::init(){
     }
   //finish setting this up      
     gTemperBeadProxy=CProxySection_CP_State_GSpacePlane(numDestinations, beadArrayIds, elems, naelems);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
     gTemperBeadProxy.ckSectionDelegate(mcastGrp);
+#endif
     ICCookieMsg *cookieme=new ICCookieMsg;
-    CkCallback *cb = new CkCallback(CkIndex_InstanceController::fmagMinTest(NULL),CkArrayIndex1D(0),thisProxy);
-    mcastGrp->setReductionClient(gTemperBeadProxy,cb);
     gTemperBeadProxy.initBeadCookie(cookieme);
 
   }
@@ -502,10 +504,14 @@ void InstanceController::allDoneCPForces(int tol_reached){
     UberCollection instance=thisInstance;
     instance.idxU.y=0;
     int offset=instance.calcPO();
-
-    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
     CkCallback cb(CkReductionTarget(InstanceController, allDoneCPForcesAllKPoint),CkArrayIndex1D(offset),thisProxy);
-    mcastGrp->contribute(sizeof(int), &tol_reached, CkReduction::min_int, allKPcookie, cb);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+    mcastGrp->
+#else
+    CProxySection_InstanceController::
+#endif
+      contribute(sizeof(int), &tol_reached, CkReduction::min_int, allKPcookie, cb);
   }
   else
   {

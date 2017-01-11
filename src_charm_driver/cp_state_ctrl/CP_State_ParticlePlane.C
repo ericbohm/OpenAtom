@@ -300,10 +300,12 @@ void CP_State_ParticlePlane::initKVectors()
     particlePlaneENLProxy = 
       CProxySection_CP_State_ParticlePlane::ckNew(UparticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),
           elems, nstates);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
     particlePlaneENLProxy.ckDelegate(mcastGrp);
-    EnlCookieMsg *emsg= new EnlCookieMsg;
     mcastGrp->setSection(particlePlaneENLProxy);
+#endif
+    EnlCookieMsg *emsg= new EnlCookieMsg;
     particlePlaneENLProxy.setEnlCookie(emsg);
     delete [] elems;
 
@@ -685,7 +687,12 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
 
       CkCallback cb=CkCallback(CkIndex_CP_State_ParticlePlane::printEnl(NULL),CkArrayIndex2D(0,0), UparticlePlaneProxy[thisInstance.proxyOffset]);
-      mcastGrp->contribute(sizeof(double),(void*) &enl, 
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+      mcastGrp->
+#else
+      CProxySection_CP_State_ParticlePlane::
+#endif
+	contribute(sizeof(double),(void*) &enl, 
           CkReduction::sum_double, enlCookie, cb);
       doneEnl=0;
       enl=0.0;

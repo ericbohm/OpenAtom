@@ -661,9 +661,11 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
     if(config.useOrthoSectionRed)
     {
       CProxySection_Ortho rproxy =   multiproxy;
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oRedGID).ckLocalBranch();
       CkAssert(mcastGrp != NULL);
       rproxy.ckSectionDelegate(mcastGrp);
+#endif
       initCookieMsg *redMsg=new initCookieMsg;
       /// Ask the rest of the section (the whole array) to init their CkSectionInfo cookies that identify the mgr etc
       rproxy.orthoCookieinit(redMsg);
@@ -671,9 +673,11 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
     /// If multicasts are being delegated to a comm library
     if(config.useOrthoSection)
     {
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oMCastGID).ckLocalBranch();
       CkAssert(mcastGrp != NULL);
       multiproxy.ckSectionDelegate(mcastGrp);
+#endif
     }
   }
 
@@ -939,8 +943,13 @@ void Ortho::tolerance_check(){
   if(config.useOrthoSectionRed)
   {
     CkCallback mycb(CkIndex_Ortho::collect_error(NULL), thisProxy(0, 0));
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oRedGID).ckLocalBranch();
-    mcastGrp->contribute(sizeof(internalType),  &ret, CkReduction::sum_double, orthoCookie, mycb);
+    mcastGrp->
+#else
+    CProxySection_Ortho::
+#endif
+      contribute(sizeof(internalType),  &ret, CkReduction::sum_double, orthoCookie, mycb);
   }
   else
     contribute(sizeof(internalType), &ret, CkReduction::sum_double);

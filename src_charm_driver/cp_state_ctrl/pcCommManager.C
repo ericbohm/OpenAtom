@@ -68,8 +68,10 @@ namespace cp {
               chunk, chunk, 1);
           /// Delegate the multicast work to an appropriate library
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
           CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
           sectionGettingLeft[chunk].ckSectionDelegate(mcastGrp);
+#endif
 #endif
         }
       }
@@ -122,8 +124,10 @@ namespace cp {
                 c, c, 1);
             /// Delegate the multicast work to an appropriate library
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
             CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
             sectionGettingRight[c].ckSectionDelegate(mcastGrp);
+#endif
 #endif
           }
         }
@@ -511,7 +515,9 @@ namespace cp {
           chunk, chunk,1);
       CkSectionID sid=sectProxy.ckGetSectionID();
       std::random_shuffle(sid._elems, sid._elems + sid._nElems);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
       sectProxy.ckSectionDelegate(mcastGrp);
+#endif
       //initialize proxy
       setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
       return sectProxy;
@@ -543,7 +549,9 @@ namespace cp {
       std::random_shuffle(elems, elems + ecount);
       CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcHandle.pcAID,  elems, ecount);
       delete [] elems;
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
       sectProxy.ckSectionDelegate(mcastGrp);
+#endif
       setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
       return sectProxy;
     }
@@ -568,7 +576,9 @@ namespace cp {
           chunk, chunk, 1);
       CkSectionID sid=sectProxy.ckGetSectionID();
       std::random_shuffle(sid._elems, sid._elems + sid._nElems);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
       sectProxy.ckSectionDelegate(mcastGrp);
+#endif
       setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
       return sectProxy;
     }
@@ -597,7 +607,9 @@ namespace cp {
 
       CkSectionID sid=sectProxy.ckGetSectionID();
       std::random_shuffle(sid._elems, sid._elems + sid._nElems);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
       sectProxy.ckSectionDelegate(mcastGrp);
+#endif
       setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
       return sectProxy;
     }

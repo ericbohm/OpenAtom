@@ -1914,13 +1914,16 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 
   //create sections if needed
   if(ees_eext_on && config.nchareHartAtmT > 1) {
-    CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+
     for(int type = 0; type < config.nchareHartAtmT; type++) {
       CProxySection_CP_Rho_GHartExt proxy =
         CProxySection_CP_Rho_GHartExt::ckNew(
             UrhoGHartExtProxy[thisInstance.proxyOffset].ckGetArrayID(),
             0, nchareRhoG - 1, 1, type, type, 1);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+      CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
       proxy.ckSectionDelegate(mCastGrp);
+#endif
       Ughart_sectionProxy[type].push_back(proxy);
     }
   }
@@ -1933,13 +1936,15 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     UrhoRHartExtProxy[thisInstance.proxyOffset].doneInserting();
     //create sections if needed
     if(config.nchareHartAtmT > 1) {
-      CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
       for(int type = 0; type < config.nchareHartAtmT; type++) {
         CProxySection_CP_Rho_RHartExt proxy =
           CProxySection_CP_Rho_RHartExt::ckNew(
               UrhoRHartExtProxy[thisInstance.proxyOffset].ckGetArrayID(),
               0, nchareRhoRHart_x - 1, 1, 0, nchareRhoRHart_y - 1, 1, type, type, 1);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+	CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
         proxy.ckSectionDelegate(mCastGrp);
+#endif
         Urhart_sectionProxy[type].push_back(proxy);
       }
     }

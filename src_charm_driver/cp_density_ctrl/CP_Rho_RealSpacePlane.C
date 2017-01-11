@@ -343,12 +343,12 @@ void CP_Rho_RealSpacePlane::init(){
       realSpaceSectionProxyA[kp][c_plane] = CProxySection_CP_State_RealSpacePlane::
         ckNew(UrealSpacePlaneProxy[RhoReductionSource.proxyOffset].ckGetArrayID(),
         elems[c_plane], simReadOnly.nstates);
-
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
       realSpaceSectionProxyA[kp][c_plane].ckDelegate
         (CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch());
 
       mcastGrp->setSection(realSpaceSectionProxyA[kp][c_plane]);
-
+#endif
       InitDensity *indexMsg = new InitDensity;
       // inform realspace element of this section proxy.
       indexMsg->grid_offset_b = myGrid_start[MY_B];

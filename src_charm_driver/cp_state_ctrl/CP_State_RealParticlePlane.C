@@ -271,9 +271,11 @@ void CP_State_RealParticlePlane::init(){
       CProxySection_CP_State_RealParticlePlane::ckNew(thisProxy.ckGetArrayID(),
           thisIndex.x,thisIndex.x,1,
           0,nChareR-1,1);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
     rPlaneSectProxy.ckDelegate(mcastGrp);
     mcastGrp->setSection(rPlaneSectProxy);
+#endif;
     EnlCookieMsg *emsg= new EnlCookieMsg;
     rPlaneSectProxy.setPlaneRedCookie(emsg);
   }//endif
@@ -679,11 +681,17 @@ void CP_State_RealParticlePlane::computeZmatEes(){
 
 #define _FANCY_RED_METHOD_
 #ifdef _FANCY_RED_METHOD_
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+
   CkCallback cb(CkIndex_CP_State_RealParticlePlane::recvZMatEes(NULL),
       CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
       UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
-  mcastGrp->contribute((nZmat*sizeof(double)),zmat,sumFastDoubleType,
+#ifdef _AUTO_DELEGATE_MCASTMGR_ON_
+  CProxySection_CP_State_RealParticlePlane::
+#else
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+  mcastGrp->
+#endif
+    contribute((nZmat*sizeof(double)),zmat,sumFastDoubleType,
       rPlaneRedCookie,cb, iterNL);
 #else
   thisProxy(thisIndex.x,reductionPlaneNum).recvZMatEesSimp(nZmat,zmat,
@@ -1026,12 +1034,17 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg){
 #endif
 
 #ifdef _FANCY_RED_METHOD_
-    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
     //     CkCallback cb=CkCallback(printEnlR, NULL);
     CkCallback cb(CkIndex_CP_State_RealParticlePlane::printEnlR(NULL),
         CkArrayIndex2D(0,state0ReductionPlaneNum),
         UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
-    mcastGrp->contribute(sizeof(double),(void*) &cp_enl, 
+#ifdef _AUTO_DELEGATE_MCASTMGR_ON_
+  CProxySection_CP_State_RealParticlePlane::
+#else
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+  mcastGrp->
+#endif
+    contribute(sizeof(double),(void*) &cp_enl, 
         CkReduction::sum_double,rEnlCookie, cb, itime);
 #else
     thisProxy(0,0).printEnlRSimp(cp_enl,thisIndex.x,itime);
@@ -1315,11 +1328,17 @@ void CP_State_RealParticlePlane::setPlaneRedCookie(EnlCookieMsg *m){
 
   CkGetSectionInfo(rPlaneRedCookie,m);
   int cookiedone=1;
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+
   CkCallback cb(CkIndex_CP_State_RealParticlePlane::planeRedSectDone(NULL),
       CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
       UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
-  mcastGrp->contribute(sizeof(int),&cookiedone,CkReduction::sum_int,
+#ifdef _AUTO_DELEGATE_MCASTMGR_ON_
+  CProxySection_CP_State_RealParticlePlane::
+#else
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+  mcastGrp->
+#endif
+    contribute(sizeof(int),&cookiedone,CkReduction::sum_int,
       rPlaneRedCookie,cb);
   // if not root, we are set up
   if(thisIndex.y!=reductionPlaneNum)
@@ -1351,11 +1370,17 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
 
   CkGetSectionInfo(rEnlCookie,m);
   int cookiedone=1;
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+
   CkCallback cb(CkIndex_CP_State_RealParticlePlane::enlSectDone(NULL),
       CkArrayIndex2D(0,state0ReductionPlaneNum),
       UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
-  mcastGrp->contribute(sizeof(int), &cookiedone, 
+#ifdef _AUTO_DELEGATE_MCASTMGR_ON_
+  CProxySection_CP_State_RealParticlePlane::
+#else
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+  mcastGrp->
+#endif
+    contribute(sizeof(int), &cookiedone, 
       CkReduction::sum_int,rEnlCookie, cb);
   // if not root, we are set up
   if(thisIndex.y!=reductionPlaneNum || thisIndex.x!=0){     

@@ -764,8 +764,12 @@ PairCalculator::sendTiles(bool flag_dp)
       for(int i=0; i<cfg.orthoGrainSize * cfg.orthoGrainSize; i++)
         CkAssert( isfinite(outTiles[orthoIndex][i]) );
 #endif
-
-      mcastGrp->contribute(cfg.orthoGrainSize * cfg.orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+    mcastGrp->
+#else
+    CProxySection_PairCalculator::
+#endif
+    contribute(cfg.orthoGrainSize * cfg.orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
       //mcastGrp->contribute(cfg.orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], CkReduction::sum_double, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
       touchedTiles[orthoIndex]=0;
     }
@@ -997,8 +1001,12 @@ void PairCalculator::contributeSubTiles(internalType *fullOutput)
       snprintf(filename,80,"fwoutTile_%d_%d:",orthoX,orthoY);
       dumpMatrix(filename, outTile, orthoGrainSizeX, orthoGrainSizeY,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize);
 #endif
-
-      mcastGrp->contribute(tileSize*sizeof(internalType), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+    mcastGrp->
+#else
+    CProxySection_PairCalculator::
+#endif
+    contribute(tileSize*sizeof(internalType), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
       if(! reuseTile)
         delete [] outTile;
     }
@@ -2304,7 +2312,12 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
 #endif
 
       int outOffset=thisIndex.z;
-      mcastGrp->contribute(numPoints*sizeof(inputType), computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+    mcastGrp->
+#else
+    CProxySection_PairCalculator::
+#endif
+    contribute(numPoints*sizeof(inputType), computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
 
 #ifdef CMK_TRACE_ENABLED
       traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2331,7 +2344,12 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
 #endif
 
       int outOffset=thisIndex.z;
-      mcastGrp->contribute(numPoints*sizeof(inputType), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+    mcastGrp->
+#else
+    CProxySection_PairCalculator::
+#endif
+      contribute(numPoints*sizeof(inputType), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
 
 #ifdef CMK_TRACE_ENABLED
       traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2475,7 +2493,12 @@ void PairCalculator::sendBWResult(sendBWsignalMsg *msg)
       CkPrintf("[%d,%d,%d,%d,%d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
 #endif
       int outOffset=thisIndex.z;
-      mcastGrp->contribute(numPoints*sizeof(inputType),computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+    mcastGrp->
+#else
+    CProxySection_PairCalculator::
+#endif
+      contribute(numPoints*sizeof(inputType),computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
     }
   }
 
@@ -2492,7 +2515,12 @@ void PairCalculator::sendBWResult(sendBWsignalMsg *msg)
       CkPrintf("[%d,%d,%d,%d,%d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
 #endif
       int outOffset=thisIndex.z;
-      mcastGrp->contribute(numPoints*sizeof(inputType), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+#ifndef _AUTO_DELEGATE_MCASTMGR_ON_
+    mcastGrp->
+#else
+    CProxySection_PairCalculator::
+#endif
+      contribute(numPoints*sizeof(inputType), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
     }
   }
 
