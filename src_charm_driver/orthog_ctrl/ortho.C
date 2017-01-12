@@ -286,7 +286,16 @@ void Ortho::output_eigen(int xoff, int yoff, int size, double *data){
     {// output
       std::string outfile=cfg.eigenFileName;
       outfile.append(".");
+
+#if CMK_USING_XLC
+      //to_string is not supported, so I'm going to aggressively mix old and new to maximize the absurdity
+      char iterstring[32];
+      snprintf(iterstring,31,"%d",numGlobalIter);
+      outfile.append(iterstring);
+#else
       outfile.append(std::to_string(numGlobalIter));
+#endif
+
       CkPrintf("output to ksfile %s\n",outfile.c_str());
       FILE *eigenFile = fopen(outfile.c_str(), "w");
       for(int i=0; i<cfg.grainSize; i++)
