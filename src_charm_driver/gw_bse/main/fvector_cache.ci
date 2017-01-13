@@ -6,6 +6,7 @@ module fvector_cache {
     entry FVectorCache();
     entry void putFVec(Phase4Message *msg);
     entry void receive(Phase4Message *in_data);
+    entry void computeFTilde();
 
     entry void getFVec(int n, const CkCallback &cb){
         if(isLocal(n)){//local

@@ -123,9 +123,7 @@ Main::Main(CkArgMsg* msg) {
   eps_matrix2D_cproxy = CProxy_EpsMatrix2D::ckNew();
   eps_matrix2D_ccproxy = CProxy_EpsMatrix2D::ckNew();
   eps_matrix2D_bbproxy = CProxy_EpsMatrix2D::ckNew();
- 
-
-  //eps_matrix2D_proxy = CProxy_EpsMatrix2D::ckNew();
+  eps_proxy1D = CProxy_EpsMatrix1D::ckNew();
 
   int local_mtx_size_1d_x = dimension;
   int local_mtx_size_1d_y = 1;//1728; 

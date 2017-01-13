@@ -110,6 +110,7 @@ class FVectorCache : public CBase_FVectorCache {
   public:
     FVectorCache();
     void putFVec(Phase4Message* msg);
+    void computeFTilde();
     bool isLocal(int n){
       if(n/node_count==CkMyNode())
         return true;
@@ -121,6 +122,7 @@ class FVectorCache : public CBase_FVectorCache {
  //   void receive(complex* in_data);
 //    void getFVec(int n, const CkCallback &cb);
   private:
+    FComputePacket f_packet;
     unsigned L, psi_size, fcount, n_list_size, node_count;
     complex* fs;
 };

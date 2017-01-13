@@ -284,7 +284,7 @@ module controller {
         CkPrintf("\n[CONTROLLER] Created Transpose");
         for(index=0;index<padded_epsilon_size;index++)
           eps_proxy1D(index).insert();
-         eps_proxy1D.doneInserting();
+        eps_proxy1D.doneInserting();
         eps_proxy1D.setSize(padded_epsilon_size);
          //X = m*m^T   
         mat_mul_proxy.do_multiply(eps_matrix2D_proxy, eps_matrix2D_bproxy, eps_matrix2D_cproxy);
@@ -409,10 +409,10 @@ module controller {
     serial{
     //Bare exchange
         //compute Fs that for n's that are occ
-
+        fvector_cache_proxy.computeFTilde();
     }
 
-    serial {
+    when fftComplete() serial {
         CkPrintf("Phase 5 not implemented yet. Exiting.\n");
         CkExit();
     }

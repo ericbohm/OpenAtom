@@ -9,6 +9,7 @@
 #include "main.h"
 #include "states.h"
 #include "fft_controller.h"
+#include "fft_routines.h"
 #include "CkLoopAPI.h"
 
 #define eps_rows 20
@@ -403,6 +404,60 @@ void FVectorCache::putFVec(Phase4Message *msg) {
   fcount++;
 //TODO: Partition Fs and duplicate to reduce access latency
   //Partitioning logic
+}
+
+// Called by CkLoop to spread the computation of f vectors across the node
+void fTildeWorkUnit(int first, int last, void* result, int count, void* params) {
+
+  FComputePacket* f_packet = (FComputePacket*)params;
+  complex* fs = f_packet->fs;
+  int psi_size = f_packet->size;
+  GWBSE *gwbse = GWBSE::get();
+  int* nfft;
+  nfft = gwbse->gw_parallel.fft_nelems;
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  int vector_count = 1;
+  int direction = 1;
+  int L = gwbse->gw_parallel.L;
+  FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
+
+
+  for(int k=first;k<=last;k++)
+  for (int i=0; i < L; i++){ //for all the L*n_list_size, L are computed in this node
+    // First set up the data structures in the FFTController
+    fft_controller->setup_fftw_3d(nfft, direction);
+    fftw_complex* in_pointer = fft_controller->get_in_pointer();
+    fftw_complex* out_pointer = fft_controller->get_out_pointer();
+
+    // Pack our data, do the fft, then get the output
+    put_into_fftbox(nfft, &fs[k*i*psi_size], in_pointer);
+    fft_controller->do_fftw();
+    fftbox_to_array(ndata, out_pointer, &fs[k*i*psi_size], 1); //Now cached on the same partitions
+    // replace f_vector to f_tilde_vector
+    // ndata is the size of the vector
+  }
+
+}
+
+//Each node calculates its own ftilde
+void FVectorCache::computeFTilde(){
+
+  // Create the FComputePacket for this set of f vectors and start CkLoop
+  f_packet.size = psi_size;
+  f_packet.fs = fs;
+  
+  
+#ifdef USE_CKLOOP
+  CkLoop_Parallelize(fTildeWorkUnit, 1, &f_packet, n_list_size, 0, n_list_size - 1);
+#else
+  for (int n = 0; n < n_list_size; n++) {
+    fTildeWorkUnit(n,n,NULL,1,&f_packet);
+  }
+#endif
+  CkPrintf("\nComputed and cached FTilde\n");
+
+//cached fTilde, so matrix can be computed
+  contribute(CkCallback(CkReductionTarget(Controller, fftComplete), controller_proxy));
 }
 
 #include "psi_cache.def.h"
