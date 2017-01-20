@@ -1,0 +1,7 @@
+
+&INPUT
+   prefix='Si2'
+   work_dir='./'
+   wfn_name='wfnq.dat'
+/
+

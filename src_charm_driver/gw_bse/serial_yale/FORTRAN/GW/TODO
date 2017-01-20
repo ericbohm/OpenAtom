@@ -1,0 +1,15 @@
+TO DO list (Feb. 2015 minjung.kim@yale.edu)
+
+
+1. User provided input
+
+2. Coulomb truncation (By Subhasish)
+
+3. Generalized Plasmon-Pole model (eigenrepresentation) (By the end of Feb)
+
+
+
+
+- USE LAPACK for matrix multiplication (when we calculate P)
+- change set_FFTsize.f90 subroutine (decide FFT box size using energy cutoff) 
+- 
