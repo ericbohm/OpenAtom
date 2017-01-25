@@ -1423,6 +1423,41 @@ on system size and processor number and architecture. Below, the
 name nstate refers to the number of KS states and the name nproc
 refers to the number of processors to be used.
 
+These parameters control parallel decomposition and the prioritization
+of the parallel phases of the ground state code.
+
+The primary decomposition control is  {\emph gExpandFact}    
+
+Which determines the number of pieces (nchareG) into which each plane
+wave state is cut.  The default is nchareG = 1.0 * plane\_x.  Values greater
+than 1 will make more, between 0 and 1 will make fewer.  This value
+should been chosen such that nstate * nchareG is an even
+multiple of the number of Processing Elements (AKA worker
+threads). Large multiples will create a significant amount of
+overhead.  Optimal configurations are generally as low as a multiple
+of 1 or 2.
+
+Analogous logic apply to gExpandFactRho, however there will only be
+gExpandFactRho * nplane\_x\_rho objects created as there is no nstates
+dimension to the density.
+
+The next most critical decomposition choice is for the paircalculator.
+It operates on pairs of CP\_State\_GSpacePlane and therefore its
+paramaterization is based on nchareG, how the states are grouped
+together, and a free parameter for addition decomposition within those
+constaints.
+
+The primary parameter specific to the paircalculator is sGrainSize, which governs the number of states in each calculator.
+
+the seconary parameter specific to the paircalculator is numChunks, which performs a linear cut across all the point.
+
+numPC = {\emph chareG} * {\emph nstates / sGrainSize} * {\emph nstates / sGrainSize} * numChunks;
+
+numPC / numProcs should be 1, or slightly fewer, for best performance.  Overdecomposition of the paircalculator is supported, but the communication overhead incurred has been observed to be greater than any parallelization benefits. 
+
+Note: you must choose $\leq$ sGrainSize such that ${\rm
+  mod}(sGrainSize,oGrainSize)=0$.
+
 %==================================================================
 \newpage
 %-------------------------------------------------------------------
@@ -1430,12 +1465,6 @@ refers to the number of processors to be used.
 
 \begin{enumerate}
   \vspace{0.15in} 
-  \item  \textbackslash{}useCommlib\{on:on,off \} : \\
-  Turn on/off Charm communication library use. Default on
-  \vspace{0.15in} 
-  \item  \textbackslash{}useCommlibMulticast\{ \} : \\   
-  \vspace{0.15in} 
-  Turn on/off Charm multicast communication library use. Default on
   \item  \textbackslash{}atmOutput\{on:on,off \} : \\   
   Turn on/off atom output. Default on
 \end{enumerate}
