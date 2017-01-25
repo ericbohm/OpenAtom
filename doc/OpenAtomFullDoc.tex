@@ -1435,7 +1435,7 @@ should been chosen such that nstate * nchareG is an even
 multiple of the number of Processing Elements (AKA worker
 threads). Large multiples will create a significant amount of
 overhead.  Optimal configurations are generally as low as a multiple
-of 1 or 2.
+of 1 or 2.  Larger choices can provide additional communication computation overlap and smoothen out load imbalances.  However, there is communication overhead associated, so large values should be avoided.
 
 Analogous logic apply to gExpandFactRho, however there will only be
 gExpandFactRho * nplane\_x\_rho objects created as there is no nstates
@@ -1451,7 +1451,7 @@ The primary parameter specific to the paircalculator is sGrainSize, which govern
 
 the seconary parameter specific to the paircalculator is numChunks, which performs a linear cut across all the point.
 
-numPC = {\emph chareG} * {\emph nstates / sGrainSize} * {\emph nstates / sGrainSize} * numChunks;
+numPC = {\emph chareG} *  ({\emph nstates / sGrainSize}) * ({\emph nstates / sGrainSize})  * numChunks;
 
 numPC / numProcs should be 1, or slightly fewer, for best performance.  Overdecomposition of the paircalculator is supported, but the communication overhead incurred has been observed to be greater than any parallelization benefits. 
 
