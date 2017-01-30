@@ -1,16 +1,9 @@
 
 #include "eps_matrix.decl.h"
 
+#include "mylapack.h"
 #include "CLA_Matrix.h"
 #include "ckcomplex.h"
-
-#define ZGEMM zgemm
-#define ZGERC zgerc
-
-extern "C" {
-  void ZGERC (int*, int*, complex*, complex*, int*, complex*, int*, complex*, int*);
-  void ZGEMM (char*, char*, int*, int*, int*, complex*, complex*, int*, complex*, int*, complex*, complex*, int*);
-}
 
 class EpsMatrix2D : public CBase_EpsMatrix2D {
   EpsMatrix2D_SDAG_CODE

@@ -5,20 +5,26 @@ CHARMDIR = /Users/<username>/charm
 CHARMC = $(CHARMDIR)/bin/charmc
 
 # Compile and link flags
-CFLAGS=-O3
-LFLAGS=
+CFLAGS = -O3
+LFLAGS = -module CkMulticast
 
 # Path to the build of the fftw3 library
 FFTW3 = <PATH TO FFTW3 DIRECTORY>
-CFLAGS+=-I$(FFTW3)/include
-LFLAGS=-L$(FFTW3)/lib -lfftw3 -lm -lz
+CFLAGS += -I$(FFTW3)/include
+LFLAGS += -L$(FFTW3)/lib -lfftw3 -lm -lz
 
-# Path to LAPACK if using LAPACK (the following should work for Mac OS X)
-LAPACKLIB = -framework Accelerate
-LAPACKINC = -I/System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Headers/
-CFLAGS += -DUSE_LAPACK $(LAPACKINC)
+# Path to LAPACK if using LAPACK
+# FOR MACS
+# LAPACKLIB = -framework Accelerate
+# LAPACKINC = -I/System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Headers/
+# FOR LAB MACHINES
+# LAPACKLIB = -llapack -lblas
+# LAPACKINC =
+# FOR ANL MACHINES
+# LAPACKLIB = -L/soft/libraries/alcf/current/xl/CBLAS/lib -L/soft/libraries/alcf/current/xl/BLAS/lib -L/soft/compilers/ibmcmp-nov2012/xlf/bg/14.1/lib64 -lcblas -lblas -lxlf90_r -lxlopt -lxl -lxlfmath
+# LAPACKINC = -I/soft/libraries/alcf/current/xl/CBLAS/include/
+CFLAGS += -DUSE_LAPACK -DUSE_FORTRAN_UNDERSCORE -DUSE_ZGEMM $(LAPACKINC)
 LFLAGS += $(LAPACKLIB)
-LFLAGS += -module CkMulticast  -module RotateLB
 
 # Flags for enabling CkLoop
 CFLAGS += -DUSE_CKLOOP
