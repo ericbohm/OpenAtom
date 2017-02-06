@@ -1,0 +1,5 @@
+wfn.dat      # wavefunction name
+wfnq.dat     # shifted wavefunction name
+10           # polarizability calculation energy cutoff
+10           # epsilon calculation energy cutoff
+

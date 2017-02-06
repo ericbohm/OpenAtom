@@ -115,15 +115,21 @@ PsiCache::PsiCache() {
   K = gwbse->gw_parallel.K;
   L = gwbse->gw_parallel.L;
   qindex = Q_IDX;
-  int* nfft;
-  nfft = gwbse->gw_parallel.fft_nelems;
-  psi_size = nfft[0]*nfft[1]*nfft[2];//gwbse->gw_parallel.n_elems;
+  psi_size = gwbse->gw_parallel.n_elems;
   received_psis = 0;
   psis = new complex**[K];
   for (int k = 0; k < K; k++) {
     psis[k] = new complex*[L];
     for (int l = 0; l < L; l++) {
       psis[k][l] = new complex[psi_size];
+    }
+  }
+  // shifted k grid psis. Need this for qindex=0
+  psis_shifted = new complex**[K];
+  for (int k = 0; k < K; k++) {
+    psis_shifted[k] = new complex*[L];
+    for (int l = 0; l < L; l++) {
+      psis_shifted[k][l] = new complex[psi_size];
     }
   }
 
@@ -153,12 +159,13 @@ void PsiCache::receivePsi(PsiMessage* msg) {
   CkAssert(msg->k_index < K);
   CkAssert(msg->state_index < L);
   CkAssert(msg->size == psi_size);
-  std::copy(msg->psi, msg->psi+psi_size, psis[msg->k_index][msg->state_index]);
+  if(msg->shifted==false){std::copy(msg->psi, msg->psi+psi_size, psis[msg->k_index][msg->state_index]);}
+  if(msg->shifted==true){std::copy(msg->psi, msg->psi+psi_size, psis_shifted[msg->k_index][msg->state_index]);}
   delete msg;
 
   // Once the cache has received all of it's data start the sliding pipeline
   // sending of psis to P to start the accumulation of fxf'.
-  if (++received_psis == K*L) {
+  if (++received_psis == 2*K*L) {
     //CkPrintf("[%d]: Cache filled\n", CkMyPe());
     contribute(CkCallback(CkReductionTarget(Controller,cachesFilled), controller_proxy));
   }
@@ -174,25 +181,21 @@ void computeF(int first, int last, void* result, int count, void* params) {
   double e_unocc = f_packet->e_unocc;
   complex* fs = f_packet->fs;
 
-  complex total = 0;
   for (int l = first; l <= last; l++) {
     complex* f = &(fs[l*psi_size]);
     complex* psi_occ = f_packet->occ_psis[l];
     double scaling_factor = 2/sqrt(e_unocc - e_occ[l]);
 
     for (int i = 0; i < psi_size; i++) {
-      f[i] = psi_occ[i] * psi_unocc[i].conj();// * scaling_factor;
-/*
+      f[i] = psi_occ[i] * psi_unocc[i].conj() * scaling_factor;
       if (umklapp_factor) {
         f[i] *= umklapp_factor[i];
       }
-      total += psi_occ[i];
 #ifdef USE_LAPACK
       // BLAS calls compute the complex conjugate of P, which is hermitian. This
       // change to f corrects that so we get the correct P.
       f[i] = f[i].conj();
 #endif
-*/
     }
   }
 }
@@ -200,7 +203,6 @@ void computeF(int first, int last, void* result, int count, void* params) {
 // Receive an unoccupied psi, and split off the computation of all associated f
 // vectors across the node using CkLoop.
 void PsiCache::computeFs(PsiMessage* msg) {
-//  CkPrintf("\nIn corresponding computeFs\n");
   double start = CmiWallTimer();
 
   if (msg->spin_index != 0) {
@@ -222,13 +224,20 @@ void PsiCache::computeFs(PsiMessage* msg) {
 
   GWBSE* gwbse = GWBSE::get();
   double*** e_occ = gwbse->gw_epsilon.Eocc;
+  double*** e_occ_shifted = gwbse->gw_epsilon.Eocc_shifted;
   double*** e_unocc = gwbse->gw_epsilon.Eunocc;
 
   // Create the FComputePacket for this set of f vectors and start CkLoop
   f_packet.size = psi_size;
   f_packet.unocc_psi = msg->psi;
-  f_packet.occ_psis = psis[ikq];
-  f_packet.e_occ = e_occ[msg->spin_index][ikq];
+  if ( qindex == 0 ) { 
+    f_packet.occ_psis = psis_shifted[ikq]; 
+    f_packet.e_occ = e_occ_shifted[msg->spin_index][ikq];
+  }
+  else { 
+    f_packet.occ_psis = psis[ikq];
+    f_packet.e_occ = e_occ[msg->spin_index][ikq]; 
+  }
   f_packet.e_unocc = e_unocc[msg->spin_index][msg->k_index][msg->state_index-L];
   f_packet.fs = fs;
 
@@ -242,13 +251,11 @@ void PsiCache::computeFs(PsiMessage* msg) {
     computeF(l,l,NULL,1,&f_packet);
   }
 #endif
-  fs = f_packet.fs;
-  wrote = 4;
+
   // Let the matrix chares know that the f vectors are ready
-//  CkPrintf("\nAbout to call pmatrix2D_proxy\n");
   CkCallback cb(CkReductionTarget(PMatrix2D, applyFs), pmatrix2D_proxy);
   contribute(cb);
-//  CkPrintf("\nAfter calling pmatrix2D_proxy\n");
+
   // Cleanup
   delete msg;
   total_time += CmiWallTimer() - start;
@@ -268,11 +275,6 @@ complex* PsiCache::getF(unsigned idx) const {
   return &(fs[idx*psi_size]);
 }
 
-int PsiCache::getWrote(){
-    return wrote;
-}
-
-
 void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   GWBSE* gwbse = GWBSE::get();
 
@@ -280,9 +282,8 @@ void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   double *this_k, *this_q;
   double k_plus_q[3], k_plus_q_orig[3];
   
-  this_k = gwbse->gwbseopts.kvec[1];//ikpt];
-  
-  this_q = gwbse->gwbseopts.qvec[1];//qindex];
+  this_k = gwbse->gwbseopts.kvec[ikpt];
+  this_q = gwbse->gwbseopts.qvec[qindex];
 
   for (int i=0; i<3; i++) {
     // calculate k+q vector 

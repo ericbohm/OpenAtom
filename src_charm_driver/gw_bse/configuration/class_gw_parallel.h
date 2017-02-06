@@ -46,7 +46,6 @@ class GW_PARALLEL{
       p | K; p | L; p | M;
       p | n_elems;
       p | pipeline_stages;
-      p | transpose_stages;
       p | rows_per_chare;
       p | cols_per_chare;
       p | transpose_stages;
@@ -69,7 +68,6 @@ class GW_PARALLEL{
       fprintf(fp,"L %i\n", L);
       fprintf(fp,"M %i\n", M);
       fprintf(fp,"pipeline_stages %i\n", pipeline_stages);
-      fprintf(fp,"transpose_stages %i\n", transpose_stages);
       fprintf(fp,"rows_per_chare %i\n", rows_per_chare);
       fprintf(fp,"cols_per_chare %i\n", cols_per_chare);
       fprintf(fp,"transpose_stages %i\n", transpose_stages);

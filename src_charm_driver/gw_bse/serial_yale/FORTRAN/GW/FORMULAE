@@ -1,0 +1,42 @@
+Last update: June 2. 2015  by M. Kim
+
+What is really calculated in this code:
+
+Nk = number of k points
+vol = volume of the simulation cell
+nfft = number of fft grid (same as number of r points)
+Ev, Ec = energy (unit is in Hartree) 
+
+
+:: Epsilon inverse calculations ::
+
+P(r,r’)^q = sum_k,v,c{ 4/(Ev-Ec) * (psi(r)_v,k+q x psi^†(r)_c,k) * (psi^†(r’)_v,k+q x psi(r’)_c,k) }
+
+(for spin unpolarized system)
+
+P(G,G’)^q = vol^2/(nfft^2) * FFT[ P(r,r’)^q ]  
+
+epsilon(G,G’)^q = delta_G,G’ - sqrt( Vcoulb(q+G) ) * P(G,G’)^q * sqrt( Vcoulb(q+G') )
+
+Vcoulb(q) = 4*pi/(Nk*Vol*q^2)  (in calc_coulb subroutine)
+
+
+
+
+:: Generalized Plasmon-Pole model ::
+
+S = eps^-1 - I
+
+  ( eigendecomposition )
+
+  = V x sigma x V*
+
+  ( V = eigenvectors in columns
+    sigma = eigenvalue matrix on diagonal elements)
+
+S_GG'(q,w) = sum_i V_G,i x (\sigma_i x \omega_i^2 )/ (\omega_i^2 - w^2) x V_i,G'*  
+
+omega_i^2 = - w_pl^2 x sum_G,G' (q+G)(q+G')/(|q+G||q+G'|) x rho(G-G')/rho(0)
+
+w_pl^2 = 4pi x rho(0)
+rho(0) = number of electrons/volume

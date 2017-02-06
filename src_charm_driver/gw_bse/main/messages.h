@@ -14,6 +14,7 @@ class PsiMessage : public CMessage_PsiMessage {
       std::copy(p, p+size, psi);
     }
     unsigned spin_index, k_index, state_index, size;
+    bool shifted;
     complex* psi;
 };
 
@@ -33,7 +34,6 @@ class Phase2Message : public CMessage_Phase2Message {
     int global_y;
 };
 
-
 class Phase3Message : public CMessage_Phase3Message {
   public:
     complex* data;
@@ -45,5 +45,4 @@ class Phase3Message : public CMessage_Phase3Message {
     int end_i;
     int end_j;
 };
-
 #endif

@@ -1,0 +1,14 @@
+This serial code computes the Screened exchange part of GW-selfenergy. At present, at q=0,
+ coulb(q=0) is hardcoded for silicon (in sigma.f90). The input should be the 
+ same wavefuction that was used to compute epsilon inverse matrix. Here wfn.dat* and in are the inputs.  
+The number of bands that are asked for computing sigma is an input option. 
+In this code, you can change the number of bands for sigma, just by changing the ib -indices inside sigma.f90
+To change eps_cutoff, please change manually in usrinput.f90. 
+The same value of eps_cut that was used to compute epsilon inverse matrix, should be used here.  
+Typically the convergence for epsilon inverse with eps_cut is similar to the convergence for Screened 
+exchange.
+
+To run this code we need eps_inv from epsilon calculation (phase III) obtained at q-vectors.
+All the q-vectors have to match with epsilon calculation. 
+For example, if you have 8 q-points, you need epsilon inverse seperately for each q-point. 
+Like EPS_INV_1, EPS_INV_2 .. etc.  

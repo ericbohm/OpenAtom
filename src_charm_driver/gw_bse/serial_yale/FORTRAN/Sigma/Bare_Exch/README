@@ -1,0 +1,8 @@
+This serial code computes Bare exchange part of GW-selfenergy. At present, at q=0,
+ coulb(q=0) is hardcoded for silicon (in sigma.f90). The input should be the 
+ same wavefuction that was used to compute epsilon inverse matrix. Here wfn.dat* and in are the inputs.  
+For Bare-exchange you don't need  epsilon inverse, but you still need to use the same wfn  to run
+this code. 
+Typically the number of bands that are asked for computing sigma is an input option. 
+In this code, you can change the number of bands for sigma, just by changing the ib -indices inside sigma.f90
+

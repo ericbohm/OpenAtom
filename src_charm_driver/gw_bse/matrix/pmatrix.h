@@ -3,21 +3,9 @@
 
 #include "pmatrix.decl.h"
 
+#include "mylapack.h"
 #include "CLA_Matrix.h"
 #include "ckcomplex.h"
-
-#ifdef FORTRANUNDERSCORE
-#define ZGEMM zgemm_
-#define ZGERC zgerc_
-#else
-#define ZGEMM zgemm
-#define ZGERC zgerc
-#endif
-
-extern "C" {
-  void ZGERC (int*, int*, complex*, complex*, int*, complex*, int*, complex*, int*);
-  void ZGEMM (char*, char*, int*, int*, int*, complex*, complex*, int*, complex*, int*, complex*, complex*, int*);
-}
 
 class FFTController;
 
@@ -64,23 +52,6 @@ class PMatrix2D : public CBase_PMatrix2D {
 
     double total_time;
     
-};
-
-
-class EpsData{
-  public:
-    EpsData(){}
-    complex* eps_data_array;
-    int size;
-    int global_x;
-    int global_y;
-    int start_i;
-    int start_j;
-    int end_i;
-    int end_j;
-    int curr_index;
-    bool first_time;
-
 };
 
 class PMatrix1D : public CBase_PMatrix1D {
