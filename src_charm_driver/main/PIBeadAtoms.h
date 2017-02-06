@@ -60,8 +60,8 @@ class PIBeadAtoms : public CBase_PIBeadAtoms
     void compute_PIMD_Fu();
     void compute_PIMD_u();
     void compute_PIMD_x();
-    void output_PIMD_u();
-    void output_PIMD_x();
+    void output_PIMD_u(char *s);
+    void output_PIMD_x(char *s);
     void zero_PIMD_u();
     void zero_PIMD_x();
     void zero_PIMD_fu();

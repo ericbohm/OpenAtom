@@ -24,6 +24,7 @@ def execute_tests(tests):
 		test_dict = tests[i]
 
 		os.chdir(test_dict['data_path'])
+
 		test_util.setup_dataset()
 		test_util.clean_dataset()
 

@@ -205,6 +205,7 @@ class AtomsCompute: public CBase_AtomsCompute {
         atoms[i].y    = atoms[i].yu; 
         atoms[i].z    = atoms[i].zu; 
       }//endfor
+      CkPrintf("switchPIMDBeadForceMass: bead%d\n",mybead);
 #ifdef _CHECK_PIMD_TRANSFORMS_
       CkPrintf("switchPIMDBeadForceMass: I am bead %d end dumping stuff\n",mybead);
 #endif

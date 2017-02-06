@@ -2,7 +2,9 @@ def clean_dataset():
 	import os
 	import subprocess
 	devnull = open(os.devnull, 'w')
-	subprocess.call(['./tidy', 'water'], stdout=devnull, stderr=devnull)
+        tidy = os.getcwd() + '/tidy'
+        subprocess.call([tidy, 'water'], stdout=devnull, stderr=devnull)
+
 
 def setup_dataset():
 	import os

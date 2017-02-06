@@ -145,19 +145,24 @@ void PIBeadAtoms::accept_PIMD_Fx_and_x(AtomXYZMsg *msg)
   //  atomdest[PIBeadIndex]=atomdest;
 
   acceptCount_Fx++;
-  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx (%d of %d)\n",thisInstance.proxyOffset,thisIndex, acceptCount_Fx, numBeads);
+#ifdef _CP_DEBUG_ATMS_
+  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx_and_x (%d of %d)\n",thisInstance.proxyOffset,thisIndex, acceptCount_Fx, numBeads);
+#endif
 
   if(acceptCount_Fx==numBeads){
     compute_PIMD_Fu();
     compute_PIMD_u();
+#ifdef _CP_DEBUG_ATMS_
+    output_PIMD_u("c");
+#endif
     acceptCount_Fx=0;
     UberCollection instance=thisInstance;
     for(int bead=0;bead<numBeads; bead++){
       instance.idxU.x=bead;
       int proxyOffset=instance.setPO();
-      //	  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx sending atomsGrp{%d}.accept_PIMD_fu\n",thisInstance.proxyOffset,thisIndex, proxyOffset);
-      //	  UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_fu(fxu[bead],
-      //	  fyu[bead], fzu[bead], thisIndex);
+#ifdef _CP_DEBUG_ATMS_
+      CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx_and_x sending atomsGrp{%d}.accept_PIMD_Fu_and_u\n",thisInstance.proxyOffset,thisIndex, proxyOffset);
+#endif
       // this atom index has to send the Fu to everyone
       AtomXYZMsg * toSend = new (2*numAtm, 2*numAtm, 2*numAtm,  8*sizeof(int)) AtomXYZMsg;
       toSend->index  = thisIndex;
@@ -194,11 +199,20 @@ void PIBeadAtoms::accept_PIMD_u(AtomXYZMsg *msg)
     zu[offset] = msg->z[i];
     offset += numBeads;
   }
+#ifdef _CP_DEBUG_ATMS_
+  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_u (%d of %d) index %d\n",thisInstance.proxyOffset,thisIndex, acceptCount_u, numBeads, msg->index );
+#endif
   delete msg;
   acceptCount_u++;
-  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_u (%d of %d)\n",thisInstance.proxyOffset,thisIndex, acceptCount_u, numBeads );
   if(acceptCount_u == numBeads){
+#ifdef _CP_DEBUG_ATMS_
+    output_PIMD_x("p");
+#endif
     compute_PIMD_x();
+#ifdef _CP_DEBUG_ATMS_
+    output_PIMD_u("r");
+    output_PIMD_x("c");
+#endif
     acceptCount_u=0;
     UberCollection instance=thisInstance;
     for(int bead=0;bead<numBeads; bead++){
@@ -240,9 +254,14 @@ void PIBeadAtoms::accept_PIMD_x(AtomXYZMsg *msg)
   delete msg;
 
   acceptCount_x++;
-  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_x (%d of %d) \n",thisInstance.proxyOffset,thisIndex, acceptCount_x, numBeads);
+#ifdef _CP_DEBUG_ATMS_
+  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_x (%d of %d) \n",thisInstance.proxyOffset,thisIndex, acceptCount_x, numBeads);
+#endif
   if(acceptCount_x==numBeads){
     compute_PIMD_u();
+#ifdef _CP_DEBUG_ATMS_
+    output_PIMD_u("c");
+#endif
     acceptCount_x=0;
     UberCollection instance=thisInstance;
     for(int bead=0;bead<numBeads; bead++){
@@ -397,14 +416,15 @@ void PIBeadAtoms::compute_PIMD_x()
         double xadd = rat1[ip] * x[offset + ip1] + xu[offset] * rat2[ip];
         double yadd = rat1[ip] * y[offset + ip1] + yu[offset] * rat2[ip];
         double zadd = rat1[ip] * z[offset + ip1] + zu[offset] * rat2[ip];
-        x[ip] = xu[ip] + xadd;
-        y[ip] = yu[ip] + yadd;
-        z[ip] = zu[ip] + zadd;
+        x[offset + ip] = xu[offset + ip] + xadd;
+        y[offset + ip] = yu[offset + ip] + yadd;
+        z[offset + ip] = zu[offset + ip] + zadd;
       }/*endfor*/
     }
   }else{
     for(int i = 0; i < numAtm; i++) {
-      x[i]  = xu[i];  y[i]  = yu[i];  z[i] = zu[i];
+      int offset = i * numBeads; // technically correct, if silly as numBeads=0
+      x[offset]  = xu[offset];  y[offset]  = yu[offset];  z[offset] = zu[offset];
     }
   }//endif
 
@@ -419,7 +439,7 @@ void PIBeadAtoms::compute_PIMD_x()
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void PIBeadAtoms::output_PIMD_x()
+void PIBeadAtoms::output_PIMD_x(char *s)
   //============================================================================
 {// begin routine
   //============================================================================
@@ -427,7 +447,7 @@ void PIBeadAtoms::output_PIMD_x()
   CkPrintf("\n=================================\n");
   for(int atm = 0; atm < numAtm; atm++) {
     for(int i =0; i< numBeads;i++) {
-      CkPrintf("x[%d,%d]: %g %g %g\n", startAtm + atm, i, x[atm * numBeads + i], 
+      CkPrintf("%s x[%d,%d]: %g %g %g\n", s, startAtm + atm, i, x[atm * numBeads + i], 
         y[atm * numBeads + i], z[atm * numBeads + i]);
     }//endfor
   }
@@ -443,7 +463,7 @@ void PIBeadAtoms::output_PIMD_x()
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void PIBeadAtoms::output_PIMD_u()
+void PIBeadAtoms::output_PIMD_u( char *s)
   //============================================================================
 {// begin routine
   //============================================================================
@@ -451,7 +471,7 @@ void PIBeadAtoms::output_PIMD_u()
   CkPrintf("\n=================================\n");
   for(int atm = 0; atm < numAtm; atm++) {
     for(int i =0;i<numBeads;i++){
-      CkPrintf("u[%d,%d]: %g %g %g\n", startAtm + atm, i, xu[atm * numBeads + i],       
+      CkPrintf("%s u[%d,%d]: %g %g %g\n", s,startAtm + atm, i, xu[atm * numBeads + i],       
         yu[atm * numBeads + i], zu[atm * numBeads + i]);
     }//endfor
   }

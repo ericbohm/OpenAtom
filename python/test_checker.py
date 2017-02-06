@@ -6,15 +6,64 @@ def check_result(test_dict):
 	iteration = test_dict['iteration']
 	sig_figs = test_dict['sig_figs']
 
-	# Snip the iteration being checked out into a temporary file
-	output_temp = output_file+'.temp'
-	snip_iteration(iteration, output_file, output_temp)
 
-	# Compare the output reference to the temporary output
-	result = compare_iteration(output_temp, out_ref, sig_figs)
+        outputFiles= split_output_instances(output_file)
+        ref_temp = out_ref+'.temp'
+        refFiles=  split_output_instances(out_ref)
+        if(len(refFiles) != len(outputFiles)):
+           print 'refFiles has ' + str(len(refFiles)) + ' vs outputFiles '+ str(len(outputFiles)) + '\n'
+           return [false, "mismatch"]
+	# Snip the iteration being checked out into a temporary file
+        result=[]
+        for index, name in enumerate(outputFiles):
+                output_temp = name+'.temp'
+                ref_temp = refFiles[index]+'.temp'
+                snip_iteration(iteration, name, output_temp)
+                snip_iteration(iteration, refFiles[index], ref_temp)
+                result+=compare_iteration(output_temp, ref_temp, sig_figs)
 
 	return result
 
+# given a file and a basename
+# split filter file to basename.instance, for each instance in output
+# return list of filenames
+def split_output_instances(inputfile):
+	in_file = open(inputfile)
+	lines = in_file.readlines();
+	in_file.close()
+        numInstance=1
+        numBeads=1
+        numTempers=1
+        numKpoints=1
+        numSpins=1
+        #get the number of instances
+	for line in lines:
+                instanceoffset = line.find('NumInstances ', 0, len(line)-1)
+                if instanceoffset >-1:
+                        numInstanceList=strip_numbers(line,1)
+                        numInstance=numInstanceList[0]
+                        numTempers=numInstanceList[1]
+                        numBeads=numInstanceList[2]
+                        numKpoints=numInstanceList[3]
+                        numSpins=numInstanceList[4]
+                        break;
+        fkeys=[]
+        instanceFilenames=[]
+        for beadNum in range(numBeads):
+                fkeys.append("[b="+str(beadNum)+"]")
+                for kNum in range(numKpoints):
+                        for spinNum in range(numSpins):
+                              fkeys.append("[s="+str(spinNum)+",k="+str(kNum)+",b="+str(beadNum)+"]")
+        for key in fkeys:
+                instanceOutfilename=inputfile+key;
+                instanceFilenames.append(instanceOutfilename)
+                ofile=open(instanceOutfilename, "w")
+                for line in lines:        
+                        if line.find(key,0,len(line)-1) > -1:
+                              ofile.write(line)                        
+                ofile.close();
+        return instanceFilenames
+                        
 def snip_iteration(num, inputfile, outputfile):
 	in_file = open(inputfile)
 	out_file = open(outputfile, 'w')
@@ -66,7 +115,7 @@ def compare_iteration(testoutput, reffile, magnum):
 	key_words.append('EExt')
 	key_words.append('EWALD_recip')
 	key_words.append('EEXC        ')
-	key_words.append('EGGA        ')
+	key_words.append('EGGA           ')
 	key_words.append('EEXC+EGGA')
 	key_words.append('EKE')
 	key_words.append('EWALD_REAL')
@@ -134,11 +183,13 @@ def compare_iteration(testoutput, reffile, magnum):
 				continue
 
 			if len(ref_number_list) != len(test_number_list):
+                                print 'key '+ keys + ' value ' + str(test_number_list[0]) + 'vs ref value of ' + str(ref_number_list[0]) + '\n'
 				return [False, 'Key ' + keys + ' doesn\'t match']
 
 			counter = 0
 			while counter < len(ref_number_list):
 				if compare_number(test_number_list[counter], ref_number_list[counter], magnum) == False:
+                                        print 'key '+ keys + ' value ' + str(test_number_list[counter]) + 'vs ref value of ' + str(ref_number_list[counter]) + '\n'
 					return [False, 'Key ' + keys + ' doesn\'t match']
 				counter = counter + 1
 
@@ -160,10 +211,12 @@ def compare_iteration(testoutput, reffile, magnum):
 					return [False, 'Missing key in output: ' + keys]
 				if keys != 'MagForPsi':
 					if len(ref_number_list) != len(test_number_list):
+                                                print 'key count mismatch '+ str(len(ref_number_list)) + 'vs output ' + str(len(test_number_list)) + '\n'
 						return [False, 'Key ' + keys + ' doesn\'t match']
 					counter = 0
 					while counter < len(ref_number_list):
 						if compare_number(test_number_list[counter], ref_number_list[counter], magnum) == False:
+                                                        print 'key '+ keys + ' value ' + str(test_number_list[counter]) + 'vs ref value of ' + str(ref_number_list[counter]) + '\n'                                                        
 							return [False, 'Key ' + keys + ' doesn\'t match']
 						counter = counter + 1
 				if keys == 'MagForPsi':

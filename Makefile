@@ -86,6 +86,9 @@ realclean:
 test: compile
 	cd python; python test_driver.py $(absbuild) make_test.config
 
+test-pimd: compile
+	cd python; python test_driver.py $(absbuild) pimd_test.config
+
 test-full: compile
 	cd python; python test_driver.py $(absbuild) full_test.config
 
