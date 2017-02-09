@@ -34,7 +34,7 @@ LAPACKLIB = -framework Accelerate
 SRCF = set_FFTsize.f90 utility.f90 readwfn.f90 \
 	mtrx_op.f90 \
 	kqinfo.f90 create_mtrx.f90 fft_subroutines.f90 do_fft_all.f90 \
-	shifted_grid.f90 umkalpp.f90 calc_v.f90 gspace.f90 calc_sig.f90 inverse.f90\
+	shifted_grid.f90 umkalpp.f90 calc_v.f90 gspace.f90 calc_S.f90 inverse.f90\
 	usrinput.f90 structures.f90 constant.f90 sigma.f90
 OBJS=$(patsubst %.f90, %.o, $(SRCF))
 MOD = constant.o structures.o usrinput.o
