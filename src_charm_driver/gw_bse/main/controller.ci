@@ -408,7 +408,7 @@ module controller {
 
     serial{
     //Bare exchange
-        //compute Fs that for n's that are occ
+        //TODO:compute Fs that for n's that are occ
         fvector_cache_proxy.computeFTilde();
     }
 

@@ -111,20 +111,18 @@ class FVectorCache : public CBase_FVectorCache {
     FVectorCache();
     void putFVec(Phase4Message* msg);
     void computeFTilde();
-    bool isLocal(int n){
-      if(n/node_count==CkMyNode())
-        return true;
-      return false;
-    }
-    int homeNode(int n){
-      return n/node_count;
-    }
- //   void receive(complex* in_data);
-//    void getFVec(int n, const CkCallback &cb);
+    void putFVec(int n, complex* fs_input);
+    complex* getFVec(int n, int l, int start, int size);
   private:
     FComputePacket f_packet;
     unsigned L, psi_size, fcount, n_list_size, node_count;
     complex* fs;
+    int num_chares, num_chares_x, num_chares_y;
+    int *charesX;
+    int *charesY;
+    int *local_to_global_offset;
+    int num_rows, num_cols;
+    int *offsets;//[num_chares*2];//already calculated
 };
 
 

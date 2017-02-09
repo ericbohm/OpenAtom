@@ -263,9 +263,10 @@ void PsiCache::computeFs(PsiMessage* msg) {
   FVectorCache *fvec_cache = fvector_cache_proxy.ckLocalBranch();
   Phase4Message *fvec_msg;
   fvec_msg = new(L*psi_size) Phase4Message();
-  fvec_msg->n = msg->state_index-L;
+  fvec_msg->n = (msg->k_index+1)*(msg->state_index-L);
   fvec_msg->data = fs;
-  fvec_cache->putFVec(fvec_msg);
+//compute ftilde first - similar to ckloop above for all L's
+  fvec_cache->putFVec(msg->state_index-L, fs);
 #endif
 
   // Let the matrix chares know that the f vectors are ready
@@ -387,24 +388,72 @@ FVectorCache::FVectorCache() {
   n_list_size = 10; //TODO: to be greater than 0, read in from user input file
 
   node_count = CkNumNodes();// For testing purposes
-  n_list_size /= node_count; // When partitioning
-  fs = new complex[n_list_size*L*psi_size];//
+
+  int factor = 4;
+  int num_chares_x = node_count*factor; // 4*4 chares per node, change this
+  int num_chares_y = node_count*factor;
+  num_rows = psi_size/(num_chares_x);
+  num_cols = psi_size/(num_chares_y);
+  num_chares = num_chares_x * num_chares_y;
+  charesX = new int[num_chares_x];
+  charesY = new int[num_chares_y];
+
+  int count = 0;
+  for(int i=factor*CkMyNode();i<(factor+1)*CkMyNode();i++) {
+    for(int j=factor*CkMyNode();j<(factor+1)*CkMyNode();j++){
+      charesX[count] = i;
+      charesY[count] = j;
+      count++;
+    }
+  }
+  int vector_size = num_chares*(num_rows+num_cols);
+
+  long local_to_global_offset[count*2];//Assuming a max of each chares asking for disjoint offsets
+
+  for(int i=0;i<count*2;i+=2){
+    int chare_index = i/2;
+    long global_offset_x = charesX[chare_index]*num_rows;
+    long global_offset_y = charesY[chare_index]*num_cols;
+    
+    local_to_global_offset[i] = global_offset_x;
+    local_to_global_offset[i+1] = global_offset_y;
+
+  } 
+
+  fs = new complex[n_list_size*L*factor*(num_rows+num_cols)];//Assuming num_rows = num_cols
 }
 
-void FVectorCache::putFVec(Phase4Message *msg) {
-//  if(fcount==0)
-    CkPrintf("\nCaching f[%d*L] vectors\n", msg->n);
-//Simple scheme where all Fs are stored in each node
-//  if(inList(msg->n))
-  if(isLocal(msg->n))
-  { //Store all n*l's for all l in L
-    complex* f = &(fs[msg->n*L*psi_size]);
-    f = msg->data;
+void FVectorCache::putFVec(int n, complex* fs_input){ //fs_input has all L's corresponding to n
+  for(int l=0;l<L;l++){
+    for(int o=0;o<num_chares*2;o+=2){ //num_chares = count
+//fs = new complex[n_list_size*L*factor*num_rows]
+      int local_offset_x = o;
+      int local_offset_y = o+1;
+      int global_offset_x = local_to_global_offset[local_offset_x];
+      int global_offset_y = local_to_global_offset[local_offset_y];
+
+      complex *tostore = &(fs[n*l*local_offset_x]); //This is where we locally store
+      tostore = &(fs_input[n*l*global_offset_x]); //should this be a memcpy?
+
+      tostore = &(fs[n*l*local_offset_y]);
+      tostore = &(fs_input[n*l*global_offset_y]); //should this be a memcpy?
+      
+    }
   }
-  fcount++;
-//TODO: Partition Fs and duplicate to reduce access latency
-  //Partitioning logic
 }
+
+complex* FVectorCache::getFVec(int n, int l, int start, int size){
+  int local_offset = 0;
+  for(int i=0;i<num_chares*2;i++){
+    if(local_to_global_offset[i] == start){
+      local_offset = i;
+      break;
+    }
+  }
+  complex *toget = &(fs[n*l*local_offset]);
+  return toget;
+}
+
 
 // Called by CkLoop to spread the computation of f vectors across the node
 void fTildeWorkUnit(int first, int last, void* result, int count, void* params) {
@@ -422,7 +471,7 @@ void fTildeWorkUnit(int first, int last, void* result, int count, void* params) 
   FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
 
 
-  for(int k=first;k<=last;k++)
+  for(int k=first;k<=last;k++) //this is unoccupied states
   for (int i=0; i < L; i++){ //for all the L*n_list_size, L are computed in this node
     // First set up the data structures in the FFTController
     fft_controller->setup_fftw_3d(nfft, direction);
@@ -433,10 +482,10 @@ void fTildeWorkUnit(int first, int last, void* result, int count, void* params) 
     put_into_fftbox(nfft, &fs[k*i*psi_size], in_pointer);
     fft_controller->do_fftw();
     fftbox_to_array(ndata, out_pointer, &fs[k*i*psi_size], 1); //Now cached on the same partitions
+    CkPrintf("\nPerformed FFT %d,%d\n", k, i);
     // replace f_vector to f_tilde_vector
     // ndata is the size of the vector
   }
-
 }
 
 //Each node calculates its own ftilde
