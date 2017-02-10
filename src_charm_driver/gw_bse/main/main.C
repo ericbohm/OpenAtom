@@ -115,7 +115,7 @@ Main::Main(CkArgMsg* msg) {
 
 
   eps_matrix2D_proxy = CProxy_EpsMatrix2D::ckNew();
-  eps_proxy1D = CProxy_EpsMatrix1D::ckNew(140);
+  eps_proxy1D = CProxy_EpsMatrix1D::ckNew();
 
   pmatrix2D_proxy = CProxy_PMatrix2D::ckNew(dimension/nrows, dimension/ncols);
   eps_matrix2D_bproxy = CProxy_EpsMatrix2D::ckNew();
