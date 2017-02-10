@@ -25,8 +25,14 @@ subroutine read_wfn( fname, sys, psi, k )
    use constant
    use usrinput
    use electronic_structure
-    
+
    implicit none
+
+   character(len=100) :: filename
+   character(len=1) :: string1
+   character(len=2) :: string2
+   integer :: iii,jjj,kkk
+
    character(len=100) :: fname
    type(sysinfo), intent(inout) :: sys
    type(wfstruc), intent(inout) :: psi
@@ -141,6 +147,24 @@ subroutine read_wfn( fname, sys, psi, k )
             istart = ( (is-1)*npwk_all + sum( npwk(1:ik-1) ) )*nb + npwk(ik)*(ib-1) + 1
             iend = ( (is-1)*npwk_all + sum( npwk(1:ik-1) ) )*nb + npwk(ik)*ib
             psi%wk(iks)%cg( 1:npwk(ik), ib ) = wfntmp(istart:iend)
+
+if (1 .gt. 0) then
+            write (string1,'(I1)') is
+            filename = trim('state')//trim('_')//trim(string1)
+            write (string1,'(I1)') ik
+            filename = trim(filename)//'_'//trim(string1)
+            write (string2,'(I2)') ib
+            filename = trim(filename)//'_'//trim(string2)//'.txt'
+
+            print *, 'Writing to file for ib =', ib, 'on file', filename
+            open (unit = 7, file = filename)
+            do iii=1,npwk(ik)
+              write (7,*), REAL(REAL(psi%wk(iks)%cg(iii, ib))), REAL(AIMAG(psi%wk(iks)%cg(iii, ib))), &
+              & psi%wk(iks)%gvec(0,iii), &
+              & psi%wk(iks)%gvec(1,iii),psi%wk(iks)%gvec(2,iii)
+            enddo
+            close(7)
+endif
          enddo
 
       enddo
