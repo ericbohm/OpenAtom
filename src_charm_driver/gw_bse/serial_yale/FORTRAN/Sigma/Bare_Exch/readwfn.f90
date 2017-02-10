@@ -148,7 +148,7 @@ subroutine read_wfn( fname, sys, psi, k )
             iend = ( (is-1)*npwk_all + sum( npwk(1:ik-1) ) )*nb + npwk(ik)*ib
             psi%wk(iks)%cg( 1:npwk(ik), ib ) = wfntmp(istart:iend)
 
-if (1 .gt. 0) then
+if (0 .gt. 0) then
             write (string1,'(I1)') is
             filename = trim('state')//trim('_')//trim(string1)
             write (string1,'(I1)') ik
