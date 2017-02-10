@@ -19,7 +19,8 @@ subroutine reduce_gspace( G_pol, G_eps, inp, sys, qvec, gidx )
    real(dp) :: ekin ! kinetic energy ( 1/2*(q+G)^2 )
    real(dp) :: tmpvec(3), Gcart(3)
    integer :: counter
-   
+
+
    
    Ecut = inp%epscut ! in Ry unit
    
@@ -50,6 +51,7 @@ subroutine reduce_gspace( G_pol, G_eps, inp, sys, qvec, gidx )
    
    
    G_eps%ng = counter
+   if (allocated(G_eps%gvec)) deallocate(G_eps%gvec)
    allocate( G_eps%gvec(3,counter) ) 
    
    do i = 1, counter

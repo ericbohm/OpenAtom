@@ -38,6 +38,7 @@ class Controller : public CBase_Controller {
     int msg_received;
     int iter, maxiter;
     int iteration;
+    unsigned index;
     unsigned dimension, rows;
     bool resultInsert;
     double epsCut;
