@@ -378,18 +378,18 @@ subroutine write_eig_occ( ispin, ik, nstate, eig, occ, shift_flag )
    ! directory name
    if (shift_flag .eqv. .false.) then
       if ( ik .le. 10 ) then
-         write( fdir, '( "./STATES_IN/Spin.", I1, "_Kpt.", I1, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1
+         write( fdir, '( "./STATES/Spin.", I1, "_Kpt.", I1, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1
       elseif ( ik .le. 100 ) then
-         write( fdir, '( "./STATES_IN/Spin.", I1, "_Kpt.", I2, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1   
+         write( fdir, '( "./STATES/Spin.", I1, "_Kpt.", I2, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1   
       else
          print*, 'Cannot locate directory because you have more than 100 k points'
          stop
       endif
    elseif (shift_flag .eqv. .true. ) then
       if ( ik .le. 10 ) then
-         write( fdir, '( "./STATES_IN/Spin.", I1, "_Kpt.0", I1, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1
+         write( fdir, '( "./STATES/Spin.", I1, "_Kpt.0", I1, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1
       elseif ( ik .le. 100 ) then
-         write( fdir, '( "./STATES_IN/Spin.", I1, "_Kpt.0", I2, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1   
+         write( fdir, '( "./STATES/Spin.", I1, "_Kpt.0", I2, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1   
       else
          print*, 'Cannot locate directory because you have more than 100 k points'
          stop
@@ -433,6 +433,7 @@ subroutine read_write_wfn( ib, ik, ispin, npwk, idxgk, master_gv, ngm, &
    complex(dp), allocatable :: wfn(:,:)
    integer :: iunit = 30
    character (len=100) :: fplace, fname
+   integer :: open_status
 
    integer :: i, j
    ! total number of gvector to be written
@@ -452,18 +453,18 @@ subroutine read_write_wfn( ib, ik, ispin, npwk, idxgk, master_gv, ngm, &
    ! set up the directory where state files are stored
    if ( shift_flag .eqv. .false. ) then
       if ( ik .le. 10 ) then
-         write( fplace, '( "./STATES_IN/Spin.", I1, "_Kpt.", I1, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1
+         write( fplace, '( "./STATES/Spin.", I1, "_Kpt.", I1, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1
       elseif ( ik .le. 100 ) then
-         write( fplace, '( "./STATES_IN/Spin.", I1, "_Kpt.", I2, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1   
+         write( fplace, '( "./STATES/Spin.", I1, "_Kpt.", I2, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1   
       else
          print*, 'Cannot locate directory because you have more than 100 k points'
          stop
       endif
    elseif( shift_flag .eqv. .true. ) then
       if ( ik .le. 10 ) then
-         write( fplace, '( "./STATES_IN/Spin.", I1, "_Kpt.0", I1, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1
+         write( fplace, '( "./STATES/Spin.", I1, "_Kpt.0", I1, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1
       elseif ( ik .le. 100 ) then
-         write( fplace, '( "./STATES_IN/Spin.", I1, "_Kpt.0", I2, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1   
+         write( fplace, '( "./STATES/Spin.", I1, "_Kpt.0", I2, "_Bead.0_Temper.0/" )' ) ispin-1, ik-1   
       else
          print*, 'Cannot locate directory because you have more than 100 k points'
          stop
@@ -485,7 +486,10 @@ subroutine read_write_wfn( ib, ik, ispin, npwk, idxgk, master_gv, ngm, &
    ! writing starts here
    
    ! open state.out file
-   open(iunit, file=trim(fplace)//trim(fname), form='formatted', status='replace')
+   open(iunit, file=trim(fplace)//trim(fname), form='formatted', status='replace', iostat=open_status)
+   if (open_status \= 0 ) then
+      print*, 'Could not open file ', trim(fplace)//trim(fname), '. Please check your STATES directory'
+   endif
 
    ! 1. write total number of g vectors and dense FFT grid size
    ngktot = sum(gkidx_allkpt)

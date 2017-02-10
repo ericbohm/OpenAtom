@@ -47,19 +47,18 @@ void CMATRIX::printRow(int row, char* fileName){
 
     int rowGidx[3];
     PdataIndexG(row,rowGidx);
-    
+    fprintf(fp,"row G vector (%d, %d, %d)\n",rowGidx[0], rowGidx[1], rowGidx[2]);
     // loop over column
-    fprintf(fp,"row G index   column G index\n");
+    fprintf(fp,"column G vector      P.re     P.im\n");
     for (int ic=0; ic<ncol; ic++){
 	complex data;
 	data = get(row, ic);
 	int colGidx[3];
 	PdataIndexG(ic,colGidx);
-	/*
-	fprintf(fp, "(%d, %d, %d)  (%d, %d, %d)   %lg  %lg \n", rowGidx[0], rowGidx[1], rowGidx[2],
-		colGidx[0], colGidx[1], colGidx[2], data.re, data.im);
-	*/
-	fprintf(fp,"%lg  %lg \n", data.re, data.im);
+	
+	fprintf(fp, "%d %d %d   %lg  %lg \n", colGidx[0], colGidx[1], colGidx[2], data.re, data.im);
+	
+	//fprintf(fp,"%lg  %lg \n", data.re, data.im);
     }
     fclose(fp);
     

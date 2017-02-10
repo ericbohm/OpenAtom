@@ -89,7 +89,7 @@ void iter_invmtrx(CMATRIX* eps, USRINPUT usrin, int N){
 	//     Step 1-(a) : M1 = -A * X
 	Lalpha = double(-1.0);
 	myGEMM(&transform, &transform, &N, &N, &N, &Lalpha, A, &N, X, &N, &Lbeta, M1, &N);
-	//     Step 1-(b) : M1 = 2I-M1 
+	//     Step 1-(b) : M1 = 2I + M1 
 	for(int i=0; i<N; i++){
 	    M1[i*N+i] += compl_two;
 	}
@@ -120,7 +120,6 @@ void iter_invmtrx(CMATRIX* eps, USRINPUT usrin, int N){
         for(int i=0; i<N*N; i++){
             X[i] = X1[i];
         }//end step 3
-        
         
         if (resid <= convg){
             niter = iter+1;

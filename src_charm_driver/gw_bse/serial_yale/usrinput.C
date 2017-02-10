@@ -34,7 +34,10 @@ void USRINPUT::read_usrinput(){
 #ifdef USE_P_INTERPOLATION
         fp >> nPitp;
 #endif
-
+#ifdef USE_P_LAPLACE
+        fp >> nPitp; // dummy variable in laplace method
+        fp >> ptol;
+#endif
 
     }
     

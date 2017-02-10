@@ -227,7 +227,7 @@ void GPPDATA::eigenDecomp(){
   Die("Eigendecomposition requires LAPACK routine. Set USE_LAPACK flag on");
 
 #endif
-  // transpose again... -_-
+  // transpose again... 
   S->transpose();
   // so now each column of S matrix is an eigenvector!
   
@@ -365,11 +365,13 @@ void GPPDATA::calc_Omsq(){
 
   for(int i=0; i<ng; i++){
     omsq[i] = Mggp.get(i,i).re * factor / eigval[i];
+
+    // print omega^2
 #ifdef DEBUG
-    ///*
+    /*
     if(i==0){mymessage("Printing Omsq value\n");}
     printf("omsq: %lg\n",omsq[i]);
-    //*/
+    */
 #endif
   }
 
@@ -420,10 +422,22 @@ void GPPDATA::calc_Sw(int iw){
 	tmp.re = tmp.re / ( (omsq[a]-E.re*E.re+E.im*E.im)*(omsq[a]-E.re*E.re+E.im*E.im)+4*E.re*E.re*E.im*E.im );
 	tmp.im = 2*E.re*E.im / ( (omsq[a]-E.re*E.re+E.im*E.im)*(omsq[a]-E.re*E.re+E.im*E.im)+4*E.re*E.re*E.im*E.im );
 	Sw[iw]->get(r,c) += S->get(r,a) * eigval[a] * omsq[a] * tmp * S->get(c,a).conj();
+	/*
+#ifdef DEBUG
+	// printing out values
+	if(r==0 && c==0){
+	  if (a==0 | a==1 | a==2 | a==4 | a==ng-1){
+	    double swreal = Sw[iw]->get(r,c).re*(1/vc->data[0])+1;
+	    double swimag = Sw[iw]->get(r,c).im*(1/vc->data[0]);
+	    printf("%.12f %.12f\n", swreal, swimag);
+	  }
+	}
+#endif	
+	*/
       }
     }
   }
-
+  /*
 #ifdef DEBUG
   // let's print some values
   for(int r=0; r<3; r++){
@@ -438,6 +452,6 @@ void GPPDATA::calc_Sw(int iw){
     }
   }
 #endif
-	
+  */	
 
 }

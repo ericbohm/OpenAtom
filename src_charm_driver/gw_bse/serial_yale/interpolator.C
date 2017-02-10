@@ -72,7 +72,7 @@ void INTERPOLATOR::make_zlist(){
   // CASE 4: uneven sampling with weight of the spacing (exponential grid)
   // now we want to find nzpt based on the % error analysis
   double ptol; // % tolerance for sum_c 1/(Ec-Ev)
-  ptol = 0.1;
+  ptol = 100;
   int satisfied; // whether we achieved the tolerance or not
   satisfied = 0; // initial value = false
   double wdth;
@@ -106,7 +106,7 @@ void INTERPOLATOR::make_zlist(){
     for(int iz=0;iz<N+1;iz++){
       z[iz] = exp(A*(N-iz));
     }
-    // transfrom z[] to real energy value
+    // transform z[] to real energy value
     for(int iz=0;iz<nzpt;iz++){
       z[iz] = EoccMax - (z[iz]-1)*Egap;
     }

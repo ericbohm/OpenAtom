@@ -98,10 +98,15 @@ int main(){
   CMATRIX **P[nspin]; // Polarizability matrix
   int ndata = nfft[0]*nfft[1]*nfft[2];// number of data for P matrix
 
+
+  // initial setting if one chooses interpolation or laplace method for P
 #ifdef USE_P_INTERPOLATION
   INTERPOLATOR ***G[nspin];
+#elif USE_P_LAPLACE
+  LAPLACE L = LAPLACE(usrin, sys, psiR);
 #endif
-  
+
+
   // Epsilon matrix variables
   CMATRIX **Epsmat[nspin];
   GSPACE *geps[nkpt];
@@ -132,19 +137,23 @@ int main(){
 
 
 #ifdef DEBUG
-nq = 2;
+nq = 1;
 #endif
 
     // loop over q 
     for (int iq=0; iq<nq; iq++){
 #ifdef VERBOSE
       printf("    q point at %d\n", iq);
+      TimeStamp();
 #endif
       // m'alloc P matrix
       P[is][iq] = new CMATRIX (ndata, ndata);
+
 #ifdef USE_P_INTERPOLATION
       G[is][iq] = new INTERPOLATOR* [nkpt];
 #endif
+
+
       // Polarizability calculation requires shifted wavefunctions
 
       // when q=0 & G=0
@@ -176,25 +185,48 @@ nq = 2;
 	//========================
         // calculte P matrix
 	//========================
-        for (int ik=0; ik<nkpt; ik++){
+        for (int ik=0; ik<nkpt; ik++){            
+
+#ifdef VERBOSE
+          clock_t startTime = clock();
+#endif
 
           // index for k+q
           get_k_plus_q_index(ik, iq, ikq, sys, uklpp);
+
 
           // calculate P(r,r') matrix
 #ifdef USE_P_INTERPOLATION
 
 	  G[is][iq][ik] = new INTERPOLATOR(iq, usrin.nPitp, psiR[is][ik], psiR_[is][ikq], sys);
-
+	  
           CalcPmtrxRspaceInterpolation(P[is][iq], G[is][iq][ik], psiR_[is][ikq], uklpp, nfft, sys);
 
 	  // remove G from the memory
 	  delete G[is][iq][ik];
 
+#elif USE_P_LAPLACE
+
+	  CalcPmtrxLaplace(P[is][iq], L, psiR_[is][ikq], psiR[is][ik], uklpp, nfft, sys);
+
 #else	  
           calc_Pmtrx_Rspace(P[is][iq], sys, psiR[is][ik], psiR_[is][ikq], uklpp, nfft);
 #endif
+
+#ifdef VERBOSE
+	  clock_t endTime = clock();
+	  clock_t clockTicksTaken = endTime - startTime;
+	  double timeInSeconds = clockTicksTaken / (double) CLOCKS_PER_SEC;
+
+	  printf("k index %d Time for calculating partial P matrix = %lg sec\n",ik,timeInSeconds);
+#endif
+	  
+
         }//end ik loop
+
+#ifdef USE_P_LAPLACE
+	printf("\n number of computation for P calculation with Gauss-Laguerre quadrature: %d\n\n",L.ncounter);
+#endif	
 
       }//end iq=0
 
@@ -205,14 +237,22 @@ nq = 2;
 	  // index for k+q
 	  get_k_plus_q_index(ik, iq, ikq, sys, uklpp);
 	  // calculate P(r,r') matrix
+
 #ifdef USE_P_INTERPOLATION
 
 	  G[is][iq][ik] = new INTERPOLATOR(iq, usrin.nPitp, psiR[is][ik], psiR[is][ikq], sys);
 
 	  CalcPmtrxRspaceInterpolation(P[is][iq], G[is][iq][ik], psiR[is][ikq], uklpp, nfft, sys);
+
+#elif USE_P_LAPLACE
+	  
+	  CalcPmtrxLaplace(P[is][iq], L, psiR[is][ikq], psiR[is][ik], uklpp, nfft, sys);
 #else
 	  calc_Pmtrx_Rspace(P[is][iq], sys, psiR[is][ik], psiR[is][ikq], uklpp, nfft);
 #endif
+
+	  
+
 	}//end ik loop
       }
       // P(r,r';q) is done
@@ -222,24 +262,12 @@ nq = 2;
       P[is][iq]->transpose();
 #endif
 
-      // FFT: P(r,r';q) -> P(g,g';q)
+      // FFT: P(r,r';q) -> P(g,g';q)      
       Pmtrx_R_to_G(iq, P[is][iq], nfft, sys.vol);
-
-
-      //------------------------ DONE Polarizability calculations -------------------------//
-
-      //@@@@@@@@@@@ let's print out values for Epsmat. for iq=1
-      if(iq==1){
-	for(int irow=0;irow<10;irow++){
-	  char fname[100];
-	  sprintf(fname,"PMatrix_row%d",irow);
-	  P[is][iq]->printRow(irow,fname);
-	}
-      }
-      //@@@@@@@@@@@ print out value done
-      //@@@@@@@@@@ print out real values to evaluate interpolation scheme
-      /*
+      
+//@@@@@@@@@@ print out real values to evaluate interpolation scheme
 #ifdef DEBUG
+      /*
       printf("We are printing out P matrix in G\n");
       {
       GSPACE g;
@@ -252,21 +280,38 @@ nq = 2;
       printf("allocation done\n");
       fftidx_to_gidx( g.ig, g.jg, g.kg, nfft );
       printf("Got G index!!!\n");
+      */
       
+      printf("\n Printing out P matrix in G\n");
       
       char fname[100];
-#ifdef USE_P_INTERPOLATION
-      sprintf(fname,"P_q%d",iq);
+#ifdef USE_P_LAPLACE
+      sprintf(fname,"P_q%d_GL",iq);
+      
 #else
-      sprintf(fname,"P_q%d_orig",iq);
+      sprintf(fname,"P_q%d",iq);
 #endif
-      P[is][iq]->printallG(fname,&g);
+      /*
+      int nr = nfft[0]*nfft[1]*nfft[2];
+      for(int i=0; i<nr; i++){
+	sprintf(fname,"P_row_%d",i);
+	P[is][iq]->printRow(i,fname);
       }
-#endif
       */
-      //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+      //P[is][iq]->printRow(0,fname);
+      //P[is][iq]->printallG(fname,&g);
+      
+#endif
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+      
+      
+      //------------------------ DONE Polarizability calculations -------------------------//
+
+
       
 
+#ifdef FULLRUN      
       // prep to calculate Epsmat
       if(is==0){
 	geps[iq] = new GSPACE;
@@ -285,23 +330,15 @@ nq = 2;
       //delete P matrix
       delete P[is][iq];
 
-
-      //@@@@@@@@@@@ let's print out values for Epsmat. for iq=1
-      if(iq==1){
-	for(int irow=0;irow<10;irow++){
-	  char fname[100];
-	  sprintf(fname,"EpsilonMatrix_row%d",irow);
-	  Epsmat[is][iq]->printRowEps(irow,fname, geps[iq]);
-	}
-      }
-      //@@@@@@@@@@@ print out value done
-
-
-      
       // calculate epsilon inverse matrix
       iter_invmtrx(Epsmat[is][iq], usrin, geps[iq]->ng);
 
+      if(iq==0){
+	complex data = Epsmat[is][iq]->m[0];
+	printf("\n Epsilon inverse at q=0 & G=G'=0:  %lg   %lg\n",data.re, data.im);
+      }
 
+      /*
       //@@@@@@@@@@@ let's print out values for Epsmat. for iq=1
       if(iq==1){
 	for(int irow=0;irow<10;irow++){
@@ -312,10 +349,6 @@ nq = 2;
       }
       //@@@@@@@@@@@ print out value done
 
-
-
-
-      /*
       //@@@@@@@@@@ print out real values to evaluate interpolation scheme
 #ifdef DEBUG
       printf("We are printing out epsilon inverse matrix in G space\n");
@@ -335,14 +368,23 @@ nq = 2;
 #endif
       //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      
       */
+#endif
       
     }//end q loop
   }//end spin loop
+
 
   delete[] accept;
 
 
   mymessage("epsilon calculation is done");
+
+
+
+
+
+
+
 
 #ifdef GPP
 
@@ -405,7 +447,9 @@ nq = 2;
     }
   }
 */
-  
+
+
+
   TimeStamp();
   return 0;
 

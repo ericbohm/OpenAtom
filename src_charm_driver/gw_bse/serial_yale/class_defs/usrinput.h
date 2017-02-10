@@ -21,7 +21,11 @@ class USRINPUT{
     int    iter_maxiter; // maximum number of iteration for matrix inversion
     double iter_convg;   // convergence of iterative matrix inversion
 
+    // these variables are for reduced order P calculation
+    // interpolation method variables
     int nPitp;           // number of spacing for P interpolation 
+    // Laplace method variables
+    double ptol;          // percentage tolerance 
 
     //constructor
     USRINPUT(){
@@ -48,6 +52,8 @@ class USRINPUT{
       fprintf(fp,"convergence for iterative matrix inversion: %lg\n",iter_convg);
 #ifdef USE_P_INTERPOLATION
       fprintf(fp,"number of spacing for P Interpolation: %d\n",nPitp);
+#elif USE_P_LAPLACE
+      fprintf(fp,"tolerance for 1/(Ec-Ev) for Laplace method: %lg\n",ptol);
 #endif
       fclose(fp);
     }

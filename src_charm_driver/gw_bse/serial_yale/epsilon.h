@@ -7,6 +7,7 @@
 #include "class_defs/matrix.h"
 #include "class_defs/gspace.h"
 #include "class_defs/interpolator.h"
+#include "class_defs/laplace.h"
 #include <string>
 #include "util.h"
 #include "iter_invmtrx.h"

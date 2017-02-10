@@ -37,12 +37,13 @@ class CMATRIX{
     }
 
     // access function
+    // index i,j start from 0
     inline complex& get(int i, int j){
         T = false;
 	if(!T)
-	    return m[i*ncol+j];
+	    return m[i*ncol+j]; // row major (C/C++)
 	if(T)
-	    return m[i+j*nrow];
+	    return m[i+j*nrow]; // column major (FORTRAN)
     }
 
     // in place transpose of the matrix
