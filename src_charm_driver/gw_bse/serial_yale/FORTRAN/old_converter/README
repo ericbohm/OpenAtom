@@ -1,0 +1,23 @@
+This is the old converter.
+Previously it worked for QE 5.0 / 5.1
+but they have changed the main module that the converter utilizes, so I modified this old converter
+so that it works for QE 5.3 and later version.
+
+So... if you want to run this converter, you should use QE 5.3 or later version.
+
+This converter writes wavefunctions into a single file (similar to Berkeley GW converter)
+This converted wavefunction should be used for FORTRAN serial code. NOT FOR C++ CODE!!!
+
+How to use:
+
+Add these lines into Makefile in PP/src directory of QE, then type make old_converter.x
+
+old_converter.x: ../../Modules/qexml.o save_QEwfn.o
+        $(LD) $(LDFLAGS) -o $@ save_QEwfn.o ../../Modules/qexml.o $(QEOBJS) $(LIBOBJS)
+
+
+Run this executable with the input file. (Input file example is in this directory)
+
+
+
+Minjung Kim. Feb.10 2017

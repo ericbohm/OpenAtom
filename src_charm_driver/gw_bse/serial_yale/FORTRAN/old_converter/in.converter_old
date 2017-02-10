@@ -1,0 +1,5 @@
+&INPUT
+   prefix = 'Si'
+   work_dir = './'
+   wfn_name = 'wfn.dat'
+/
