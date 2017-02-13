@@ -167,6 +167,55 @@ void EpsMatrix2D::sendTo1D(){
   
 }
 
+void EpsMatrix2D::screenedExchange() {
+  complex contribution(0.0,0.0);
+  const int N = 2; // TODO: Give an actual value
+  FVectorCache* f_cache = fvector_cache_proxy.ckLocalBranch();
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      for (int l = 0; l < L; l++) {
+        complex* fi = f_cache->getFVec(i, l, start_row, num_rows);
+        complex* fj = f_cache->getFVec(j, l, start_col, num_cols);
+        for (int r = 0; r < num_rows; r++) {
+          for (int c = 0; c < num_cols; c++) {
+            contribution += fi[r]*data[IDX_eps(r,c)]*fj[c];
+          }
+        }
+      }
+    }
+  }
+  CkCallback cb(CkReductionTarget(Controller, screenedExchangeComplete), controller_proxy);
+  contribute(sizeof(complex), &contribution, CkReduction::sum_double, cb);
+}
+
+void EpsMatrix2D::bareExchange() {
+  complex* tile = new complex[num_rows * num_cols];
+  complex contribution(0.0,0.0);
+  const int N = 2; // TODO: Give an actual value
+  FVectorCache* f_cache = fvector_cache_proxy.ckLocalBranch();
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      for (int l = 0; l < L; l++) {
+        complex* fi = f_cache->getFVec(i, l, start_row, num_rows);
+        complex* fj = f_cache->getFVec(j, l, start_col, num_cols);
+        for (int r = 0; r < num_rows; r++) {
+          for (int c = 0; c < num_cols; c++) {
+            tile[IDX_eps(r,c)] += fi[r]*fj[c];
+          }
+        }
+      }
+    }
+  }
+  // TODO: Need to get v(c) from somewhere
+  for (int r = 0; r < num_rows; r++) {
+    for (int c = 0; c < num_cols; c++) {
+      contribution += /*v(c)**/tile[IDX_eps(r,c)];
+    }
+  }
+  CkCallback cb(CkReductionTarget(Controller, bareExchangeComplete), controller_proxy);
+  contribute(sizeof(complex), &contribution, CkReduction::sum_double, cb);
+}
+
 EpsMatrix1D::EpsMatrix1D(){
   received = 0;
 }

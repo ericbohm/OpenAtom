@@ -25,6 +25,8 @@ class EpsMatrix2D : public CBase_EpsMatrix2D {
     void multiply(double alpha, double beta);
     void round_done(void);
     void findAlpha(void);
+    void screenedExchange();
+    void bareExchange();
     long double max_fn(int size);
     void scalar_multiply(double alpha);
     void convergence_check(CProxy_EpsMatrix2D cmp_proxy);

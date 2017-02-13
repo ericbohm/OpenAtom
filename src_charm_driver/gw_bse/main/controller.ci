@@ -62,6 +62,8 @@ module controller {
     entry [reductiontarget] void converge_results(double max);
     entry [reductiontarget] void prepare_epsilon();
     entry [reductiontarget] void epsilon_created();
+    entry [reductiontarget] void bareExchangeComplete(complex x);
+    entry [reductiontarget] void screenedExchangeComplete(complex x);
 
 //    entry [reductiontarget] void allReady();
     entry [reductiontarget] void finished_copy();
@@ -89,7 +91,6 @@ module controller {
         CkPrintf("\n[CONTROLLER] Matrix Setup done"); 
       // When we receive this message, all states have been read in and FFTd, so
       // so we duplicate the occupied states across all nodes.
-     // when stateFFTComplete() serial {
         STEP_BOUNDARY(fft_states, caches_filled, "States FFTd");
         // Send a message to each occupied state (the first L states of each K
         // point), telling them to broadcast to all PsiCaches.
@@ -401,22 +402,26 @@ module controller {
       
     }//end of for loop
     
-    serial{
+    serial {
 	      PHASE_BOUNDARY(total_phase3, total_phase4, "PHASE 3 (Epsilon Matrix Inversion) COMPLETE");
-
-    }
-
-    serial{
-    //Bare exchange
+        //Bare exchange
         //TODO:compute Fs that for n's that are occ
         fvector_cache_proxy.computeFTilde();
     }
 
     when fftComplete() serial {
-        CkPrintf("Phase 5 not implemented yet. Exiting.\n");
-        CkExit();
+        eps_matrix2D_proxy.bareExchange();
+        eps_matrix2D_proxy.screenedExchange();
     }
+    overlap {
+      when bareExchangeComplete(complex x) serial {
+        CkPrintf("Bare Exchange complete: %f + %fi\n", x.re, x.im);
+      }
+      when screenedExchangeComplete(complex x) serial {
+        CkPrintf("Screened Exchange complete: %f + %fi\n", x.re, x.im);
+      }
     }
-    
+    serial { CkExit(); }
+    }
   };
 };

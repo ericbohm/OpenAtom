@@ -33,6 +33,8 @@ module eps_matrix {
     entry void receiveConvCheck(std::vector<complex> incoming);
     entry void setI(CLA_Matrix_interface mat, bool clean);
     entry void receiveFs(Phase3Message*);
+    entry void bareExchange();
+    entry void screenedExchange();
   };
   
   array [1D] EpsMatrix1D {
