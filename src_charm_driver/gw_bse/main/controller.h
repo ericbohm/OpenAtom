@@ -117,10 +117,10 @@ class FVectorCache : public CBase_FVectorCache {
     FComputePacket f_packet;
     unsigned L, psi_size, fcount, n_list_size, node_count;
     complex* fs;
-    int num_chares, num_chares_x, num_chares_y;
+    int num_chares, num_chares_x, num_chares_y, chare_factor;
     int *charesX;
     int *charesY;
-    int *local_to_global_offset;
+    long *local_to_global_offset;
     int num_rows, num_cols;
     int *offsets;//[num_chares*2];//already calculated
 };

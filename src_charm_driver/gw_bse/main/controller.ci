@@ -406,10 +406,10 @@ module controller {
 	      PHASE_BOUNDARY(total_phase3, total_phase4, "PHASE 3 (Epsilon Matrix Inversion) COMPLETE");
         //Bare exchange
         //TODO:compute Fs that for n's that are occ
-        fvector_cache_proxy.computeFTilde();
-    }
+//        fvector_cache_proxy.computeFTilde();
+//    }
 
-    when fftComplete() serial {
+//    when fftComplete() serial {
         eps_matrix2D_proxy.bareExchange();
         eps_matrix2D_proxy.screenedExchange();
     }

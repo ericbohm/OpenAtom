@@ -389,38 +389,41 @@ FVectorCache::FVectorCache() {
 
   node_count = CkNumNodes();// For testing purposes
 
-  int factor = 4;
-  int num_chares_x = node_count*factor; // 4*4 chares per node, change this
-  int num_chares_y = node_count*factor;
+  chare_factor = 4;
+  int num_chares_x = node_count*chare_factor; // 4*4 chares per node, change this
+  int num_chares_y = node_count*chare_factor;
   num_rows = psi_size/(num_chares_x);
   num_cols = psi_size/(num_chares_y);
   num_chares = num_chares_x * num_chares_y;
   charesX = new int[num_chares_x];
   charesY = new int[num_chares_y];
 
-  int count = 0;
-  for(int i=factor*CkMyNode();i<(factor+1)*CkMyNode();i++) {
-    for(int j=factor*CkMyNode();j<(factor+1)*CkMyNode();j++){
-      charesX[count] = i;
-      charesY[count] = j;
-      count++;
+  int count_i = 0, count_j=0;
+  for(int i=chare_factor*CkMyNode();i<chare_factor*(CkMyNode()+1);i++) {
+    charesX[count_i++] = i;
+    for(int j=chare_factor*CkMyNode();j<chare_factor*(CkMyNode()+1);j++){
+      charesY[count_j++] = j;
     }
   }
+#ifdef DEBUG_FVECTOR
+  CkPrintf("\n-------------Storing chares (%d,%d) to (%d,%d) on PE %d\n", 
+          chare_factor*CkMyNode(), chare_factor*CkMyNode(), chare_factor*(CkMyNode()+1), chare_factor*(CkMyNode()+1), CkMyPe());
+#endif
   int vector_size = num_chares*(num_rows+num_cols);
 
-  long local_to_global_offset[count*2];//Assuming a max of each chares asking for disjoint offsets
+  local_to_global_offset = new long[chare_factor*chare_factor*2];//Assuming a max of each chares asking for disjoint offsets
 
-  for(int i=0;i<count*2;i+=2){
-    int chare_index = i/2;
-    long global_offset_x = charesX[chare_index]*num_rows;
-    long global_offset_y = charesY[chare_index]*num_cols;
-    
-    local_to_global_offset[i] = global_offset_x;
-    local_to_global_offset[i+1] = global_offset_y;
-
+  int count = 0;
+  for(int i=0;i<chare_factor;i++){
+    for(int j=0;j<chare_factor;j++){
+      long global_offset_x = charesX[i]*num_rows;
+      long global_offset_y = charesY[j]*num_cols;
+      local_to_global_offset[count++] = global_offset_x;
+      local_to_global_offset[count++] = global_offset_y;
+    }
   } 
 
-  fs = new complex[n_list_size*L*factor*(num_rows+num_cols)];//Assuming num_rows = num_cols
+  fs = new complex[n_list_size*L*chare_factor*(num_rows+num_cols)];//Assuming num_rows = num_cols
 }
 
 void FVectorCache::putFVec(int n, complex* fs_input){ //fs_input has all L's corresponding to n
@@ -444,12 +447,14 @@ void FVectorCache::putFVec(int n, complex* fs_input){ //fs_input has all L's cor
 
 complex* FVectorCache::getFVec(int n, int l, int start, int size){
   int local_offset = 0;
-  for(int i=0;i<num_chares*2;i++){
+
+  for(int i=0;i<chare_factor*chare_factor*2;i++){
     if(local_to_global_offset[i] == start){
       local_offset = i;
       break;
     }
   }
+
   complex *toget = &(fs[n*l*local_offset]);
   return toget;
 }
