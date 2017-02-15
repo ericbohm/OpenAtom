@@ -303,7 +303,8 @@ if (iq == 1) then
       ! gxg' elements
       counter=counter+1
       !For silicon we hardcode this coulb(1)
-      coulb(1)=0.38343474
+      coulb(1)=0.19171737
+      !coulb(1)=0.38343474
       ! Building g''=g-g' 
       gppvec(:,counter)=gvec(:,gidx(g))-gvec(:,gidx(gp))
       ! Feeding SR vector with S-matrix element following counter
@@ -345,8 +346,8 @@ igp=0
  print*, grp
 
  ! Writing to disk for the accumulated values 
-       write(10,*) 'accumulation of sigma at q : ', iq, sig_g1, sig_g1*0.5, sig_g1*Ry2eV*0.5
-       write(20,*) 'accumulation of sigma at q : ', iq,  sig_g1, sig_g1*0.5, sig_g1*Ry2eV*0.5
+       write(10,*) 'accumulation of sigma at q : ', iq, sig_g1, sig_g1*0.5, sig_g1*Ha2eV*0.5
+       write(20,*) 'accumulation of sigma at q : ', iq,  sig_g1, sig_g1*0.5, sig_g1*Ha2eV*0.5
 
        print*, 'accumulation of sigma at q : ',iq,  sig_g1 !, sig_g2*0.5, sig_g2*Ry2eV*0.5
     
@@ -403,15 +404,15 @@ enddo !end of iq
 !Summing up contribution for iq=1 and iq>1
 sig_sum= sig_g1 + sig_sum1
 print*, 'print sigma over all q at k', k_%vec(1:3, ik), ib, '::', sig_sum, &
-sig_sum*Ry2eV*0.5
+sig_sum*Ha2eV*0.5
 write(20,*)  ' Dealing with K-point', k_%vec(1:3, ik)
 write(20,*)  '****************'
 write(20,*)  'Band index, Sigma'
-write(20, '(i8,2f15.8)' ) ib,  -sig_sum*Ry2eV*0.5
+write(20, '(i8,2f15.8)' ) ib,  -sig_sum*Ha2eV*0.5
 write(10,*)  ' Dealing with K-point', k_%vec(1:3, ik)
 write(10,*)  '****************'
 write(10,*)  'Band index, Sigma'
-write(10, '(i8, 2f15.8)' ) ib, sig_sum, sig_sum*Ry2eV*0.5
+write(10, '(i8, 2f15.8)' ) ib, sig_sum, sig_sum*Ha2eV*0.5
 
 !
 enddo ! end of iband
