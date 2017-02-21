@@ -684,6 +684,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     // Contribute to the reduction telling main we are done
 
     contribute(CkCallback(CkIndex_InstanceController::doneInit(),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+    delete msg;
   }
 
   //============================================================================

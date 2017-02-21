@@ -275,7 +275,7 @@ void CP_State_RealParticlePlane::init(){
     CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
     rPlaneSectProxy.ckDelegate(mcastGrp);
     mcastGrp->setSection(rPlaneSectProxy);
-#endif;
+#endif
     EnlCookieMsg *emsg= new EnlCookieMsg;
     rPlaneSectProxy.setPlaneRedCookie(emsg);
   }//endif

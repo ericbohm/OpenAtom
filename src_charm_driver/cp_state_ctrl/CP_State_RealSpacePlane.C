@@ -410,7 +410,7 @@ void CP_State_RealSpacePlane::doFFT(){
   if(config.doublePack){
     bzero(planeArrR,(ngrida+2)*ngridb*sizeof(double));
   }else{
-    bzero(planeArrR,(ngrida*ngridb*2)*sizeof(double))
+    bzero(planeArrR,(ngrida*ngridb*2)*sizeof(double));
   }//endif
   fftcache->freeCacheMem("CP_State_RealSpacePlane::doFFT");
 #else

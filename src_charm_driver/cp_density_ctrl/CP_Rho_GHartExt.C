@@ -925,6 +925,7 @@ void CP_Rho_GHartExt::acceptAtmSFTot(RhoGHartMsg *msg){
     // FFT back, which generates a send back to RHart
     FFTEesFwd(1);
   }//endif
+  delete msg;
   //============================================================================
 }//end routine
 //============================================================================
@@ -963,6 +964,7 @@ void CP_Rho_GHartExt::acceptVks(RhoGHartMsg *msg) {
     countVksTot=0;
     FFTVks();
   }//endif
+  delete msg;
   //============================================================================
 }//end routine
 //============================================================================

@@ -590,7 +590,6 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
       if(thisIndex.x==0 && thisIndex.y==0)
         CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
 #endif
-      delete msg;
     }
     else {
       int xind = thisIndex.x;
@@ -598,7 +597,9 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
       int petoaddress = numOrthosPerDim * xind + yind;
       diagonalizerBridgeProxy[petoaddress].sendLambdaToDiagonalizer(xind, yind, newcount, templambda);
     }
+    delete msg;
   }
+  delete [] templambda;
   //----------------------------------------------------------------------------
 }// end routine
 //==============================================================================
