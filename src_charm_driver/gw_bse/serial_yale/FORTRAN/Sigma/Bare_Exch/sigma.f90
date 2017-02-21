@@ -269,8 +269,7 @@ if (iq == 1) then
     print*, 'Which q-point you are on : ', q%vec(1:3, iq)
     print*, 'Which k-point you are on : ', k_%vec(1:3, ik)
     do g = 1, ngdata
-    coulb(1)=0.19171737
-    !coulb(1)=0.38343474*2.00
+    coulb(1)=0.38343474
     !sig_g1=  sig_g1  + coulb(g)*real(abs(fg(g)*conjg(fgp(g)))) 
     sig_g1=  sig_g1  + coulb(g)*real(abs(fg(gidx(g))*conjg(fg(gidx(g)))))
     !sig_g1=  sig_g1  + coulb(g)*real(abs(fg(gidx(g))*conjg(fgp(gidx(g)))))
@@ -332,13 +331,13 @@ sig_sum= sig_g1 + sig_g2
 enddo
 ! enddo   ! end of iband
 !enddo
-print*, 'print sigma over all q at k', k_%vec(1:3, ik), '::', -sig_sum, -sig_sum*Ha2ev
+print*, 'print sigma over all q at k', k_%vec(1:3, ik), '::', -sig_sum, -sig_sum*Ry2eV
 write(1,*) 'band index ', ib, 'K-point ', k_%vec(1:3, ik)
 write(2,*)  ' Dealing with K-point', k_%vec(1:3, ik)
 write(2,*)  '****************'
 write(2,*)  'Band index, Sigma'
-write(1, '(2f15.8)' ) -sig_sum, -sig_sum*Ha2ev
-write(2, '(i8,2f15.8)' ) ib,  -sig_sum*Ha2ev
+write(1, '(2f15.8)' ) -sig_sum, -sig_sum*Ry2eV
+write(2, '(i8,2f15.8)' ) ib,  -sig_sum*Ry2eV
 
 !enddo
 
