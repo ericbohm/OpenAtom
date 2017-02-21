@@ -115,8 +115,7 @@ Re(EPS_inv) -1/0  Im(EPS_inv)-1/0    --Re(S)--  -Im(S)-- '
    !call calc_coulb( sys, ndata, qvec, gvec(:, gp), coulb, nq )
    !coulb(:) = sqrt( coulb(:) ) 
     !coulb(1)=0.38343474
-     if ( iq .eq. 1 ) coulb(1)=0.19171737
-     !if ( iq .eq. 1 ) coulb(1)=0.38343474
+     if ( iq .eq. 1 ) coulb(1)=0.38343474
     !coulb(1)=0.61922
        S%C( g, gp ) =sqrt( coulb(g)) * EpsInv%C(g, gp) * sqrt(coulb(gp))
        EPS_BGW%C( g, gp ) = EpsInv%C(g, gp)
@@ -188,7 +187,7 @@ subroutine calc_coulb( sys, ngdata, qvec, gvec, coulb, nq )
   !    print*, "check g-vec", gvec(:,i)
       gqsq = dot_product( gq, gq )
       
-      coulb(i) = ( 4.d0 * pi ) /( gqsq *vol*nq)
+      coulb(i) = ( 8.d0 * pi ) /( gqsq *vol*nq)
       !!coulb(i) = ( 8.d0 * pi ) / (vol * nq * gqsq)
       ! If you want to compare the results with BGW, 
       ! Vc = 8*PI / (G+q)^2 should be used

@@ -304,7 +304,7 @@ if (iq == 1) then
     do gp=1, ngdata
     Tg=0 ! This is very important 
       do g=1, ngdata
-    coulb(1)=0.19171737
+    coulb(1)=0.38343474
   Tg = real(fg(gidx(g))*conjg(fg(gidx(gp))))*S%C(g,gp)+Tg
     write(11, '(8i3,12f15.8 )') g,  sig_mat%gs(iq)%gvec(:,g), gp,  sig_mat%gs(iq)%gvec(:,gp) , &
    coulb(g), coulb(gp),  S%C( g, gp ) &
@@ -316,7 +316,7 @@ if (iq == 1) then
 
  print*,  'Total ScreenEx accumulated -', -sig_g1
  write(10,* ) 'Total EX-'
- write(10, '(1f15.8)')  -sig_g1*Ha2ev
+ write(10, '(1f15.8)')  -sig_g1*Ry2ev
  ! For iq ne 1 uncomment till endif 
     elseif ( iq .ne.1) then 
 
@@ -338,7 +338,7 @@ if (iq == 1) then
 
  write(10,* ) 'Total ScreenEx accumulated -'
  print*,  'Total EX-', -sig_g2
- write(10, '(1f15.8)')  -sig_g2*Ha2ev
+ write(10, '(1f15.8)')  -sig_g2*Ry2ev
 endif
 
 !
@@ -350,13 +350,13 @@ enddo !end of iq
 do iq=1, nq
 sig_sum= sig_g1 + sig_g2 
 enddo
-print*, 'print sigma over all q at k', k_%vec(1:3, ik), ib, '::', -sig_sum, -sig_sum*Ha2eV
+print*, 'print sigma over all q at k', k_%vec(1:3, ik), ib, '::', -sig_sum, -sig_sum*Ry2eV
 write(20,*) 'band index ', ib, 'K-point ', k_%vec(1:3, ik)
 write(20,*)  ' Dealing with K-point', k_%vec(1:3, ik)
 write(20,*)  '****************'
 write(20,*)  'Band index, Sigma'
-write(10, '(2f15.8)' ) -sig_sum, -sig_sum*Ha2eV
-write(20, '(i8,2f15.8)' ) ib,  -sig_sum*Ha2eV
+write(10, '(2f15.8)' ) -sig_sum, -sig_sum*Ry2eV
+write(20, '(i8,2f15.8)' ) ib,  -sig_sum*Ry2eV
 !
 !
 
