@@ -29,6 +29,12 @@ subroutine read_wfn( fname, sys, psi, k )
    implicit none
 
    character(len=100) :: filename
+   character(len=100) :: eigenvalfilename
+   character(len=100) :: dirname
+   character(len=100) :: subdir
+   character(len=100) :: subdir2
+   character(len=100) :: gzfile
+   character(len=100) :: makedirectory
    character(len=1) :: string1
    character(len=2) :: string2
    integer :: iii,jjj,kkk
@@ -113,8 +119,23 @@ subroutine read_wfn( fname, sys, psi, k )
 
    allocate( psi%wk(nk*ns) )  
 
+   dirname = 'STATES_IN'
+   makedirectory = 'mkdir ' // trim(dirname)
+   print*, makedirectory
+   call system(makedirectory)
+
+
    do is = 1, ns
       do ik= 1, nk
+         write (string1,'(I1)') ik-1
+         subdir = 'Spin.0_Kpt.' // string1 // '_Bead.0_Temper.0'
+         makedirectory = 'mkdir ' // trim(dirname) // '/' // trim(subdir)
+         call system(makedirectory)
+
+         subdir2 = 'Spin.0_Kpt.0' // string1 // '_Bead.0_Temper.0'
+         makedirectory = 'mkdir ' // trim(dirname) // '/' // trim(subdir2)
+         call system(makedirectory)
+
          iks = nk*(is-1)+ik
          ! k index
          psi%wk(iks)%kidx = ik
@@ -130,7 +151,23 @@ subroutine read_wfn( fname, sys, psi, k )
          
          psi%wk(iks)%eig(1:nb) = eig(1:nb,ik,is)
          psi%wk(iks)%occ(1:nb) = occ(1:nb,ik,is)
-        
+
+         eigenvalfilename = trim(dirname) // '/' // trim(subdir) // '/' // 'eigenvalues.in'
+
+         open (unit = 7, file = eigenvalfilename)
+         do iii=1,nb
+            write (7,*), psi%wk(iks)%eig(iii)
+         enddo
+         close(7)
+
+         eigenvalfilename = trim(dirname) // '/' // trim(subdir2) // '/' // 'eigenvalues.in'
+
+         open (unit = 7, file = eigenvalfilename)
+         do iii=1,nb
+            write (7,*), psi%wk(iks)%eig(iii)
+         enddo
+         close(7)
+
          ! let's assign g vectors
         
          istart = sum( npwk(1:ik) ) - npwk(ik) + 1
@@ -141,6 +178,9 @@ subroutine read_wfn( fname, sys, psi, k )
             counter = counter + 1
             psi%wk(iks)%gvec(1:3,counter) = psi%gvec( 1:3,igk_all(ii) )
          enddo
+
+
+!         print*, npwk(ik)
                
          ! wfn coefficient Band index!!! npwk_all*nb = total in one spin channel   npwk(ik)*nb
          do ib = 1, nb
@@ -148,22 +188,48 @@ subroutine read_wfn( fname, sys, psi, k )
             iend = ( (is-1)*npwk_all + sum( npwk(1:ik-1) ) )*nb + npwk(ik)*ib
             psi%wk(iks)%cg( 1:npwk(ik), ib ) = wfntmp(istart:iend)
 
-if (0 .gt. 0) then
+if (0 .gt. 0) then ! 1 .gt. 0 to create state files
             write (string1,'(I1)') is
-            filename = trim('state')//trim('_')//trim(string1)
+            filename = trim('state')
+!            filename = filename//trim('_')//trim(string1)
             write (string1,'(I1)') ik
-            filename = trim(filename)//'_'//trim(string1)
-            write (string2,'(I2)') ib
-            filename = trim(filename)//'_'//trim(string2)//'.txt'
+!            filename = trim(filename)//'_'//trim(string1)
+            if(ib .lt. 10) then
+              write (string2,'(I1)') ib
+            else
+              write (string2,'(I2)') ib
+            endif
+            filename = trim(dirname) // '/' // trim(subdir) // '/' // trim(filename)//trim(string2)//'.out'
 
-            print *, 'Writing to file for ib =', ib, 'on file', filename
+!            print *, 'Writing to file for ib =', ib, 'on file', filename
             open (unit = 7, file = filename)
+            write (7,*), npwk(ik), 12, 12, 12
             do iii=1,npwk(ik)
               write (7,*), REAL(REAL(psi%wk(iks)%cg(iii, ib))), REAL(AIMAG(psi%wk(iks)%cg(iii, ib))), &
               & psi%wk(iks)%gvec(0,iii), &
               & psi%wk(iks)%gvec(1,iii),psi%wk(iks)%gvec(2,iii)
             enddo
             close(7)
+
+            gzfile = 'gzip ' // filename
+            call system(gzfile)
+
+!Fake way to create Kpt.0? directory files as well, needs to be fixed
+            filename = trim('state')
+            filename = trim(dirname) // '/' // trim(subdir2) // '/' // trim(filename)//trim(string2)//'.out'
+!            print *, 'Writing to file for ib =', ib, 'on file', filename
+            open (unit = 7, file = filename)
+            write (7,*), npwk(ik), 12, 12, 12
+            do iii=1,npwk(ik)
+              write (7,*), REAL(REAL(psi%wk(iks)%cg(iii, ib))), REAL(AIMAG(psi%wk(iks)%cg(iii, ib))), &
+              & psi%wk(iks)%gvec(0,iii), &
+              & psi%wk(iks)%gvec(1,iii),psi%wk(iks)%gvec(2,iii)
+            enddo
+            close(7)
+
+            gzfile = 'gzip ' // filename
+            call system(gzfile)
+
 endif
          enddo
 
