@@ -10,12 +10,15 @@
 // node, and others are streamed in to the PMatrix as needed.
 class PsiMessage : public CMessage_PsiMessage {
   public:
-    PsiMessage(unsigned s, complex* p) : size(s) {
+    PsiMessage(unsigned s, complex* p, int*a) : size(s) {
       std::copy(p, p+size, psi);
+      std::copy(a, a+size, accept);
     }
     unsigned spin_index, k_index, state_index, size;
     bool shifted;
     complex* psi;
+    int* accept;
+    int accept_size;
 };
 
 // Message sent between PMatrix chares to exchange data during a transpose.

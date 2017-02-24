@@ -74,9 +74,8 @@ void Controller::prep(){
   }
 
   void Controller::got_geps(std::vector<int> accept, int epsilon_size){
-        //CkPrintf("\nGot geps");fflush(stdout);
-        accept_result = accept;
-        thisProxy.done_geps(epsilon_size);
+    accept_result = accept;
+    thisProxy.done_geps(epsilon_size);
   }
   
   void Controller::calc_Geps(){
@@ -260,13 +259,14 @@ void PsiCache::computeFs(PsiMessage* msg) {
 
 
 #ifdef TESTING
+if(msg->state_index-L<2){
   FVectorCache *fvec_cache = fvector_cache_proxy.ckLocalBranch();
-  Phase4Message *fvec_msg;
-  fvec_msg = new(L*psi_size) Phase4Message();
-  fvec_msg->n = (msg->k_index+1)*(msg->state_index-L);
-  fvec_msg->data = fs;
+  fvec_cache->computeFTilde();
+  fvec_cache->applyCutoff(msg->accept_size, msg->accept);
+  fvec_cache->init(140);
 //compute ftilde first - similar to ckloop above for all L's
   fvec_cache->putFVec(msg->state_index-L, fs);
+}
 #endif
 
   // Let the matrix chares know that the f vectors are ready
@@ -385,16 +385,25 @@ FVectorCache::FVectorCache() {
   L = gwbse->gw_parallel.L;
   psi_size = gwbse->gw_parallel.n_elems;
   fcount = 0;
-  n_list_size = 10; //TODO: to be greater than 0, read in from user input file
+  n_list_size = 2; //TODO: to be greater than 0, read in from user input file
 
   node_count = CkNumNodes();// For testing purposes
 
-  chare_factor = 4;
+  chare_factor = 1;
   int num_chares_x = node_count*chare_factor; // 4*4 chares per node, change this
   int num_chares_y = node_count*chare_factor;
   num_rows = psi_size/(num_chares_x);
   num_cols = psi_size/(num_chares_y);
   num_chares = num_chares_x * num_chares_y;
+  fs = new complex[n_list_size*L*chare_factor*(num_rows+num_cols)];//Assuming num_rows = num_cols
+}
+
+void FVectorCache::init(int size_xy){
+  int num_chares_x = node_count*chare_factor; // 4*4 chares per node, change this
+  int num_chares_y = node_count*chare_factor;
+  num_rows = size_xy/(num_chares_x);
+  num_cols = size_xy/(num_chares_y);
+
   charesX = new int[num_chares_x];
   charesY = new int[num_chares_y];
 
@@ -411,36 +420,34 @@ FVectorCache::FVectorCache() {
 #endif
   int vector_size = num_chares*(num_rows+num_cols);
 
-  local_to_global_offset = new long[chare_factor*chare_factor*2];//Assuming a max of each chares asking for disjoint offsets
+  local_to_global_offset = new int[chare_factor*chare_factor*2];//Assuming a max of each chares asking for disjoint offsets
 
   int count = 0;
   for(int i=0;i<chare_factor;i++){
     for(int j=0;j<chare_factor;j++){
-      long global_offset_x = charesX[i]*num_rows;
-      long global_offset_y = charesY[j]*num_cols;
+      int global_offset_x = charesX[i]*num_rows;
+      int global_offset_y = charesY[j]*num_cols;
       local_to_global_offset[count++] = global_offset_x;
       local_to_global_offset[count++] = global_offset_y;
     }
   } 
-
-  fs = new complex[n_list_size*L*chare_factor*(num_rows+num_cols)];//Assuming num_rows = num_cols
 }
 
 void FVectorCache::putFVec(int n, complex* fs_input){ //fs_input has all L's corresponding to n
   for(int l=0;l<L;l++){
     for(int o=0;o<num_chares*2;o+=2){ //num_chares = count
-//fs = new complex[n_list_size*L*factor*num_rows]
       int local_offset_x = o;
       int local_offset_y = o+1;
       int global_offset_x = local_to_global_offset[local_offset_x];
       int global_offset_y = local_to_global_offset[local_offset_y];
 
-      complex *tostore = &(fs[n*l*local_offset_x]); //This is where we locally store
-      tostore = &(fs_input[n*l*global_offset_x]); //should this be a memcpy?
+      complex *tostore = &(fs[((n*n_list_size)+l)*local_offset_x]); //This is where we locally store
+      complex *src = &(fs_input[l*global_offset_x]);
+      memcpy(tostore,src,num_rows*sizeof(complex)); //should this be a memcpy?
 
-      tostore = &(fs[n*l*local_offset_y]);
-      tostore = &(fs_input[n*l*global_offset_y]); //should this be a memcpy?
-      
+      tostore = &(fs[((n*n_list_size)+l)*local_offset_y]);
+      src = &(fs_input[l*global_offset_y]);
+      memcpy(tostore, src,num_cols*sizeof(complex)); //should this be a memcpy?
     }
   }
 }
@@ -487,9 +494,7 @@ void fTildeWorkUnit(int first, int last, void* result, int count, void* params) 
     put_into_fftbox(nfft, &fs[k*i*psi_size], in_pointer);
     fft_controller->do_fftw();
     fftbox_to_array(ndata, out_pointer, &fs[k*i*psi_size], 1); //Now cached on the same partitions
-    CkPrintf("\nPerformed FFT %d,%d\n", k, i);
     // replace f_vector to f_tilde_vector
-    // ndata is the size of the vector
   }
 }
 
@@ -508,10 +513,19 @@ void FVectorCache::computeFTilde(){
     fTildeWorkUnit(n,n,NULL,1,&f_packet);
   }
 #endif
-  CkPrintf("\nComputed and cached FTilde\n");
+}
 
-//cached fTilde, so matrix can be computed
-  contribute(CkCallback(CkReductionTarget(Controller, fftComplete), controller_proxy));
+void FVectorCache::applyCutoff(int size, int* accept){
+
+  int inew = 0;
+
+  for(int i=0;i<size;i++){
+    if(accept[i]){
+      fs[inew] = fs[i];
+      inew++;
+    }
+  }
+//  fs.resize(inew);
 }
 
 #include "psi_cache.def.h"

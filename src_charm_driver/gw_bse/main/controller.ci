@@ -84,6 +84,10 @@ module controller {
 
       when fftControllerReady() serial {
         STEP_BOUNDARY(chare_creation, fft_states, "Chares created");
+        controller_proxy.prep();
+      }
+
+      when done_geps(int epsilon_size_in) serial{
         states_proxy.fftGtoR();
       }
 
@@ -116,7 +120,7 @@ module controller {
       for (next_K = 0; next_K < K && total_sent < max_sends; next_K++) {
         for (next_state = L; next_state < L + M && total_sent < max_sends; next_state++) {
           serial {
-            states_proxy(0, next_K, next_state).sendToComputeF();
+            states_proxy(0, next_K, next_state).sendToComputeF(accept_result);
             total_sent++;
           }
           // This constrains us to only sending out 'pipeline_stages' number of

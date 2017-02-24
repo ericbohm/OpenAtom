@@ -109,10 +109,12 @@ class FVectorCache : public CBase_FVectorCache {
   FVectorCache_SDAG_CODE
   public:
     FVectorCache();
+    void init(int size_xy);
     void putFVec(Phase4Message* msg);
     void computeFTilde();
     void putFVec(int n, complex* fs_input);
     complex* getFVec(int n, int l, int start, int size);
+    void applyCutoff(int size, int* accept);
   private:
     FComputePacket f_packet;
     unsigned L, psi_size, fcount, n_list_size, node_count;
@@ -120,7 +122,7 @@ class FVectorCache : public CBase_FVectorCache {
     int num_chares, num_chares_x, num_chares_y, chare_factor;
     int *charesX;
     int *charesY;
-    long *local_to_global_offset;
+    int *local_to_global_offset;
     int num_rows, num_cols;
     int *offsets;//[num_chares*2];//already calculated
 };
