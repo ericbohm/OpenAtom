@@ -206,8 +206,8 @@ if (0 .gt. 0) then ! 1 .gt. 0 to create state files
             write (7,*), npwk(ik), 12, 12, 12
             do iii=1,npwk(ik)
               write (7,*), REAL(REAL(psi%wk(iks)%cg(iii, ib))), REAL(AIMAG(psi%wk(iks)%cg(iii, ib))), &
-              & psi%wk(iks)%gvec(0,iii), &
-              & psi%wk(iks)%gvec(1,iii),psi%wk(iks)%gvec(2,iii)
+              & psi%wk(iks)%gvec(1,iii), &
+              & psi%wk(iks)%gvec(2,iii),psi%wk(iks)%gvec(3,iii)
             enddo
             close(7)
 
