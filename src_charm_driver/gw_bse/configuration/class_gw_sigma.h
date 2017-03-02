@@ -17,8 +17,10 @@ class GW_SIGMA{
 
   public:
     int PP_nmode;                // Num: number of eigenmodes included in plasmon-pole model
-    int band_index_min;          // Band index for sigma
-    int band_index_max;          // Band index for sigma
+
+    char nnpFileName[200];       // No need to pup this, contents stored in next three variables
+    int num_sig_matels;  // number of <n|Sigma|n'> elements to calculate in GW
+    int *n_list_sig_matels, *np_list_sig_matels;  // n an n' lists
 
     double screened_coulomb_cutoff;     // Num: Cutoff for screened coulomb term (must be less than Ecuteps (eV)
     double bare_coulomb_cutoff;         // Num: cutoff for bare coulomb (eV)
@@ -27,10 +29,11 @@ class GW_SIGMA{
     //con-destruct:
     GW_SIGMA(){
       PP_nmode        = 0;
-      band_index_min  = 0;
-      band_index_max  = 0;
       screened_coulomb_cutoff = 0;
       bare_coulomb_cutoff     = 0;
+      num_sig_matels = 0;
+      n_list_sig_matels = 0;
+      np_list_sig_matels = 0;
     };
     ~GW_SIGMA(){};
 
@@ -41,11 +44,17 @@ class GW_SIGMA{
     void pup(PUP::er &p){
       //pupping ints
       p | PP_nmode;
-      p | band_index_min;
-      p | band_index_max;
+      p | num_sig_matels;
       //puppting dbles
       p | screened_coulomb_cutoff;
       p | bare_coulomb_cutoff;      
+      if(p.isUnpacking()) {
+	        n_list_sig_matels = new int [num_sig_matels];
+	        np_list_sig_matels = new int [num_sig_matels];
+      }
+      // pup 1d integer arrays
+      PUParray(p,n_list_sig_matels,num_sig_matels);
+      PUParray(p,np_list_sig_matels,num_sig_matels);
 #ifdef _PARALLEL_DEBUG_        
       if (p.isUnpacking())
         state_class_out ();
@@ -59,8 +68,10 @@ class GW_SIGMA{
       FILE *fp; fp = fopen(fileName,"w");
       //ints
       fprintf(fp,"PP_nmode %d\n",PP_nmode);
-      fprintf(fp,"band_index_min %d\n",band_index_min);
-      fprintf(fp,"band_index_max %d\n",band_index_max);
+      fprintf(fp,"n and n' list for sigma matrix elements is %d long\n",num_sig_matels);
+      for (int i=0; i < num_sig_matels; i++) {
+        	fprintf(fp,"%d %d\n",n_list_sig_matels[i],np_list_sig_matels[i]);
+      }
       //dbles
       fprintf(fp,"screened_coulomb_cutoff %lg\n",screened_coulomb_cutoff);
       fprintf(fp,"bare_coulomb_cutoff %lg\n",bare_coulomb_cutoff);

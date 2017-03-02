@@ -168,7 +168,13 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
   // read cell and k list
   read_lattice( gwbseopts );
   read_klist( gwbseopts );
-  read_nnpbandlist ( gw_sigma );
+
+  
+  //===================================================================================
+  // Improve user parameters and/or try to optimize unset parameters
+
+  // guesstimateParmsConfig(sizez,dict_gen,dict_rho,dict_state,dict_pc,dict_nl,dict_map, 
+  //    nchareRhoRHart, nplane_x_rho, natm_typ);
 
   //===================================================================================
   // Final consistency checks
@@ -427,6 +433,15 @@ void Config::set_config_dict_GW_epsilon  (int *num_dict ,DICT_WORD **dict){
   strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
 
+
+
+
+
+
+
+
+
+  
 }//end routine
 //===================================================================================
 
@@ -440,7 +455,7 @@ void Config::set_config_dict_GW_epsilon  (int *num_dict ,DICT_WORD **dict){
 void Config::set_config_dict_GW_sigma  (int *num_dict ,DICT_WORD **dict){
   //==================================================================================
   //  I) Malloc the dictionary                                              
-  num_dict[0] = 4;
+  num_dict[0] = 5;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
 
   //=================================================================================
@@ -462,24 +477,32 @@ void Config::set_config_dict_GW_sigma  (int *num_dict ,DICT_WORD **dict){
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
-  //  2)\nnp_list_file
+  //  2)\band_index_min{}
   ind =   2;   
-  strcpy((*dict)[ind].keyword,"nnp_list_file");
-  strcpy((*dict)[ind].keyarg,"band_list.dat");
-  strcpy((*dict)[ind].error_mes,"a file containing list of n,n' bands for sigma matrix elements");
+  strcpy((*dict)[ind].keyword,"band_index_min");
+  strcpy((*dict)[ind].keyarg,"1");
+  strcpy((*dict)[ind].error_mes,"an integer > 0 ");
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
-  //  3)\screened_coulomb_cutoff{}
+  //  3)\band_index_max{}
   ind =   3;   
+  strcpy((*dict)[ind].keyword,"band_index_max");
+  strcpy((*dict)[ind].keyarg,"2");
+  strcpy((*dict)[ind].error_mes,"an integer > 1 ");
+  //-----------------------------------------------------------------------------
+
+  //-----------------------------------------------------------------------------
+  //  4)\screened_coulomb_cutoff{}
+  ind =   4;   
   strcpy((*dict)[ind].keyword,"screened_coulomb_cutoff");
   strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0 ");
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
-  //  4)\screened_coulomb_cutoff{}
-  ind =   4;   
+  //  5)\screened_coulomb_cutoff{}
+  ind =   5;   
   strcpy((*dict)[ind].keyword,"bare_coulomb_cutoff");
   strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0 ");
@@ -518,7 +541,7 @@ void Config::set_config_dict_GW_file  (int *num_dict ,DICT_WORD **dict){
   ind =   1;
   strcpy((*dict)[ind].keyword,"read_kpt_cell");
   strcpy((*dict)[ind].keyarg,"");
-  strcpy((*dict)[ind].error_mes,"a filename to read with kpoints and cell info");
+  strcpy((*dict)[ind].error_mes,"a file name that reads kpoints and cell info");
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
@@ -534,7 +557,7 @@ void Config::set_config_dict_GW_file  (int *num_dict ,DICT_WORD **dict){
   ind =   3;   
   strcpy((*dict)[ind].keyword,"restart_EpsMatInv");
   strcpy((*dict)[ind].keyarg,"EPSMATINV");
-  strcpy((*dict)[ind].error_mes,"a filename to read with epsilon matrix inverse");
+  strcpy((*dict)[ind].error_mes,"a file name that reads epsilon matrix inverse");
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
@@ -542,12 +565,8 @@ void Config::set_config_dict_GW_file  (int *num_dict ,DICT_WORD **dict){
   ind =   4;   
   strcpy((*dict)[ind].keyword,"read_density");
   strcpy((*dict)[ind].keyarg,"RHO");
-  strcpy((*dict)[ind].error_mes,"a filename to read density for GPP calculations");
+  strcpy((*dict)[ind].error_mes,"a file name that reads density for GPP calculations");
   //-----------------------------------------------------------------------------
-
-
-
-
 }//end routine
 //===================================================================================
 
@@ -783,13 +802,18 @@ void Config::set_config_params_GW_sigma  (DICT_WORD *dict, char *fun_key, char *
   if (int_arg<0){keyarg_barf(dict,input_name,fun_key,ind);}
   gw_sigma->PP_nmode = int_arg; 
 
-
   //-----------------------------------------------------------------------------
-  //  2)\nnp_list_file
-  ind =   2;
-  strcpy(gw_sigma->nnpFileName, dict[ind].keyarg); // must put somewhere!
-  if (strlen(gw_sigma->nnpFileName) == 0){keyarg_barf(dict,input_name,fun_key,ind);}  
-
+  //  2)\band_index_min{}
+  ind =   2;   
+  sscanf(dict[ind].keyarg,"%d",&int_arg);
+  if (int_arg<0){keyarg_barf(dict,input_name,fun_key,ind);}  
+  gw_sigma->band_index_min = int_arg;
+  //-----------------------------------------------------------------------------
+  //  3)\band_index_max{}
+  ind =   3;   
+  sscanf(dict[ind].keyarg,"%d",&int_arg);
+  if (int_arg<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  gw_sigma->band_index_max = int_arg; 
 
   //-----------------------------------------------------------------------------
   //  4)\screened_coulomb_cutoff{}
@@ -1285,61 +1309,6 @@ void Config::read_klist(GWBSEOPTS *gwbseopts){
   
 }//end routine 
 //========================================================================
-
-
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-// Reads the file containing set of n,n' bands for which we want to compute
-// sigma matrix elements.  The filename was read from the input option.
-// The file is text.  The first line is an integer=M>0 saying how many
-// n,n' pairs there are.  The next M lines have 2 integers per line n,n'.
-// This is one list for all k points.
-void Config::read_nnpbandlist(GW_SIGMA *gw_sigma){
-
-  // local variables
-  int i,n_nnp;
-  FILE *fp;
-
-  // open the file
-  fp = cfopen((const char *)gw_sigma->nnpFileName,"r");
-  fscanf(fp,"%d",&n_nnp);
-
-    //printf("The size of band_list'  %d\n", sizeof(fp));
-  // do some check on n_nnp
-  if(n_nnp<1) {
-    printf("The number of n,n' lines to read = %d is < 1 and invalid in file %s\n",
-	   n_nnp,gw_sigma->nnpFileName);
-    EXIT(1);
-  }
-  gw_sigma->num_sig_matels = n_nnp;
-
-  // allocate space and read
-  gw_sigma->n_list_sig_matels = new int [n_nnp];
-  gw_sigma->np_list_sig_matels = new int [n_nnp];
-  int counter = 0;
-  for (i=0; i < n_nnp; i++) {
-    int in,inp;
-    fscanf(fp,"%d %d",&in,&inp);
-    gw_sigma->n_list_sig_matels[i] = in;
-    gw_sigma->np_list_sig_matels[i] = inp;
-    counter++;
- //}
-
-}
-  // check that the file had the right number of n,n' pair
-  //if (counter != n_nnp) {
-  if (counter != sizeof(fp)-1) {
-    printf("The number of n,n' lines in bandlist.dat does not match with the length of your list ",
-    //printf("The number of n,n' lines file %s is %d and not equal to specified %d\n",
-	   gw_sigma->nnpFileName,counter);
-    EXIT(1);
-  }
-
-  // close file
-  fclose(fp);
-}// end routine
-
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

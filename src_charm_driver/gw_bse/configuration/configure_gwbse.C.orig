@@ -160,7 +160,6 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
   set_config_params_GW_sigma    (dict_GW_sigma, dict_fun[3].keyword, input_name, gw_sigma);
   //  set_config_params_GW_file     (dict_GW_file, dict_fun[4].keyword, input_name, gwbseopts);
   set_config_params_GW_parallel   (dict_GW_parallel, dict_fun[5].keyword, input_name, gw_parallel);
-// my input values
 //  simpleRangeCheck_gwbse(); // redundant checking   need to write this
 
 
@@ -168,7 +167,7 @@ void Config::readConfig(char* input_name, GWBSE *gwbse)
   // read cell and k list
   read_lattice( gwbseopts );
   read_klist( gwbseopts );
-  read_nnpbandlist ( gw_sigma );
+  read_bandindices( gwbseopts );
 
   //===================================================================================
   // Final consistency checks
@@ -238,248 +237,266 @@ void Config::set_config_dict_fun  (int *num_dict  ,DICT_WORD **dict){
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_fun")-1;
 
   //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
+//   //  II) Initialize the user set option(did the user set the key word      
 
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].key_type = 1;} //spec only once
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].key_type = 1;} //spec only once
 
-  //=================================================================================
-  // III) Set up the dictionary
-  int ind;
-  //------------------------------------------------------------------------------
-  //  1)~gen_GW[ ]
-  ind = 1;
-  strcpy((*dict)[ind].error_mes," ");
-  strcpy((*dict)[ind].keyword,"gen_GW");
-  strcpy((*dict)[ind].keyarg," ");
-  //------------------------------------------------------------------------------
-  //  2)~GW_epsilon[ ]
-  ind = 2;
-  strcpy((*dict)[ind].error_mes," ");
-  strcpy((*dict)[ind].keyword,"GW_epsilon");
-  strcpy((*dict)[ind].keyarg," ");
-  //------------------------------------------------------------------------------
-  //  3)~GW_sigma[ ]
-  ind = 3;
-  strcpy((*dict)[ind].error_mes," ");
-  strcpy((*dict)[ind].keyword,"GW_sigma");
-  strcpy((*dict)[ind].keyarg," ");  
-  //------------------------------------------------------------------------------
-  //  4)~GW_filenames[ ]
-  ind = 4;
-  strcpy((*dict)[ind].error_mes," ");
-  strcpy((*dict)[ind].keyword,"GW_filenames");
-  strcpy((*dict)[ind].keyarg," ");
-  //------------------------------------------------------------------------------
-  //  5)~GW_parallel[ ]
-  ind = 5;
-  strcpy((*dict)[ind].error_mes," ");
-  strcpy((*dict)[ind].keyword,"GW_parallel");
-  strcpy((*dict)[ind].keyarg," ");
-  //------------------------------------------------------------------------------
-}//end routine
-//===================================================================================
-
-
+//   //=================================================================================
+//   // III) Set up the dictionary
+//   int ind;
+//   //------------------------------------------------------------------------------
+//   //  1)~gen_GW[ ]
+//   ind = 1;
+//   strcpy((*dict)[ind].error_mes," ");
+//   strcpy((*dict)[ind].keyword,"gen_GW");
+//   strcpy((*dict)[ind].keyarg," ");
+//   //------------------------------------------------------------------------------
+//   //  2)~GW_epsilon[ ]
+//   ind = 2;
+//   strcpy((*dict)[ind].error_mes," ");
+//   strcpy((*dict)[ind].keyword,"GW_epsilon");
+//   strcpy((*dict)[ind].keyarg," ");
+//   //------------------------------------------------------------------------------
+//   //  3)~GW_sigma[ ]
+//   ind = 3;
+//   strcpy((*dict)[ind].error_mes," ");
+//   strcpy((*dict)[ind].keyword,"GW_sigma");
+//   strcpy((*dict)[ind].keyarg," ");  
+//   //------------------------------------------------------------------------------
+//   //  4)~GW_filenames[ ]
+//   ind = 4;
+//   strcpy((*dict)[ind].error_mes," ");
+//   strcpy((*dict)[ind].keyword,"GW_filenames");
+//   strcpy((*dict)[ind].keyarg," ");
+//   //------------------------------------------------------------------------------
+//   //  5)~GW_parallel[ ]
+//   ind = 5;
+//   strcpy((*dict)[ind].error_mes," ");
+//   strcpy((*dict)[ind].keyword,"GW_parallel");
+//   strcpy((*dict)[ind].keyarg," ");
+//   //------------------------------------------------------------------------------
+// }//end routine
+// //===================================================================================
 
 
 
 
-//===================================================================================
-//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//===================================================================================
-void Config::set_config_dict_gen_GW  (int *num_dict ,DICT_WORD **dict){
-  //==================================================================================
-  //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 8;
-  *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
 
-  //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
+// //===================================================================================
+// //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+// //===================================================================================
+// void Config::set_config_dict_gen_GW  (int *num_dict ,DICT_WORD **dict){
+//   //==================================================================================
+//   //  I) Malloc the dictionary                                              
 
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].key_type = 1;} //spec only once
+//   num_dict[0] = 8;
+//   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
 
-  //=================================================================================
-  // III) Set up the dictionary
-  int ind;
-  //-----------------------------------------------------------------------------
-  //  1)\gwbse_opt{}
-  ind =   1;
-  strcpy((*dict)[ind].keyword,"gwbse_opt");
-  strcpy((*dict)[ind].keyarg,"off");
-  strcpy((*dict)[ind].error_mes,"on or off");
-  //-----------------------------------------------------------------------------
+//   //=================================================================================
+//   //  II) Initialize the user set option(did the user set the key word      
 
-  //-----------------------------------------------------------------------------
-  //  2)\num_tot_state{}
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].key_type = 1;} //spec only once
+
+//   //=================================================================================
+//   // III) Set up the dictionary
+//   int ind;
+//   //-----------------------------------------------------------------------------
+//   //  1)\gwbse_opt{}
+//   ind =   1;
+//   strcpy((*dict)[ind].keyword,"gwbse_opt");
+//   strcpy((*dict)[ind].keyarg,"off");
+//   strcpy((*dict)[ind].error_mes,"on or off");
+//   //-----------------------------------------------------------------------------
+
+//   //-----------------------------------------------------------------------------
+//   //  2)\num_tot_state{}
+//   ind =   2;   
+//   strcpy((*dict)[ind].keyword,"num_tot_state");
+//   strcpy((*dict)[ind].keyarg,"2");
+//   strcpy((*dict)[ind].error_mes,"an integer > 1 ");
+//   //-----------------------------------------------------------------------------
+
+//   //-----------------------------------------------------------------------------
+//   //  3)\num_occ_state{}
+//   ind =   3;   
+//   strcpy((*dict)[ind].keyword,"num_occ_state");
+//   strcpy((*dict)[ind].keyarg,"1");
+//   strcpy((*dict)[ind].error_mes,"an integer > 0 ");
+//   //-----------------------------------------------------------------------------
+
+//   //-----------------------------------------------------------------------------
+//   //  4)\num_unocc_state{}
+//   ind =   4;   
+//   strcpy((*dict)[ind].keyword,"num_unocc_state");
+//   strcpy((*dict)[ind].keyarg,"1");
+//   strcpy((*dict)[ind].error_mes,"an integer > 0");
+//   //-----------------------------------------------------------------------------  
+
+//   //-----------------------------------------------------------------------------
+//   //  5)\num_kpoint{}
+//   ind =   5;
+//   strcpy((*dict)[ind].keyword,"num_kpoint");
+//   strcpy((*dict)[ind].keyarg,"1");
+//   strcpy((*dict)[ind].error_mes,"an integer > 0");
+//   //----------------------------------------------------------------------------- 
+
+//   //-----------------------------------------------------------------------------
+//   //  6)\num_spin{}
+//   ind =   6;
+//   strcpy((*dict)[ind].keyword,"num_spin");
+//   strcpy((*dict)[ind].keyarg,"1");
+//   strcpy((*dict)[ind].error_mes,"an integer > 0");
+//   //----------------------------------------------------------------------------- 
+
+//   //-----------------------------------------------------------------------------
+//   //  7)\coulb_trunc_opt{}
+//   ind =   7;
+//   strcpy((*dict)[ind].keyword,"coulb_trunc_opt");
+//   strcpy((*dict)[ind].keyarg,"0");
+//   strcpy((*dict)[ind].error_mes,"0-no truncation, 1-wire, 2-sheet, 3-molecule");
+//   //-----------------------------------------------------------------------------
+
+//   //-----------------------------------------------------------------------------
+//   //  8)\statefile_binary_opt{}
+//   ind =   8;
+//   strcpy((*dict)[ind].keyword,"statefile_binary_opt");
+//   strcpy((*dict)[ind].keyarg,"off");
+//   strcpy((*dict)[ind].error_mes,"off,off_gzip,on,on_gzip");
+
+// }//end routine
+// //===================================================================================
+
+
+
+
+
+// //===================================================================================
+// //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+// //===================================================================================
+// void Config::set_config_dict_GW_epsilon  (int *num_dict ,DICT_WORD **dict){
+//   //==================================================================================
+//   //  I) Malloc the dictionary                                              
+//   num_dict[0] = 4;
+//   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
+
+//   //=================================================================================
+//   //  II) Initialize the user set option(did the user set the key word      
+
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].key_type = 1;} //spec only once
+
+//   //=================================================================================
+//   // III) Set up the dictionary
+//   int ind;
+//   //-----------------------------------------------------------------------------
+//   //  1)\Ecuteps{}
+//   ind =   1;
+//   strcpy((*dict)[ind].keyword,"Ecuteps");
+//   strcpy((*dict)[ind].keyarg,"10");
+//   strcpy((*dict)[ind].error_mes,"a number > 0");
+//   //-----------------------------------------------------------------------------
+
+//   //-----------------------------------------------------------------------------
+//   //  2)\tol_iter_mtxinv{}
+//   ind =   2;   
+//   strcpy((*dict)[ind].keyword,"tol_iter_mtxinv");
+//   strcpy((*dict)[ind].keyarg,"0.001");
+//   strcpy((*dict)[ind].error_mes,"an integer > 1 ");
+//   //-----------------------------------------------------------------------------
+
+//   //-----------------------------------------------------------------------------
+//   //  3)\state_eigen_value_file{}
+//   ind =   3;   
+//   strcpy((*dict)[ind].keyword,"state_eigen_value_file");
+//   strcpy((*dict)[ind].keyarg,"eigenvalues.in");
+//   strcpy((*dict)[ind].error_mes,"a file containing nocc + nunocc eigenvalues");
+//   //-----------------------------------------------------------------------------
+
+//   //-----------------------------------------------------------------------------
+//   //  4)\EcutFFT{}
+//   ind =   4;   
+//   strcpy((*dict)[ind].keyword,"EcutFFT");
+//   strcpy((*dict)[ind].keyarg,"25");
+//   strcpy((*dict)[ind].error_mes,"a number > 0");
+//   //-----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+  
+// }//end routine
+// //===================================================================================
+
+
+
+
+
+// //===================================================================================
+// //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+// //===================================================================================
+// void Config::set_config_dict_GW_sigma  (int *num_dict ,DICT_WORD **dict){
+//   //==================================================================================
+//   //  I) Malloc the dictionary                                              
+//   num_dict[0] = 5;
+//   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
+
+//   //=================================================================================
+//   //  II) Initialize the user set option(did the user set the key word      
+
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
+//   for(int i=1;i<=num_dict[0];i++){(*dict)[i].key_type = 1;} //spec only once
+
+//   //=================================================================================
+//   // III) Set up the dictionary
+//   int ind;
+//   //-----------------------------------------------------------------------------
+//   //  1)\PP_num_mode{}
+//   ind =   1;
+//   strcpy((*dict)[ind].keyword,"PP_num_mode");
+//   strcpy((*dict)[ind].keyarg,"1");
+//   strcpy((*dict)[ind].error_mes,"an integer > 0");
+//   //-----------------------------------------------------------------------------
+
+//   //-----------------------------------------------------------------------------
+
+  //  2)\band_index_min{}
   ind =   2;   
-  strcpy((*dict)[ind].keyword,"num_tot_state");
-  strcpy((*dict)[ind].keyarg,"2");
-  strcpy((*dict)[ind].error_mes,"an integer > 1 ");
-  //-----------------------------------------------------------------------------
-
-  //-----------------------------------------------------------------------------
-  //  3)\num_occ_state{}
-  ind =   3;   
-  strcpy((*dict)[ind].keyword,"num_occ_state");
+  strcpy((*dict)[ind].keyword,"n_list_sig_matels");
   strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"an integer > 0 ");
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
-  //  4)\num_unocc_state{}
-  ind =   4;   
-  strcpy((*dict)[ind].keyword,"num_unocc_state");
-  strcpy((*dict)[ind].keyarg,"1");
-  strcpy((*dict)[ind].error_mes,"an integer > 0");
-  //-----------------------------------------------------------------------------  
-
-  //-----------------------------------------------------------------------------
-  //  5)\num_kpoint{}
-  ind =   5;
-  strcpy((*dict)[ind].keyword,"num_kpoint");
-  strcpy((*dict)[ind].keyarg,"1");
-  strcpy((*dict)[ind].error_mes,"an integer > 0");
-  //----------------------------------------------------------------------------- 
-
-  //-----------------------------------------------------------------------------
-  //  6)\num_spin{}
-  ind =   6;
-  strcpy((*dict)[ind].keyword,"num_spin");
-  strcpy((*dict)[ind].keyarg,"1");
-  strcpy((*dict)[ind].error_mes,"an integer > 0");
-  //----------------------------------------------------------------------------- 
-
-  //-----------------------------------------------------------------------------
-  //  7)\coulb_trunc_opt{}
-  ind =   7;
-  strcpy((*dict)[ind].keyword,"coulb_trunc_opt");
-  strcpy((*dict)[ind].keyarg,"0");
-  strcpy((*dict)[ind].error_mes,"0-no truncation, 1-wire, 2-sheet, 3-molecule");
-  //-----------------------------------------------------------------------------
-
-  //-----------------------------------------------------------------------------
-  //  8)\statefile_binary_opt{}
-  ind =   8;
-  strcpy((*dict)[ind].keyword,"statefile_binary_opt");
-  strcpy((*dict)[ind].keyarg,"off");
-  strcpy((*dict)[ind].error_mes,"off,off_gzip,on,on_gzip");
-
-}//end routine
-//===================================================================================
-
-
-
-
-
-//===================================================================================
-//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//===================================================================================
-void Config::set_config_dict_GW_epsilon  (int *num_dict ,DICT_WORD **dict){
-  //==================================================================================
-  //  I) Malloc the dictionary                                              
-  num_dict[0] = 4;
-  *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
-
-  //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
-
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].key_type = 1;} //spec only once
-
-  //=================================================================================
-  // III) Set up the dictionary
-  int ind;
-  //-----------------------------------------------------------------------------
-  //  1)\Ecuteps{}
-  ind =   1;
-  strcpy((*dict)[ind].keyword,"Ecuteps");
-  strcpy((*dict)[ind].keyarg,"10");
-  strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-
-  //-----------------------------------------------------------------------------
-  //  2)\tol_iter_mtxinv{}
-  ind =   2;   
-  strcpy((*dict)[ind].keyword,"tol_iter_mtxinv");
-  strcpy((*dict)[ind].keyarg,"0.001");
+  //  3)\band_index_max{}
+  ind =   3;   
+  strcpy((*dict)[ind].keyword,"np_list_sig_matels");
+  strcpy((*dict)[ind].keyarg,"2");
   strcpy((*dict)[ind].error_mes,"an integer > 1 ");
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
-  //  3)\state_eigen_value_file{}
-  ind =   3;   
-  strcpy((*dict)[ind].keyword,"state_eigen_value_file");
-  strcpy((*dict)[ind].keyarg,"eigenvalues.in");
-  strcpy((*dict)[ind].error_mes,"a file containing nocc + nunocc eigenvalues");
-  //-----------------------------------------------------------------------------
-
-  //-----------------------------------------------------------------------------
-  //  4)\EcutFFT{}
+  //  4)\screened_coulomb_cutoff{}
   ind =   4;   
-  strcpy((*dict)[ind].keyword,"EcutFFT");
-  strcpy((*dict)[ind].keyarg,"25");
-  strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-
-}//end routine
-//===================================================================================
-
-
-
-
-
-//===================================================================================
-//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//===================================================================================
-void Config::set_config_dict_GW_sigma  (int *num_dict ,DICT_WORD **dict){
-  //==================================================================================
-  //  I) Malloc the dictionary                                              
-  num_dict[0] = 4;
-  *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_dict_gen_GW")-1;
-
-  //=================================================================================
-  //  II) Initialize the user set option(did the user set the key word      
-
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
-  for(int i=1;i<=num_dict[0];i++){(*dict)[i].key_type = 1;} //spec only once
-
-  //=================================================================================
-  // III) Set up the dictionary
-  int ind;
-  //-----------------------------------------------------------------------------
-  //  1)\PP_num_mode{}
-  ind =   1;
-  strcpy((*dict)[ind].keyword,"PP_num_mode");
-  strcpy((*dict)[ind].keyarg,"1");
-  strcpy((*dict)[ind].error_mes,"an integer > 0");
-  //-----------------------------------------------------------------------------
-
-  //-----------------------------------------------------------------------------
-  //  2)\nnp_list_file
-  ind =   2;   
-  strcpy((*dict)[ind].keyword,"nnp_list_file");
-  strcpy((*dict)[ind].keyarg,"band_list.dat");
-  strcpy((*dict)[ind].error_mes,"a file containing list of n,n' bands for sigma matrix elements");
-  //-----------------------------------------------------------------------------
-
-  //-----------------------------------------------------------------------------
-  //  3)\screened_coulomb_cutoff{}
-  ind =   3;   
   strcpy((*dict)[ind].keyword,"screened_coulomb_cutoff");
   strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0 ");
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
-  //  4)\screened_coulomb_cutoff{}
-  ind =   4;   
+  //  5)\screened_coulomb_cutoff{}
+  ind =   5;   
   strcpy((*dict)[ind].keyword,"bare_coulomb_cutoff");
   strcpy((*dict)[ind].keyarg,"1");
   strcpy((*dict)[ind].error_mes,"a number > 0 ");
@@ -518,7 +535,7 @@ void Config::set_config_dict_GW_file  (int *num_dict ,DICT_WORD **dict){
   ind =   1;
   strcpy((*dict)[ind].keyword,"read_kpt_cell");
   strcpy((*dict)[ind].keyarg,"");
-  strcpy((*dict)[ind].error_mes,"a filename to read with kpoints and cell info");
+  strcpy((*dict)[ind].error_mes,"a file name that reads kpoints and cell info");
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
@@ -534,7 +551,7 @@ void Config::set_config_dict_GW_file  (int *num_dict ,DICT_WORD **dict){
   ind =   3;   
   strcpy((*dict)[ind].keyword,"restart_EpsMatInv");
   strcpy((*dict)[ind].keyarg,"EPSMATINV");
-  strcpy((*dict)[ind].error_mes,"a filename to read with epsilon matrix inverse");
+  strcpy((*dict)[ind].error_mes,"a file name that reads epsilon matrix inverse");
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
@@ -542,12 +559,8 @@ void Config::set_config_dict_GW_file  (int *num_dict ,DICT_WORD **dict){
   ind =   4;   
   strcpy((*dict)[ind].keyword,"read_density");
   strcpy((*dict)[ind].keyarg,"RHO");
-  strcpy((*dict)[ind].error_mes,"a filename to read density for GPP calculations");
+  strcpy((*dict)[ind].error_mes,"a file name that reads density for GPP calculations");
   //-----------------------------------------------------------------------------
-
-
-
-
 }//end routine
 //===================================================================================
 
@@ -694,6 +707,13 @@ void Config::set_config_params_gen_GW  (DICT_WORD *dict, char *fun_key, char *in
   if(ifound == 0) keyarg_barf(dict,input_name,fun_key,ind);
   
 
+  //-----------------------------------------------------------------------------
+  //  8)\num_kpoint{}
+  ind =   9;   
+  sscanf(dict[ind].keyarg,"%d",&int_arg);
+  if (int_arg<1){keyarg_barf(dict,input_name,fun_key,ind);}     
+  gwbseopts->nbpt = int_arg;
+
   //----------------------------------------------------------------------------- 
   // Die if the number of states don't add up
   if(gwbseopts->nstate!=(gwbseopts->nunocc+gwbseopts->nocc)){
@@ -783,13 +803,18 @@ void Config::set_config_params_GW_sigma  (DICT_WORD *dict, char *fun_key, char *
   if (int_arg<0){keyarg_barf(dict,input_name,fun_key,ind);}
   gw_sigma->PP_nmode = int_arg; 
 
-
   //-----------------------------------------------------------------------------
-  //  2)\nnp_list_file
-  ind =   2;
-  strcpy(gw_sigma->nnpFileName, dict[ind].keyarg); // must put somewhere!
-  if (strlen(gw_sigma->nnpFileName) == 0){keyarg_barf(dict,input_name,fun_key,ind);}  
-
+  //  2)\band_index_min{}
+  ind =   2;   
+  sscanf(dict[ind].keyarg,"%d",&int_arg);
+  if (int_arg<0){keyarg_barf(dict,input_name,fun_key,ind);}  
+  gw_sigma->n_list_sig_matels = int_arg;
+  //-----------------------------------------------------------------------------
+  //  3)\band_index_max{}
+  ind =   3;   
+  sscanf(dict[ind].keyarg,"%d",&int_arg);
+  if (int_arg<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  gw_sigma->np_list_sig_matels = int_arg; 
 
   //-----------------------------------------------------------------------------
   //  4)\screened_coulomb_cutoff{}
@@ -1284,62 +1309,71 @@ void Config::read_klist(GWBSEOPTS *gwbseopts){
   
   
 }//end routine 
-//========================================================================
 
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-// Reads the file containing set of n,n' bands for which we want to compute
-// sigma matrix elements.  The filename was read from the input option.
-// The file is text.  The first line is an integer=M>0 saying how many
-// n,n' pairs there are.  The next M lines have 2 integers per line n,n'.
-// This is one list for all k points.
-void Config::read_nnpbandlist(GW_SIGMA *gw_sigma){
+void Config::read_bandindices(GWBSEOPTS *gwbseopts){
 
-  // local variables
-  int i,n_nnp;
-  FILE *fp;
+  int nb; nbp
+  int n1,  n2;
+  int nbpt;
+  int c1[100],c2[100];
+  //double n1, n2;
+  //double nx, ky, kz, wt;
+  FILE *fb;
+  
+  // open bandlist.dat file. The name is hard-coded!
+  fb = cfopen("bandlist.dat","r");
+  fscanf(fb,"%d",&nb);
+//  ifstream read("bandlist.dat");
+  int lines;
+  read>>lines;//number of lines
+ for(int i=1;i<=lines;i++)
+  read>>c1[i]>>c2[i];
+  // this is necessary to malloc 
+//
+//  double **kvec   = new double *[nk];
+//  double **qvec   = new double *[nk];
+//  for(int i=0; i<nk ; i++){
+//    kvec[i] = new double [3];
+//    qvec[i] = new double [3];
+//  }
+//  gwbseopts->kvec = kvec;
+//  gwbseopts->kwt = kwt;
+//  gwbseopts->qvec = qvec;
 
-  // open the file
-  fp = cfopen((const char *)gw_sigma->nnpFileName,"r");
-  fscanf(fp,"%d",&n_nnp);
+  // good to check if nk is the same as gwbseopts.nkpt
+//  if(nb!=gwbseopts->nkpt){
+//    printf("The number of bands pair in the file bandlist.dat doesn't match with the length of the list %d vs. %d.\n",nb,gwbseopts->nbpt);
+//    EXIT(1);
+//  }
+//  
+//  for(i=0; i<nb; i++){
+//    fscanf(fb,"%lg %lg %lg %lg",&kx,&ky,&kz,&wt);
+//    gwbseopts->kvec[i][0] = kx;
+//    gwbseopts->kvec[i][1] = ky;
+//    gwbseopts->kvec[i][2] = kz;
+//    gwbseopts->kwt[i] = wt;
+//  }
+//  fclose(fb);
 
-    //printf("The size of band_list'  %d\n", sizeof(fp));
-  // do some check on n_nnp
-  if(n_nnp<1) {
-    printf("The number of n,n' lines to read = %d is < 1 and invalid in file %s\n",
-	   n_nnp,gw_sigma->nnpFileName);
-    EXIT(1);
-  }
-  gw_sigma->num_sig_matels = n_nnp;
+//  // calculate qpoint list
+//  for(int k=0; k<nk; k++){
+//    for(int i=0; i<3; i++){
+//      gwbseopts->qvec[k][i] = gwbseopts->kvec[k][i] - gwbseopts->kvec[0][i];
+//    }
+//  }
+  
+}//end routine 
 
-  // allocate space and read
-  gw_sigma->n_list_sig_matels = new int [n_nnp];
-  gw_sigma->np_list_sig_matels = new int [n_nnp];
-  int counter = 0;
-  for (i=0; i < n_nnp; i++) {
-    int in,inp;
-    fscanf(fp,"%d %d",&in,&inp);
-    gw_sigma->n_list_sig_matels[i] = in;
-    gw_sigma->np_list_sig_matels[i] = inp;
-    counter++;
- //}
 
-}
-  // check that the file had the right number of n,n' pair
-  //if (counter != n_nnp) {
-  if (counter != sizeof(fp)-1) {
-    printf("The number of n,n' lines in bandlist.dat does not match with the length of your list ",
-    //printf("The number of n,n' lines file %s is %d and not equal to specified %d\n",
-	   gw_sigma->nnpFileName,counter);
-    EXIT(1);
-  }
-
-  // close file
-  fclose(fp);
-}// end routine
-
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+  
+//========================================================================
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1429,6 +1463,7 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
 
   int nspin = gw_epsilon->nspin;
   int nkpt = gw_epsilon->nkpt;
+  int nbpt = gw_epsilon->nbpt;
   int nocc = gw_epsilon->nocc;
   int nunocc = gw_epsilon->nunocc;
   double*** Eocc;

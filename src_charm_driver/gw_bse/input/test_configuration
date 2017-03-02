@@ -1,0 +1,30 @@
+================================================
+cccccccccccccccccccccccccccccccccccccccccccccccc
+================================================
+~gen_GW[
+\gwbse_opt{on}       ERR:on or off
+\num_tot_state{12}       ERR:an integer > 0
+\num_occ_state{8}       ERR:an integer > 0
+\num_unocc_state{4}       ERR:an integer > 0
+\num_kpoint{8}       ERR:an integer > 0
+\num_spin{1}
+\coulb_trunc_opt{0}
+\statefile_binary_opt{off}
+]
+================================================
+
+~GW_epsilon[
+\EcutFFT{25}
+\Ecuteps{10}
+]
+
+~GW_sigma[
+nnp_list_file
+]
+
+
+~GW_parallel[
+\rows_per_chare{144}
+\cols_per_chare{144}
+\transpose_stages{1}
+]

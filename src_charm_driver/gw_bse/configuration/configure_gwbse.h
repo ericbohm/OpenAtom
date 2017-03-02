@@ -58,6 +58,7 @@ class Config {
 
    void read_lattice(GWBSEOPTS *);
    void read_klist(GWBSEOPTS *);
+   void read_nnpbandlist(GW_SIGMA *);
    void set_nfft( int (&)[3], double, GWBSEOPTS *);
 
 //============================================================================

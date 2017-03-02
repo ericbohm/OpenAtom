@@ -40,7 +40,6 @@ class GWBSEOPTS{
     char fileEpsMatInv[255];         // Chr: file name for inverse epsilon matrix
     char fileRho[255];               // Chr: file name for density
 
-
     
     //----------------
     //con-destruct:
@@ -142,8 +141,6 @@ class GWBSEOPTS{
 	  fprintf(fp,"%lg   %lg   %lg\n",qvec[i][0],qvec[i][1],qvec[i][2]);
       }
 
-
-      // dbles
       
       fclose(fp);
     }// end routine 
