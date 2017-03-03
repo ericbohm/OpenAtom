@@ -1296,48 +1296,79 @@ void Config::read_klist(GWBSEOPTS *gwbseopts){
 // n,n' pairs there are.  The next M lines have 2 integers per line n,n'.
 // This is one list for all k points.
 void Config::read_nnpbandlist(GW_SIGMA *gw_sigma){
+// local variables
+   int i,n_nnp,nread;
+   FILE *fp;
 
-  // local variables
-  int i,n_nnp;
-  FILE *fp;
+       // open the file
+         fp = cfopen((const char *) gw_sigma->nnpFileName,"r");
+           if ( fp == NULL ) {
+            printf("Can not open file %s to read n,n' pairs \n",gw_sigma->nnpFileName);
+            EXIT(1);
+            }
 
-  // open the file
-  fp = cfopen((const char *)gw_sigma->nnpFileName,"r");
-  fscanf(fp,"%d",&n_nnp);
+  // Read first line which should be a single integer giving us # of n,n' to read
+        nread = fscanf(fp,"%d",&n_nnp);
+        if (nread != 1) {
+        printf("Reading file %s did not read a single integer first which would be n_nnp\n",
+        gw_sigma->nnpFileName);
+        EXIT(1);
+        }
+        //printf("Thishe size of band_list'  %d\n", sizeof(fp));
+        // do some check on n_nnp
+       if ( n_nnp < 1) {
+        printf("The number of n,n' lines to read = %d is < 1 and invalid in file %s\n",
+        n_nnp,gw_sigma->nnpFileName);
+        EXIT(1);
+        }
+        gw_sigma->num_sig_matels = n_nnp;
 
-    //printf("The size of band_list'  %d\n", sizeof(fp));
-  // do some check on n_nnp
-  if(n_nnp<1) {
-    printf("The number of n,n' lines to read = %d is < 1 and invalid in file %s\n",
-	   n_nnp,gw_sigma->nnpFileName);
-    EXIT(1);
-  }
-  gw_sigma->num_sig_matels = n_nnp;
 
-  // allocate space and read
-  gw_sigma->n_list_sig_matels = new int [n_nnp];
-  gw_sigma->np_list_sig_matels = new int [n_nnp];
-  int counter = 0;
-  for (i=0; i < n_nnp; i++) {
-    int in,inp;
-    fscanf(fp,"%d %d",&in,&inp);
-    gw_sigma->n_list_sig_matels[i] = in;
-    gw_sigma->np_list_sig_matels[i] = inp;
-    counter++;
- //}
+        // check to see if the file has the right number of lines: start at
+        // the beginning of the n,n' list and read as many integer pairs until
+        // end of file (eof) is reached.  Keep track of how many pairs are read.
+        // not being able to read a pair of integers is an error
+        rewind(fp);
+        int counter = 0;
+        int in,inp;
+       // loop until end of file
+        while ( ! feof(fp) ) {
+        nread = fscanf(fp,"%d %d",&in,&inp);
+        // if we failed to read our pair of integers, get out
+        if (nread != 2)
+        break;
+                                                                                                     // if we read two integers, up the counter as we suceeded
+        counter++;
+        }
 
-}
-  // check that the file had the right number of n,n' pair
-  //if (counter != n_nnp) {
-  if (counter != sizeof(fp)-1) {
-    printf("The number of n,n' lines in bandlist.dat does not match with the length of your list ",
-    //printf("The number of n,n' lines file %s is %d and not equal to specified %d\n",
-	   gw_sigma->nnpFileName,counter);
-    EXIT(1);
-  }
+        // now check if counter matches correct line count
+        if (counter != n_nnp) {
+          printf("In file %s given n_nnp = %d does not match number of n,n' lines=%d in file\n",
+              gw_sigma->nnpFileName,n_nnp,counter);
+          EXIT(1);
+        }
 
-  // close file
-  fclose(fp);
+        // allocate space, rewind and read
+        gw_sigma->n_list_sig_matels = new int [n_nnp];
+        gw_sigma->np_list_sig_matels = new int [n_nnp];
+
+        rewind(fp);
+
+        for (i=0; i < n_nnp; i++) {
+
+          int in,inp;
+
+          nread = fscanf(fp,"%d %d",&in,&inp);
+
+          gw_sigma->n_list_sig_matels[i] = in;
+
+          gw_sigma->np_list_sig_matels[i] = inp;
+
+          counter++;
+
+        }
+        // close file
+ fclose(fp);
 }// end routine
 
 
