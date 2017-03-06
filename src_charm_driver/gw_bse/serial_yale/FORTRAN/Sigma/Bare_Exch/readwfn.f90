@@ -37,6 +37,7 @@ subroutine read_wfn( fname, sys, psi, k )
    character(len=100) :: makedirectory
    character(len=1) :: string1
    character(len=2) :: string2
+   integer :: FFTsize(3)
    integer :: iii,jjj,kkk
 
    character(len=100) :: fname
@@ -80,7 +81,6 @@ subroutine read_wfn( fname, sys, psi, k )
 
    ! number of total gvec, # spin, # kpt, # bands 
    read(iunit) psi%ng, psi%nspin, psi%nkpt, psi%nband
-   
    ng=psi%ng; ns=psi%nspin; nk=psi%nkpt; nb=psi%nband
    
    allocate( psi%gvec(3,ng) )
@@ -127,15 +127,7 @@ subroutine read_wfn( fname, sys, psi, k )
 
    do is = 1, ns
       do ik= 1, nk
-         write (string1,'(I1)') ik-1
-         subdir = 'Spin.0_Kpt.' // string1 // '_Bead.0_Temper.0'
-         makedirectory = 'mkdir ' // trim(dirname) // '/' // trim(subdir)
-         call system(makedirectory)
-
-         subdir2 = 'Spin.0_Kpt.0' // string1 // '_Bead.0_Temper.0'
-         makedirectory = 'mkdir ' // trim(dirname) // '/' // trim(subdir2)
-         call system(makedirectory)
-
+          
          iks = nk*(is-1)+ik
          ! k index
          psi%wk(iks)%kidx = ik
@@ -152,6 +144,44 @@ subroutine read_wfn( fname, sys, psi, k )
          psi%wk(iks)%eig(1:nb) = eig(1:nb,ik,is)
          psi%wk(iks)%occ(1:nb) = occ(1:nb,ik,is)
 
+         ! let's assign g vectors
+        
+         istart = sum( npwk(1:ik) ) - npwk(ik) + 1
+         iend = sum( npwk(1:ik) )
+
+         counter = 0
+         do ii = istart, iend
+            counter = counter + 1
+            psi%wk(iks)%gvec(1:3,counter) = psi%gvec( 1:3,igk_all(ii) )
+         enddo
+
+!         print*, npwk(ik)
+               
+         ! wfn coefficient Band index!!! npwk_all*nb = total in one spin channel   npwk(ik)*nb
+         do ib = 1, nb
+            istart = ( (is-1)*npwk_all + sum( npwk(1:ik-1) ) )*nb + npwk(ik)*(ib-1) + 1
+            iend = ( (is-1)*npwk_all + sum( npwk(1:ik-1) ) )*nb + npwk(ik)*ib
+            psi%wk(iks)%cg( 1:npwk(ik), ib ) = wfntmp(istart:iend)
+
+         enddo
+
+      enddo
+   enddo
+
+if (0 .gt. 0) then ! 1 .gt. 0 to create state files
+
+call set_FFTsize( psi, FFTsize )
+do is = 1, ns
+    do ik= 1, nk
+        write (string1,'(I1)') ik-1
+         subdir = 'Spin.0_Kpt.' // string1 // '_Bead.0_Temper.0'
+         makedirectory = 'mkdir ' // trim(dirname) // '/' // trim(subdir)
+         call system(makedirectory)
+
+         subdir2 = 'Spin.0_Kpt.0' // string1 // '_Bead.0_Temper.0'
+         makedirectory = 'mkdir ' // trim(dirname) // '/' // trim(subdir2)
+         call system(makedirectory)
+      
          eigenvalfilename = trim(dirname) // '/' // trim(subdir) // '/' // 'eigenvalues.in'
 
          open (unit = 7, file = eigenvalfilename)
@@ -168,27 +198,8 @@ subroutine read_wfn( fname, sys, psi, k )
          enddo
          close(7)
 
-         ! let's assign g vectors
-        
-         istart = sum( npwk(1:ik) ) - npwk(ik) + 1
-         iend = sum( npwk(1:ik) )
 
-         counter = 0
-         do ii = istart, iend
-            counter = counter + 1
-            psi%wk(iks)%gvec(1:3,counter) = psi%gvec( 1:3,igk_all(ii) )
-         enddo
-
-
-!         print*, npwk(ik)
-               
-         ! wfn coefficient Band index!!! npwk_all*nb = total in one spin channel   npwk(ik)*nb
-         do ib = 1, nb
-            istart = ( (is-1)*npwk_all + sum( npwk(1:ik-1) ) )*nb + npwk(ik)*(ib-1) + 1
-            iend = ( (is-1)*npwk_all + sum( npwk(1:ik-1) ) )*nb + npwk(ik)*ib
-            psi%wk(iks)%cg( 1:npwk(ik), ib ) = wfntmp(istart:iend)
-
-if (0 .gt. 0) then ! 1 .gt. 0 to create state files
+      do ib = 1, nb
             write (string1,'(I1)') is
             filename = trim('state')
 !            filename = filename//trim('_')//trim(string1)
@@ -219,7 +230,7 @@ if (0 .gt. 0) then ! 1 .gt. 0 to create state files
             filename = trim(dirname) // '/' // trim(subdir2) // '/' // trim(filename)//trim(string2)//'.out'
 !            print *, 'Writing to file for ib =', ib, 'on file', filename
             open (unit = 7, file = filename)
-            write (7,*), npwk(ik), 12, 12, 12
+            write (7,*), npwk(ik), FFTsize(1), FFTsize(2), FFTsize(3)
             do iii=1,npwk(ik)
               write (7,*), REAL(REAL(psi%wk(iks)%cg(iii, ib))), REAL(AIMAG(psi%wk(iks)%cg(iii, ib))), &
               & psi%wk(iks)%gvec(0,iii), &
@@ -229,13 +240,10 @@ if (0 .gt. 0) then ! 1 .gt. 0 to create state files
 
             gzfile = 'gzip ' // filename
             call system(gzfile)
-
-endif
-         enddo
-
       enddo
-   enddo
-
+    enddo
+  enddo
+endif
    deallocate( npwk, igk_all, eig, occ, wfntmp )
    
 end subroutine
