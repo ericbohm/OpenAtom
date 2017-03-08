@@ -263,7 +263,7 @@ void PsiCache::computeFs(PsiMessage* msg) {
 #ifdef TESTING
 {
   FVectorCache *fvec_cache = fvector_cache_proxy.ckLocalBranch();
-//  fvec_cache->computeFTilde();
+  fvec_cache->computeFTilde(fs);
 //  fvec_cache->applyCutoff(msg->accept_size, msg->accept);
 //  fvec_cache->init(140);
 //compute ftilde first - similar to ckloop above for all L's
@@ -527,14 +527,12 @@ void fTildeWorkUnit(int first, int last, void* result, int count, void* params) 
   GWBSE *gwbse = GWBSE::get();
   int* nfft;
   nfft = gwbse->gw_parallel.fft_nelems;
-  int ndata = nfft[0]*nfft[1]*nfft[2];
   int vector_count = 1;
-  int direction = 1;
+  int direction = -1;
   int L = gwbse->gw_parallel.L;
   FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
 
 
-  for(int k=first;k<=last;k++) //this is unoccupied states
   for (int i=0; i < L; i++){ //for all the L*n_list_size, L are computed in this node
     // First set up the data structures in the FFTController
     fft_controller->setup_fftw_3d(nfft, direction);
@@ -542,27 +540,25 @@ void fTildeWorkUnit(int first, int last, void* result, int count, void* params) 
     fftw_complex* out_pointer = fft_controller->get_out_pointer();
 
     // Pack our data, do the fft, then get the output
-    put_into_fftbox(nfft, &fs[k*i*psi_size], in_pointer);
+    put_into_fftbox(nfft, &fs[i*psi_size], in_pointer);
     fft_controller->do_fftw();
-    fftbox_to_array(ndata, out_pointer, &fs[k*i*psi_size], 1); //Now cached on the same partitions
+    fftbox_to_array(psi_size, out_pointer, &fs[i*psi_size], direction); //Now cached on the same partitions
     // replace f_vector to f_tilde_vector
   }
 }
 
 //Each node calculates its own ftilde
-void FVectorCache::computeFTilde(){
+void FVectorCache::computeFTilde(complex *fs_in){
 
   // Create the FComputePacket for this set of f vectors and start CkLoop
-  f_packet.size = psi_size;
-  f_packet.fs = fs;
+  f_packet.size = ndata;
+  f_packet.fs = fs_in;
   
   
 #ifdef USE_CKLOOP
   CkLoop_Parallelize(fTildeWorkUnit, 1, &f_packet, n_list_size, 0, n_list_size - 1);
 #else
-  for (int n = 0; n < n_list_size; n++) {
-    fTildeWorkUnit(n,n,NULL,1,&f_packet);
-  }
+    fTildeWorkUnit(0,0,NULL,1,&f_packet);
 #endif
 }
 

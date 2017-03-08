@@ -111,7 +111,7 @@ class FVectorCache : public CBase_FVectorCache {
     FVectorCache();
     void init(int size_xy);
     void putFVec(Phase4Message* msg);
-    void computeFTilde();
+    void computeFTilde(complex* fs_in);
     void putFVec(int n, complex* fs_input);
     complex* getFVec(int n, int l, int start, int size);
     void applyCutoff(int size, int* accept);

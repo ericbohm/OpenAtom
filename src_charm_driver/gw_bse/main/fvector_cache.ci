@@ -4,7 +4,6 @@ module fvector_cache {
 
   nodegroup FVectorCache {
     entry FVectorCache();
-    entry void computeFTilde();
     entry void applyCutoff(int size, int accept_result[size]);
   };
 };

@@ -204,7 +204,7 @@ void EpsMatrix2D::bareExchange() {
       complex* f = f_cache->getFVec(i, l, thisIndex.x, block_size);//start_row, num_rows);
       int end = block_size;
       if(thisIndex.x==6)
-        end = ndata%(matrix_dimension/eps_rows);
+        end = ndata%block_size;
       for(int ii=0;ii<end;ii++){
         complex tmp = f[ii]*f[ii];
         contribution += sqrt(tmp.getMagSqr());
