@@ -10,6 +10,7 @@
 
 #define eps_rows 20
 #define eps_cols 20
+#define NSIZE 4
 #define IDX_eps(r,c) ((r)*eps_cols + (c))
 
 EpsMatrix2D::EpsMatrix2D(){
@@ -184,32 +185,30 @@ void EpsMatrix2D::screenedExchange() {
       }
     }
   }
-  CkCallback cb(CkReductionTarget(Controller, screenedExchangeComplete), controller_proxy);
-  contribute(sizeof(complex), &contribution, CkReduction::sum_double, cb);
+//  CkCallback cb(CkReductionTarget(Controller, screenedExchangeComplete), controller_proxy);
+//  contribute(sizeof(complex), &contribution, CkReduction::sum_double, cb);
 }
 
 void EpsMatrix2D::bareExchange() {
   complex* tile = new complex[num_rows * num_cols];
   complex contribution(0.0,0.0);
-  const int N = 2; // TODO: Give an actual value
+
   FVectorCache* f_cache = fvector_cache_proxy.ckLocalBranch();
-  for (int i = 0; i < N; i++) {
-    for (int j = 0; j < N; j++) {
+  int ndata = nfft[0]*nfft[1]*nfft[2];
+  int block_size = ndata/(matrix_dimension/eps_rows);
+  if(ndata%(matrix_dimension/eps_rows) > 0)
+    block_size += 2;
+  if(thisIndex.x== thisIndex.y)
+  for (int i = 0; i < NSIZE; i++) {//ib = 5 to 8 actually, map to a number from 0
       for (int l = 0; l < L; l++) {
-        complex* fi = f_cache->getFVec(i, l, start_row, num_rows);
-        complex* fj = f_cache->getFVec(j, l, start_col, num_cols);
-        for (int r = 0; r < num_rows; r++) {
-          for (int c = 0; c < num_cols; c++) {
-            tile[IDX_eps(r,c)] += fi[r]*fj[c];
-          }
-        }
+      complex* f = f_cache->getFVec(i, l, thisIndex.x, block_size);//start_row, num_rows);
+      int end = block_size;
+      if(thisIndex.x==6)
+        end = ndata%(matrix_dimension/eps_rows);
+      for(int ii=0;ii<end;ii++){
+        complex tmp = f[ii]*f[ii];
+        contribution += sqrt(tmp.getMagSqr());
       }
-    }
-  }
-  // TODO: Need to get v(c) from somewhere
-  for (int r = 0; r < num_rows; r++) {
-    for (int c = 0; c < num_cols; c++) {
-      contribution += /*v(c)**/tile[IDX_eps(r,c)];
     }
   }
   CkCallback cb(CkReductionTarget(Controller, bareExchangeComplete), controller_proxy);

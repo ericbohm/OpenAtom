@@ -115,14 +115,25 @@ class FVectorCache : public CBase_FVectorCache {
     void putFVec(int n, complex* fs_input);
     complex* getFVec(int n, int l, int start, int size);
     void applyCutoff(int size, int* accept);
+    void findIndices();
   private:
     FComputePacket f_packet;
     unsigned L, psi_size, fcount, n_list_size, node_count;
+    int ndata, totalSize, data_size_x, data_size_y;
+    int eps_chares_x, eps_chares_y, my_chare_count, my_chare_start;
+    int eps_start_chare_x, eps_start_chare_y, eps_end_chare_x, eps_end_chare_y;
+    int *my_eps_chare_indices_x;
+    int *my_eps_chare_indices_y;
+    int *data_offset_x;
+    int *data_offset_y;
+    int count;
+    complex sum;
     complex* fs;
     int num_chares, num_chares_x, num_chares_y, chare_factor;
     int *charesX;
     int *charesY;
-    int *local_to_global_offset;
+    int *local_offset;
+    int *global_offset;
     int num_rows, num_cols;
     int *offsets;//[num_chares*2];//already calculated
 };

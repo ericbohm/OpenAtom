@@ -14,6 +14,7 @@
 
 #define eps_rows 20
 #define eps_cols 20
+#define NSIZE 4
 
 void init_plan_lock();
 
@@ -234,6 +235,7 @@ void PsiCache::computeFs(PsiMessage* msg) {
   // Create the FComputePacket for this set of f vectors and start CkLoop
   f_packet.size = psi_size;
   f_packet.unocc_psi = msg->psi;
+
   if ( qindex == 0 ) { 
     f_packet.occ_psis = psis_shifted[ikq]; 
     f_packet.e_occ = e_occ_shifted[msg->spin_index][ikq];
@@ -259,11 +261,11 @@ void PsiCache::computeFs(PsiMessage* msg) {
 
 
 #ifdef TESTING
-if(msg->state_index-L<2){
+{
   FVectorCache *fvec_cache = fvector_cache_proxy.ckLocalBranch();
-  fvec_cache->computeFTilde();
-  fvec_cache->applyCutoff(msg->accept_size, msg->accept);
-  fvec_cache->init(140);
+//  fvec_cache->computeFTilde();
+//  fvec_cache->applyCutoff(msg->accept_size, msg->accept);
+//  fvec_cache->init(140);
 //compute ftilde first - similar to ckloop above for all L's
   fvec_cache->putFVec(msg->state_index-L, fs);
 }
@@ -380,90 +382,139 @@ void PsiCache::computeUmklappFactor(int uklpp[3]){
 
 }//end function
 
+void FVectorCache::findIndices(){
+
+  int count = 0;
+  for(int i=0;i<eps_chares_x;i++){
+    for(int j=0;j<eps_chares_y;j++){
+      count++;
+      if(count == my_chare_start+1){
+        eps_start_chare_x = i;
+        eps_start_chare_y = j;
+      }
+      if(count == my_chare_start+my_chare_count){
+        eps_end_chare_x = i;
+        eps_end_chare_y = j;
+        return;
+      }
+    }
+  }
+
+  return;
+}
+
 FVectorCache::FVectorCache() {
+  eps_chares_x = 7;
+  eps_chares_y = 7;
+  totalSize = 0;
   GWBSE *gwbse = GWBSE::get();
   L = gwbse->gw_parallel.L;
-  psi_size = gwbse->gw_parallel.n_elems;
-  fcount = 0;
-  n_list_size = 2; //TODO: to be greater than 0, read in from user input file
+  int total_eps_chares = eps_chares_x*eps_chares_y;
 
-  node_count = CkNumNodes();// For testing purposes
+  my_chare_count = total_eps_chares/CkNumNodes();
 
-  chare_factor = 1;
-  int num_chares_x = node_count*chare_factor; // 4*4 chares per node, change this
-  int num_chares_y = node_count*chare_factor;
-  num_rows = psi_size/(num_chares_x);
-  num_cols = psi_size/(num_chares_y);
-  num_chares = num_chares_x * num_chares_y;
-  fs = new complex[n_list_size*L*chare_factor*(num_rows+num_cols)];//Assuming num_rows = num_cols
+  my_chare_start = CkMyNode()*my_chare_count;
+  int remaining = total_eps_chares%CkNumNodes();
+
+  if(CkMyNode()>0)
+    my_chare_start += remaining;
+
+  if(CkMyNode()==0)
+    my_chare_count += remaining;
+
+  my_eps_chare_indices_x = new int[my_chare_count];
+  my_eps_chare_indices_y = new int[my_chare_count];
+
+  findIndices();
+  int count = 0;
+  for(int i=eps_start_chare_x;i<=eps_end_chare_x;i++){
+    int j = 0;
+    if(i==eps_start_chare_x)
+      j = eps_start_chare_y;
+    int j_end = eps_chares_y-1;
+    if(i==eps_end_chare_x)
+      j_end = eps_end_chare_y;
+    while(j<=j_end){
+      my_eps_chare_indices_x[count] = i;
+      my_eps_chare_indices_y[count++] = j;
+      j++;
+    }
+  }
+
+  ndata = gwbse->gw_parallel.n_elems;
+  data_size_x = ndata/eps_chares_x;
+  if(ndata%eps_chares_x > 0)
+    data_size_x += 2;
+  data_size_y = ndata/eps_chares_y;
+    if(ndata%eps_chares_y > 0)
+      data_size_y += 2;
+  data_offset_x = new int[my_chare_count];
+  data_offset_y = new int[my_chare_count];
+
+  for(int i=0;i<my_chare_count;i++){
+    data_offset_x[i] = my_eps_chare_indices_x[i]*data_size_x;
+    data_offset_y[i] = my_eps_chare_indices_y[i]*data_size_y;
+  }
+
+  int size_x = data_size_x;
+  int size_y = data_size_y;
+  local_offset =  new int[my_chare_count*2];
+  global_offset = new int[my_chare_count*2];
+  for(int i=0;i<my_chare_count;i++){
+    global_offset[2*i] = data_offset_x[i];//totalSize;
+    local_offset[2*i] = totalSize;
+    totalSize += size_x;
+
+    global_offset[2*i+1] = data_offset_y[i];//totalSize;
+    local_offset[2*i+1] = totalSize;
+    totalSize += size_y;
+  }
+
+  fs = new complex[NSIZE*L*totalSize];
+
 }
 
 void FVectorCache::init(int size_xy){
-  int num_chares_x = node_count*chare_factor; // 4*4 chares per node, change this
-  int num_chares_y = node_count*chare_factor;
-  num_rows = size_xy/(num_chares_x);
-  num_cols = size_xy/(num_chares_y);
-
-  charesX = new int[num_chares_x];
-  charesY = new int[num_chares_y];
-
-  int count_i = 0, count_j=0;
-  for(int i=chare_factor*CkMyNode();i<chare_factor*(CkMyNode()+1);i++) {
-    charesX[count_i++] = i;
-    for(int j=chare_factor*CkMyNode();j<chare_factor*(CkMyNode()+1);j++){
-      charesY[count_j++] = j;
-    }
-  }
-#ifdef DEBUG_FVECTOR
-  CkPrintf("\n-------------Storing chares (%d,%d) to (%d,%d) on PE %d\n", 
-          chare_factor*CkMyNode(), chare_factor*CkMyNode(), chare_factor*(CkMyNode()+1), chare_factor*(CkMyNode()+1), CkMyPe());
-#endif
-  int vector_size = num_chares*(num_rows+num_cols);
-
-  local_to_global_offset = new int[chare_factor*chare_factor*2];//Assuming a max of each chares asking for disjoint offsets
-
-  int count = 0;
-  for(int i=0;i<chare_factor;i++){
-    for(int j=0;j<chare_factor;j++){
-      int global_offset_x = charesX[i]*num_rows;
-      int global_offset_y = charesY[j]*num_cols;
-      local_to_global_offset[count++] = global_offset_x;
-      local_to_global_offset[count++] = global_offset_y;
-    }
-  } 
 }
 
 void FVectorCache::putFVec(int n, complex* fs_input){ //fs_input has all L's corresponding to n
-  for(int l=0;l<L;l++){
-    for(int o=0;o<num_chares*2;o+=2){ //num_chares = count
-      int local_offset_x = o;
-      int local_offset_y = o+1;
-      int global_offset_x = local_to_global_offset[local_offset_x];
-      int global_offset_y = local_to_global_offset[local_offset_y];
+ sum = (0.0,0.0);
+ for(int i=0;i<my_chare_count;i++){
+    if(my_eps_chare_indices_x[i] == my_eps_chare_indices_y[i])
+    for(int l=0;l<L;l++){
+      int global_x = global_offset[2*i];
+      global_x += l*ndata;
+      int local_x = local_offset[2*i];
+      local_x += n*L*totalSize + l*totalSize;
 
-      complex *tostore = &(fs[((n*n_list_size)+l)*local_offset_x]); //This is where we locally store
-      complex *src = &(fs_input[l*global_offset_x]);
-      memcpy(tostore,src,num_rows*sizeof(complex)); //should this be a memcpy?
+      complex *store_x = &fs[local_x];
+      complex *load_x = &fs_input[global_x];
+      for(int ii=0;ii<data_size_x;ii++)
+        store_x[ii] = load_x[ii];
 
-      tostore = &(fs[((n*n_list_size)+l)*local_offset_y]);
-      src = &(fs_input[l*global_offset_y]);
-      memcpy(tostore, src,num_cols*sizeof(complex)); //should this be a memcpy?
+      int global_y = global_offset[2*i+1];
+      global_y += l*ndata;
+      int local_y = local_offset[2*i+1];
+      local_y += n*L*totalSize + l*totalSize;
+
+      complex *store_y = &fs[local_y];
+      complex *load_y = &fs_input[global_y];
+      for(int ii=0;ii<data_size_x;ii++)
+        store_y[ii] = load_y[ii];
     }
   }
 }
 
-complex* FVectorCache::getFVec(int n, int l, int start, int size){
-  int local_offset = 0;
-
-  for(int i=0;i<chare_factor*chare_factor*2;i++){
-    if(local_to_global_offset[i] == start){
-      local_offset = i;
-      break;
+complex* FVectorCache::getFVec(int n, int l, int chare_start_index, int size){
+  for(int i=0;i<my_chare_count;i++){
+    if(my_eps_chare_indices_x[i] == my_eps_chare_indices_y[i] && chare_start_index == my_eps_chare_indices_x[i]){
+      int local_x = local_offset[2*i];
+      local_x += n*L*totalSize + l*totalSize;
+      complex *f = &fs[local_x];
+      return f;
     }
   }
-
-  complex *toget = &(fs[n*l*local_offset]);
-  return toget;
+  return NULL;
 }
 
 

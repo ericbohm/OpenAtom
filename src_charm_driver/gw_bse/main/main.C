@@ -114,8 +114,11 @@ Main::Main(CkArgMsg* msg) {
   CkPrintf("[MAIN] Creating %ix%i matrix chares with %i rows and %i cols each\n",
       dimension/nrows, dimension/ncols, nrows, ncols);
 
+  CProxy_EpsMap map = CProxy_EpsMap::ckNew();
+  CkArrayOptions opts;
+  opts.setMap(map);
 
-  eps_matrix2D_proxy = CProxy_EpsMatrix2D::ckNew();
+  eps_matrix2D_proxy = CProxy_EpsMatrix2D::ckNew(opts);
   eps_proxy1D = CProxy_EpsMatrix1D::ckNew();
 
   pmatrix2D_proxy = CProxy_PMatrix2D::ckNew(dimension/nrows, dimension/ncols);

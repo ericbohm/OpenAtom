@@ -16,5 +16,8 @@ mainmodule main {
   mainchare Main {
     entry Main(CkArgMsg* msg);
     entry void done();
-  };  
+  };
+  group EpsMap : CkArrayMap {
+    entry EpsMap();
+  };
 }; 
