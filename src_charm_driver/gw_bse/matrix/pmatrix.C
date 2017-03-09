@@ -97,7 +97,7 @@ void PMatrix1D::generateEpsilon(std::vector<int> accept){
   int counter = 0;
   if(thisIndex == local_mtx_size_1d_x-1){
     
-    int padded_send_size = local_mtx_size_1d_x + (eps_cols - (local_mtx_size_1d_x%eps_cols));
+    int padded_send_size = inew + (eps_cols - (inew%eps_cols));
     int remainder = eps_cols - (inew+1)%eps_cols;
 //    CkPrintf("\nSending to i=%d,j=%d\n", remainder, padded_send_size);
     for(int i=inew+1;counter<remainder;i++){
