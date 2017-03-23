@@ -39,6 +39,7 @@ class PMatrix2D : public CBase_PMatrix2D {
     unsigned matrix_dimension; // Size of the entire matrix
     unsigned num_rows, num_cols, start_row, start_col; // The shape of our data
     unsigned trans_count, num_chares; // SDAG variables
+    unsigned completed_chunks;
     complex* data;
     int* nfft; // number of fft grids in each direction
     unsigned qindex;

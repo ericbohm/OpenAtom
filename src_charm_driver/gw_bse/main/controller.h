@@ -84,7 +84,7 @@ class PsiCache : public CBase_PsiCache {
     void computeFs(PsiMessage*);
     void reportFTime();
     complex* getPsi(unsigned, unsigned, unsigned) const;
-    complex* getF(unsigned) const;
+    complex* getF(unsigned,unsigned) const;
     int getWrote();
   private:
     void kqIndex(unsigned, unsigned&, int*);
@@ -93,7 +93,8 @@ class PsiCache : public CBase_PsiCache {
     // Used for CkLoop parameters
     FComputePacket f_packet;
 
-    unsigned K, L, psi_size, received_psis, qindex;
+    unsigned K, L, psi_size, received_psis, qindex, pipeline_stages, received_chunks;
+    // TODO: Flatten arrays?
     complex*** psis;
     complex*** psis_shifted;
     complex* fs;

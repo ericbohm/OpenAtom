@@ -154,7 +154,7 @@ void PMatrix2D::applyFs() {
   int LDF = matrix_dimension; // Leading dimension of fs
   complex beta = 1.0;
   char opA = 'N', opB = 'C';
-  complex* fs = psi_cache->getF(0);
+  complex* fs = psi_cache->getF(0,completed_chunks);
   ZGEMM(&opA, &opB, &N, &M, &K,
     &alpha, &(fs[start_col]), &LDF,
     &(fs[start_row]), &LDF,
@@ -162,13 +162,13 @@ void PMatrix2D::applyFs() {
 #else
   int K = 1; // If using ZGERC, we compute each outer product one at a time
   for (int l = 0; l < L; l++) {
-    complex* f = psi_cache->getF(l);
+    complex* f = psi_cache->getF(l,completed_chunks);
     ZGERC(&N, &M, &alpha, &(f[start_col]), &K, &(f[start_row]), &K, data, &N);
   }
 #endif // endif for ifdef USE_ZGEMM
 #else
   for (int l = 0; l < L; l++) {
-    complex* f = psi_cache->getF(l);
+    complex* f = psi_cache->getF(l,completed_chunks);
     for (int r = 0; r < num_rows; r++) {
       for (int c = 0; c < num_cols; c++) {
         data[IDX(r,c)] += f[r+start_row]*f[c+start_col].conj() * -1.0;
@@ -176,6 +176,7 @@ void PMatrix2D::applyFs() {
     }
   }
 #endif // endif for ifdef USE_LAPACK
+  completed_chunks++;
   contribute(CkCallback(CkReductionTarget(Controller, psiComplete), controller_proxy));
   total_time += CmiWallTimer() - start;
 }

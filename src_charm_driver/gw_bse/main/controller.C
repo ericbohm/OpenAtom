@@ -116,6 +116,7 @@ PsiCache::PsiCache() {
   L = gwbse->gw_parallel.L;
   qindex = Q_IDX;
   psi_size = gwbse->gw_parallel.n_elems;
+  pipeline_stages = gwbse->gw_parallel.pipeline_stages;
   received_psis = 0;
   psis = new complex**[K];
   for (int k = 0; k < K; k++) {
@@ -133,7 +134,7 @@ PsiCache::PsiCache() {
     }
   }
 
-  fs = new complex[L*psi_size];
+  fs = new complex[L*psi_size*pipeline_stages];
 
   umklapp_factor = new complex[psi_size];
 
@@ -239,7 +240,7 @@ void PsiCache::computeFs(PsiMessage* msg) {
     f_packet.e_occ = e_occ[msg->spin_index][ikq]; 
   }
   f_packet.e_unocc = e_unocc[msg->spin_index][msg->k_index][msg->state_index-L];
-  f_packet.fs = fs;
+  f_packet.fs = fs + (L*psi_size*(received_chunks%pipeline_stages));
 
   if (uproc) { f_packet.umklapp_factor = umklapp_factor; }
   else { f_packet.umklapp_factor = NULL; }
@@ -251,6 +252,7 @@ void PsiCache::computeFs(PsiMessage* msg) {
     computeF(l,l,NULL,1,&f_packet);
   }
 #endif
+  received_chunks++;
 
   // Let the matrix chares know that the f vectors are ready
   CkCallback cb(CkReductionTarget(PMatrix2D, applyFs), pmatrix2D_proxy);
@@ -270,9 +272,10 @@ complex* PsiCache::getPsi(unsigned ispin, unsigned ikpt, unsigned istate) const 
   return psis[ikpt][istate];
 }
 
-complex* PsiCache::getF(unsigned idx) const {
+complex* PsiCache::getF(unsigned idx, unsigned req_no) const {
   CkAssert(idx >= 0 && idx < L);
-  return &(fs[idx*psi_size]);
+  CkAssert(req_no < received_chunks && req_no >= received_chunks - pipeline_stages);
+  return &(fs[idx*psi_size+(L*psi_size*(req_no%pipeline_stages))]);
 }
 
 void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
