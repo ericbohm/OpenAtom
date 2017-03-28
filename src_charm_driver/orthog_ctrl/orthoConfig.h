@@ -43,7 +43,6 @@ namespace cp {
         int gemmSplit;
 	std::string eigenFileName;
 
-
         void pup(PUP::er &p)
         {
           p|isDynamics;

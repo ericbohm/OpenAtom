@@ -431,7 +431,7 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
   /*========================================================================*/
   /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 44;
+  *num_dict = 46;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_cp")-1;
 
   /*========================================================================*/
@@ -682,6 +682,16 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
   strcpy((*dict)[i].error_mes,"on or off");
   strcpy((*dict)[i].keyword,"cp_grimme_Vdw");
   strcpy((*dict)[i].keyarg,"off");
+  /* 45)\cp_dyn_update{on,off} */
+  i = 45;
+  strcpy((*dict)[i].error_mes,"on,off");
+  strcpy((*dict)[i].keyword,"cp_dyn_update");
+  strcpy((*dict)[i].keyarg,"on");
+  /* 46)\cp_dyn_reset_frq{#} */
+  i = 46;
+  strcpy((*dict)[i].error_mes,"an integer > 0");
+  strcpy((*dict)[i].keyword,"cp_dyn_reset_frq");
+  strcpy((*dict)[i].keyarg,"5");
 
   /*========================================================================*/
   /*------------------------------------------------------------------------*/

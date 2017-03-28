@@ -172,6 +172,11 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 
   massPIMDScal = (double *)fftw_malloc(numPIMDBeads*sizeof(double));
   initPIMD();
+  
+  //reset copy for dynamics reset
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+  if(sim->cp_dyn_update==0)  allocateAtomsCopy();
+
 
   //-----------------------------------------------------------------------------
 }//end routine
@@ -602,7 +607,13 @@ void AtomsCompute::integrateAtoms(){
 #endif
 
 #ifndef  _CP_DEBUG_SCALC_ONLY_ 
-  ATOMINTEGRATE::ctrl_atom_integrate(*iteration,natm,len_nhc,cp_min_opt,
+  int fakeIteration=*iteration;
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+  if(sim->cp_dyn_update==0 && (fakeIteration+1) % sim->cp_dyn_reset_frq ==0) {
+    fakeIteration=0;
+    //    CkPrintf("fake iteration set to %d at iteration %d\n",fakeIteration, *iteration);
+  }
+  ATOMINTEGRATE::ctrl_atom_integrate(fakeIteration,natm,len_nhc,cp_min_opt,
       cp_wave_opt,cp_bomd_opt,tol_reached,iextended_on,atoms,atomsNHC,myid,
       &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
       myoutput_on,natmNow,natmStr,natmEnd,mybead, switchMoveNow, 
@@ -651,7 +662,6 @@ void AtomsCompute::integrateAtoms(){
   //      zero forces, outputAtmEnergy, atomsDone
 
   zeroforces();
-
   if(move_atoms==1){
     if(natmNow>0){
       sendAtoms(eKinetic_loc,eKineticNhc_loc,potNhc_loc,potPIMDChain_loc,natmNow,natmStr,natmEnd);
@@ -676,6 +686,12 @@ void AtomsCompute::integrateAtoms(){
 #ifdef _CP_DEBUG_ATMS_
       CkPrintf("{%d}[%d] AtomsCompute::integrateAtoms contributing to atomsDone atomsPIMDXrecv is %d atomsCMrecv %d iteration %d\n ", thisInstance.proxyOffset, thisIndex, atomsPIMDXrecv, atomsCMrecv, *iteration);     
 #endif
+      CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+      if(*iteration >0 && sim->cp_dyn_update==0 && ((*iteration+2) % sim->cp_dyn_reset_frq)==0)
+	{
+	  copyAtomsFromReset();
+	  //	  CkPrintf("[%d] reset Atoms for step %d\n",thisIndex, *iteration+2);
+	}
 
       CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
@@ -710,6 +726,16 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   int nproc  = nChareAtoms;
 
   //==========================================================================
+  //Implement CP dyn reset option
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+  if(*iteration==0 && sim->cp_dyn_update==0)
+    {
+      initAtomsCopy();
+      if(thisIndex==0)
+	CkPrintf("initializing atom reset image %d\n", *iteration);
+    }
+
+  //==========================================================================
   // Get the real space atom forces plus these 4 quantities
 
   pot_ewd_rs   = 0.0;
@@ -717,7 +743,7 @@ void AtomsCompute::startRealSpaceForces(int t_reached){
   vself        = 0.0;
   vbgr         = 0.0;
   potPerdCorr  = 0.0;
-
+  
 #ifdef _NAN_CHECK_
   for(int i=0;i<natm;i++)
     {
@@ -797,6 +823,12 @@ void AtomsCompute::energyReady() {
 #ifdef _CP_DEBUG_ATMS_
       CkPrintf("{%d}[%d] AtomsCompute::energyReady contributing to atomsDone atomsPIMDXrecv is %d atomsCMrecv %d iteration %d\n ", thisInstance.proxyOffset, thisIndex, atomsPIMDXrecv, atomsCMrecv, *iteration);     
 #endif
+      CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+      if(*iteration >0 && sim->cp_dyn_update==0 && ((*iteration+2) % sim->cp_dyn_reset_frq)==0)
+	{
+	  copyAtomsFromReset();
+	  //	  CkPrintf("[%d] reset Atoms for step %d\n",thisIndex, *iteration+2);
+	}
 
       CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
@@ -1219,6 +1251,13 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
 #ifdef _CP_DEBUG_ATMS_
 	CkPrintf("{%d}[%d] AtomsCompute::acceptAtoms contributing to atomsDone atomsPIMDXrecv is %d atomsCMrecv %d iteration %d\n ", thisInstance.proxyOffset, thisIndex, atomsPIMDXrecv, atomsCMrecv, *iteration);     
 #endif
+	CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+	if(*iteration >0 && sim->cp_dyn_update==0 && ((*iteration+2) % sim->cp_dyn_reset_frq)==0)
+	  {
+	    copyAtomsFromReset();
+	    //	    CkPrintf("[%d] reset Atoms for step %d\n",thisIndex, *iteration+2);
+	  }
+
 	CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
 	contribute(sizeof(int),&i,CkReduction::sum_int,cb);
 	atomsOutputReady=false;
@@ -1241,11 +1280,20 @@ void AtomsCompute::atomsDone(CkReductionMsg *msg)
   int move_atoms = 0;
   if(cp_min_opt==0 && cp_wave_opt==0) { move_atoms = 1; }
   if(cp_bomd_opt==1 && tol_reached==1) { move_atoms = 1; }
+
   // This means that all the atomCompute chares are done integrating
   // in minimization.  Tell the atomCaches they can go ahead now.
   delete msg;
   if(move_atoms==1)
-    bcastAtomsToAtomCache();
+    {
+      CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+      if(*iteration >0 && sim->cp_dyn_update==0 && ((*iteration+2) % sim->cp_dyn_reset_frq)==0)
+	{
+	  copyAtomsFromReset();
+	  CkPrintf("[%d] reset Atoms for step %d\n",thisIndex, *iteration+2);
+	}
+      bcastAtomsToAtomCache();
+    }
   else
     UatomsCacheProxy[thisInstance.proxyOffset].atomsDone();
 }
@@ -1277,6 +1325,12 @@ void AtomsCompute::accept_PIMD_CM(AtomXYZMsg *msg){
 #endif
       outputAtmEnergy();
       int i=0;
+      CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+      if(*iteration >0 && sim->cp_dyn_update==0 && ((*iteration+2) % sim->cp_dyn_reset_frq)==0)
+	{
+	  copyAtomsFromReset();
+	  //	  CkPrintf("[%d] reset Atoms for step %d\n",thisIndex, *iteration+2);
+	}
       CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
       atomsOutputReady=false;
@@ -1439,6 +1493,13 @@ void AtomsCompute::accept_PIMD_x(AtomXYZMsg* msg) {
 #endif
 	outputAtmEnergy();
 	atomsOutputReady=false;
+	CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+	if(*iteration >0 && sim->cp_dyn_update==0 && ((*iteration+2) % sim->cp_dyn_reset_frq)==0)
+	  {
+	    copyAtomsFromReset();
+	    //	    CkPrintf("[%d] reset Atoms for step %d\n",thisIndex, *iteration+2);
+	  }
+
 	CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);     
 	int i=1;
 	contribute(sizeof(int),&i,CkReduction::sum_int,cb);

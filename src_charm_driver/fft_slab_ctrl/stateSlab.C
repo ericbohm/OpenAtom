@@ -435,6 +435,94 @@ void initRealStateSlab(RealStateSlab *rs, int ngrid_a,int ngrid_b, int ngrid_c,
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//  the reset image based on an existing slab
+//==============================================================================
+GStateSlabResetCopy::GStateSlabResetCopy(GStateSlab *gs) {
+  packedRedPsi   = (complex *)fftw_malloc(gs->nkx0*sizeof(complex));
+  packedRedPsiV  = (complex *)fftw_malloc(gs->nkx0*sizeof(complex));
+  packedPlaneData     = (complex *)fftw_malloc(gs->numPoints*sizeof(complex));
+  packedForceData     = (complex *)fftw_malloc(gs->numFull*sizeof(complex));
+  packedVelData       = (complex *)fftw_malloc(gs->numPoints*sizeof(complex));
+  packedPlaneDataScr   = (complex *)fftw_malloc(gs->numPoints*sizeof(complex));
+  packedPlaneDataTemp  = (complex *)fftw_malloc(gs->numPoints*sizeof(complex));
+  packedPlaneDataTemp1 = (complex *)fftw_malloc(gs->numPoints*sizeof(complex));  
+  packedPlaneDataTemp2 = (complex *)fftw_malloc(gs->numPoints*sizeof(complex));
+  packedPlaneDataTemp3 = (complex *)fftw_malloc(gs->numPoints*sizeof(complex));  
+  xNHC       = new double **[gs->nck_nhc_cp];
+  xNHCP      = new double **[gs->nck_nhc_cp];
+  vNHC       = new double **[gs->nck_nhc_cp];
+  fNHC       = new double **[gs->nck_nhc_cp];
+  for(int k = 0;k<gs->nck_nhc_cp;k++){
+    xNHC[k]   = new double *[gs->num_nhc_cp];
+    xNHCP[k]  = new double *[gs->num_nhc_cp];
+    vNHC[k]   = new double *[gs->num_nhc_cp];
+    fNHC[k]   = new double *[gs->num_nhc_cp];
+    for(int i=0;i<gs->num_nhc_cp;i++){
+      xNHC[k][i]   = new double[gs->len_nhc_cp];
+      xNHCP[k][i]  = new double[gs->len_nhc_cp];
+      vNHC[k][i]   = new double[gs->len_nhc_cp];
+      fNHC[k][i]   = new double[gs->len_nhc_cp];
+    }//endfor
+  }//endfor
+
+}//end routine
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//  initialize the reset image based on an existing slab
+//==============================================================================
+void GStateSlabResetCopy::initFromGStateSlab(GStateSlab *gs) {
+  if(gs->packedRedPsi)    memcpy(packedRedPsi, gs->packedRedPsi, gs->nkx0*sizeof(complex));
+  if(gs->packedRedPsiV) memcpy(packedRedPsiV, gs->packedRedPsiV, gs->nkx0*sizeof(complex));
+  if(gs->packedPlaneData) memcpy(packedPlaneData, gs->packedPlaneData, gs->numPoints*sizeof(complex));
+  if(gs->packedForceData) memcpy(packedForceData, gs->packedForceData, gs->numFull*sizeof(complex));
+  if(gs->packedVelData) memcpy(packedVelData, gs->packedVelData, gs->numPoints*sizeof(complex));
+  if(gs->packedPlaneDataScr) memcpy(packedPlaneDataScr, gs->packedPlaneDataScr, gs->numPoints*sizeof(complex));
+  if(gs->packedPlaneDataTemp) memcpy(packedPlaneDataTemp, gs->packedPlaneDataTemp, gs->numPoints*sizeof(complex));
+  if(gs->packedPlaneDataTemp1) memcpy(packedPlaneDataTemp1, gs->packedPlaneDataTemp1, gs->numPoints*sizeof(complex));
+  if(gs->packedPlaneDataTemp2) memcpy(packedPlaneDataTemp2, gs->packedPlaneDataTemp2, gs->numPoints*sizeof(complex));
+  if(gs->packedPlaneDataTemp3) memcpy(packedPlaneDataTemp3, gs->packedPlaneDataTemp3, gs->numPoints*sizeof(complex));
+  for(int k = 0;k<gs->nck_nhc_cp;k++){
+    for(int i=0;i<gs->num_nhc_cp;i++){
+      memcpy(xNHC[k][i], gs->xNHC[k][i], sizeof(double)* gs->len_nhc_cp);
+      memcpy(xNHCP[k][i], gs->xNHCP[k][i], sizeof(double)* gs->len_nhc_cp);
+      memcpy(vNHC[k][i], gs->vNHC[k][i], sizeof(double)* gs->len_nhc_cp);
+      memcpy(fNHC[k][i], gs->fNHC[k][i], sizeof(double)* gs->len_nhc_cp);
+    }
+  }
+
+
+}
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+// overwrite the GStateSlab with the retained image
+//==============================================================================
+void GStateSlabResetCopy::copyOntoGStateSlab(GStateSlab *gs) {
+  if(gs->packedRedPsi)    memcpy(gs->packedRedPsi, packedRedPsi, gs->nkx0*sizeof(complex));
+  if(gs->packedRedPsiV) memcpy(gs->packedRedPsiV, packedRedPsiV, gs->nkx0*sizeof(complex));
+  if(gs->packedPlaneData) memcpy(gs->packedPlaneData, packedPlaneData, gs->numPoints*sizeof(complex));
+  if(gs->packedForceData) memcpy(gs->packedForceData, packedForceData, gs->numFull*sizeof(complex));
+  if(gs->packedVelData) memcpy(gs->packedVelData, packedVelData, gs->numPoints*sizeof(complex));
+  if(gs->packedPlaneDataScr) memcpy(gs->packedPlaneDataScr, packedPlaneDataScr, gs->numPoints*sizeof(complex));
+  if(gs->packedPlaneDataTemp) memcpy(gs->packedPlaneDataTemp, packedPlaneDataTemp, gs->numPoints*sizeof(complex));
+  if(gs->packedPlaneDataTemp1) memcpy(gs->packedPlaneDataTemp1, packedPlaneDataTemp1, gs->numPoints*sizeof(complex));
+  if(gs->packedPlaneDataTemp2) memcpy(gs->packedPlaneDataTemp2, packedPlaneDataTemp2, gs->numPoints*sizeof(complex));
+  if(gs->packedPlaneDataTemp3) memcpy(gs->packedPlaneDataTemp3, packedPlaneDataTemp3, gs->numPoints*sizeof(complex));
+  for(int k = 0;k<gs->nck_nhc_cp;k++){
+    for(int i=0;i<gs->num_nhc_cp;i++){
+      memcpy(gs->xNHC[k][i], xNHC[k][i], sizeof(double)* gs->len_nhc_cp);
+      memcpy(gs->xNHCP[k][i], xNHCP[k][i], sizeof(double)* gs->len_nhc_cp);
+      memcpy(gs->vNHC[k][i], vNHC[k][i], sizeof(double)* gs->len_nhc_cp);
+      memcpy(gs->fNHC[k][i], fNHC[k][i], sizeof(double)* gs->len_nhc_cp);
+    }
+  }
+
+}
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 RealStateSlab::~RealStateSlab() {
   //==============================================================================

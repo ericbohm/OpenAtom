@@ -1074,6 +1074,36 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
 
   /*========================================================================*/
+  /* 45)\cp_dyn_update{on,off} */
+  index=45;
+  ifound = 0;
+  if(strcasecmp(dict[index].keyarg,"on")==0)    {
+    gensimopts->cp_dyn_update = 1; ifound++;}
+  if(strcasecmp(dict[index].keyarg,"off")==0)    {
+    gensimopts->cp_dyn_update = 0; ifound++;}
+  if(ifound != 1){
+    keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
+  if(gensimopts->cp_dyn_update==0){
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("You are in danger! Your cp_dyn_update is off! \n");
+    PRINTF("Are you debugging some CS code? \n");
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+  }
+  /*========================================================================*/
+  /* 46)\cp_dyn_reset_frq{#} */
+  sscanf(dict[46].keyarg,"%lg",&real_key_arg);
+  gensimopts->cp_dyn_reset_frq =  (int)(real_key_arg);
+  index=46;
+  if((gensimopts->cp_dyn_reset_frq  <4 ))
+    keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+  if(gensimopts->cp_dyn_update==0 && gensimopts->cp_dyn_reset_frq <= 0) {
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("cp_dyn_reset_frq should be >=3 for debugging\n");
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+  }
+
+
+  /*========================================================================*/
 }/*end routine*/ 
 /*========================================================================*/
 
@@ -3350,6 +3380,25 @@ void set_sim_params_finale(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     }/*endif*/
   }/*endif*/
 
+  /*
+  if( (cp_on && gensimopts->cp_min_update==0 )) {
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("CP Minimization reset option invalid if CP \n");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
+  }
+
+
+  if( (cp_min_on && gensimopts->cp_dyn_update )) {
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("CP Dynamics reset option invalid if CP minimization \n");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
+  }
+  */
+
   if((cp_on || cp_min_on) && (mdenergy_ctrl->iget_pe_real_inter_freq != 1)){
     PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
     PRINTF("For CP calculations, interatomic PE should be \n");
@@ -3742,6 +3791,19 @@ void set_sim_params_finale(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     gensimopts->cp_pimd          = 0;
     gensimopts->cp_wave_pimd     = 0;
   }/*endif*/
+
+  /*========================================================================*/
+  // force screen output frequency to be one if CP_dyn_update off and CP is on
+  if(cp_on && gensimopts->cp_dyn_update==0)
+    {
+      if(genfilenames->iwrite_screen != 1){
+	PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+	PRINTF("Forcing write screen freq = 1  \n");
+	PRINTF("To make cp_dyn_update off debugging useful\n");
+	PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+      }/*endif*/
+      genfilenames->iwrite_screen = 1;
+    }/*endif*/
 
  /*========================================================================*/
   }/*end routine*/ 

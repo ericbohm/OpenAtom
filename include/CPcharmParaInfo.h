@@ -155,6 +155,8 @@ class CPcharmParaInfo {
    int cp_min_opt;
    int cp_bomd_opt;
    int cp_min_update; 
+   int cp_dyn_update; 
+   int cp_dyn_reset_frq;
    int cp_min_cg;
    int cp_min_std;
    int cp_force_complex_psi;
@@ -275,6 +277,8 @@ class CPcharmParaInfo {
      cp_min_opt   = s.cp_min_opt;
      cp_bomd_opt  = s.cp_bomd_opt;
      cp_min_update= s.cp_min_update;
+     cp_dyn_update= s.cp_dyn_update;
+     cp_dyn_reset_frq= s.cp_dyn_reset_frq;
      cp_min_cg    = s.cp_min_cg;
      cp_min_std   = s.cp_min_std;
      cp_force_complex_psi = s.cp_force_complex_psi;
@@ -518,9 +522,12 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
      cp_min_opt   = s.cp_min_opt;
      cp_bomd_opt  = s.cp_bomd_opt;
      cp_min_update= s.cp_min_update;
+     cp_dyn_update= s.cp_dyn_update;
+     cp_dyn_reset_frq= s.cp_dyn_reset_frq;
      cp_min_cg    = s.cp_min_cg;
      cp_min_std   = s.cp_min_std;
      cp_force_complex_psi = s.cp_force_complex_psi;
+     cp_lsda      = s.cp_lsda;         //RAZ: added cp_lsda
      rhoRsubplanes= s.rhoRsubplanes;
      sizeX        = s.sizeX;
      sizeY        = s.sizeY;
@@ -826,6 +833,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
       p|ndump_frq;  p| nscreen_frq; p|istart_typ_cp; p|cp_grad_corr_on;
       p|cp_opt;     p|cp_std;     p|cp_wave;
       p|cp_min_opt; p|cp_min_update; p|cp_min_std; p|cp_force_complex_psi;
+      p|cp_dyn_update; p|cp_dyn_reset_frq;
       p|cp_bomd_opt;
       p|cp_min_cg; p|rhoRsubplanes;
       p|cp_lsda;    //RAZ:  Added cp_lsda

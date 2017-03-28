@@ -15,7 +15,6 @@ orthoCfg.grainSize     = config.orthoGrainSize;
 orthoCfg.instanceIndex = thisInstance.getPO();
 orthoCfg.maxTolerance  = sim->tol_norb;
 orthoCfg.uponToleranceFailure = CkCallback(CkIndex_GSpaceDriver::needUpdatedPsiV(), UgSpaceDriverProxy[thisInstance.getPO()]);
-
 // Fill in the paircalc configs that are instance dependent
 cfgSymmPC.gSpaceAID            = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
 cfgAsymmPC.gSpaceAID           = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();

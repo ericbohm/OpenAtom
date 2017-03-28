@@ -85,7 +85,9 @@ module gSpaceDriver
     entry void computeMinimization() {
       serial "SDAG_minInitialSetup" {
         if (thisIndex.x == 0 && thisIndex.y == 0) {
-          CkPrintf("Starting minimization with a max of %d steps\n", config.maxIter);
+	  CkPrintf("\n********************************************************************************\n");
+          CkPrintf("* Starting minimization with a max of %d steps\n", config.maxIter);
+	  CkPrintf("********************************************************************************\n");
         }
         myGSpaceObj->min_step = 0;
         myGSpaceObj->exitFlag = 0;
@@ -197,7 +199,13 @@ module gSpaceDriver
     entry void computeDynamics() {
       serial "SDAG_dynInitialSetup" {
         if (thisIndex.x == 0 && thisIndex.y == 0) {
-          CkPrintf("Starting dynamics for %d steps\n", myGSpaceObj->num_steps);
+	  CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+	  CkPrintf("\n********************************************************************************\n");
+	  if(sim->cp_dyn_update==0)
+	    CkPrintf("* Starting dynamics for %d steps with Reset Frequency %d\n", myGSpaceObj->num_steps, sim->cp_dyn_reset_frq);	
+	  else
+	    CkPrintf("* Starting dynamics for %d steps\n", myGSpaceObj->num_steps);
+	  CkPrintf("********************************************************************************\n\n");
         }
       }
       //! Compute our initial psi

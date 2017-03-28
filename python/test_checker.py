@@ -15,12 +15,17 @@ def check_result(test_dict):
            return [false, "mismatch"]
 	# Snip the iteration being checked out into a temporary file
         result=[]
+        thisComp=[]
         for index, name in enumerate(outputFiles):
                 output_temp = name+'.temp'
                 ref_temp = refFiles[index]+'.temp'
                 snip_iteration(iteration, name, output_temp)
                 snip_iteration(iteration, refFiles[index], ref_temp)
-                result+=compare_iteration(output_temp, ref_temp, sig_figs)
+                thisComp=compare_iteration(output_temp, ref_temp, sig_figs)
+                if(thisComp[0] == False):
+                        return thisComp
+                else:
+                        result+=thisComp
 
 	return result
 

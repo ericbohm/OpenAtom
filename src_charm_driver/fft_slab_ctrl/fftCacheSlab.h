@@ -164,6 +164,36 @@ class GStateSlab {
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+// exists to hold a copy of the state that we reset to every cp_dyn_reset_frq
+// which is a correctness debugging process, not a part of production physics
+//==============================================================================
+class GStateSlabResetCopy {
+ public:
+    complex *packedPlaneData;   
+    complex *packedPlaneDataTemp; 
+    complex *packedPlaneDataTemp1; 
+    complex *packedPlaneDataTemp2; 
+    complex *packedPlaneDataTemp3; 
+    complex *packedPlaneDataScr; 
+    complex *packedForceData; 
+    complex *packedVelData; 
+    complex *packedRedPsi;
+    complex *packedRedPsiV;
+    double  ***xNHC;
+    double  ***xNHCP;
+    double  ***vNHC;
+    double  ***fNHC;
+    GStateSlabResetCopy(GStateSlab *);
+    GStateSlabResetCopy() {packedPlaneData=NULL; packedPlaneDataTemp=NULL; 
+      packedForceData=NULL; packedPlaneDataScr=NULL; 
+      packedVelData=NULL;}
+    ~GStateSlabResetCopy();
+    void copyOntoGStateSlab(GStateSlab *gs);
+    void initFromGStateSlab(GStateSlab *gs);
+};
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 class RealStateSlab {
   public:

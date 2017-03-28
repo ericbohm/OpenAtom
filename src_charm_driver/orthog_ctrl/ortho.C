@@ -43,6 +43,7 @@
  */
 //============================================================================
 
+
 #include "ortho.h"
 #include "orthoHelper.h"
 #include "diagonalizer.h"
@@ -529,7 +530,6 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 
   // revise this to do a matmul replacing multiplyforgamma
   if(cfg.isDynamics){
-
     if(toleranceCheckOrthoT)
     {// replace orthoT with the identity matrix
       if(thisIndex.x!=thisIndex.y)
@@ -558,6 +558,10 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 	for(int i=0; i<m*n; i++)
 	  lambda[i]=lambda[i]* 2.0;
       }
+#ifdef _CP_ORTHO_DUMP_OTMAT_
+  dumpMatrix("otmat",(double *)orthoT, m, n,numGlobalIter,thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+#endif
+
     matA1.multiply(1, 0, orthoT, Ortho::gamma_done_cb, (void*) this,
         thisIndex.x, thisIndex.y);
     matB1.multiply(1, 0, lambda, Ortho::gamma_done_cb, (void*) this,

@@ -41,6 +41,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int cp_std          = gensimopts->cp;
   int cp_wave         = gensimopts->cp_wave;
   int cp_min_update   = gensimopts->cp_min_update;
+  int cp_dyn_update   = gensimopts->cp_dyn_update;
+  int cp_dyn_reset_frq= gensimopts->cp_dyn_reset_frq;
   int cp_min_cg       = genminopts->cp_min_cg;
   int cp_min_std      = genminopts->cp_min_std;
   int *kmax           = cpewald->kmax_cp_dens_cp_box;
@@ -160,6 +162,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   sim->ncoef          = ncoef;
 
   sim->cp_min_update  = cp_min_update;
+  sim->cp_dyn_update  = cp_dyn_update;
+  sim->cp_dyn_reset_frq= cp_dyn_reset_frq;
   sim->cp_min_opt     = cp_min_opt;
   sim->cp_bomd_opt    = cp_bomd_opt;
   sim->cp_min_cg      = cp_min_cg;

@@ -282,6 +282,10 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
     PCCommManager symmPCmgr;
     /// Manages communication with the asymmetric paircalc array
     PCCommManager asymmPCmgr;
+
+    /// debugging tool for dynamics
+    GStateSlabResetCopy *resetCopy;
+
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
     complex *savedvksBf;
     complex *savedforceBf;

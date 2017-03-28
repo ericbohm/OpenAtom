@@ -94,6 +94,9 @@ class AtomsCompute: public CBase_AtomsCompute {
     bool atomsOutputReady;
     bool energyGroupReady;
 
+    Atom *atomsReset;
+    AtomNHC *atomsNHCReset;
+    FastAtoms fastAtomsReset;
 
 
     AtomsCompute(CkMigrateMessage *m) {}
@@ -236,9 +239,77 @@ class AtomsCompute: public CBase_AtomsCompute {
       }//endfor
     }//end routine
     //==========================================================================
+    void allocateAtomsCopy(){
+      atomsReset           = new Atom[natm];
+      atomsNHCReset        = new AtomNHC[natm];
+      fastAtomsReset.x    = new double[natm];
+      fastAtomsReset.y    = new double[natm];
+      fastAtomsReset.z    = new double[natm];
+      fastAtomsReset.fx   = new double[natm];
+      fastAtomsReset.fy   = new double[natm];
+      fastAtomsReset.fz   = new double[natm];
+    }
+    
+    void initAtomsCopy(){
+      for(int i=0;i<natm;i++){
+        fastAtomsReset.x[i]  = fastAtoms.x[i];
+        fastAtomsReset.y[i]  = fastAtoms.y[i];
+        fastAtomsReset.z[i]  = fastAtoms.z[i];
+        fastAtomsReset.fx[i] = fastAtoms.fx[i];
+        fastAtomsReset.fy[i] = fastAtoms.fy[i];
+        fastAtomsReset.fz[i] = fastAtoms.fz[i];
+	atomsReset[i].x = atoms[i].x; 
+	atomsReset[i].y = atoms[i].y; 
+	atomsReset[i].z = atoms[i].z; 
+	atomsReset[i].fx = atoms[i].fx; 
+	atomsReset[i].fy = atoms[i].fy; 
+	atomsReset[i].fz = atoms[i].fz; 
+	atomsReset[i].vx = atoms[i].vx; 
+	atomsReset[i].vy = atoms[i].vy; 
+	atomsReset[i].vz = atoms[i].vz; 
+	for(int j=0;j<atomsNHC[i].len_nhc;j++){
+	  atomsNHCReset[i].fx[j] = atomsNHC[i].fx[j]; 
+	  atomsNHCReset[i].fy[j] = atomsNHC[i].fy[j]; 
+	  atomsNHCReset[i].fz[j] = atomsNHC[i].fz[j]; 
+	  atomsNHCReset[i].vx[j] = atomsNHC[i].vx[j]; 
+	  atomsNHCReset[i].vy[j] = atomsNHC[i].vy[j]; 
+	  atomsNHCReset[i].vz[j] = atomsNHC[i].vz[j]; 
+	}//endfor
+      }//endfor
+    }//end routine
 
+    void copyAtomsFromReset(){
+      for(int i=0;i<natm;i++){
+        fastAtoms.x[i]  = fastAtomsReset.x[i];
+        fastAtoms.y[i]  = fastAtomsReset.y[i];
+        fastAtoms.z[i]  = fastAtomsReset.z[i];
+        fastAtoms.fx[i] = fastAtomsReset.fx[i];
+        fastAtoms.fy[i] = fastAtomsReset.fy[i];
+        fastAtoms.fz[i] = fastAtomsReset.fz[i];
+	atoms[i].x = atomsReset[i].x; 
+	atoms[i].y = atomsReset[i].y; 
+	atoms[i].z = atomsReset[i].z; 
+	atoms[i].fx = atomsReset[i].fx; 
+	atoms[i].fy = atomsReset[i].fy; 
+	atoms[i].fz = atomsReset[i].fz; 
+	atoms[i].vx = atomsReset[i].vx; 
+	atoms[i].vy = atomsReset[i].vy; 
+	atoms[i].vz = atomsReset[i].vz; 
+	atomsNHC[i].posKT=0.0;
+	for(int j=0;j<atomsNHC[i].len_nhc;j++){
+	  atomsNHC[i].fx[j] = atomsNHCReset[i].fx[j]; 
+	  atomsNHC[i].fy[j] = atomsNHCReset[i].fy[j]; 
+	  atomsNHC[i].fz[j] = atomsNHCReset[i].fz[j]; 
+	  atomsNHC[i].vx[j] = atomsNHCReset[i].vx[j]; 
+	  atomsNHC[i].vy[j] = atomsNHCReset[i].vy[j]; 
+	  atomsNHC[i].vz[j] = atomsNHCReset[i].vz[j]; 
+	}//endfor
+      }//endfor
+    }//end routine
     //==========================================================================
-}; //end class
+};//end class
+
+
 //==========================================================================
 /*@}*/
 #endif // ATOMSCOMPUTE_H

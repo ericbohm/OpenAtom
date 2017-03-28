@@ -22,6 +22,8 @@ class GENSIMOPTS {
     int cp_min;                 // Opt: Full CP minimization                 
     int cp_bomd;                // Opt: Born-Oppenheimer molecular dynamics
     int cp_min_update;          // Opt: Turn on/off updates at each step for debugging
+    int cp_dyn_update;          // Opt: Turn on/off updates at each step for debugging dynamics
+    int cp_dyn_reset_frq;       // Opt: frequency at which to reset for debugging
     int cp_wave_min;            // Opt: CP min, wave function only           
     int cp_any_on;              // Opt: Is cp of any type ``on''
     int debug;                  // Opt: Internal use-backdoor chks           
@@ -57,6 +59,8 @@ class GENSIMOPTS {
       cp_min           = 0;
       cp_bomd          = 0;
       cp_min_update    = 0;
+      cp_dyn_update    = 0;
+      cp_dyn_reset_frq = 0;
       cp_wave_min      = 0;
       cp_any_on        = 0;
       debug            = 0;
@@ -94,6 +98,8 @@ class GENSIMOPTS {
       p | cp_min;
       p | cp_bomd;
       p | cp_min_update;
+      p | cp_dyn_update;
+      p | cp_dyn_reset_frq;
       p | cp_wave_min;
       p | cp_any_on;
       p | debug;
@@ -138,6 +144,8 @@ class GENSIMOPTS {
       fprintf(fp,"cp_min %d\n",cp_min);
       fprintf(fp,"cp_bomd %d\n",cp_bomd);
       fprintf(fp,"cp_min_update %d\n",cp_min_update);
+      fprintf(fp,"cp_dyn_update %d\n",cp_dyn_update);
+      fprintf(fp,"cp_dyn_reset_frq %d\n",cp_dyn_reset_frq);
       fprintf(fp,"cp_wave_min %d\n",cp_wave_min);
       fprintf(fp,"cp_any_on %d\n",cp_any_on);
       fprintf(fp,"debug %d\n",debug);

@@ -278,6 +278,7 @@ void printForce(void *param, void *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_State_GSpacePlane::CP_State_GSpacePlane(
+					   
     /// numplanes in x per state
     int sizeX,
     /// numplanes per slab (Gspace: in x dimension)
@@ -549,7 +550,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     redPlane = (redPlane < 0 ? redPlane+nchareG : redPlane);
     redPlane = (redPlane > nchareG-1 ? redPlane-nchareG : redPlane);
   }//endif
-
+  resetCopy=NULL;
 
   //---------------------------------------------------------------------------
   }//end routine
@@ -1126,6 +1127,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
 #endif // _CP_SUBSTEP_TIMING_
 
     //---------------------------------------------------------------------------
+    
 
   }// end routine
   //============================================================================
@@ -1217,6 +1219,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       CkAbort("Error: GSpace cannot startNewIter() before finishing the PsiV loop\n");
     }//endif
 
+    
+
     CPcharmParaInfo *sim = CPcharmParaInfo::get();
     int cp_min_opt = sim->cp_min_opt;
     int cp_bomd_opt = sim->cp_bomd_opt;
@@ -1230,10 +1234,16 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     // Output psi at start of minimization for debugging
     if(iteration==0 && cp_min_opt==1 && config.screenOutputPsi){screenOutputPsi();}
 
-    // Incremenet iteration counter
+    // Increment iteration counter
     doneNewIter = true;
     iteration++;
-    
+
+    if(iteration==1 && sim->cp_dyn_update==0)
+      {
+	resetCopy= new GStateSlabResetCopy(&gs);
+	resetCopy->initFromGStateSlab(&gs);
+      }
+
     if(thisIndex.x==0 && thisIndex.y==0 && doOutput){
       fprintf(temperScreenFile,"===============================================================================\n");
       fprintf(temperScreenFile,"===============================================================================\n");
@@ -1756,6 +1766,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
       fclose(fp);
     }//endif
 #endif
+
+
 
     //-----------------------------------------------------------------------------
   }//end routine
@@ -2713,7 +2725,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     }
 #endif
     fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
-    CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
+    int fakeIteration=iteration;
+    if(sim->cp_dyn_update==0 && fakeIteration %sim->cp_dyn_reset_frq ==0) 
+      {
+	fakeIteration=1;
+      }
+    CPINTEGRATE::CP_integrate(ncoef,istate,fakeIteration,forces,forcesold,psi_g,
         coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
         mNHC,v0NHC,a2NHC,a4NHC,kTCP,gamma_conj_grad,&fictEke,
         nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,
@@ -2992,6 +3009,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(
     int numPoints  = gs.numPoints;
 
     if(cp_min_opt==0){
+      //overwrite the gslab with the saved values
+      if(iteration >1 && sim->cp_dyn_update==0 && (iteration+1) % sim->cp_dyn_reset_frq==0)
+	{
+	  resetCopy->copyOntoGStateSlab(&gs);
+	}
+
       int ncoef     = gs.numPoints;
       complex *scr  = gs.packedPlaneDataScr; //save non-orthog psi
       CmiMemcpy(scr,psi,sizeof(complex)*ncoef);
