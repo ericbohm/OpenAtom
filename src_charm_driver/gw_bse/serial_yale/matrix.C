@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <stdio.h>
 #include "class_defs/matrix.h"
 #include "print_util.h"
 
@@ -62,6 +63,22 @@ void CMATRIX::printRow(int row, char* fileName){
     }
     fclose(fp);
     
+}
+
+
+// print all rows for P matrix
+void CMATRIX::printAllRows(char* fileName){
+    FILE* fp = fopen(fileName, "w");
+    fprintf(fp,"column G vector      P.re     P.im\n");
+		for (int ir=0; ir<nrow;ir++){
+			fprintf(fp, "\n%d ", ir);
+	    for (int ic=0; ic<ncol; ic++){
+        complex data;
+        data = get(ir, ic);
+        fprintf(fp, "%lg  %lg", data.re, data.im);
+			}
+    }
+    fclose(fp);
 }
 
 // print row for epsilon matrix

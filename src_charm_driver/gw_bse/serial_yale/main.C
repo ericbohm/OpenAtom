@@ -309,7 +309,13 @@ nq = 1;
       //------------------------ DONE Polarizability calculations -------------------------//
 
 
-      
+#ifdef VERIFICATION
+      if(iq==1) {
+        char fname[100];
+        sprintf(fname,"PMatrix_iq%d", iq);
+        P[is][iq]->printAllRows(fname);
+      }
+#endif
 
 #ifdef FULLRUN      
       // prep to calculate Epsmat
