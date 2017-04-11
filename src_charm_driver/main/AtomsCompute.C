@@ -1213,17 +1213,29 @@ void AtomsCompute::acceptAtoms(AtomMsg *msg) {
     //          maxIter is 1 more than you need, slightly annoying but livable.
 
     int output_on = config.atmOutput;
-    if(output_on==1 && *iteration<=config.maxIter-1){ 
-      int pi_beads   = 1;
-      int iwrite_atm = 0;
-      int myid       = thisIndex;
-      ATOMOUTPUT::ctrl_piny_output(*iteration,natm,len_nhc,pi_beads,myid,atoms,atomsNHC,
-          &iwrite_atm,output_on,TemperIndex,PIBeadIndex);
-      if(myid==0 && iwrite_atm>0){
-        fprintf(temperScreenFile,"-----------------------------------\n");
-        fprintf(temperScreenFile, "Writing atoms to disk at time %d\n",*iteration);
-        fprintf(temperScreenFile,"-----------------------------------\n");
-      }//endif
+    if(output_on==1 && *iteration<=config.maxIter-1 ){ 
+      CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
+      if(((*iteration+2) % sim->cp_dyn_reset_frq)==0) //|| (((*iteration+1) % sim->cp_dyn_reset_frq)==0))
+	{
+	  if(thisIndex==0){
+	    fprintf(temperScreenFile,"-----------------------------------\n");
+	    fprintf(temperScreenFile, "Skipping atoms to disk at time %d due to reset frq\n",*iteration);
+	    fprintf(temperScreenFile,"-----------------------------------\n");
+	  }//endif
+	}
+      else
+	{
+	  int pi_beads   = 1;
+	  int iwrite_atm = 0;
+	  int myid       = thisIndex;
+	  ATOMOUTPUT::ctrl_piny_output(*iteration,natm,len_nhc,pi_beads,myid,atoms,atomsNHC,
+				       &iwrite_atm,output_on,TemperIndex,PIBeadIndex);
+	  if(myid==0 && iwrite_atm>0){
+	    fprintf(temperScreenFile,"-----------------------------------\n");
+	    fprintf(temperScreenFile, "Writing atoms to disk at time %d\n",*iteration);
+	    fprintf(temperScreenFile,"-----------------------------------\n");
+	  }//endif
+	}//endif
     }//endif
 
     //---------------------------------------------------------------------------------
