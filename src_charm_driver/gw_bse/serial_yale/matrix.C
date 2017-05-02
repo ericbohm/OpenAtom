@@ -68,17 +68,17 @@ void CMATRIX::printRow(int row, char* fileName){
 
 // print all rows for P matrix
 void CMATRIX::printAllRows(char* fileName){
-    FILE* fp = fopen(fileName, "w");
-    fprintf(fp,"column G vector      P.re     P.im\n");
 		for (int ir=0; ir<nrow;ir++){
-			fprintf(fp, "\n%d ", ir);
+			char fname[100];
+      sprintf(fname,"PMatrix_row%d", ir);
+      FILE* fp = fopen(fname, "w");
 	    for (int ic=0; ic<ncol; ic++){
         complex data;
         data = get(ir, ic);
         fprintf(fp, "%lg  %lg", data.re, data.im);
 			}
+			fclose(fp);
     }
-    fclose(fp);
 }
 
 // print row for epsilon matrix

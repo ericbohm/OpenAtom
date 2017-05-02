@@ -403,6 +403,15 @@ void States::readState(char *fromFile)
       CkExit();
   }
 
+#ifdef VERIFICATION
+  char filename[100];
+  sprintf(filename,"state_0_%d_%d", thisIndex.y, thisIndex.z);
+  FILE *fp = fopen(filename, "w");
+  for(int pNo=0;pNo<numCoeff;pNo++) {
+    fprintf(fp, "%lg %lg ", stateCoeff[pNo].re, stateCoeff[pNo].im);
+  }
+  fclose(fp);
+#endif
   //----------------------------------------------------------------------------------
 }//end routine
 //===================================================================================

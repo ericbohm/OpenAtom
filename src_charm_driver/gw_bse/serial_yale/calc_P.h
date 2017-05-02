@@ -4,7 +4,7 @@
 #include "class_defs/interpolator.h"
 #include "class_defs/laplace.h"
 #include "include/ckcomplex.h"
-#include "/sw/include/fftw3.h"
+#include "fftw3.h"
 #include "util.h"
 #include "my_fftw.h"
 

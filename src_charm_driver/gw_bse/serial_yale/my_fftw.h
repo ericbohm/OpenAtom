@@ -1,4 +1,4 @@
-#include "/sw/include/fftw3.h"
+#include "fftw3.h"
 #include "util.h"
 
 void setup_fftw_3d(int [3], int);

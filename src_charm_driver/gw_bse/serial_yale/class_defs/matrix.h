@@ -59,7 +59,7 @@ class CMATRIX{
     void printDiag(char*);
     void printIJdiff(int,char*);
     void printallG(char*,GSPACE*);
-
+    void printAllRows(char*);
 };
 
 

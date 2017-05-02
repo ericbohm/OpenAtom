@@ -81,6 +81,22 @@ void read_states(STATES *psi){
 	// close state file
 	fp.close();
 
+
+#ifdef VERIFICATION
+//if(iq == 1)
+{
+	ofstream o_fp;
+	char op_filename[100];
+	sprintf(op_filename, "state_0_%d_%d", istate, psi->ikpt);
+
+  o_fp.open(op_filename);
+	for (int i=0; i<ng; i++){
+		o_fp << psi->coeff[0][i].re << psi->coeff[0][i].im;
+	}
+	o_fp.close();
+}
+#endif
+
 	// clean the stringstream
 	sb.str("");
     }// end istate loop
@@ -105,6 +121,6 @@ void read_states(STATES *psi){
         }
     }
     fp.close();
-    
+
 }
 
