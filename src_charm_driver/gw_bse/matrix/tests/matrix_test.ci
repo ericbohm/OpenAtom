@@ -1,0 +1,58 @@
+mainmodule matrix_test {
+  extern module matrix;
+
+  mainchare MatrixTester {
+    entry MatrixTester(CkArgMsg*);
+
+    entry [reductiontarget] void matrixCreated();
+    entry [reductiontarget] void matrixCopied();
+    entry [reductiontarget] void matrixChecked();
+    entry void test() {
+      serial {
+        mat_rows = 1024; mat_cols = 1024;
+        tile_rows = 64; tile_cols = 64;
+        chare_rows = mat_rows / tile_rows;
+        chare_cols = mat_cols / tile_cols;
+
+        CkCallback cb(CkReductionTarget(MatrixTester, matrixCreated), thisProxy);
+        mat1 = CProxy_Matrix::ckNew(mat_rows, mat_cols, tile_rows, tile_cols, cb, chare_rows, chare_cols);
+        mat2 = CProxy_Matrix::ckNew(mat_rows, mat_cols, tile_rows, mat_cols, cb, chare_rows, 1);
+      }
+
+      when matrixCreated(), matrixCreated() serial {
+        CkPrintf("Matrices created\n");
+        CkCallback cb(CkReductionTarget(MatrixTester, matrixCopied), thisProxy);
+        matrixCopy(mat1, mat2, cb);
+      }
+
+      when matrixCopied() serial {
+        CkPrintf("Matrix copied, checking result\n");
+        CkCallback cb(CkReductionTarget(MatrixTester, matrixChecked), thisProxy);
+        matrixCompare(mat1, mat2, cb);
+        matrixCompare(mat2, mat1, cb);
+      }
+
+      when matrixChecked() serial {
+        CkPrintf("Matrices match in both directions, copying other matrix\n");
+        CkCallback cb(CkReductionTarget(MatrixTester, matrixCopied), thisProxy);
+        matrixCopy(mat2, mat1, cb);
+      }
+
+      when matrixCopied() serial {
+        CkPrintf("Matrix copied, checking result\n");
+        CkCallback cb(CkReductionTarget(MatrixTester, matrixChecked), thisProxy);
+        matrixCompare(mat1, mat2, cb);
+        matrixCompare(mat2, mat1, cb);
+      }
+
+      when matrixChecked(), matrixChecked() serial {
+        CkPrintf("Matrices match in both directions, test complete!\n");
+        CkExit();
+      }
+    }
+  };
+
+  array [2D] TestMatrix : Matrix {
+    entry TestMatrix(int, int, int, int, CkCallback);
+  };
+};

@@ -1,0 +1,27 @@
+module matrix {
+  include "ckcomplex.h";
+
+  message DataMessage {
+    complex data[];
+  };
+
+  array [2D] Matrix {
+    entry Matrix(int,int,int,int,CkCallback);
+    entry void startCopy(CProxy_Matrix, CkCallback);
+    entry void copy(CProxy_Matrix,int,int);
+    entry void startCompare(CProxy_Matrix, CkCallback);
+    entry void compare(CProxy_Matrix, int, int);
+
+    entry void receiveData(DataMessage* msg);
+    entry void waitForData(CkCallback cb) {
+      serial { data_received = 0; }
+      while (data_received < total_data) {
+        when receiveData(DataMessage* msg) serial {
+          (((Matrix*)this)->*Matrix::dataHandler)(msg);
+          data_received += msg->num_rows * msg->num_cols;
+        }
+      }
+      serial { busy = false; contribute(cb); }
+    }
+  };
+};
