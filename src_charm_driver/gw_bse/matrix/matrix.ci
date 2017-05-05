@@ -12,6 +12,9 @@ module matrix {
     entry void startCompare(CProxy_Matrix, CkCallback);
     entry void compare(CProxy_Matrix, int, int);
 
+    entry void read(std::string, CkCallback);
+    entry void write(std::string, CkCallback);
+
     entry void receiveData(DataMessage* msg);
     entry void waitForData(CkCallback cb) {
       serial { data_received = 0; }

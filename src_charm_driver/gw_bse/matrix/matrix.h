@@ -46,6 +46,9 @@ class Matrix : public CBase_Matrix {
     void copy(CProxy_Matrix dest, int dest_rows, int dest_cols);
     void startCompare(CProxy_Matrix src, CkCallback cb);
     void compare(CProxy_Matrix dest, int dest_rows, int dest_cols);
+
+    void read(std::string prefix, CkCallback cb);
+    void write(std::string prefix, CkCallback cb);
 };
 
 

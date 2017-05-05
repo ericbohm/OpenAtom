@@ -1,9 +1,15 @@
 #include "matrix.h"
 
 #include <cstring> // for memcpy
+#include <fstream>
+#include <string>
 
+using std::ifstream;
+using std::ios;
 using std::min;
 using std::memcpy;
+using std::ofstream;
+using std::string;
 
 void matrixCopy(CProxy_Matrix src, CProxy_Matrix dest, CkCallback cb) {
   dest.startCopy(src, cb);
@@ -57,6 +63,42 @@ void Matrix::startCompare(CProxy_Matrix src, CkCallback cb) {
 
 void Matrix::compare(CProxy_Matrix dest, int dest_rows, int dest_cols) {
   sendTo(dest, dest_rows, dest_cols);
+}
+
+void Matrix::read(string prefix, CkCallback cb) {
+  if (num_cols != matrix_cols) {
+    CkAbort("Read/Write only supported for row decomposition\n");
+  }
+  ifstream infile;
+  string filename;
+  for (int r = 0; r < num_rows; r++) {
+    filename = prefix + std::to_string(start_row+r);
+    infile.open(filename, ios::in);
+    for (int c = 0; c < num_cols; c++) {
+      infile >> data[r * num_cols + c].re;
+      infile >> data[r * num_cols + c].im;
+    }
+    infile.close();
+  }
+  contribute(cb);
+}
+
+void Matrix::write(string prefix, CkCallback cb) {
+  if (num_cols != matrix_cols) {
+    CkAbort("Read/Write only supported for row decomposition\n");
+  }
+  ofstream outfile;
+  string filename;
+  for (int r = 0; r < num_rows; r++) {
+    filename = prefix + std::to_string(start_row+r);
+    outfile.open(filename, ios::out);
+    for (int c = 0; c < num_cols; c++) {
+      outfile << data[r * num_cols + c].re << " ";
+      outfile << data[r * num_cols + c].im << " ";
+    }
+    outfile.close();
+  }
+  contribute(cb);
 }
 
 void Matrix::packMsg(DataMessage* msg) {
