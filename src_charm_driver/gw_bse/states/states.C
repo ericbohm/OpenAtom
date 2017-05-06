@@ -37,11 +37,13 @@ States::States() {
   // set file name to read my state from  (there is additional "0" right after "Kpt." )
   // we do this only for the occupied states
   nocc = gwbse->gw_epsilon.nocc;
+#ifdef SHIFTED
   int qindex = Q_IDX;
   if( istate < nocc && qindex == 0){
     sprintf(fileName,"./STATES_IN/Spin.%d_Kpt.0%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, istate+1);
     readStateShifted(fileName);
   }
+#endif
   
   // set the size of fft grid
   for(int i=0;i<3;i++){nfft[i] = gwbse->gw_parallel.fft_nelems[i];}
@@ -74,6 +76,7 @@ void States::sendToCache() {
   msg->shifted = false;
   psi_cache_proxy.receivePsi(msg);
 
+#ifdef SHIFTED
   int qindex = Q_IDX;
   if(qindex == 0){
     msg = new (ndata) PsiMessage(ndata, stateCoeffR_shifted);
@@ -83,6 +86,7 @@ void States::sendToCache() {
     msg->shifted = true;
     psi_cache_proxy.receivePsi(msg);
   }
+#endif
 
 }
 
@@ -151,6 +155,7 @@ void States::fftGtoR() {
   // delete stateCoeff
   delete [] stateCoeff;
 
+#ifdef SHIFTED
   // fft for shifted states (only occupied states)
   int qindex = Q_IDX;
   if( istate < nocc && qindex == 0){
@@ -160,6 +165,7 @@ void States::fftGtoR() {
     fftbox_to_array(ndata, out_pointer, stateCoeffR_shifted, scale);
     delete [] stateCoeff_shifted;
   }
+#endif
 
   // delete space used for fftidx
   for (int i = 0; i < numCoeff; i++) { delete [] fftidx[i]; }
