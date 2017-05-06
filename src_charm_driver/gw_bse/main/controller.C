@@ -166,7 +166,10 @@ void PsiCache::receivePsi(PsiMessage* msg) {
 
   // Once the cache has received all of it's data start the sliding pipeline
   // sending of psis to P to start the accumulation of fxf'.
-  if (++received_psis == 2*K*L) {
+  int expected_psis = K*L;
+  if(qindex == 0)
+    expected_psis += K*L;
+  if (++received_psis == expected_psis) {
     //CkPrintf("[%d]: Cache filled\n", CkMyPe());
     contribute(CkCallback(CkReductionTarget(Controller,cachesFilled), controller_proxy));
   }

@@ -1501,6 +1501,8 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
   } // endfor spin
 
   // shifted states eigenvalues
+  int qindex = Q_IDX;
+  if(qindex == 0)
   for (int s = 0; s < nspin; s++) {
     for (int k = 0; k < nkpt; k++) {
       sprintf(fromFile, "./STATES_IN/Spin.%d_Kpt.0%d_Bead.0_Temper.0/%s",s,k,gw_epsilon->eigFileName);

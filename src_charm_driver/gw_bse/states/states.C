@@ -37,7 +37,8 @@ States::States() {
   // set file name to read my state from  (there is additional "0" right after "Kpt." )
   // we do this only for the occupied states
   nocc = gwbse->gw_epsilon.nocc;
-  if( istate < nocc ){
+  int qindex = Q_IDX;
+  if( istate < nocc && qindex == 0){
     sprintf(fileName,"./STATES_IN/Spin.%d_Kpt.0%d_Bead.0_Temper.0/state%d.out", ispin, ikpt, istate+1);
     readStateShifted(fileName);
   }
@@ -73,12 +74,15 @@ void States::sendToCache() {
   msg->shifted = false;
   psi_cache_proxy.receivePsi(msg);
 
-  msg = new (ndata) PsiMessage(ndata, stateCoeffR_shifted);
-  msg->spin_index = ispin;
-  msg->k_index = ikpt;
-  msg->state_index = istate;
-  msg->shifted = true;
-  psi_cache_proxy.receivePsi(msg);
+  int qindex = Q_IDX;
+  if(qindex == 0){
+    msg = new (ndata) PsiMessage(ndata, stateCoeffR_shifted);
+    msg->spin_index = ispin;
+    msg->k_index = ikpt;
+    msg->state_index = istate;
+    msg->shifted = true;
+    psi_cache_proxy.receivePsi(msg);
+  }
 
 }
 
@@ -148,7 +152,8 @@ void States::fftGtoR() {
   delete [] stateCoeff;
 
   // fft for shifted states (only occupied states)
-  if( istate < nocc ){
+  int qindex = Q_IDX;
+  if( istate < nocc && qindex == 0){
     stateCoeffR_shifted = new complex [ndata];
     put_into_fftbox(numCoeff, stateCoeff_shifted, fftidx, nfft, in_pointer, doublePack);
     fft_controller->do_fftw();
