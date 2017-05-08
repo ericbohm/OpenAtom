@@ -4,86 +4,79 @@ mainmodule matrix_test {
   mainchare MatrixTester {
     entry MatrixTester(CkArgMsg*);
 
-    entry [reductiontarget] void matrixCreated();
-    entry [reductiontarget] void matrixCopied();
-    entry [reductiontarget] void matrixChecked();
-    entry [reductiontarget] void matrixWritten();
-    entry [reductiontarget] void matrixRead();
+    entry [reductiontarget] void operationCompleted();
 
     entry void test() {
       serial {
-        mat_rows = 1024; mat_cols = 1024;
-        tile_rows = 64; tile_cols = 64;
-        chare_rows = mat_rows / tile_rows;
-        chare_cols = mat_cols / tile_cols;
+        config2D.mat_rows = 1024; config2D.mat_cols = 1024;
+        config2D.tile_rows = 64; config2D.tile_cols = 64;
+        config1D = convertTo1D(config2D, 16);
 
-        CkCallback cb(CkReductionTarget(MatrixTester, matrixCreated), thisProxy);
+        CkPrintf("Config 2D: %ix%i, %ix%i, %ix%i\n",
+            config2D.mat_rows, config2D.mat_cols,
+            config2D.tile_rows, config2D.tile_cols,
+            config2D.chareRows(), config2D.chareCols());
+        CkPrintf("Config 1D: %ix%i, %ix%i, %ix%i\n",
+            config1D.mat_rows, config1D.mat_cols,
+            config1D.tile_rows, config1D.tile_cols,
+            config1D.chareRows(), config1D.chareCols());
 
-        mat1 = CProxy_TestMatrix::ckNew(
-            mat_rows, mat_cols, tile_rows, tile_cols, LOCAL, cb,
-            chare_rows, chare_cols);
+        mat1 = CProxy_TestMatrix::ckNew(config2D, LOCAL, config2D.chareRows(), config2D.chareCols());
+        mat2 = CProxy_TestMatrix::ckNew(config1D, ZERO, config1D.chareRows(), config1D.chareCols());
+        mat3 = CProxy_TestMatrix::ckNew(config1D, ZERO, config1D.chareRows(), config1D.chareCols());
+        callback = CkCallback(CkReductionTarget(MatrixTester, operationCompleted), thisProxy);
 
-        mat2 = CProxy_TestMatrix::ckNew(
-            mat_rows, mat_cols, tile_rows, mat_cols, ZERO, cb,
-            chare_rows, 1);
-
-        mat3 = CProxy_TestMatrix::ckNew(
-            mat_rows, mat_cols, tile_rows, mat_cols, ZERO, cb,
-            chare_rows, 1);
+        matrixCopy(mat1, mat2, callback);
       }
 
-      when matrixCreated(), matrixCreated(), matrixCreated() serial {
-        CkPrintf("Matrices created\n");
-        CkCallback cb(CkReductionTarget(MatrixTester, matrixCopied), thisProxy);
-        matrixCopy(mat1, mat2, cb);
-      }
-
-      when matrixCopied() serial {
+      when operationCompleted() serial {
         CkPrintf("Matrix copied, checking result\n");
-        CkCallback cb(CkReductionTarget(MatrixTester, matrixChecked), thisProxy);
-        matrixCompare(mat1, mat2, cb);
-        matrixCompare(mat2, mat1, cb);
+        matrixCompare(mat1, mat2, callback);
+        matrixCompare(mat2, mat1, callback);
       }
 
-      when matrixChecked() serial {
+      when operationCompleted() serial {
         CkPrintf("Matrices match in both directions, copying other matrix\n");
-        CkCallback cb(CkReductionTarget(MatrixTester, matrixCopied), thisProxy);
-        matrixCopy(mat2, mat1, cb);
+        matrixCopy(mat2, mat1, callback);
       }
 
-      when matrixCopied() serial {
+      when operationCompleted() serial {
         CkPrintf("Matrix copied, checking result\n");
-        CkCallback cb(CkReductionTarget(MatrixTester, matrixChecked), thisProxy);
-        matrixCompare(mat1, mat2, cb);
-        matrixCompare(mat2, mat1, cb);
+        matrixCompare(mat1, mat2, callback);
+        matrixCompare(mat2, mat1, callback);
       }
 
-      when matrixChecked(), matrixChecked() serial {
+      when operationCompleted(), operationCompleted() serial {
         CkPrintf("Matrices match, writing matrix to file\n");
-        CkCallback cb(CkReductionTarget(MatrixTester, matrixWritten), thisProxy);
-        mat2.write("output/matout_row", cb);
+        matrixWrite(mat2, "output/matout_row", callback);
       }
 
-      when matrixWritten() serial {
+      when operationCompleted() serial {
         CkPrintf("Matrix written to file, reading from file!\n");
-        CkCallback cb(CkReductionTarget(MatrixTester, matrixRead), thisProxy);
-        mat3.read("output/matout_row", cb);
+        matrixRead(mat3, "output/matout_row", callback);
       }
 
-      when matrixRead() serial {
+      when operationCompleted() serial {
         CkPrintf("Matrix read from file, checking result\n");
-        CkCallback cb(CkReductionTarget(MatrixTester, matrixChecked), thisProxy);
-        matrixCompare(mat1, mat3, cb);
-        matrixCompare(mat2, mat3, cb);
+        matrixCompare(mat1, mat3, callback);
+        matrixCompare(mat2, mat3, callback);
       }
-      when matrixChecked(), matrixChecked() serial {
-        CkPrintf("Matrices match, test complete!\n");
+
+      when operationCompleted(), operationCompleted() serial {
+        CkPrintf("Matrices match, verifying all against file\n");
+        matrixVerify(mat2, "output/matout_row", callback);
+        matrixVerify(mat3, "output/matout_row", callback);
+      }
+
+      when operationCompleted(), operationCompleted() serial {
+        CkPrintf("Matrices verified, test complete!\n");
         CkExit();
       }
     }
   };
 
   array [2D] TestMatrix : Matrix {
-    entry TestMatrix(int, int, int, int, int, CkCallback);
+    entry TestMatrix(MatrixConfig, int);
+    entry TestMatrix(int, int, int, int, int);
   };
 };

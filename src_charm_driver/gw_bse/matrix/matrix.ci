@@ -6,14 +6,15 @@ module matrix {
   };
 
   array [2D] Matrix {
-    entry Matrix(int,int,int,int,CkCallback);
-    entry void startCopy(CProxy_Matrix, CkCallback);
-    entry void copy(CProxy_Matrix,int,int);
-    entry void startCompare(CProxy_Matrix, CkCallback);
-    entry void compare(CProxy_Matrix, int, int);
+    entry Matrix(MatrixConfig);
+    entry Matrix(int,int,int,int);
 
-    entry void read(std::string, CkCallback);
-    entry void write(std::string, CkCallback);
+    entry void copy(CProxy_Matrix, CkCallback);
+    entry void compare(CProxy_Matrix, CkCallback);
+    entry void read(std::string prefix, CkCallback cb);
+    entry void write(std::string prefix, CkCallback cb);
+    entry void verify(std::string prefix, CkCallback cb);
+    entry void sendData(CProxy_Matrix, int, int);
 
     entry void receiveData(DataMessage* msg);
     entry void waitForData(CkCallback cb) {
