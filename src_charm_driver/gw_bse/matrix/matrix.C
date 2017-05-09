@@ -58,6 +58,11 @@ void Matrix::initialize() {
   data = new complex[total_data];
 }
 
+inline bool withinTolerance(const complex& a, const complex& b) {
+  static const complex tolerance(1E-6, 1E-6);
+  return fabs(a.re - b.re) < tolerance.re && fabs(a.im - b.im) < tolerance.im;
+}
+
 void Matrix::copy(CProxy_Matrix src, CkCallback cb) {
   if (thisIndex.x == 0 && thisIndex.y == 0) {
     src.sendData(thisProxy, config.tile_rows, config.tile_cols);
@@ -83,7 +88,7 @@ void Matrix::read(string prefix, CkCallback cb) {
   ifstream infile;
   string filename;
   for (int r = 0; r < config.tile_rows; r++) {
-    filename = prefix + std::to_string(start_row+r);
+    filename = prefix + "_row" + std::to_string(start_row+r);
     infile.open(filename, ios::in);
     for (int c = 0; c < config.tile_cols; c++) {
       infile >> data[r * config.tile_cols + c].re;
@@ -101,7 +106,7 @@ void Matrix::write(string prefix, CkCallback cb) {
   ofstream outfile;
   string filename;
   for (int r = 0; r < config.tile_rows; r++) {
-    filename = prefix + std::to_string(start_row+r);
+    filename = prefix + "_row" + std::to_string(start_row+r);
     outfile.open(filename, ios::out);
     for (int c = 0; c < config.tile_cols; c++) {
       outfile << data[r * config.tile_cols + c].re << " ";
@@ -120,13 +125,16 @@ void Matrix::verify(string prefix, CkCallback cb) {
   string filename;
   complex tmp;
   for (int r = 0; r < config.tile_rows; r++) {
-    filename = prefix + std::to_string(start_row+r);
+    filename = prefix + "_row" + std::to_string(start_row+r);
     infile.open(filename, ios::in);
     for (int c = 0; c < config.tile_cols; c++) {
       infile >> tmp.re;
       infile >> tmp.im;
-      if (data[r * config.tile_cols + c].re != tmp.re ||
-          data[r * config.tile_cols + c].im != tmp.im) {
+      if (!withinTolerance(tmp, data[r * config.tile_cols + c])) {
+        CkPrintf("Verification Failure @ entry %i,%i: %g + %gi != %g + %gi\n",
+            start_row + r, start_col + c, tmp.re, tmp.im,
+            data[r * config.tile_cols + c].re,
+            data[r * config.tile_cols + c].im);
         CkAbort("Matrix verification failed!\n");
       }
     }
@@ -185,8 +193,12 @@ void Matrix::compareMsg(DataMessage* msg) {
   int local_idx = (msg->row - start_row) * config.tile_cols + (msg->col - start_col);
   for (int r = 0; r < msg->num_rows; r++) {
     for (int c = 0; c < msg->num_cols; c++) {
-      if (data[local_idx+c].re != msg->data[msg_idx+c].re ||
-          data[local_idx+c].im != msg->data[msg_idx+c].im) {
+      if (!withinTolerance(data[local_idx+c],msg->data[msg_idx+c])) {
+        CkPrintf("Verification Failure @ entry %i,%i: %g + %gi != %g + %gi\n",
+            start_row + r, start_col + c,
+            msg->data[msg_idx+c].re, msg->data[msg_idx+c].im,
+            data[r * config.tile_cols + c].re,
+            data[r * config.tile_cols + c].im);
         CkAbort("Matrices don't match\n");
       }
     }
