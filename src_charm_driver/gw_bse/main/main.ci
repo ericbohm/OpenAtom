@@ -1,5 +1,5 @@
 mainmodule main {
-
+  include "matrix.h";
   readonly CProxy_Main mainProxy;
   readonly GWBSE  readonly_gwbse;
   extern module states;

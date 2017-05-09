@@ -1,7 +1,9 @@
 
 module controller {
+  include "matrix.h";
   extern module psi_cache;
   extern module eps_matrix;
+  extern module matrix;
   extern module pmatrix;
   extern module mat_mul;
   extern module main;
@@ -203,7 +205,7 @@ module controller {
             timers.avg_pcomp * ((double)timers.pcomp_count/CkNumPes()));
 
         PHASE_BOUNDARY(total_phase1, total_phase2, "PHASE 1 (P in R Space) COMPLETE");
-        pmatrix2D_proxy.sendTo1D();
+        matrixCopy(pmatrix2D_proxy, pmatrix1D_proxy, CkCallback(CkReductionTarget(Controller,dataSendComplete), thisProxy));
       }
 
       // When we receive this message, we know that P has switched to a 1D
@@ -236,7 +238,7 @@ module controller {
       // The final transpose is complete so now switch back to the 2D decomp.
       when transposeComplete() serial{
         STEP_BOUNDARY(trans2, to2D, "Second transpose complete");
-        pmatrix1D_proxy.sendTo2D();
+        matrixCopy(pmatrix1D_proxy, pmatrix2D_proxy, CkCallback(CkReductionTarget(Controller, phase2_complete),thisProxy));
       }
 
       // Back in the 2D decomposition. This is as far as we have implemented,

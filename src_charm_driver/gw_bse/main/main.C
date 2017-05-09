@@ -40,7 +40,7 @@
 
 /* readonly */ CProxy_EpsMatrix2D eps_matrix2D_proxy;
 
-/* readonly */ CProxy_PMatrix2D pmatrix2D_proxy;
+/* readonly */ CProxy_PMatrix pmatrix2D_proxy;
 /* readonly */ CProxy_EpsMatrix2D eps_matrix2D_bproxy;
 /* readonly */ CProxy_EpsMatrix2D eps_matrix2D_cproxy;
 
@@ -49,7 +49,7 @@
 /* readonly */ CProxy_EpsMatrix2D eps_matrix2D_bbproxy;
 /* readonly */ CProxy_EpsMatrix2D eps_matrix2D_ccproxy;
 
-/* readonly */ CProxy_PMatrix1D pmatrix1D_proxy;
+/* readonly */ CProxy_PMatrix pmatrix1D_proxy;
 ///* readonly */ CProxy_Controller controller_proxy;
 /* readonly */ CProxy_FFTController fft_controller_proxy;
 
@@ -121,7 +121,11 @@ Main::Main(CkArgMsg* msg) {
   eps_matrix2D_proxy = CProxy_EpsMatrix2D::ckNew(opts);
   eps_proxy1D = CProxy_EpsMatrix1D::ckNew();
 
-  pmatrix2D_proxy = CProxy_PMatrix2D::ckNew(dimension/nrows, dimension/ncols);
+  MatrixConfig pmatrix2Dcfg;
+  pmatrix2Dcfg.mat_rows = pmatrix2Dcfg.mat_cols = dimension;
+  pmatrix2Dcfg.tile_rows = nrows;
+  pmatrix2Dcfg.tile_cols = ncols;
+  pmatrix2D_proxy = CProxy_PMatrix::ckNew(pmatrix2Dcfg, pmatrix2Dcfg.chareRows(), pmatrix2Dcfg.chareCols());
   eps_matrix2D_bproxy = CProxy_EpsMatrix2D::ckNew();
   eps_matrix2D_cproxy = CProxy_EpsMatrix2D::ckNew();
   eps_matrix2D_ccproxy = CProxy_EpsMatrix2D::ckNew();
@@ -134,7 +138,8 @@ Main::Main(CkArgMsg* msg) {
   CkPrintf("[MAIN] Creating %i array chares with %i rows and %i cols each\n",
       number_of_chares_1d, local_mtx_size_1d_y, local_mtx_size_1d_x);
 
-  pmatrix1D_proxy = CProxy_PMatrix1D::ckNew(local_mtx_size_1d_x, local_mtx_size_1d_y, number_of_chares_1d);
+  MatrixConfig pmatrix1Dcfg = convertTo1D(pmatrix2Dcfg, 1);
+  pmatrix1D_proxy = CProxy_PMatrix::ckNew(pmatrix1Dcfg, pmatrix1Dcfg.chareRows(), pmatrix1Dcfg.chareCols());
 
 
 
