@@ -23,6 +23,7 @@ module matrix {
         when receiveData(DataMessage* msg) serial {
           (((Matrix*)this)->*Matrix::dataHandler)(msg);
           data_received += msg->num_rows * msg->num_cols;
+          delete msg;
         }
       }
       serial { busy = false; contribute(cb); }
