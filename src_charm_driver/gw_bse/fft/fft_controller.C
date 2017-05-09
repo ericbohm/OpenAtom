@@ -108,7 +108,7 @@ void FFTController::get_geps(double epsCut, double* qvec, double* b1, double* b2
 
     }
 
-    CkPrintf("[FFT CONTROLLER] Dimension of epsilon matrix = %d ", count);
+    CkPrintf("[FFT CONTROLLER] Dimension of epsilon matrix = %d\n", count);
     // set values
     geps->ng = count;
     geps->ig = new int [count];

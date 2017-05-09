@@ -3,7 +3,6 @@ module messages {
   // A message used to package and send around psi arrays
   message PsiMessage {
     complex psi[];
-    int accept[];
   };
 
   // A message containing data being moved during a transpose
@@ -34,6 +33,6 @@ module states {
     entry States();
     entry void fftGtoR();
     entry [reductiontarget] void sendToCache();
-    entry [reductiontarget] void sendToComputeF(std::vector<int> accept);
+    entry [reductiontarget] void sendToComputeF();
   };  
 };

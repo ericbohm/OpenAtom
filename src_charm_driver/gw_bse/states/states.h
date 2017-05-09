@@ -33,7 +33,7 @@ class States : public CBase_States {
   /// Entry Methods ///                                                                         
   void fftGtoR();
   void sendToCache();
-  void sendToComputeF(std::vector<int> accept);
+  void sendToComputeF();
 
   /// fftw routines ///
   // void fft_G_to_R(); -> doesn't seem to exist anymore

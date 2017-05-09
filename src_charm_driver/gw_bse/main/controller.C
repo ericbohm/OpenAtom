@@ -140,6 +140,7 @@ PsiCache::PsiCache() {
   umklapp_factor = new complex[psi_size];
 
   total_time = 0.0;
+  contribute(CkCallback(CkReductionTarget(Controller,psiCacheReady), controller_proxy));
 }
 
 void PsiCache::reportFTime() {
@@ -472,6 +473,7 @@ FVectorCache::FVectorCache() {
 
   fs = new complex[NSIZE*L*totalSize];
 
+  contribute(CkCallback(CkReductionTarget(Controller,fCacheReady), controller_proxy));
 }
 
 void FVectorCache::init(int size_xy){
