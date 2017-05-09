@@ -14,8 +14,6 @@
 #include "ckcomplex.h"
 
 
-/* readonly */ CProxy_Controller controller_proxy;
-
 /*readonly*/ int M_stride;
 /*readonly*/ int K_stride;
 /*readonly*/ int N_stride;
