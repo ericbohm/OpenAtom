@@ -123,24 +123,26 @@ void EpsMatrix::screenedExchange() {
 }
 
 void EpsMatrix::bareExchange() {
-  complex* tile = new complex[total_data];
   complex contribution(0.0,0.0);
-
   FVectorCache* f_cache = fvector_cache_proxy.ckLocalBranch();
   int ndata = nfft[0]*nfft[1]*nfft[2];
   int block_size = ndata/(config.chareRows());
-  if(ndata % config.chareRows() > 0)
+  if(ndata % config.chareRows() > 0) {
     block_size += 2;
-  if(thisIndex.x== thisIndex.y)
-  for (int i = 0; i < NSIZE; i++) {//ib = 5 to 8 actually, map to a number from 0
+  }
+
+  if(thisIndex.x == thisIndex.y) {
+    for (int i = 0; i < NSIZE; i++) {//ib = 5 to 8 actually, map to a number from 0
       for (int l = 0; l < L; l++) {
-      complex* f = f_cache->getFVec(i, l, thisIndex.x, block_size);//start_row, num_rows);
-      int end = block_size;
-      if(thisIndex.x==6)
-        end = ndata%block_size;
-      for(int ii=0;ii<end;ii++){
-        complex tmp = f[ii]*f[ii];
-        contribution += sqrt(tmp.getMagSqr());
+        complex* f = f_cache->getFVec(i, l, thisIndex.x, block_size);//start_row, num_rows);
+        int end = block_size;
+        if(thisIndex.x == 6) {
+          end = ndata%block_size;
+        }
+        for(int ii=0; ii < end; ii++) {
+          complex tmp = f[ii]*f[ii];
+          contribution += sqrt(tmp.getMagSqr());
+        }
       }
     }
   }
@@ -181,25 +183,22 @@ void EpsMatrix::receiveConvCheck(std::vector<complex> data_in) {
       CkCallback(CkReductionTarget(Controller, converge_results), controller_proxy));
 }
 
-// TODO: Memory leak here and in many other places as well
 void EpsMatrix::createTranspose(CProxy_EpsMatrix other, bool todo) {
-    std::vector<complex> incoming;
-    unsigned n = 0;
-    complex* new_data;
-    new_data = new complex[total_data];
-    for(int i=0;i<config.tile_rows;i++){
-        for(int j=0;j<config.tile_cols;j++){
-            if(todo)
-              new_data[n] = -1*data[IDX_eps(i,j)];//negative values //data[IDX_eps(j,i)];
-            else  
-              new_data[n] =  data[IDX_eps(i,j)];//data[IDX_eps(j,i)];
-            incoming.push_back(new_data[n++]);
-        }
+  std::vector<complex> incoming;
+  for(int i=0; i < config.tile_rows; i++) {
+    for(int j=0; j < config.tile_cols; j++) {
+      if (todo) {
+        incoming.push_back(-1*data[IDX_eps(i,j)]);
+      } else {
+        incoming.push_back(data[IDX_eps(i,j)]);
+      }
     }
-    if(todo)
-      other(thisIndex.y, thisIndex.x).receiveTranspose(incoming);
-    else
-      other(thisIndex.x, thisIndex.y).receiveTranspose(incoming);
+  }
+  if(todo) {
+    other(thisIndex.y, thisIndex.x).receiveTranspose(incoming);
+  } else {
+    other(thisIndex.x, thisIndex.y).receiveTranspose(incoming);
+  }
 }
 
 void EpsMatrix::receiveTranspose(std::vector<complex> new_data) {
