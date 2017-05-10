@@ -56,8 +56,18 @@ class Controller : public CBase_Controller {
     int padded_epsilon_size;
     double prev_max;
     std::vector<int> accept_result;
-    CLA_Matrix_interface matA, matB, matC, matA2, matB2, matC2, matA3, matB3, matC3;
     Timers timers;
+
+    // Epsilon proxies and matrices
+    CLA_Matrix_interface matA, matB, matC;
+    CLA_Matrix_interface matA2, matB2, matC2;
+    CLA_Matrix_interface matA3, matB3, matC3;
+    CProxy_EpsMatrix eps_matrix1D_proxy;
+    CProxy_EpsMatrix eps_matrix2D_proxy;
+    CProxy_EpsMatrix eps_matrix2D_bproxy;
+    CProxy_EpsMatrix eps_matrix2D_cproxy;
+    CProxy_EpsMatrix eps_matrix2D_bbproxy;
+    CProxy_EpsMatrix eps_matrix2D_ccproxy;
 };
 
 // A struct containing the required info for computing a set of f vectors for a

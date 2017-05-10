@@ -39,6 +39,7 @@
 /* readonly */ CProxy_FFTController fft_controller_proxy;
 /* readonly */ CProxy_PsiCache psi_cache_proxy;
 /* readonly */ CProxy_FVectorCache fvector_cache_proxy;
+/* readonly */ CProxy_MatMul mat_mul_proxy;
 
 // States (Phase 1)
 /* readonly */ CProxy_States states_proxy;
@@ -48,13 +49,6 @@
 /* readonly */ CProxy_PMatrix pmatrix1D_proxy;
 
 // Epsilon matrices (Phase 3 & 4)
-/* readonly */ CProxy_EpsMatrix2D eps_matrix2D_proxy;
-/* readonly */ CProxy_EpsMatrix1D eps_proxy1D;
-/* readonly */ CProxy_EpsMatrix2D eps_matrix2D_bproxy;
-/* readonly */ CProxy_EpsMatrix2D eps_matrix2D_cproxy;
-/* readonly */ CProxy_EpsMatrix2D eps_matrix2D_bbproxy;
-/* readonly */ CProxy_EpsMatrix2D eps_matrix2D_ccproxy;
-/* readonly */ CProxy_MatMul mat_mul_proxy;
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -95,6 +89,7 @@ Main::Main(CkArgMsg* msg) {
   fft_controller_proxy = CProxy_FFTController::ckNew();
   psi_cache_proxy = CProxy_PsiCache::ckNew();
   fvector_cache_proxy = CProxy_FVectorCache::ckNew();
+  mat_mul_proxy = CProxy_MatMul::ckNew();
 
   // -------------------------------------------------------------------
   // Create the array of state chare objects.
@@ -127,20 +122,6 @@ Main::Main(CkArgMsg* msg) {
       pmatrix2D_config.chareRows(), pmatrix2D_config.chareCols());
   pmatrix1D_proxy = CProxy_PMatrix::ckNew(pmatrix1D_config,
       pmatrix1D_config.chareRows(), pmatrix1D_config.chareCols());
-
-  // -------------------------------------------------------------------
-  // Create the arrays of epsilon matrix chare objects.
-  CProxy_EpsMap map = CProxy_EpsMap::ckNew();
-  CkArrayOptions opts;
-  opts.setMap(map);
-
-  eps_proxy1D = CProxy_EpsMatrix1D::ckNew();
-  eps_matrix2D_proxy = CProxy_EpsMatrix2D::ckNew(opts);
-  eps_matrix2D_bproxy = CProxy_EpsMatrix2D::ckNew();
-  eps_matrix2D_cproxy = CProxy_EpsMatrix2D::ckNew();
-  eps_matrix2D_ccproxy = CProxy_EpsMatrix2D::ckNew();
-  eps_matrix2D_bbproxy = CProxy_EpsMatrix2D::ckNew();
-  mat_mul_proxy = CProxy_MatMul::ckNew();
 
   // -------------------------------------------------------------------
   // Start the computation

@@ -17,7 +17,7 @@ class PMatrix : public CBase_PMatrix {
     PMatrix(CkMigrateMessage* msg) {}
 
     void fftRows(int);
-    void generateEpsilon(std::vector<int> accept);
+    void generateEpsilon(CProxy_EpsMatrix proxy, std::vector<int> accept);
     void applyFs();
     void calc_vcoulb();
     void calc_Eps(Phase3Message* msg);
@@ -52,6 +52,4 @@ class PMatrix : public CBase_PMatrix {
 
 extern /* readonly */ CProxy_PMatrix pmatrix2D_proxy;
 extern /* readonly */ CProxy_PMatrix pmatrix1D_proxy;
-
-extern /* readonly */ CProxy_EpsMatrix2D eps_matrix2D_proxy;
 #endif

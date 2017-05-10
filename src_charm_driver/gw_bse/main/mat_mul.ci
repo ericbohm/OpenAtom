@@ -6,17 +6,22 @@ module mat_mul{
   extern module pmatrix;
   extern module controller;
   readonly CProxy_MatMul mat_mul_proxy;
-  readonly int M_stride;
-  readonly int K_stride;
-  readonly int N_stride;
+
   chare MatMul {
     entry MatMul();
-    entry void setup(CLA_Matrix_interface matA, CLA_Matrix_interface matB, CLA_Matrix_interface matC,
-    CProxy_EpsMatrix2D aproxy, CProxy_EpsMatrix2D bproxy, CProxy_EpsMatrix2D cproxy, int dimension, int rows,bool insertA, bool insertB, bool insertC);
-    entry void do_multiply(CProxy_EpsMatrix2D aproxy, CProxy_EpsMatrix2D bproxy, CProxy_EpsMatrix2D cproxy);
-    entry void chunk_inited(void);
-//    entry void migration_done(CkReductionMsg *msg);
+    entry void setup(CLA_Matrix_interface matA,
+                     CLA_Matrix_interface matB,
+                     CLA_Matrix_interface matC,
+                     CProxy_EpsMatrix aproxy,
+                     CProxy_EpsMatrix bproxy,
+                     CProxy_EpsMatrix cproxy,
+                     int dimension, int rows);
+
+    entry void do_multiply(CProxy_EpsMatrix aproxy,
+                           CProxy_EpsMatrix bproxy,
+                           CProxy_EpsMatrix cproxy);
+
+    entry void chunk_inited();
     entry void quiet();
   };
-
 };

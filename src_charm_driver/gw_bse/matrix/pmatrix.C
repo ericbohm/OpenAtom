@@ -35,7 +35,7 @@ PMatrix::PMatrix(MatrixConfig config) : CBase_PMatrix(config) {
   total_time = 0.0;
 }
 
-void PMatrix::generateEpsilon(std::vector<int> accept){
+void PMatrix::generateEpsilon(CProxy_EpsMatrix proxy, std::vector<int> accept){
   int inew = 0;
   for(int i=0;i<thisIndex.x;i++)
     if(accept[i])
@@ -61,7 +61,7 @@ void PMatrix::generateEpsilon(std::vector<int> accept){
           msg->end_i = inew%eps_rows;
           msg->end_j = (jnew-1)%eps_cols;
 //          CkPrintf("\nSending data to (%d,%d)\n", dest_chare_x, dest_chare_y);
-          eps_matrix2D_proxy(dest_chare_x,dest_chare_y).receiveFs(msg);
+          proxy(dest_chare_x,dest_chare_y).receiveFs(msg);
           jnew_local = 0;
           msg = new(eps_cols)Phase3Message();  
         }
@@ -79,7 +79,7 @@ void PMatrix::generateEpsilon(std::vector<int> accept){
           msg->start_j = 0;
           msg->end_i = inew%eps_rows;
           msg->end_j = (jnew-1)%eps_cols;
-          eps_matrix2D_proxy(dest_chare_x,dest_chare_y).receiveFs(msg);
+          proxy(dest_chare_x,dest_chare_y).receiveFs(msg);
     }
   }
  
@@ -110,7 +110,7 @@ void PMatrix::generateEpsilon(std::vector<int> accept){
           msg->end_i = i%eps_rows;
           msg->end_j = (jnew_local-1)%eps_cols;
  //         CkPrintf("\nSending data to (%d,%d)\n", dest_chare_x, dest_chare_y);
-          eps_matrix2D_proxy(dest_chare_x,dest_chare_y).receiveFs(msg);
+          proxy(dest_chare_x,dest_chare_y).receiveFs(msg);
           jnew_local = 0;
           msg = new(eps_cols)Phase3Message();
         }
