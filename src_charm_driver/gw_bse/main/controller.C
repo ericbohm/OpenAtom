@@ -49,8 +49,7 @@ Controller::Controller() {
 }
 
 
-void Controller::prep(){
-
+void Controller::prep() {
   GWBSE *gwbse = GWBSE::get();
 
   double *this_q, *b1, *b2, *b3;
@@ -62,25 +61,21 @@ void Controller::prep(){
 
   this_q = gwbse->gwbseopts.qvec[qindex];
 
-
   int* nfft;
   nfft = gwbse->gw_parallel.fft_nelems;
 
   int ndata = nfft[0]*nfft[1]*nfft[2];
   FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
 
-//output geps, accept
-  fft_controller->get_geps(epsCut, this_q, b1, b2, b3,
-                            alat, nfft);
-  }
+  fft_controller->get_geps(epsCut, this_q, b1, b2, b3, alat, nfft);
+}
 
-  void Controller::got_geps(std::vector<int> accept, int epsilon_size){
-    accept_result = accept;
-    thisProxy.done_geps(epsilon_size);
-  }
+void Controller::got_geps(std::vector<int> accept, int epsilon_size){
+  accept_result = accept;
+  thisProxy.done_geps(epsilon_size);
+}
   
-  void Controller::calc_Geps(){
-
+void Controller::calc_Geps() {
   
   GWBSE *gwbse = GWBSE::get();
 
@@ -93,20 +88,17 @@ void Controller::prep(){
 
   this_q = gwbse->gwbseopts.qvec[qindex];
 
-
   int* nfft;
   nfft = gwbse->gw_parallel.fft_nelems;
 
   int ndata = nfft[0]*nfft[1]*nfft[2];
   FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
 
-
-//output - vcoulb
+  //output - vcoulb
   fft_controller->calc_vcoulb(this_q, b1, b2, b3, shift, alat, vol, gwbse->gwbseopts.nkpt, qindex);
 }
 
 void Controller::got_vcoulb(std::vector<double> vcoulb_in){
-
   vcoulb = vcoulb_in;
   thisProxy.prepare_epsilon();
 }

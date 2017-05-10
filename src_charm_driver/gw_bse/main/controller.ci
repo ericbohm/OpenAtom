@@ -224,6 +224,7 @@ module controller {
         padded_epsilon_size = epsilon_size_in+pad;
         controller_proxy.calc_Geps();
       }
+
       when prepare_epsilon() serial {
         // TODO: Use this map
         CProxy_EpsMap map = CProxy_EpsMap::ckNew();
@@ -253,6 +254,7 @@ module controller {
             eps_matrix2D_proxy, eps_matrix2D_bproxy, eps_matrix2D_cproxy,
             padded_epsilon_size, eps_rows);
       }
+
       when matrixReady() serial {
         CkPrintf("[CONTROLLER] 2D Matrices are ready\n");
         pmatrix1D_proxy.generateEpsilon(eps_matrix2D_proxy, accept_result);
@@ -266,7 +268,6 @@ module controller {
         //X = m*m^T
         mat_mul_proxy.do_multiply(eps_matrix2D_proxy, eps_matrix2D_bproxy, eps_matrix2D_cproxy);
       }
-
       when m_multiplied() serial{
         CkPrintf("[CONTROLLER] Multiply completed\n");
         CkCallback cb(CkReductionTarget(Controller, created1d_complete), thisProxy);
