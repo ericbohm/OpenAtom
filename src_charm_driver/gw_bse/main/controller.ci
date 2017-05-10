@@ -66,6 +66,10 @@ module controller {
     entry [reductiontarget] void bareExchangeComplete(complex x);
     entry [reductiontarget] void finished_copy();
 
+#ifdef VERIFY
+    entry [reductiontarget] void verifyComplete();
+#endif
+
     entry void reportFTime(CkReductionMsg*);
     entry void reportPTime(CkReductionMsg*);
 
@@ -215,16 +219,26 @@ module controller {
       // The final transpose is complete so now switch back to the 2D decomp.
       when transposeComplete() serial{
         STEP_BOUNDARY(trans2, to2D, "Second transpose complete");
+      }
+
+#ifdef VERIFY
+      serial {
+        CkCallback cb(CkReductionTarget(Controller, verifyComplete), thisProxy);
+        matrixVerify(pmatrix1D_proxy, "serial_output/PMatrix", cb);
+      }
+      when verifyComplete() serial { CkPrintf("[CONTROLLER] Matrix Verified\n"); }
+#endif
+
+      // Start phase 3 by figuring out epsilon size and creating the matrices
+      serial {
         PHASE_BOUNDARY(total_phase2, total_phase3, "PHASE 2 (FFT P) COMPLETE");
         prep();
       }
-
       when done_geps(int epsilon_size_in) serial{
         int pad = 10 - (epsilon_size_in%10);
         padded_epsilon_size = epsilon_size_in+pad;
         controller_proxy.calc_Geps();
       }
-
       when prepare_epsilon() serial {
         // TODO: Use this map
         CProxy_EpsMap map = CProxy_EpsMap::ckNew();
@@ -261,8 +275,21 @@ module controller {
       }
       when epsilon_created() serial {
         CkPrintf("[CONTROLLER] Created Epsilon Matrix\n");
-        eps_matrix2D_proxy.createTranspose(eps_matrix2D_bproxy, false);
       }
+
+#ifdef VERIFY
+      serial {
+        CkCallback cb(CkReductionTarget(Controller, copyComplete), thisProxy);
+        matrixCopy(eps_matrix2D_proxy, eps_matrix1D_proxy, cb);
+      }
+      when copyComplete() serial {
+        CkCallback cb(CkReductionTarget(Controller, verifyComplete), thisProxy);
+        matrixVerify(eps_matrix1D_proxy, "serial_output/Eps_0", cb);
+      }
+      when verifyComplete() serial { CkPrintf("[CONTROLLER] Matrix Verified\n"); }
+#endif
+
+      serial { eps_matrix2D_proxy.createTranspose(eps_matrix2D_bproxy, false); }
       when transpose_complete() serial {
         CkPrintf("[CONTROLLER] Created Transpose\n");
         //X = m*m^T
@@ -365,6 +392,21 @@ module controller {
 
       serial {
 	      PHASE_BOUNDARY(total_phase3, total_phase4, "PHASE 3 (Epsilon Matrix Inversion) COMPLETE");
+      }
+
+#ifdef VERIFY
+      serial {
+        CkCallback cb(CkReductionTarget(Controller, copyComplete), thisProxy);
+        matrixCopy(eps_matrix2D_proxy, eps_matrix1D_proxy, cb);
+      }
+      when copyComplete() serial {
+        CkCallback cb(CkReductionTarget(Controller, verifyComplete), thisProxy);
+        matrixVerify(eps_matrix1D_proxy, "serial_output/Eps_inv_0", cb);
+      }
+      when verifyComplete() serial { CkPrintf("[CONTROLLER] Matrix Verified\n"); }
+#endif
+
+      serial {
         //Bare exchange
         //TODO:compute Fs that for n's that are occ
         //fvector_cache_proxy.computeFTilde();

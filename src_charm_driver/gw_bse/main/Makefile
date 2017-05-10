@@ -14,7 +14,7 @@ $(BUILDDIR):
 make_ci: $(MODULES)
 
 %.decl.h: %.ci
-	$(CHARMC) $<
+	$(CHARMC) $(CFLAGS) $<
 
 $(BUILDDIR)/%.o: %.C %.h $(MODULES)
 	$(CHARMC) $(CFLAGS) -c $< -o $@
