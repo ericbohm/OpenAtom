@@ -20,7 +20,8 @@ class FFTController : public CBase_FFTController {
 
     void get_geps(double epsCut, double* qvec, double* b1, double* b2, double * b3, 
                               double alat, int nfft[3]);
-    void calc_vcoulb(double* qvec, double* b1, double* b2, double * b3, 
+    void calc_vcoulb(double* qvec, double* a1, double* a2, double* a3,
+                      double* b1, double* b2, double * b3,
                       double shift[3],double alat, double vol, int nkpt, int iq);
   private:
     void destroy_fftw_stuff();

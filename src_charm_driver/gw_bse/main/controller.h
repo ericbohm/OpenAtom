@@ -9,7 +9,6 @@
 #include "fvector_cache.decl.h"
 
 #include "controller.decl.h"
-
 #define ITERATION 10 //needs to be read from epsilon.in
 // Structure keeping track of all timers we report
 struct Timers {
@@ -96,7 +95,8 @@ class PsiCache : public CBase_PsiCache {
     void reportFTime();
     complex* getPsi(unsigned, unsigned, unsigned) const;
     complex* getF(unsigned,unsigned) const;
-    int getWrote();
+    void setVCoulb(std::vector<double> vcoulb_in);
+    std::vector<double> getVCoulb();
   private:
     void kqIndex(unsigned, unsigned&, int*);
     void computeUmklappFactor(int*);
@@ -109,7 +109,7 @@ class PsiCache : public CBase_PsiCache {
     complex*** psis;
     complex*** psis_shifted;
     complex* fs;
-    int wrote;
+    std::vector<double> vcoulb;
     complex* umklapp_factor;
     
     double total_time;

@@ -84,6 +84,10 @@ void Controller::calc_Geps() {
   b2 = gwbse->gwbseopts.b2;
   b3 = gwbse->gwbseopts.b3;
 
+  double *a1, *a2, *a3;
+  a1 = gwbse->gwbseopts.a1;
+  a2 = gwbse->gwbseopts.a2;
+  a3 = gwbse->gwbseopts.a3;
   int qindex = Q_IDX;
 
   this_q = gwbse->gwbseopts.qvec[qindex];
@@ -95,12 +99,12 @@ void Controller::calc_Geps() {
   FFTController* fft_controller = fft_controller_proxy.ckLocalBranch();
 
   //output - vcoulb
-  fft_controller->calc_vcoulb(this_q, b1, b2, b3, shift, alat, vol, gwbse->gwbseopts.nkpt, qindex);
+  fft_controller->calc_vcoulb(this_q, a1, a2, a3, b1, b2, b3, shift, alat, vol, gwbse->gwbseopts.nkpt, qindex);
 }
 
 void Controller::got_vcoulb(std::vector<double> vcoulb_in){
   vcoulb = vcoulb_in;
-  thisProxy.prepare_epsilon();
+  psi_cache_proxy.setVCoulb(vcoulb_in);
 }
 
 PsiCache::PsiCache() {
@@ -286,6 +290,15 @@ complex* PsiCache::getF(unsigned idx, unsigned req_no) const {
   CkAssert(idx >= 0 && idx < L);
   CkAssert(req_no < received_chunks && req_no >= received_chunks - pipeline_stages);
   return &(fs[idx*psi_size+(L*psi_size*(req_no%pipeline_stages))]);
+}
+
+void PsiCache::setVCoulb(std::vector<double> vcoulb_in){
+  vcoulb = vcoulb_in;
+  contribute(CkCallback(CkReductionTarget(Controller,prepare_epsilon), controller_proxy));
+}
+
+std::vector<double> PsiCache::getVCoulb() {
+  return vcoulb;
 }
 
 void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){

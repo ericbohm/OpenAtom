@@ -22,48 +22,71 @@ void FFTController::do_fftw() {
   fftw_execute(plan);
 }
 
-void FFTController:: calc_vcoulb(double* qvec, double* b1, double* b2, double * b3, double shift[3], double alat, double vol, int nkpt, int iq){
-//CkPrintf("\nStarted calculate vcoulb\n");fflush(stdout);
-    double* vcoulb;
-    vcoulb = new double [geps->ng];
+double calc_vol(double* a1, double* a2, double* a3){
+  double a[3][3];
+  double m[3][3];
+  double vol;
 
-    double gx, gy, gz;
-    double gq[3];
-    const double fact = 4*PI/vol/nkpt;
+  for (int i=0; i<3; i++){
+      m[0][i] = a1[i];
+      m[1][i] = a2[i];
+      m[2][i] = a3[i];
+  }
 
-    for (int i=0; i<geps->ng; i++) {
+  /* compute matrix of cofactors */
+  a[0][0] =  m[1][1]*m[2][2] - m[1][2]*m[2][1];
+  a[1][0] = -m[1][0]*m[2][2] + m[1][2]*m[2][0];
+  a[2][0] =  m[1][0]*m[2][1] - m[1][1]*m[2][0];
+  a[0][1] = -m[0][1]*m[2][2] + m[0][2]*m[2][1];
+  a[1][1] =  m[0][0]*m[2][2] - m[0][2]*m[2][0];
+  a[2][1] = -m[0][0]*m[2][1] + m[0][1]*m[2][0];
+  a[0][2] =  m[0][1]*m[1][2] - m[0][2]*m[1][1];
+  a[1][2] = -m[0][0]*m[1][2] + m[0][2]*m[1][0];
+  a[2][2] =  m[0][0]*m[1][1] - m[0][1]*m[1][0];
 
+  vol = m[0][0]*a[0][0] + m[0][1]*a[1][0] + m[0][2]*a[2][0];
+  return vol;
+}
 
-        if (iq==0){
-            gx = geps->ig[i] + shift[0];
-            gy = geps->jg[i] + shift[1];
-            gz = geps->kg[i] + shift[2];
-        }
-        else{
-            gx = geps->ig[i] + qvec[0];
-            gy = geps->jg[i] + qvec[1];
-            gz = geps->kg[i] + qvec[2];
-        }
+void FFTController:: calc_vcoulb(double* qvec, double* a1, double* a2, double* a3,
+                                 double* b1, double* b2, double * b3, double shift[3],
+                                 double alat, double vol, int nkpt, int iq){
 
-        vcoulb[i] = 0;
-        for (int j=0; j<3; j++) {
-            gq[j] =  gx*b1[j] + gy*b2[j] + gz*b3[j];
-            gq[j] *= 2*PI/alat;
+  double* vcoulb;
+  vcoulb = new double [geps->ng];
+  double gx, gy, gz;
+  double gq[3];
+  vol = calc_vol(a1, a2, a3);
+  double fact = 4*PI/vol/nkpt;
 
-            vcoulb[i] += gq[j]*gq[j];
-        }
-        vcoulb[i] = 1/vcoulb[i];
-        vcoulb[i] *= fact;
-    }
+  for (int i=0; i<geps->ng; i++) {
+      if (iq==0){
+          gx = geps->ig[i] + shift[0];
+          gy = geps->jg[i] + shift[1];
+          gz = geps->kg[i] + shift[2];
+      }
+      else{
+          gx = geps->ig[i] + qvec[0];
+          gy = geps->jg[i] + qvec[1];
+          gz = geps->kg[i] + qvec[2];
+      }
 
+      vcoulb[i] = 0;
+      for (int j=0; j<3; j++) {
+          gq[j] =  gx*b1[j] + gy*b2[j] + gz*b3[j];
+          gq[j] *= 2*PI/alat;
 
+          vcoulb[i] += gq[j]*gq[j];
+      }
+      vcoulb[i] = 1/vcoulb[i];
+      vcoulb[i] *= fact;
+  }
 
-    std::vector<double> vcoulb_v;
-    vcoulb_v.resize(geps->ng);
-    for(int i=0;i<geps->ng;i++)
-      vcoulb_v[i] = vcoulb[i];
-//CkPrintf("\nCalculated vcoulb\n");fflush(stdout);
-    controller_proxy.got_vcoulb(vcoulb_v);
+  std::vector<double> vcoulb_v;
+  vcoulb_v.resize(geps->ng);
+  for(int i=0;i<geps->ng;i++)
+    vcoulb_v[i] = vcoulb[i];
+  controller_proxy.got_vcoulb(vcoulb_v);
 }
 
 void FFTController::get_geps(double epsCut, double* qvec, double* b1, double* b2, double * b3, 
