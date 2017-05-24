@@ -9,6 +9,7 @@ module eps_matrix {
     entry EpsMatrix();
     entry EpsMatrix(MatrixConfig config);
     entry void createTranspose(CProxy_EpsMatrix other, bool todo);
+    entry void createConjugate();
     entry void receiveTranspose(std::vector<complex> incoming);
     entry void multiply(double alpha, double beta);
     entry void round_done();

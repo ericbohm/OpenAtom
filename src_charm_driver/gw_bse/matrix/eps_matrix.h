@@ -23,6 +23,7 @@ class EpsMatrix : public CBase_EpsMatrix {
 
     void checkReady();
     void createTranspose(CProxy_EpsMatrix other, bool todo);
+    void createConjugate();
     void receiveTranspose(std::vector<complex> incoming);
     void calc_vcoulb();
     void calc_Eps(Phase3Message* msg);

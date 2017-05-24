@@ -19,7 +19,8 @@ module mat_mul{
 
     entry void do_multiply(CProxy_EpsMatrix aproxy,
                            CProxy_EpsMatrix bproxy,
-                           CProxy_EpsMatrix cproxy);
+                           CProxy_EpsMatrix cproxy,
+                           double alpha);
 
     entry void chunk_inited();
     entry void quiet();

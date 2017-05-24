@@ -188,7 +188,9 @@ void EpsMatrix::createTranspose(CProxy_EpsMatrix other, bool todo) {
   for(int i=0; i < config.tile_rows; i++) {
     for(int j=0; j < config.tile_cols; j++) {
       if (todo) {
-        incoming.push_back(-1*data[IDX_eps(i,j)]);
+        complex tranpose = data[IDX_eps(i,j)];
+        tranpose.im *= -1;
+        incoming.push_back(tranpose);
       } else {
         incoming.push_back(data[IDX_eps(i,j)]);
       }
@@ -199,6 +201,13 @@ void EpsMatrix::createTranspose(CProxy_EpsMatrix other, bool todo) {
   } else {
     other(thisIndex.x, thisIndex.y).receiveTranspose(incoming);
   }
+}
+
+void EpsMatrix::createConjugate(){
+  for(int i=0; i < config.tile_rows; i++)
+    for(int j=0; j < config.tile_cols; j++)
+      data[IDX_eps(i,j)] = data[IDX_eps(i,j)].conj();
+  contribute(CkCallback(CkReductionTarget(Controller, conjugateComplete), controller_proxy));
 }
 
 void EpsMatrix::receiveTranspose(std::vector<complex> new_data) {

@@ -57,6 +57,7 @@ module controller {
     entry [reductiontarget] void copyComplete();
     entry [reductiontarget] void transpose_complete();
     entry [reductiontarget] void m_multiplied();
+    entry [reductiontarget] void conjugateComplete();
     entry [reductiontarget] void complement_multiplied();
     entry [reductiontarget] void found_alpha(double alpha);
     entry [reductiontarget] void scalar_multiplied();
@@ -293,7 +294,7 @@ module controller {
       when transpose_complete() serial {
         CkPrintf("[CONTROLLER] Created Transpose\n");
         //X = m*m^T
-        mat_mul_proxy.do_multiply(eps_matrix2D_proxy, eps_matrix2D_bproxy, eps_matrix2D_cproxy);
+        mat_mul_proxy.do_multiply(eps_matrix2D_proxy, eps_matrix2D_bproxy, eps_matrix2D_cproxy, 1.0);
       }
       when m_multiplied() serial{
         CkPrintf("[CONTROLLER] Multiply completed\n");
@@ -313,8 +314,11 @@ module controller {
       // X = eps_matrix2D_proxy
       // assign A = eps->m (warning!! A is column major)
       when scalar_multiplied() serial{
+        eps_matrix2D_proxy.createConjugate();
+      }
+      when conjugateComplete() serial{
         resultInsert = true;
-        eps_matrix2D_bproxy.createTranspose(eps_matrix2D_bproxy, true);//Dummy call
+        eps_matrix2D_bproxy.createTranspose(eps_matrix2D_bproxy, false);//Dummy call
         //Result A - eps_matrix2D_bproxy
       }
 
@@ -335,15 +339,15 @@ module controller {
           mat_mul_proxy.do_multiply(
               eps_matrix2D_proxy,
               eps_matrix2D_bproxy,
-              eps_matrix2D_ccproxy);
+              eps_matrix2D_ccproxy, -1.0);
         }
         when m_multiplied() serial {
+
           // Step 1-(b) : M1 = 2I-M1
 		      if(iteration%percent==0)
 			      CkPrintf("[CONTROLLER] Multiplied Matrices - Step 1-(a) : M1 = -A * X\n");
           eps_matrix2D_ccproxy.add_compl_two();
         }
-
         // Step 2: X1 = X * M1
         // X = eps_matrix2D_proxy
         // M1 - pmatrix2D_ccproxy
@@ -362,7 +366,7 @@ module controller {
           mat_mul_proxy.do_multiply(
               eps_matrix2D_ccproxy,
               eps_matrix2D_proxy,
-              eps_matrix2D_bbproxy);
+              eps_matrix2D_bbproxy, 1.0);
         }
 
         // X = X1

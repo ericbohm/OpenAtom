@@ -87,12 +87,12 @@ public:
     CkExit();
   }
 
-  void do_multiply(CProxy_EpsMatrix aproxy, CProxy_EpsMatrix bproxy, CProxy_EpsMatrix cproxy) {
+  void do_multiply(CProxy_EpsMatrix aproxy, CProxy_EpsMatrix bproxy, CProxy_EpsMatrix cproxy, double alpha) {
     msg_received = 0;
 
-    aproxy.multiply(1, 0);
-    bproxy.multiply(1, 0);
-    cproxy.multiply(1, 0);
+    aproxy.multiply(1.0, 0);
+    bproxy.multiply(1.0, 0);
+    cproxy.multiply(alpha, 0);
   }
 
   void chunk_inited() {
