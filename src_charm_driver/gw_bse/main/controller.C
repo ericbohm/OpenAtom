@@ -309,6 +309,7 @@ void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){
   double k_plus_q[3], k_plus_q_orig[3];
   
   this_k = gwbse->gwbseopts.kvec[ikpt];
+  if(qindex >= K) CkAbort("Q Index is greater than K, please provide larger K or smaller Q Index");
   this_q = gwbse->gwbseopts.qvec[qindex];
 
   for (int i=0; i<3; i++) {
