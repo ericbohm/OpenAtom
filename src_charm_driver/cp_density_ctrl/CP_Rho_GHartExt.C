@@ -37,7 +37,6 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-using std::isnan;
 
 #include "debug_flags.h"
 #include "utility/util.h"
@@ -346,8 +345,8 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 
 #ifdef _NAN_CHECK_
   for(int i = 0; i < msg->size; i++){
-    CkAssert(isnan(msg->data[i].re) == 0);
-    CkAssert(isnan(msg->data[i].im) == 0);
+    CkAssert(std::isnan(msg->data[i].re) == 0);
+    CkAssert(std::isnan(msg->data[i].im) == 0);
   }
 #endif
 

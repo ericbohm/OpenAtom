@@ -46,7 +46,6 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-using std::isnan;
 
 //============================================================================
 extern CProxy_TimeKeeper                      TimeKeeperProxy;
@@ -208,8 +207,8 @@ void CP_State_RealSpacePlane::unpackFFT(RSFFTMsg *msg) {
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->size ;i++)
   {
-    CkAssert(isnan(msg->data[i].re)==0);
-    CkAssert(isnan(msg->data[i].im)==0);
+    CkAssert(std::isnan(msg->data[i].re)==0);
+    CkAssert(std::isnan(msg->data[i].im)==0);
   }
 #endif
 
@@ -426,7 +425,7 @@ void CP_State_RealSpacePlane::doFFT(){
     msghf->chunknum = thisIndex.y;
     CmiMemcpy(msghf->inputPsi, data, lHartSize*sizeof(double));
     for(int i = 0;i < ngrida*ngridb; i++){
-      if(isnan(hartree1[i]) != 0){
+      if(std::isnan(hartree1[i]) != 0){
         CkPrintf("RS [%d %d] issuing nan at %d out of %d\n",
             thisIndex.x, thisIndex.y, i, ngridb*ngrida);
         CkAbort("RS nan in the fftcache");
@@ -463,7 +462,7 @@ void CP_State_RealSpacePlane::doReduction(){
 
 #ifdef _NAN_CHECK_
   for(int i = 0;i < ngrida*ngridb; i++){
-    if(isnan(data[i]) != 0){
+    if(std::isnan(data[i]) != 0){
       CkPrintf("RS [%d %d] issuing nan at %d out of %d\n",
           thisIndex.x, thisIndex.y, i, ngridb*ngrida);
       CkAbort("RS nan in the fftcache");

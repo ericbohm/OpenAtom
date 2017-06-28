@@ -69,7 +69,6 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-using std::isnan;
 
 #include "debug_flags.h"
 #include "utility/util.h"
@@ -409,7 +408,7 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 
 #ifdef _NAN_CHECK_
   for(int i=0; i < msg->getSize()/sizeof(double); i++){
-    CkAssert(isnan(((double*) msg->getData())[i]) == 0);
+    CkAssert(std::isnan(((double*) msg->getData())[i]) == 0);
   }//endif
 #endif
 
@@ -993,7 +992,7 @@ void CP_Rho_RealSpacePlane::acceptDensityDn(RhoRDnMsg *msg) {
 
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->datalen/sizeof(double) ;i++){
-    CkAssert(isnan(msg->data[i])==0);
+    CkAssert(std::isnan(msg->data[i])==0);
   }//endif
 #endif
 
@@ -1383,8 +1382,8 @@ void CP_Rho_RealSpacePlane::acceptHartVks(){
   for(int i = 0; i < myGrid_size; i++)
   {
 #ifdef _NAN_CHECK_
-    CkAssert(isnan(Vks[i])==0);
-    CkAssert(isnan(VksHart[i])==0);
+    CkAssert(std::isnan(Vks[i])==0);
+    CkAssert(std::isnan(VksHart[i])==0);
 #endif
 
     Vks[i] += VksHart[i];
@@ -1396,12 +1395,12 @@ void CP_Rho_RealSpacePlane::acceptHartVks(){
       for(int i = 0; i < myGrid_size; i++)
 	{   
 #ifdef _NAN_CHECK_
-	  CkAssert(isnan(VksDn[i])==0);
+	  CkAssert(std::isnan(VksDn[i])==0);
 #endif
 
 	  VksDn[i] += VksHart[i];
 #ifdef _NAN_CHECK_
-	  CkAssert(isnan(VksDn[i])==0);
+	  CkAssert(std::isnan(VksDn[i])==0);
 #endif
 	}
       sendVksHartToVksDn();
@@ -1448,7 +1447,7 @@ void CP_Rho_RealSpacePlane::sendVksHartToVksDn(){
   for(int i=0; i<dataSize; i++){dataR[i]=VksDn[i];}
 #ifdef _NAN_CHECK_
   for(int i=0; i<dataSize; i++){
-    CkAssert(isnan(dataR[i])==0);
+    CkAssert(std::isnan(dataR[i])==0);
    }
 #endif
 
@@ -1494,7 +1493,7 @@ void CP_Rho_RealSpacePlane::acceptVksHartDn(VksHartMsg *msg) {
 
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->datalen ;i++){
-    CkAssert(isnan(msg->data[i])==0);
+    CkAssert(std::isnan(msg->data[i])==0);
   }//endif
 #endif
 
@@ -1521,10 +1520,10 @@ void CP_Rho_RealSpacePlane::acceptVksHartDn(VksHartMsg *msg) {
    for(int i=0; i<dataSize; i++){
 #ifdef _NAN_CHECK_
 
-  //    CkAssert(isnan(Vks[i])==0);
+  //    CkAssert(std::isnan(Vks[i])==0);
 
-    CkAssert(isnan(VksHart[i])==0);
-    CkAssert(isnan(Vks[i])==0);
+    CkAssert(std::isnan(VksHart[i])==0);
+    CkAssert(std::isnan(Vks[i])==0);
 #endif
     // NOTE: in the non-grad corr flow there is nothing in down's Vks
     // to add this to, for debugging simplicity we're just doing an
@@ -1649,7 +1648,7 @@ void CP_Rho_RealSpacePlane::doMulticast(){
         for(int a = 0; a < myGrid_length[MY_A]; a++) {
 
 #ifdef _NAN_CHECK_
-	  CkAssert(isnan(Vks[offset])==0);
+	  CkAssert(std::isnan(Vks[offset])==0);
 #endif
 
           dataR[dest_off] = Vks[offset];
