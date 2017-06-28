@@ -46,6 +46,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+using std::isnan;
 
 //============================================================================
 extern CProxy_TimeKeeper                      TimeKeeperProxy;

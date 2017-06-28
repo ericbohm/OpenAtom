@@ -37,6 +37,8 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+using std::isnan;
+
 #include "debug_flags.h"
 #include "utility/util.h"
 #include "main/cpaimd.h"
