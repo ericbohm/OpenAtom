@@ -437,7 +437,7 @@ main::main(CkArgMsg *msg) {
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
 
-  char *output_directory=general_data->gentempering_ctrl.output_directory;
+  const char *output_directory=general_data->gentempering_ctrl.output_directory;
 
   if(output_directory==NULL)
     {
@@ -445,7 +445,7 @@ main::main(CkArgMsg *msg) {
     }
   CkPrintf("tempering output dir %s\n",output_directory);
   
-  char *historyfile=general_data->gentempering_ctrl.history_name;
+  const char *historyfile=general_data->gentempering_ctrl.history_name;
 
 
   mainProxy=thishandle;
@@ -2027,7 +2027,7 @@ void control_physics_to_driver(UberCollection thisInstance, CPcharmParaInfo *sim
 
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
-  char *output_directory=general_data->gentempering_ctrl.output_directory;
+  const char *output_directory=general_data->gentempering_ctrl.output_directory;
   if(output_directory==NULL)
     {
       output_directory="TEMPER_OUT";
