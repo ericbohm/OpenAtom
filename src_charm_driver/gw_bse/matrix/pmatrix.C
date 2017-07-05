@@ -32,6 +32,7 @@ PMatrix::PMatrix(MatrixConfig config) : CBase_PMatrix(config) {
   iteration = 0;
   arrival_counter = 0;
   receive_counter = 0;
+  completed_chunks = 0;
   total_time = 0.0;
 }
 
