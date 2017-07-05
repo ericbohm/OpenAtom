@@ -1501,7 +1501,6 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
   } // endfor spin
 
   // shifted states eigenvalues
-#ifdef SHIFTED
   int qindex = Q_IDX;
   if(qindex == 0)
   for (int s = 0; s < nspin; s++) {
@@ -1517,7 +1516,7 @@ void Config::finale(GW_EPSILON* gw_epsilon, GW_PARALLEL* gw_parallel, GWBSEOPTS*
       }
     } // endfor kpts
   } // endfor spin
-#endif
+
 
   // =======================================================================
   // Share K-Points and number of states with the parallel controller

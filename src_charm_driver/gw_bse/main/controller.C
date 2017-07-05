@@ -126,7 +126,6 @@ PsiCache::PsiCache() {
     }
   }
   // shifted k grid psis. Need this for qindex=0
-#ifdef SHIFTED
   psis_shifted = new complex**[K];
   for (int k = 0; k < K; k++) {
     psis_shifted[k] = new complex*[L];
@@ -134,7 +133,7 @@ PsiCache::PsiCache() {
       psis_shifted[k][l] = new complex[psi_size];
     }
   }
-#endif
+
   fs = new complex[L*psi_size*pipeline_stages];
 
   umklapp_factor = new complex[psi_size];
@@ -168,10 +167,8 @@ void PsiCache::receivePsi(PsiMessage* msg) {
   // Once the cache has received all of it's data start the sliding pipeline
   // sending of psis to P to start the accumulation of fxf'.
   int expected_psis = K*L;
-#ifdef SHIFTED
   if(qindex == 0)
     expected_psis += K*L;
-#endif
   if (++received_psis == expected_psis) {
     //CkPrintf("[%d]: Cache filled\n", CkMyPe());
     contribute(CkCallback(CkReductionTarget(Controller,cachesFilled), controller_proxy));
@@ -237,14 +234,11 @@ void PsiCache::computeFs(PsiMessage* msg) {
   // Create the FComputePacket for this set of f vectors and start CkLoop
   f_packet.size = psi_size;
   f_packet.unocc_psi = msg->psi;
-#ifdef SHIFTED
-  if ( qindex == 0 ) {
-    f_packet.occ_psis = psis_shifted[ikq];
+  if ( qindex == 0 ) { 
+    f_packet.occ_psis = psis_shifted[ikq]; 
     f_packet.e_occ = e_occ_shifted[msg->spin_index][ikq];
   }
-  else
-#endif
-  {
+  else { 
     f_packet.occ_psis = psis[ikq];
     f_packet.e_occ = e_occ[msg->spin_index][ikq]; 
   }
