@@ -66,14 +66,14 @@ States::States(CkMigrateMessage *msg) { }
 void States::sendToCache() {
   //CkPrintf("[%i,%i,%i]: Sending psi to node cache...\n", ispin, ikpt, istate);
   int ndata = nfft[0]*nfft[1]*nfft[2];
-  PsiMessage* msg = new (ndata, ndata) PsiMessage(ndata, stateCoeffR);
+  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
   msg->spin_index = ispin;
   msg->k_index = ikpt;
   msg->state_index = istate;
   msg->shifted = false;
   psi_cache_proxy.receivePsi(msg);
 
-  msg = new (ndata, ndata) PsiMessage(ndata, stateCoeffR_shifted);//TODO:cleanup
+  msg = new (ndata) PsiMessage(ndata, stateCoeffR_shifted);
   msg->spin_index = ispin;
   msg->k_index = ikpt;
   msg->state_index = istate;
@@ -90,7 +90,7 @@ void States::sendToComputeF() {
   //int accept_arr[accept.size()];
   //for(int i=0;i<accept.size();i++)
   //  accept_arr[i] = accept[i];
-  PsiMessage* msg = new (ndata, ndata) PsiMessage(ndata, stateCoeffR);
+  PsiMessage* msg = new (ndata) PsiMessage(ndata, stateCoeffR);
   msg->spin_index = ispin;
   msg->k_index = ikpt;
   msg->state_index = istate;
