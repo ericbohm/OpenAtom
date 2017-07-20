@@ -24,6 +24,7 @@ class PMatrix : public CBase_PMatrix {
 
     void reportPTime();
     void generateEpsilon(std::vector<double> vcoulb, std::vector<int> accept, int inew, int jnew, int size, int max_inew, int max_jnew);   
+    void registerTileSections();
  
   private:
     unsigned L; // Number of occupied psis

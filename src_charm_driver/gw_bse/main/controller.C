@@ -11,6 +11,7 @@
 #include "fft_controller.h"
 #include "fft_routines.h"
 #include "CkLoopAPI.h"
+#include "limits.h"
 
 #define eps_rows 20
 #define eps_cols 20
@@ -115,6 +116,7 @@ PsiCache::PsiCache() {
   psi_size = gwbse->gw_parallel.n_elems;
   pipeline_stages = gwbse->gw_parallel.pipeline_stages;
   received_psis = 0;
+  received_chunks = 0;
   psis = new complex**[K];
   for (int k = 0; k < K; k++) {
     psis[k] = new complex*[L];
@@ -134,6 +136,13 @@ PsiCache::PsiCache() {
   fs = new complex[L*psi_size*pipeline_stages];
 
   umklapp_factor = new complex[psi_size];
+
+  // Variables for chare region registration
+  min_row = INT_MAX;
+  min_col = INT_MAX;
+  max_row = INT_MIN;
+  max_col = INT_MIN;
+  tile_lock = CmiCreateLock();
 
   total_time = 0.0;
   contribute(CkCallback(CkReductionTarget(Controller,psiCacheReady), controller_proxy));
@@ -171,6 +180,17 @@ void PsiCache::receivePsi(PsiMessage* msg) {
     //CkPrintf("[%d]: Cache filled\n", CkMyPe());
     contribute(CkCallback(CkReductionTarget(Controller,cachesFilled), controller_proxy));
   }
+}
+
+void PsiCache::setRegionData(int start_row, int start_col, int tile_nrows, int tile_ncols) {
+  CmiLock(tile_lock);
+
+  min_row = std::min(min_row, start_row);
+  max_row = std::max(max_row, start_row + tile_nrows);
+  min_col = std::min(min_col, start_col);
+  max_col = std::max(max_col, start_col + tile_ncols);
+
+  CmiUnlock(tile_lock);
 }
 
 // Called by CkLoop to spread the computation of f vectors across the node
@@ -299,6 +319,14 @@ void PsiCache::setVCoulb(std::vector<double> vcoulb_in){
 
 std::vector<double> PsiCache::getVCoulb() {
   return vcoulb;
+}
+
+// TODO: improve this to only be called when REGISTER_REGIONS is active
+// at the moment "#ifdef REGISTER REGIONS" doesn't work in controller.ci
+void PsiCache::reportInfo() {
+  if(min_row != -1 && max_row != -1 && min_col != -1 && max_col != -1) {
+    CkPrintf("PsiCache: MyNode = %d\nminRow: %d, maxRow: %d, minCol: %d, maxCol: %d\n", CkMyNode(), min_row, max_row, min_col, max_col);
+  }
 }
 
 void PsiCache::kqIndex(unsigned ikpt, unsigned& ikq, int* uklapp){

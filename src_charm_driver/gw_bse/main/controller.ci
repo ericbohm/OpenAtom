@@ -11,6 +11,7 @@ module controller {
 
 #define percent 25
 #define MAX_ITERATIONS 100
+#define REGISTER_REGIONS
 
 #define STEP_START(x)\
   timers.x = CmiWallTimer();
@@ -51,6 +52,7 @@ module controller {
     entry [reductiontarget] void psiCacheReady();
     entry [reductiontarget] void fCacheReady();
     entry [reductiontarget] void cachesFilled();
+    entry [reductiontarget] void registrationComplete();
     entry [reductiontarget] void psiComplete();
     entry [reductiontarget] void fftComplete();
     entry [reductiontarget] void transposeComplete();
@@ -85,13 +87,17 @@ module controller {
         states_proxy.fftGtoR();
       }
       when fftComplete(), psiCacheReady() serial {
+        #ifdef REGISTER_REGIONS
+        pmatrix2D_proxy.registerTileSections();
+        #endif
         for (next_K = 0; next_K < K; next_K++) {
           for (next_state = 0; next_state < L; next_state++) {
             states_proxy(0, next_K, next_state).sendToCache();
           }
         }
       }
-      when fCacheReady(), cachesFilled() serial {
+      when fCacheReady(), cachesFilled(), registrationComplete() serial {
+        psi_cache_proxy.reportInfo();
         PHASE_BOUNDARY(total_setup, total_phase1, "SETUP COMPLETE");
       }
 

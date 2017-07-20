@@ -97,6 +97,9 @@ class PsiCache : public CBase_PsiCache {
     complex* getF(unsigned,unsigned) const;
     void setVCoulb(std::vector<double> vcoulb_in);
     std::vector<double> getVCoulb();
+    void setRegionData(int start_row, int start_col, int tile_nrows, int tile_ncols);
+    void reportInfo();
+
   private:
     void kqIndex(unsigned, unsigned&, int*);
     void computeUmklappFactor(int*);
@@ -113,6 +116,10 @@ class PsiCache : public CBase_PsiCache {
     complex* umklapp_factor;
     
     double total_time;
+
+    // Used for registering fvector regions
+    int min_row, min_col, max_row, max_col;
+    CmiNodeLock tile_lock;
 };
 
 class FVectorCache : public CBase_FVectorCache {

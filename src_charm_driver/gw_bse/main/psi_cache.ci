@@ -8,5 +8,6 @@ module psi_cache {
     entry [exclusive] void computeFs(PsiMessage*);
     entry void reportFTime();
     entry void setVCoulb(std::vector<double>);
+    entry void reportInfo();
   };
 };

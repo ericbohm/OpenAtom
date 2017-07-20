@@ -14,6 +14,9 @@
 
 #define CHARM_ON
 #define PUP_ON
+
+#define REGISTER_REGIONS
+
 #include "standard_include.h"
 #include "main.h"
 #include "states.h"
